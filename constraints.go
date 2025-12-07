@@ -129,7 +129,9 @@ func buildConstraints(constraints map[string]string) []constraint {
 	for name, value := range constraints {
 		switch name {
 		case "required":
-			result = append(result, requiredConstraint{})
+			// Skip: 'required' is only checked during Unmarshal (missing JSON keys)
+			// It doesn't apply to Validate() on manually created structs
+			continue
 		case "min":
 			if min, err := strconv.Atoi(value); err == nil {
 				result = append(result, minConstraint{min: min})

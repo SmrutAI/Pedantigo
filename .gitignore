@@ -28,7 +28,8 @@ go.work.sum
 .env
 
 # Editor/IDE
-# .idea/
+.idea/
 # .vscode/
 docs/
 CLAUDE.md
+/etc/

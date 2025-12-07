@@ -52,14 +52,21 @@ func TestUnmarshal_InvalidJSON(t *testing.T) {
 
 func TestUnmarshal_ValidationError(t *testing.T) {
 	type User struct {
-		Email string `json:"email" validate:"required"`
+		Email string `json:"email" validate:"required,email"`
 		Age   int    `json:"age" validate:"min=18"`
 	}
 
 	validator := New[User]()
-	jsonData := []byte(`{"email":"","age":15}`) // Missing required, below min
+	// email is present but invalid (not an email), age is below min
+	jsonData := []byte(`{"email":"notanemail","age":15}`)
 
 	user, errs := validator.Unmarshal(jsonData)
+
+	t.Logf("Got %d errors:", len(errs))
+	for _, err := range errs {
+		t.Logf("  - %s: %s", err.Field, err.Message)
+	}
+
 	if len(errs) == 0 {
 		t.Error("expected validation errors")
 	}
@@ -69,7 +76,7 @@ func TestUnmarshal_ValidationError(t *testing.T) {
 		t.Error("expected non-nil user even with validation errors")
 	}
 
-	// Check we have errors for both fields
+	// Check we have errors for both fields (use struct field names, not JSON names)
 	foundEmailError := false
 	foundAgeError := false
 	for _, err := range errs {
@@ -121,26 +128,27 @@ func TestUnmarshal_DefaultValues(t *testing.T) {
 
 func TestUnmarshal_NestedValidation(t *testing.T) {
 	type Address struct {
-		City string `json:"city" validate:"required"`
+		City string `json:"city" validate:"required,min=1"` // min=1 for non-empty string
 	}
 
 	type User struct {
 		Email   string  `json:"email" validate:"required"`
-		Address Address `json:"address" validate:"required"`
+		Address Address `json:"address"`
 	}
 
 	validator := New[User]()
+	// City is present but empty - should fail min=1 constraint
 	jsonData := []byte(`{"email":"test@example.com","address":{"city":""}}`)
 
 	user, errs := validator.Unmarshal(jsonData)
 	if len(errs) == 0 {
-		t.Error("expected validation error for nested required field")
+		t.Error("expected validation error for empty city (min=1)")
 	}
 
 	// Should have error for Address.City
 	foundNestedError := false
 	for _, err := range errs {
-		if err.Field == "Address.City" || err.Field == "address.city" {
+		if err.Field == "Address.City" || err.Field == "City" {
 			foundNestedError = true
 		}
 	}

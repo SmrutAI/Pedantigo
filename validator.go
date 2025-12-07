@@ -5,22 +5,249 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
+	"time"
 )
 
-// Validator validates structs of type T
-type Validator[T any] struct {
-	typ reflect.Type
+// ValidatorOptions configures validator behavior
+type ValidatorOptions struct {
+	// StrictMissingFields controls whether missing fields without defaults are errors
+	// When true (default): missing fields without defaults cause validation errors
+	// When false: missing fields are left as zero values (user handles with pointers)
+	StrictMissingFields bool
 }
 
-// New creates a new Validator for type T
-func New[T any]() *Validator[T] {
-	var zero T
-	return &Validator[T]{
-		typ: reflect.TypeOf(zero),
+// DefaultValidatorOptions returns the default validator options
+func DefaultValidatorOptions() ValidatorOptions {
+	return ValidatorOptions{
+		StrictMissingFields: true,
 	}
 }
 
+// fieldDeserializer is a closure that deserializes a single field
+// inValue is nil if field is missing from JSON, otherwise contains the JSON value
+type fieldDeserializer func(outPtr *reflect.Value, inValue any) error
+
+// Validator validates structs of type T
+type Validator[T any] struct {
+	typ                reflect.Type
+	options            ValidatorOptions
+	fieldDeserializers map[string]fieldDeserializer
+}
+
+// New creates a new Validator for type T with optional configuration
+func New[T any](opts ...ValidatorOptions) *Validator[T] {
+	var zero T
+	typ := reflect.TypeOf(zero)
+
+	options := DefaultValidatorOptions()
+	if len(opts) > 0 {
+		options = opts[0]
+	}
+
+	validator := &Validator[T]{
+		typ:                typ,
+		options:            options,
+		fieldDeserializers: make(map[string]fieldDeserializer),
+	}
+
+	// Build field deserializers at creation time (fail-fast)
+	validator.buildFieldDeserializers(typ)
+
+	return validator
+}
+
+// buildFieldDeserializers creates field deserializer closures for each struct field
+func (v *Validator[T]) buildFieldDeserializers(typ reflect.Type) {
+	// Handle pointer types
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+
+	if typ.Kind() != reflect.Struct {
+		return
+	}
+
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+
+		// Skip unexported fields
+		if !field.IsExported() {
+			continue
+		}
+
+		// Get JSON field name
+		jsonTag := field.Tag.Get("json")
+		fieldName := field.Name
+		if jsonTag != "" && jsonTag != "-" {
+			// Extract field name from json tag (before comma)
+			if name, _, found := strings.Cut(jsonTag, ","); found {
+				fieldName = name
+			} else {
+				fieldName = jsonTag
+			}
+		}
+
+		// Parse validation constraints
+		constraints := parseTag(field.Tag)
+
+		// Get default value and defaultUsingMethod
+		var staticDefault *string
+		var methodName *string
+
+		if constraints != nil {
+			if defVal, hasDefault := constraints["default"]; hasDefault {
+				staticDefault = &defVal
+			}
+			if method, hasMethod := constraints["defaultUsingMethod"]; hasMethod {
+				methodName = &method
+				// Validate method exists and has correct signature (fail-fast)
+				if err := v.validateDefaultMethod(typ, method, field.Type); err != nil {
+					panic(fmt.Sprintf("field %s: %v", field.Name, err))
+				}
+			}
+		}
+
+		// Create field deserializer closure
+		fieldIndex := i
+		fieldType := field.Type
+		_, hasRequired := constraints["required"] // Check if key exists, not if value is non-empty
+
+		v.fieldDeserializers[fieldName] = func(outPtr *reflect.Value, inValue any) error {
+			fieldValue := outPtr.Field(fieldIndex)
+
+			// Determine if field was present in JSON
+			fieldMissing := inValue == nil
+
+			if fieldMissing {
+				// Field is missing from JSON
+				if staticDefault != nil {
+					// Apply static default
+					v.setDefaultValue(fieldValue, *staticDefault)
+					return nil
+				}
+
+				if methodName != nil {
+					// Call defaultUsingMethod on the pointer receiver
+					// outPtr is the struct value, so Addr() gives us the pointer
+					ptrValue := outPtr.Addr()
+					method := ptrValue.MethodByName(*methodName)
+					results := method.Call(nil)
+					if len(results) == 2 {
+						// Check for error
+						if !results[1].IsNil() {
+							return results[1].Interface().(error)
+						}
+						// Set the value
+						fieldValue.Set(results[0])
+					}
+					return nil
+				}
+
+				if hasRequired && v.options.StrictMissingFields {
+					return fmt.Errorf("is required")
+				}
+
+				// Leave as zero value (relaxed mode or not required)
+				return nil
+			}
+
+			// Field is present in JSON - set the value
+			return v.setFieldValue(fieldValue, inValue, fieldType)
+		}
+	}
+}
+
+// validateDefaultMethod checks that a method exists and has the correct signature
+func (v *Validator[T]) validateDefaultMethod(structType reflect.Type, methodName string, fieldType reflect.Type) error {
+	// Look for the method on the pointer type (methods are typically defined on pointer receivers)
+	ptrType := reflect.PtrTo(structType)
+	method, found := ptrType.MethodByName(methodName)
+
+	if !found {
+		return fmt.Errorf("method %s not found on type %s", methodName, structType.Name())
+	}
+
+	methodType := method.Type
+	// Method signature should be: func(*T) (FieldType, error)
+	// methodType.NumIn() includes the receiver, so we expect 1 (just receiver)
+	if methodType.NumIn() != 1 {
+		return fmt.Errorf("method %s should take no arguments (only receiver), got %d arguments", methodName, methodType.NumIn()-1)
+	}
+
+	if methodType.NumOut() != 2 {
+		return fmt.Errorf("method %s should return (value, error), got %d return values", methodName, methodType.NumOut())
+	}
+
+	// Check return types
+	if methodType.Out(0) != fieldType {
+		return fmt.Errorf("method %s should return %s as first value, got %s", methodName, fieldType, methodType.Out(0))
+	}
+
+	errorInterface := reflect.TypeOf((*error)(nil)).Elem()
+	if !methodType.Out(1).Implements(errorInterface) {
+		return fmt.Errorf("method %s should return error as second value, got %s", methodName, methodType.Out(1))
+	}
+
+	return nil
+}
+
+// setFieldValue sets a field value from a JSON value
+func (v *Validator[T]) setFieldValue(fieldValue reflect.Value, inValue any, fieldType reflect.Type) error {
+	if !fieldValue.CanSet() {
+		return nil
+	}
+
+	// Convert inValue to the correct type
+	inVal := reflect.ValueOf(inValue)
+
+	// Handle time.Time special case
+	// When unmarshaling to map[string]any, time values remain as strings
+	// We need to parse them manually (mimicking what encoding/json does automatically)
+	if fieldType == reflect.TypeOf(time.Time{}) {
+		if inVal.Kind() == reflect.String {
+			// Parse RFC3339 format (same as Go's encoding/json package)
+			t, err := time.Parse(time.RFC3339, inVal.String())
+			if err != nil {
+				return fmt.Errorf("failed to parse time: %v", err)
+			}
+			fieldValue.Set(reflect.ValueOf(t))
+			return nil
+		}
+	}
+
+	// Handle nested structs: if inValue is map[string]any and target is struct
+	if inVal.Kind() == reflect.Map && fieldType.Kind() == reflect.Struct {
+		// Re-marshal the map and unmarshal into the struct
+		jsonBytes, err := json.Marshal(inValue)
+		if err != nil {
+			return fmt.Errorf("failed to marshal nested struct: %v", err)
+		}
+
+		// Create a new instance of the target type
+		newStruct := reflect.New(fieldType)
+		if err := json.Unmarshal(jsonBytes, newStruct.Interface()); err != nil {
+			return fmt.Errorf("failed to unmarshal nested struct: %v", err)
+		}
+
+		fieldValue.Set(newStruct.Elem())
+		return nil
+	}
+
+	// Handle type conversion
+	if inVal.Type().AssignableTo(fieldType) {
+		fieldValue.Set(inVal)
+	} else if inVal.Type().ConvertibleTo(fieldType) {
+		fieldValue.Set(inVal.Convert(fieldType))
+	} else {
+		return fmt.Errorf("cannot convert %v to %v", inVal.Type(), fieldType)
+	}
+
+	return nil
+}
+
 // Validate validates a struct and returns any validation errors
+// NOTE: 'required' is NOT checked here - it's only checked during Unmarshal
 func (v *Validator[T]) Validate(obj *T) ValidationErrors {
 	if obj == nil {
 		return ValidationErrors{{Field: "root", Message: "cannot validate nil pointer"}}
@@ -28,7 +255,7 @@ func (v *Validator[T]) Validate(obj *T) ValidationErrors {
 
 	var errors ValidationErrors
 
-	// First, validate all fields using struct tags
+	// Validate all fields using struct tags (required is skipped via buildConstraints)
 	errors = append(errors, v.validateValue(reflect.ValueOf(obj).Elem(), "")...)
 
 	// Then, check if struct implements Validatable for cross-field validation
@@ -50,6 +277,7 @@ func (v *Validator[T]) Validate(obj *T) ValidationErrors {
 }
 
 // validateValue recursively validates a reflected value
+// NOTE: 'required' constraint is skipped (not built in buildConstraints)
 func (v *Validator[T]) validateValue(val reflect.Value, path string) ValidationErrors {
 	var errors ValidationErrors
 
@@ -94,7 +322,7 @@ func (v *Validator[T]) validateValue(val reflect.Value, path string) ValidationE
 			continue
 		}
 
-		// Build constraint validators
+		// Build constraint validators (required is already skipped in buildConstraints)
 		validators := buildConstraints(constraints)
 
 		// Apply each constraint to the field value
@@ -119,21 +347,45 @@ func (v *Validator[T]) validateValue(val reflect.Value, path string) ValidationE
 
 // Unmarshal unmarshals JSON data, applies defaults, and validates
 func (v *Validator[T]) Unmarshal(data []byte) (*T, ValidationErrors) {
-	var obj T
-
-	// First, unmarshal the JSON
-	if err := json.Unmarshal(data, &obj); err != nil {
+	// Step 1: Unmarshal to map[string]any to detect which fields exist
+	var jsonMap map[string]any
+	if err := json.Unmarshal(data, &jsonMap); err != nil {
 		return nil, ValidationErrors{{
 			Field:   "root",
 			Message: fmt.Sprintf("JSON decode error: %v", err),
 		}}
 	}
 
-	// Apply default values
-	v.applyDefaults(reflect.ValueOf(&obj).Elem(), "")
+	// Step 2: Create new struct instance
+	var obj T
+	objValue := reflect.ValueOf(&obj).Elem()
 
-	// Validate the unmarshaled object
-	errors := v.Validate(&obj)
+	// Step 3: Apply field deserializers
+	var errors ValidationErrors
+	for fieldName, deserializer := range v.fieldDeserializers {
+		var inValue any
+		if val, exists := jsonMap[fieldName]; exists {
+			inValue = val // Field present in JSON
+		} else {
+			inValue = nil // Field missing from JSON
+		}
+
+		if err := deserializer(&objValue, inValue); err != nil {
+			errors = append(errors, ValidationError{
+				Field:   fieldName,
+				Message: err.Error(),
+			})
+		}
+	}
+
+	// Return early if deserialization errors
+	if len(errors) > 0 {
+		return &obj, errors
+	}
+
+	// Step 4: Run validation constraints (min, max, email, etc.)
+	// NOTE: 'required' is already skipped in Validate() via buildConstraints
+	errors = append(errors, v.Validate(&obj)...)
 
 	return &obj, errors
 }
