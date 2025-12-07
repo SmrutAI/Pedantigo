@@ -1,0 +1,78 @@
+# Pre-commit hooks configuration for Pedantigo
+#
+# Setup:
+#   brew install pre-commit (or pip install pre-commit)
+#   pre-commit install
+#
+# Usage:
+#   pre-commit run --all-files              # Run all hooks
+#   pre-commit run <hook-id>                # Run specific hook
+#
+# To skip hooks temporarily:
+#   git commit --no-verify -m "message"
+#
+# Hook execution order:
+#   1. Security (gitleaks)
+#   2. Go styling (go-fmt, go-vet, golangci-lint)
+#   3. Go build
+#   4. Go tests (fast for library)
+
+repos:
+  # ============================================
+  # 1. SECURITY HOOKS (run first)
+  # ============================================
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+
+  # ============================================
+  # 2. GO STYLING HOOKS (before build)
+  # ============================================
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-fmt
+
+  # ============================================
+  # 3-5. CUSTOM LOCAL HOOKS
+  # ============================================
+  - repo: local
+    hooks:
+      # --- ACTIVE (run on every commit) ---
+
+      # 2b. Go vet (via Makefile)
+      - id: go-vet
+        name: Go vet
+        description: Runs make vet
+        entry: make vet
+        language: system
+        types: [go]
+        pass_filenames: false
+
+      # 2c. golangci-lint (via Makefile)
+      - id: golangci-lint
+        name: golangci-lint
+        description: Runs make lint
+        entry: make lint
+        language: system
+        types: [go]
+        pass_filenames: false
+
+      # 3. Go build (via Makefile)
+      - id: check-build
+        name: Go build check
+        description: Runs make build
+        entry: make build
+        language: system
+        types: [go]
+        pass_filenames: false
+
+      # 4. Go tests (active for library - should be fast)
+      - id: check-tests
+        name: Run Go tests
+        description: Runs make test
+        entry: make test
+        language: system
+        types: [go]
+        pass_filenames: false

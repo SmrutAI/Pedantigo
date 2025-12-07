@@ -14,28 +14,13 @@ type constraint interface {
 
 // Built-in constraint types
 type (
-	requiredConstraint struct{}
-	minConstraint      struct{ min int }
-	maxConstraint      struct{ max int }
-	emailConstraint    struct{}
-	defaultConstraint  struct{ value string }
+	minConstraint     struct{ min int }
+	maxConstraint     struct{ max int }
+	emailConstraint   struct{}
+	defaultConstraint struct{ value string }
 )
 
 var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
-
-// requiredConstraint validates that a value is not the zero value
-func (c requiredConstraint) Validate(value any) error {
-	if value == nil {
-		return fmt.Errorf("is required")
-	}
-
-	v := reflect.ValueOf(value)
-	if !v.IsValid() || v.IsZero() {
-		return fmt.Errorf("is required")
-	}
-
-	return nil
-}
 
 // minConstraint validates that a numeric value is >= min
 func (c minConstraint) Validate(value any) error {

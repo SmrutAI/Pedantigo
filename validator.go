@@ -24,8 +24,14 @@ func DefaultValidatorOptions() ValidatorOptions {
 	}
 }
 
+// missingFieldSentinel is a sentinel value to distinguish missing fields from explicit null
+type missingFieldSentinel struct{}
+
+var fieldMissingSentinel = missingFieldSentinel{}
+
 // fieldDeserializer is a closure that deserializes a single field
-// inValue is nil if field is missing from JSON, otherwise contains the JSON value
+// inValue is fieldMissingSentinel if field is missing from JSON,
+// nil if field is explicitly null, or the actual value if present
 type fieldDeserializer func(outPtr *reflect.Value, inValue any) error
 
 // Validator validates structs of type T
@@ -117,7 +123,7 @@ func (v *Validator[T]) buildFieldDeserializers(typ reflect.Type) {
 			fieldValue := outPtr.Field(fieldIndex)
 
 			// Determine if field was present in JSON
-			fieldMissing := inValue == nil
+			_, fieldMissing := inValue.(missingFieldSentinel)
 
 			if fieldMissing {
 				// Field is missing from JSON
@@ -161,7 +167,7 @@ func (v *Validator[T]) buildFieldDeserializers(typ reflect.Type) {
 // validateDefaultMethod checks that a method exists and has the correct signature
 func (v *Validator[T]) validateDefaultMethod(structType reflect.Type, methodName string, fieldType reflect.Type) error {
 	// Look for the method on the pointer type (methods are typically defined on pointer receivers)
-	ptrType := reflect.PtrTo(structType)
+	ptrType := reflect.PointerTo(structType)
 	method, found := ptrType.MethodByName(methodName)
 
 	if !found {
@@ -195,6 +201,28 @@ func (v *Validator[T]) validateDefaultMethod(structType reflect.Type, methodName
 // setFieldValue sets a field value from a JSON value
 func (v *Validator[T]) setFieldValue(fieldValue reflect.Value, inValue any, fieldType reflect.Type) error {
 	if !fieldValue.CanSet() {
+		return nil
+	}
+
+	// Handle pointer types
+	if fieldType.Kind() == reflect.Ptr {
+		// If inValue is nil, set the pointer field to nil (explicit JSON null)
+		if inValue == nil {
+			fieldValue.Set(reflect.Zero(fieldType))
+			return nil
+		}
+
+		// Allocate new pointer of the element type
+		elemType := fieldType.Elem()
+		newPtr := reflect.New(elemType)
+
+		// Recursively set the value on the dereferenced pointer
+		if err := v.setFieldValue(newPtr.Elem(), inValue, elemType); err != nil {
+			return err
+		}
+
+		// Set the field to the new pointer
+		fieldValue.Set(newPtr)
 		return nil
 	}
 
@@ -365,9 +393,9 @@ func (v *Validator[T]) Unmarshal(data []byte) (*T, ValidationErrors) {
 	for fieldName, deserializer := range v.fieldDeserializers {
 		var inValue any
 		if val, exists := jsonMap[fieldName]; exists {
-			inValue = val // Field present in JSON
+			inValue = val // Field present in JSON (might be nil for JSON null)
 		} else {
-			inValue = nil // Field missing from JSON
+			inValue = fieldMissingSentinel // Field missing from JSON
 		}
 
 		if err := deserializer(&objValue, inValue); err != nil {
@@ -390,58 +418,23 @@ func (v *Validator[T]) Unmarshal(data []byte) (*T, ValidationErrors) {
 	return &obj, errors
 }
 
-// applyDefaults recursively applies default values to fields
-func (v *Validator[T]) applyDefaults(val reflect.Value, path string) {
-	// Handle pointer indirection
-	for val.Kind() == reflect.Ptr {
-		if val.IsNil() {
-			return
-		}
-		val = val.Elem()
-	}
-
-	// Only process structs
-	if val.Kind() != reflect.Struct {
-		return
-	}
-
-	typ := val.Type()
-
-	// Iterate through all fields
-	for i := 0; i < val.NumField(); i++ {
-		field := typ.Field(i)
-		fieldValue := val.Field(i)
-
-		// Skip unexported fields
-		if !field.IsExported() {
-			continue
-		}
-
-		// Parse validation tags
-		constraints := parseTag(field.Tag)
-		if constraints != nil {
-			if defaultValue, hasDefault := constraints["default"]; hasDefault {
-				// Only apply default if field is zero value
-				if fieldValue.IsZero() {
-					v.setDefaultValue(fieldValue, defaultValue)
-				}
-			}
-		}
-
-		// Recursively apply defaults to nested structs
-		if fieldValue.Kind() == reflect.Struct {
-			fieldPath := field.Name
-			if path != "" {
-				fieldPath = path + "." + field.Name
-			}
-			v.applyDefaults(fieldValue, fieldPath)
-		}
-	}
-}
-
 // setDefaultValue sets a default value on a field
 func (v *Validator[T]) setDefaultValue(fieldValue reflect.Value, defaultValue string) {
 	if !fieldValue.CanSet() {
+		return
+	}
+
+	// Handle pointer types
+	if fieldValue.Kind() == reflect.Ptr {
+		// Create a new value of the element type
+		elemType := fieldValue.Type().Elem()
+		newPtr := reflect.New(elemType)
+
+		// Recursively set the default on the dereferenced pointer
+		v.setDefaultValue(newPtr.Elem(), defaultValue)
+
+		// Set the field to the new pointer
+		fieldValue.Set(newPtr)
 		return
 	}
 

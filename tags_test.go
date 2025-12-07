@@ -69,7 +69,7 @@ func TestParseTag_NoValidateTag(t *testing.T) {
 	tag := reflect.StructTag(`json:"email"`)
 	constraints := parseTag(tag)
 
-	if constraints != nil && len(constraints) > 0 {
+	if len(constraints) > 0 {
 		t.Errorf("expected empty constraints for tag without validate, got %v", constraints)
 	}
 }
