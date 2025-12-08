@@ -350,9 +350,126 @@ func parseDefaultValue(value string, typ reflect.Type) any {
 	return value
 }
 
-// SchemaJSON generates a JSON Schema as JSON bytes
-// This is the format required by LLM APIs (OpenAI, Anthropic, etc.)
+// SchemaJSON generates JSON Schema as JSON bytes for LLM APIs
+// Returns expanded schema with nested objects inlined (no $ref/$defs)
+// Use this for: OpenAI function calling, Anthropic tool use, Claude structured outputs
 func (v *Validator[T]) SchemaJSON() ([]byte, error) {
 	schema := v.Schema()
 	return json.MarshalIndent(schema, "", "  ")
+}
+
+// SchemaOpenAPI generates a JSON Schema with $ref support for OpenAPI/Swagger specs
+// Returns schema with $ref/$defs for type reusability and cleaner documentation
+// Use this for: OpenAPI 3.0 specs, Swagger documentation, API documentation tools
+func (v *Validator[T]) SchemaOpenAPI() *jsonschema.Schema {
+	var zero T
+	reflector := jsonschema.Reflector{
+		ExpandedStruct: true,  // Expand root struct inline
+		DoNotReference: false, // Allow $ref/$defs for nested types
+	}
+	baseSchema := reflector.Reflect(zero)
+
+	// Enhance all schemas (root and definitions) with constraints
+	v.enhanceSchemaWithDefs(baseSchema, v.typ)
+
+	return baseSchema
+}
+
+// SchemaJSONOpenAPI generates JSON Schema as JSON bytes for OpenAPI/Swagger specs
+// Returns schema with $ref/$defs for type reusability
+// Use this for: OpenAPI 3.0 specs, Swagger documentation, API documentation tools
+func (v *Validator[T]) SchemaJSONOpenAPI() ([]byte, error) {
+	schema := v.SchemaOpenAPI()
+	return json.MarshalIndent(schema, "", "  ")
+}
+
+// enhanceSchemaWithDefs enhances both root schema and all definitions
+func (v *Validator[T]) enhanceSchemaWithDefs(schema *jsonschema.Schema, typ reflect.Type) {
+	// Clear the required fields set by jsonschema library
+	// We'll add our own based on pedantigo:"required" tags
+	schema.Required = nil
+
+	// Enhance root schema
+	v.enhanceSchema(schema, typ)
+
+	// Enhance all definitions
+	for name, def := range schema.Definitions {
+		def.Required = nil
+		// Find the type for this definition
+		if defTyp := v.findTypeForDefinition(typ, name); defTyp != nil {
+			v.enhanceSchema(def, defTyp)
+		}
+	}
+}
+
+// findTypeForDefinition finds the reflect.Type for a definition by name
+func (v *Validator[T]) findTypeForDefinition(typ reflect.Type, defName string) reflect.Type {
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+
+	if typ.Kind() != reflect.Struct {
+		return nil
+	}
+
+	// Check if this is the type we're looking for
+	if typ.Name() == defName {
+		return typ
+	}
+
+	// Search through struct fields for nested types
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		fieldType := field.Type
+
+		if fieldType.Kind() == reflect.Ptr {
+			fieldType = fieldType.Elem()
+		}
+
+		// Check if this field type matches
+		if fieldType.Name() == defName {
+			return fieldType
+		}
+
+		// Recursively search nested structs
+		if fieldType.Kind() == reflect.Struct {
+			if found := v.findTypeForDefinition(fieldType, defName); found != nil {
+				return found
+			}
+		}
+
+		// Search in slice element types
+		if fieldType.Kind() == reflect.Slice {
+			elemType := fieldType.Elem()
+			if elemType.Kind() == reflect.Ptr {
+				elemType = elemType.Elem()
+			}
+			if elemType.Name() == defName {
+				return elemType
+			}
+			if elemType.Kind() == reflect.Struct {
+				if found := v.findTypeForDefinition(elemType, defName); found != nil {
+					return found
+				}
+			}
+		}
+
+		// Search in map value types
+		if fieldType.Kind() == reflect.Map {
+			valueType := fieldType.Elem()
+			if valueType.Kind() == reflect.Ptr {
+				valueType = valueType.Elem()
+			}
+			if valueType.Name() == defName {
+				return valueType
+			}
+			if valueType.Kind() == reflect.Struct {
+				if found := v.findTypeForDefinition(valueType, defName); found != nil {
+					return found
+				}
+			}
+		}
+	}
+
+	return nil
 }

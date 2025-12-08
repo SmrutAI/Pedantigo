@@ -440,3 +440,145 @@ func TestSchemaJSON_ValidOutput(t *testing.T) {
 		t.Errorf("expected email format 'email', got %v", emailField["format"])
 	}
 }
+
+func TestSchemaJSONOpenAPI_WithReferences(t *testing.T) {
+	type Address struct {
+		City string `json:"city" pedantigo:"required"`
+		Zip  string `json:"zip" pedantigo:"min=5"`
+	}
+
+	type User struct {
+		Name    string  `json:"name" pedantigo:"required,min=3"`
+		Address Address `json:"address" pedantigo:"required"`
+	}
+
+	validator := New[User]()
+	jsonBytes, err := validator.SchemaJSONOpenAPI()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Verify it's valid JSON by unmarshaling
+	var schemaMap map[string]any
+	if err := json.Unmarshal(jsonBytes, &schemaMap); err != nil {
+		t.Fatalf("expected valid JSON, got error: %v", err)
+	}
+
+	// Check that $defs exists (OpenAPI uses definitions)
+	defs, hasDefs := schemaMap["$defs"].(map[string]any)
+	if !hasDefs {
+		t.Fatal("expected $defs to exist in OpenAPI schema")
+	}
+
+	// Check that Address is in definitions
+	addressDef, ok := defs["Address"].(map[string]any)
+	if !ok {
+		t.Fatal("expected Address definition to exist in $defs")
+	}
+
+	// Verify Address definition has constraints
+	addressProps, ok := addressDef["properties"].(map[string]any)
+	if !ok {
+		t.Fatal("expected Address definition to have properties")
+	}
+
+	// Check city is required in Address definition
+	addressRequired, ok := addressDef["required"].([]any)
+	if !ok || len(addressRequired) == 0 {
+		t.Fatal("expected Address definition to have required fields")
+	}
+	hasCity := false
+	for _, req := range addressRequired {
+		if req == "city" {
+			hasCity = true
+			break
+		}
+	}
+	if !hasCity {
+		t.Error("expected 'city' to be required in Address definition")
+	}
+
+	// Check zip has minLength constraint in Address definition
+	zipProp, ok := addressProps["zip"].(map[string]any)
+	if !ok {
+		t.Fatal("expected zip property in Address definition")
+	}
+	if zipProp["minLength"] != float64(5) {
+		t.Errorf("expected zip minLength 5 in Address definition, got %v", zipProp["minLength"])
+	}
+
+	// Check root schema has $ref to Address
+	properties, ok := schemaMap["properties"].(map[string]any)
+	if !ok {
+		t.Fatal("expected root schema to have properties")
+	}
+
+	addressProp, ok := properties["address"].(map[string]any)
+	if !ok {
+		t.Fatal("expected address property in root schema")
+	}
+
+	// Should have $ref pointing to #/$defs/Address
+	ref, hasRef := addressProp["$ref"].(string)
+	if !hasRef {
+		t.Fatal("expected address property to have $ref in OpenAPI schema")
+	}
+	if ref != "#/$defs/Address" {
+		t.Errorf("expected $ref '#/$defs/Address', got %s", ref)
+	}
+}
+
+func TestSchemaOpenAPI_ConstraintsInDefinitions(t *testing.T) {
+	type Contact struct {
+		Email string `json:"email" pedantigo:"required,email"`
+		Phone string `json:"phone" pedantigo:"min=10"`
+	}
+
+	type Company struct {
+		Name    string  `json:"name" pedantigo:"required,min=3"`
+		Contact Contact `json:"contact" pedantigo:"required"`
+	}
+
+	validator := New[Company]()
+	schema := validator.SchemaOpenAPI()
+
+	// Check that Contact definition exists
+	if len(schema.Definitions) == 0 {
+		t.Fatal("expected schema to have definitions")
+	}
+
+	contactDef, ok := schema.Definitions["Contact"]
+	if !ok {
+		t.Fatal("expected Contact definition to exist")
+	}
+
+	// Check Contact has required email
+	hasEmail := false
+	for _, req := range contactDef.Required {
+		if req == "email" {
+			hasEmail = true
+			break
+		}
+	}
+	if !hasEmail {
+		t.Error("expected 'email' to be required in Contact definition")
+	}
+
+	// Check email has format constraint
+	emailProp, ok := contactDef.Properties.Get("email")
+	if !ok || emailProp == nil {
+		t.Fatal("expected email property in Contact definition")
+	}
+	if emailProp.Format != "email" {
+		t.Errorf("expected email format 'email' in Contact definition, got %s", emailProp.Format)
+	}
+
+	// Check phone has minLength constraint
+	phoneProp, ok := contactDef.Properties.Get("phone")
+	if !ok || phoneProp == nil {
+		t.Fatal("expected phone property in Contact definition")
+	}
+	if phoneProp.MinLength == nil || *phoneProp.MinLength != 10 {
+		t.Errorf("expected phone minLength 10 in Contact definition, got %v", phoneProp.MinLength)
+	}
+}
