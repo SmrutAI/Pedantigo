@@ -226,6 +226,18 @@ func (v *Validator[T]) setFieldValue(fieldValue reflect.Value, inValue any, fiel
 		return nil
 	}
 
+	// Handle nil values for slices
+	if inValue == nil && fieldType.Kind() == reflect.Slice {
+		fieldValue.Set(reflect.Zero(fieldType))
+		return nil
+	}
+
+	// Handle nil values for maps
+	if inValue == nil && fieldType.Kind() == reflect.Map {
+		fieldValue.Set(reflect.Zero(fieldType))
+		return nil
+	}
+
 	// Convert inValue to the correct type
 	inVal := reflect.ValueOf(inValue)
 
@@ -259,6 +271,156 @@ func (v *Validator[T]) setFieldValue(fieldValue reflect.Value, inValue any, fiel
 		}
 
 		fieldValue.Set(newStruct.Elem())
+		return nil
+	}
+
+	// Handle slices: if inValue is []any and target is slice
+	if inVal.Kind() == reflect.Slice && fieldType.Kind() == reflect.Slice {
+		elemType := fieldType.Elem()
+		newSlice := reflect.MakeSlice(fieldType, inVal.Len(), inVal.Len())
+
+		for i := 0; i < inVal.Len(); i++ {
+			elemValue := newSlice.Index(i)
+			elemInput := inVal.Index(i).Interface()
+
+			// For structs in slices, manually deserialize fields to track which are present
+			if elemType.Kind() == reflect.Struct && reflect.TypeOf(elemInput).Kind() == reflect.Map {
+				inputMap, ok := elemInput.(map[string]any)
+				if !ok {
+					return fmt.Errorf("expected map for struct element")
+				}
+
+				// Create new struct instance
+				newStruct := reflect.New(elemType).Elem()
+
+				// Iterate through struct fields and set values
+				for j := 0; j < elemType.NumField(); j++ {
+					field := elemType.Field(j)
+
+					// Skip unexported fields
+					if !field.IsExported() {
+						continue
+					}
+
+					// Get JSON field name
+					jsonTag := field.Tag.Get("json")
+					jsonFieldName := field.Name
+					if jsonTag != "" && jsonTag != "-" {
+						if name, _, found := strings.Cut(jsonTag, ","); found {
+							jsonFieldName = name
+						} else {
+							jsonFieldName = jsonTag
+						}
+					}
+
+					// Check if field exists in JSON
+					val, exists := inputMap[jsonFieldName]
+					if !exists {
+						// Field missing from JSON - leave as zero value
+						// Will be checked for 'required' later in validateValue()
+						continue
+					}
+
+					// Set the field value
+					fieldVal := newStruct.Field(j)
+					if err := v.setFieldValue(fieldVal, val, field.Type); err != nil {
+						return err
+					}
+				}
+
+				elemValue.Set(newStruct)
+			} else {
+				if err := v.setFieldValue(elemValue, elemInput, elemType); err != nil {
+					return err
+				}
+			}
+		}
+
+		fieldValue.Set(newSlice)
+		return nil
+	}
+
+	// Handle maps: if inValue is map[string]any and target is map
+	if inVal.Kind() == reflect.Map && fieldType.Kind() == reflect.Map {
+		keyType := fieldType.Key()
+		valueType := fieldType.Elem()
+
+		// Create new map
+		newMap := reflect.MakeMap(fieldType)
+
+		// Iterate through map entries
+		iter := inVal.MapRange()
+		for iter.Next() {
+			key := iter.Key()
+			val := iter.Value().Interface()
+
+			// Convert key if needed
+			var convertedKey reflect.Value
+			if key.Type().AssignableTo(keyType) {
+				convertedKey = key
+			} else if key.Type().ConvertibleTo(keyType) {
+				convertedKey = key.Convert(keyType)
+			} else {
+				return fmt.Errorf("cannot convert map key %v to %v", key.Type(), keyType)
+			}
+
+			// For struct values in maps, manually deserialize fields to track which are present
+			if valueType.Kind() == reflect.Struct && reflect.TypeOf(val).Kind() == reflect.Map {
+				inputMap, ok := val.(map[string]any)
+				if !ok {
+					return fmt.Errorf("expected map for struct value")
+				}
+
+				// Create new struct instance
+				newStruct := reflect.New(valueType).Elem()
+
+				// Iterate through struct fields and set values
+				for j := 0; j < valueType.NumField(); j++ {
+					field := valueType.Field(j)
+
+					// Skip unexported fields
+					if !field.IsExported() {
+						continue
+					}
+
+					// Get JSON field name
+					jsonTag := field.Tag.Get("json")
+					jsonFieldName := field.Name
+					if jsonTag != "" && jsonTag != "-" {
+						if name, _, found := strings.Cut(jsonTag, ","); found {
+							jsonFieldName = name
+						} else {
+							jsonFieldName = jsonTag
+						}
+					}
+
+					// Check if field exists in JSON
+					fieldVal, exists := inputMap[jsonFieldName]
+					if !exists {
+						// Field missing from JSON - leave as zero value
+						// Will be checked for 'required' later in validateValue()
+						continue
+					}
+
+					// Set the field value
+					structFieldVal := newStruct.Field(j)
+					if err := v.setFieldValue(structFieldVal, fieldVal, field.Type); err != nil {
+						return err
+					}
+				}
+
+				newMap.SetMapIndex(convertedKey, newStruct)
+			} else {
+				// For non-struct values, convert normally
+				newValue := reflect.New(valueType).Elem()
+				if err := v.setFieldValue(newValue, val, valueType); err != nil {
+					return err
+				}
+				newMap.SetMapIndex(convertedKey, newValue)
+			}
+		}
+
+		fieldValue.Set(newMap)
 		return nil
 	}
 
@@ -343,30 +505,116 @@ func (v *Validator[T]) validateValue(val reflect.Value, path string) ValidationE
 		// Parse validation tags
 		constraints := parseTag(field.Tag)
 		if constraints == nil {
-			// No validation tags, but still check nested structs
+			// No validation tags, but still check nested structs, slices, and maps
 			if fieldValue.Kind() == reflect.Struct {
 				errors = append(errors, v.validateValue(fieldValue, fieldPath)...)
+			} else if fieldValue.Kind() == reflect.Slice {
+				// Recursively validate struct elements in slices
+				for i := 0; i < fieldValue.Len(); i++ {
+					elemValue := fieldValue.Index(i)
+					elemPath := fmt.Sprintf("%s[%d]", fieldPath, i)
+					if elemValue.Kind() == reflect.Struct {
+						errors = append(errors, v.validateValue(elemValue, elemPath)...)
+					}
+				}
+			} else if fieldValue.Kind() == reflect.Map {
+				// Recursively validate struct values in maps
+				iter := fieldValue.MapRange()
+				for iter.Next() {
+					mapKey := iter.Key()
+					mapValue := iter.Value()
+					mapPath := fmt.Sprintf("%s[%v]", fieldPath, mapKey.Interface())
+					if mapValue.Kind() == reflect.Struct {
+						errors = append(errors, v.validateValue(mapValue, mapPath)...)
+					}
+				}
 			}
 			continue
+		}
+
+		// For nested structs (path != ""), check required fields
+		// This is needed because nested structs in slices are deserialized via json.Unmarshal
+		// which bypasses our custom required field checking in Unmarshal()
+		if path != "" && v.options.StrictMissingFields {
+			if _, hasRequired := constraints["required"]; hasRequired {
+				// Check if field is zero value (indicates it was missing from JSON)
+				if fieldValue.IsZero() {
+					errors = append(errors, ValidationError{
+						Field:   fieldPath,
+						Message: "is required",
+						Value:   fieldValue.Interface(),
+					})
+					// Skip further validation for this field
+					continue
+				}
+			}
 		}
 
 		// Build constraint validators (required is already skipped in buildConstraints)
 		validators := buildConstraints(constraints)
 
-		// Apply each constraint to the field value
-		for _, validator := range validators {
-			if err := validator.Validate(fieldValue.Interface()); err != nil {
-				errors = append(errors, ValidationError{
-					Field:   fieldPath,
-					Message: err.Error(),
-					Value:   fieldValue.Interface(),
-				})
-			}
-		}
+		// For slices, validate each element instead of the slice itself
+		if fieldValue.Kind() == reflect.Slice {
+			for i := 0; i < fieldValue.Len(); i++ {
+				elemValue := fieldValue.Index(i)
+				elemPath := fmt.Sprintf("%s[%d]", fieldPath, i)
 
-		// Recursively validate nested structs
-		if fieldValue.Kind() == reflect.Struct {
-			errors = append(errors, v.validateValue(fieldValue, fieldPath)...)
+				// Apply constraints to each element
+				for _, validator := range validators {
+					if err := validator.Validate(elemValue.Interface()); err != nil {
+						errors = append(errors, ValidationError{
+							Field:   elemPath,
+							Message: err.Error(),
+							Value:   elemValue.Interface(),
+						})
+					}
+				}
+
+				// Recursively validate nested structs in slice
+				if elemValue.Kind() == reflect.Struct {
+					errors = append(errors, v.validateValue(elemValue, elemPath)...)
+				}
+			}
+		} else if fieldValue.Kind() == reflect.Map {
+			// For maps, validate each value instead of the map itself
+			iter := fieldValue.MapRange()
+			for iter.Next() {
+				mapKey := iter.Key()
+				mapValue := iter.Value()
+				mapPath := fmt.Sprintf("%s[%v]", fieldPath, mapKey.Interface())
+
+				// Apply constraints to each value
+				for _, validator := range validators {
+					if err := validator.Validate(mapValue.Interface()); err != nil {
+						errors = append(errors, ValidationError{
+							Field:   mapPath,
+							Message: err.Error(),
+							Value:   mapValue.Interface(),
+						})
+					}
+				}
+
+				// Recursively validate nested structs in map
+				if mapValue.Kind() == reflect.Struct {
+					errors = append(errors, v.validateValue(mapValue, mapPath)...)
+				}
+			}
+		} else {
+			// For non-slice/map fields, apply constraints directly
+			for _, validator := range validators {
+				if err := validator.Validate(fieldValue.Interface()); err != nil {
+					errors = append(errors, ValidationError{
+						Field:   fieldPath,
+						Message: err.Error(),
+						Value:   fieldValue.Interface(),
+					})
+				}
+			}
+
+			// Recursively validate nested structs
+			if fieldValue.Kind() == reflect.Struct {
+				errors = append(errors, v.validateValue(fieldValue, fieldPath)...)
+			}
 		}
 	}
 
