@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 // constraint represents a validation constraint
@@ -33,6 +34,7 @@ type (
 	}
 	ipv4Constraint    struct{}
 	ipv6Constraint    struct{}
+	enumConstraint    struct{ values []string }
 	defaultConstraint struct{ value string }
 )
 
@@ -503,13 +505,55 @@ func (c ipv6Constraint) Validate(value any) error {
 	return nil
 }
 
+// enumConstraint validates that value is one of the allowed values
+func (c enumConstraint) Validate(value any) error {
+	v := reflect.ValueOf(value)
+	if !v.IsValid() {
+		return nil // Skip validation for invalid values
+	}
+
+	// Handle pointer types
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return nil // Skip validation for nil pointers
+		}
+		v = v.Elem()
+	}
+
+	// Convert value to string for comparison
+	var str string
+	switch v.Kind() {
+	case reflect.String:
+		str = v.String()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		str = strconv.FormatInt(v.Int(), 10)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		str = strconv.FormatUint(v.Uint(), 10)
+	case reflect.Float32, reflect.Float64:
+		str = strconv.FormatFloat(v.Float(), 'f', -1, 64)
+	case reflect.Bool:
+		str = strconv.FormatBool(v.Bool())
+	default:
+		return fmt.Errorf("enum constraint not supported for type %s", v.Kind())
+	}
+
+	// Check if value is in allowed list
+	for _, allowed := range c.values {
+		if str == allowed {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("must be one of: %s", strings.Join(c.values, ", "))
+}
+
 // defaultConstraint is not a validator - it's handled during unmarshaling
 func (c defaultConstraint) Validate(value any) error {
 	return nil // No-op for validation
 }
 
 // buildConstraints creates constraint instances from parsed tag map
-func buildConstraints(constraints map[string]string) []constraint {
+func buildConstraints(constraints map[string]string, fieldType reflect.Type) []constraint {
 	var result []constraint
 
 	for name, value := range constraints {
@@ -519,26 +563,40 @@ func buildConstraints(constraints map[string]string) []constraint {
 			// It doesn't apply to Validate() on manually created structs
 			continue
 		case "min":
+			// Context-aware: numeric min for numbers, length min for strings/slices
 			if min, err := strconv.Atoi(value); err == nil {
-				result = append(result, minConstraint{min: min})
+				// Handle pointer types - check underlying type
+				checkType := fieldType
+				if checkType.Kind() == reflect.Ptr {
+					checkType = checkType.Elem()
+				}
+				kind := checkType.Kind()
+				if kind == reflect.String || kind == reflect.Slice || kind == reflect.Array {
+					result = append(result, minLengthConstraint{minLength: min})
+				} else {
+					result = append(result, minConstraint{min: min})
+				}
 			}
 		case "max":
+			// Context-aware: numeric max for numbers, length max for strings/slices
 			if max, err := strconv.Atoi(value); err == nil {
-				result = append(result, maxConstraint{max: max})
-			}
-		case "min_length":
-			if minLength, err := strconv.Atoi(value); err == nil {
-				result = append(result, minLengthConstraint{minLength: minLength})
-			}
-		case "max_length":
-			if maxLength, err := strconv.Atoi(value); err == nil {
-				result = append(result, maxLengthConstraint{maxLength: maxLength})
+				// Handle pointer types - check underlying type
+				checkType := fieldType
+				if checkType.Kind() == reflect.Ptr {
+					checkType = checkType.Elem()
+				}
+				kind := checkType.Kind()
+				if kind == reflect.String || kind == reflect.Slice || kind == reflect.Array {
+					result = append(result, maxLengthConstraint{maxLength: max})
+				} else {
+					result = append(result, maxConstraint{max: max})
+				}
 			}
 		case "gt":
 			if threshold, err := strconv.ParseFloat(value, 64); err == nil {
 				result = append(result, gtConstraint{threshold: threshold})
 			}
-		case "ge":
+		case "gte":
 			if threshold, err := strconv.ParseFloat(value, 64); err == nil {
 				result = append(result, geConstraint{threshold: threshold})
 			}
@@ -546,7 +604,7 @@ func buildConstraints(constraints map[string]string) []constraint {
 			if threshold, err := strconv.ParseFloat(value, 64); err == nil {
 				result = append(result, ltConstraint{threshold: threshold})
 			}
-		case "le":
+		case "lte":
 			if threshold, err := strconv.ParseFloat(value, 64); err == nil {
 				result = append(result, leConstraint{threshold: threshold})
 			}
@@ -556,7 +614,7 @@ func buildConstraints(constraints map[string]string) []constraint {
 			result = append(result, urlConstraint{})
 		case "uuid":
 			result = append(result, uuidConstraint{})
-		case "regex":
+		case "regexp":
 			// Compile regex pattern (fail-fast on invalid regex)
 			compiledRegex, err := regexp.Compile(value)
 			if err != nil {
@@ -567,6 +625,10 @@ func buildConstraints(constraints map[string]string) []constraint {
 			result = append(result, ipv4Constraint{})
 		case "ipv6":
 			result = append(result, ipv6Constraint{})
+		case "oneof":
+			// Split oneof values by space (validator compatible)
+			values := strings.Fields(value)
+			result = append(result, enumConstraint{values: values})
 		case "default":
 			result = append(result, defaultConstraint{value: value})
 		}

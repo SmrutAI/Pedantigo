@@ -6,8 +6,8 @@ import (
 
 func TestUnmarshal_ValidJSON(t *testing.T) {
 	type User struct {
-		Email string `json:"email" validate:"required"`
-		Age   int    `json:"age" validate:"min=18"`
+		Email string `json:"email" pedantigo:"required"`
+		Age   int    `json:"age" pedantigo:"min=18"`
 	}
 
 	validator := New[User]()
@@ -33,7 +33,7 @@ func TestUnmarshal_ValidJSON(t *testing.T) {
 
 func TestUnmarshal_InvalidJSON(t *testing.T) {
 	type User struct {
-		Email string `json:"email" validate:"required"`
+		Email string `json:"email" pedantigo:"required"`
 	}
 
 	validator := New[User]()
@@ -52,8 +52,8 @@ func TestUnmarshal_InvalidJSON(t *testing.T) {
 
 func TestUnmarshal_ValidationError(t *testing.T) {
 	type User struct {
-		Email string `json:"email" validate:"required,email"`
-		Age   int    `json:"age" validate:"min=18"`
+		Email string `json:"email" pedantigo:"required,email"`
+		Age   int    `json:"age" pedantigo:"min=18"`
 	}
 
 	validator := New[User]()
@@ -99,9 +99,9 @@ func TestUnmarshal_ValidationError(t *testing.T) {
 
 func TestUnmarshal_DefaultValues(t *testing.T) {
 	type User struct {
-		Email  string `json:"email" validate:"required"`
-		Role   string `json:"role" validate:"default=user"`
-		Status string `json:"status" validate:"default=active"`
+		Email  string `json:"email" pedantigo:"required"`
+		Role   string `json:"role" pedantigo:"default=user"`
+		Status string `json:"status" pedantigo:"default=active"`
 	}
 
 	validator := New[User]()
@@ -128,11 +128,11 @@ func TestUnmarshal_DefaultValues(t *testing.T) {
 
 func TestUnmarshal_NestedValidation(t *testing.T) {
 	type Address struct {
-		City string `json:"city" validate:"required,min=1"` // min=1 for non-empty string
+		City string `json:"city" pedantigo:"required,min=1"` // min=1 for non-empty string
 	}
 
 	type User struct {
-		Email   string  `json:"email" validate:"required"`
+		Email   string  `json:"email" pedantigo:"required"`
 		Address Address `json:"address"`
 	}
 

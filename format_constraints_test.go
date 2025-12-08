@@ -10,7 +10,7 @@ import (
 
 func TestURL_Valid(t *testing.T) {
 	type Config struct {
-		Website string `json:"website" validate:"url"`
+		Website string `json:"website" pedantigo:"url"`
 	}
 
 	validator := New[Config]()
@@ -28,7 +28,7 @@ func TestURL_Valid(t *testing.T) {
 
 func TestURL_ValidHTTP(t *testing.T) {
 	type Config struct {
-		Website string `json:"website" validate:"url"`
+		Website string `json:"website" pedantigo:"url"`
 	}
 
 	validator := New[Config]()
@@ -46,7 +46,7 @@ func TestURL_ValidHTTP(t *testing.T) {
 
 func TestURL_InvalidFormat(t *testing.T) {
 	type Config struct {
-		Website string `json:"website" validate:"url"`
+		Website string `json:"website" pedantigo:"url"`
 	}
 
 	validator := New[Config]()
@@ -71,7 +71,7 @@ func TestURL_InvalidFormat(t *testing.T) {
 
 func TestURL_NoScheme(t *testing.T) {
 	type Config struct {
-		Website string `json:"website" validate:"url"`
+		Website string `json:"website" pedantigo:"url"`
 	}
 
 	validator := New[Config]()
@@ -96,7 +96,7 @@ func TestURL_NoScheme(t *testing.T) {
 
 func TestURL_FTPScheme(t *testing.T) {
 	type Config struct {
-		Website string `json:"website" validate:"url"`
+		Website string `json:"website" pedantigo:"url"`
 	}
 
 	validator := New[Config]()
@@ -121,7 +121,7 @@ func TestURL_FTPScheme(t *testing.T) {
 
 func TestURL_EmptyString(t *testing.T) {
 	type Config struct {
-		Website string `json:"website" validate:"url"`
+		Website string `json:"website" pedantigo:"url"`
 	}
 
 	validator := New[Config]()
@@ -139,7 +139,7 @@ func TestURL_EmptyString(t *testing.T) {
 
 func TestURL_WithPointer(t *testing.T) {
 	type Config struct {
-		Website *string `json:"website" validate:"url"`
+		Website *string `json:"website" pedantigo:"url"`
 	}
 
 	validator := New[Config]()
@@ -165,7 +165,7 @@ func TestURL_WithPointer(t *testing.T) {
 
 func TestURL_NilPointer(t *testing.T) {
 	type Config struct {
-		Website *string `json:"website" validate:"url"`
+		Website *string `json:"website" pedantigo:"url"`
 	}
 
 	validator := New[Config]()
@@ -187,7 +187,7 @@ func TestURL_NilPointer(t *testing.T) {
 
 func TestUUID_Valid_V4(t *testing.T) {
 	type Entity struct {
-		ID string `json:"id" validate:"uuid"`
+		ID string `json:"id" pedantigo:"uuid"`
 	}
 
 	validator := New[Entity]()
@@ -205,7 +205,7 @@ func TestUUID_Valid_V4(t *testing.T) {
 
 func TestUUID_Valid_V5(t *testing.T) {
 	type Entity struct {
-		ID string `json:"id" validate:"uuid"`
+		ID string `json:"id" pedantigo:"uuid"`
 	}
 
 	validator := New[Entity]()
@@ -223,7 +223,7 @@ func TestUUID_Valid_V5(t *testing.T) {
 
 func TestUUID_InvalidFormat(t *testing.T) {
 	type Entity struct {
-		ID string `json:"id" validate:"uuid"`
+		ID string `json:"id" pedantigo:"uuid"`
 	}
 
 	validator := New[Entity]()
@@ -248,7 +248,7 @@ func TestUUID_InvalidFormat(t *testing.T) {
 
 func TestUUID_InvalidFormat_WrongDashes(t *testing.T) {
 	type Entity struct {
-		ID string `json:"id" validate:"uuid"`
+		ID string `json:"id" pedantigo:"uuid"`
 	}
 
 	validator := New[Entity]()
@@ -273,7 +273,7 @@ func TestUUID_InvalidFormat_WrongDashes(t *testing.T) {
 
 func TestUUID_EmptyString(t *testing.T) {
 	type Entity struct {
-		ID string `json:"id" validate:"uuid"`
+		ID string `json:"id" pedantigo:"uuid"`
 	}
 
 	validator := New[Entity]()
@@ -291,7 +291,7 @@ func TestUUID_EmptyString(t *testing.T) {
 
 func TestUUID_WithPointer(t *testing.T) {
 	type Entity struct {
-		ID *string `json:"id" validate:"uuid"`
+		ID *string `json:"id" pedantigo:"uuid"`
 	}
 
 	validator := New[Entity]()
@@ -317,7 +317,7 @@ func TestUUID_WithPointer(t *testing.T) {
 
 func TestUUID_NilPointer(t *testing.T) {
 	type Entity struct {
-		ID *string `json:"id" validate:"uuid"`
+		ID *string `json:"id" pedantigo:"uuid"`
 	}
 
 	validator := New[Entity]()
@@ -339,7 +339,7 @@ func TestUUID_NilPointer(t *testing.T) {
 
 func TestRegex_ValidMatch(t *testing.T) {
 	type Code struct {
-		Value string `json:"value" validate:"regex=^[A-Z]{3}$"`
+		Value string `json:"value" pedantigo:"regexp=^[A-Z]{3}$"`
 	}
 
 	validator := New[Code]()
@@ -357,7 +357,7 @@ func TestRegex_ValidMatch(t *testing.T) {
 
 func TestRegex_InvalidMatch(t *testing.T) {
 	type Code struct {
-		Value string `json:"value" validate:"regex=^[A-Z]{3}$"`
+		Value string `json:"value" pedantigo:"regexp=^[A-Z]{3}$"`
 	}
 
 	validator := New[Code]()
@@ -382,7 +382,7 @@ func TestRegex_InvalidMatch(t *testing.T) {
 
 func TestRegex_WrongLength(t *testing.T) {
 	type Code struct {
-		Value string `json:"value" validate:"regex=^[A-Z]{3}$"`
+		Value string `json:"value" pedantigo:"regexp=^[A-Z]{3}$"`
 	}
 
 	validator := New[Code]()
@@ -407,7 +407,7 @@ func TestRegex_WrongLength(t *testing.T) {
 
 func TestRegex_DigitsPattern(t *testing.T) {
 	type Code struct {
-		Value string `json:"value" validate:"regex=^\\d{4}$"`
+		Value string `json:"value" pedantigo:"regexp=^\\d{4}$"`
 	}
 
 	validator := New[Code]()
@@ -433,7 +433,7 @@ func TestRegex_DigitsPattern(t *testing.T) {
 
 func TestRegex_EmptyString(t *testing.T) {
 	type Code struct {
-		Value string `json:"value" validate:"regex=^[A-Z]{3}$"`
+		Value string `json:"value" pedantigo:"regexp=^[A-Z]{3}$"`
 	}
 
 	validator := New[Code]()
@@ -451,7 +451,7 @@ func TestRegex_EmptyString(t *testing.T) {
 
 func TestRegex_WithPointer(t *testing.T) {
 	type Code struct {
-		Value *string `json:"value" validate:"regex=^[A-Z]{3}$"`
+		Value *string `json:"value" pedantigo:"regexp=^[A-Z]{3}$"`
 	}
 
 	validator := New[Code]()
@@ -477,7 +477,7 @@ func TestRegex_WithPointer(t *testing.T) {
 
 func TestRegex_NilPointer(t *testing.T) {
 	type Code struct {
-		Value *string `json:"value" validate:"regex=^[A-Z]{3}$"`
+		Value *string `json:"value" pedantigo:"regexp=^[A-Z]{3}$"`
 	}
 
 	validator := New[Code]()
@@ -499,7 +499,7 @@ func TestRegex_NilPointer(t *testing.T) {
 
 func TestIPv4_Valid_Localhost(t *testing.T) {
 	type Server struct {
-		IP string `json:"ip" validate:"ipv4"`
+		IP string `json:"ip" pedantigo:"ipv4"`
 	}
 
 	validator := New[Server]()
@@ -517,7 +517,7 @@ func TestIPv4_Valid_Localhost(t *testing.T) {
 
 func TestIPv4_Valid_PrivateNetwork(t *testing.T) {
 	type Server struct {
-		IP string `json:"ip" validate:"ipv4"`
+		IP string `json:"ip" pedantigo:"ipv4"`
 	}
 
 	validator := New[Server]()
@@ -535,7 +535,7 @@ func TestIPv4_Valid_PrivateNetwork(t *testing.T) {
 
 func TestIPv4_InvalidFormat(t *testing.T) {
 	type Server struct {
-		IP string `json:"ip" validate:"ipv4"`
+		IP string `json:"ip" pedantigo:"ipv4"`
 	}
 
 	validator := New[Server]()
@@ -560,7 +560,7 @@ func TestIPv4_InvalidFormat(t *testing.T) {
 
 func TestIPv4_InvalidIPv6(t *testing.T) {
 	type Server struct {
-		IP string `json:"ip" validate:"ipv4"`
+		IP string `json:"ip" pedantigo:"ipv4"`
 	}
 
 	validator := New[Server]()
@@ -585,7 +585,7 @@ func TestIPv4_InvalidIPv6(t *testing.T) {
 
 func TestIPv4_EmptyString(t *testing.T) {
 	type Server struct {
-		IP string `json:"ip" validate:"ipv4"`
+		IP string `json:"ip" pedantigo:"ipv4"`
 	}
 
 	validator := New[Server]()
@@ -603,7 +603,7 @@ func TestIPv4_EmptyString(t *testing.T) {
 
 func TestIPv4_WithPointer(t *testing.T) {
 	type Server struct {
-		IP *string `json:"ip" validate:"ipv4"`
+		IP *string `json:"ip" pedantigo:"ipv4"`
 	}
 
 	validator := New[Server]()
@@ -629,7 +629,7 @@ func TestIPv4_WithPointer(t *testing.T) {
 
 func TestIPv4_NilPointer(t *testing.T) {
 	type Server struct {
-		IP *string `json:"ip" validate:"ipv4"`
+		IP *string `json:"ip" pedantigo:"ipv4"`
 	}
 
 	validator := New[Server]()
@@ -651,7 +651,7 @@ func TestIPv4_NilPointer(t *testing.T) {
 
 func TestIPv6_Valid_Localhost(t *testing.T) {
 	type Server struct {
-		IP string `json:"ip" validate:"ipv6"`
+		IP string `json:"ip" pedantigo:"ipv6"`
 	}
 
 	validator := New[Server]()
@@ -669,7 +669,7 @@ func TestIPv6_Valid_Localhost(t *testing.T) {
 
 func TestIPv6_Valid_FullFormat(t *testing.T) {
 	type Server struct {
-		IP string `json:"ip" validate:"ipv6"`
+		IP string `json:"ip" pedantigo:"ipv6"`
 	}
 
 	validator := New[Server]()
@@ -687,7 +687,7 @@ func TestIPv6_Valid_FullFormat(t *testing.T) {
 
 func TestIPv6_Valid_Compressed(t *testing.T) {
 	type Server struct {
-		IP string `json:"ip" validate:"ipv6"`
+		IP string `json:"ip" pedantigo:"ipv6"`
 	}
 
 	validator := New[Server]()
@@ -705,7 +705,7 @@ func TestIPv6_Valid_Compressed(t *testing.T) {
 
 func TestIPv6_InvalidFormat(t *testing.T) {
 	type Server struct {
-		IP string `json:"ip" validate:"ipv6"`
+		IP string `json:"ip" pedantigo:"ipv6"`
 	}
 
 	validator := New[Server]()
@@ -730,7 +730,7 @@ func TestIPv6_InvalidFormat(t *testing.T) {
 
 func TestIPv6_InvalidIPv4(t *testing.T) {
 	type Server struct {
-		IP string `json:"ip" validate:"ipv6"`
+		IP string `json:"ip" pedantigo:"ipv6"`
 	}
 
 	validator := New[Server]()
@@ -755,7 +755,7 @@ func TestIPv6_InvalidIPv4(t *testing.T) {
 
 func TestIPv6_EmptyString(t *testing.T) {
 	type Server struct {
-		IP string `json:"ip" validate:"ipv6"`
+		IP string `json:"ip" pedantigo:"ipv6"`
 	}
 
 	validator := New[Server]()
@@ -773,7 +773,7 @@ func TestIPv6_EmptyString(t *testing.T) {
 
 func TestIPv6_WithPointer(t *testing.T) {
 	type Server struct {
-		IP *string `json:"ip" validate:"ipv6"`
+		IP *string `json:"ip" pedantigo:"ipv6"`
 	}
 
 	validator := New[Server]()
@@ -799,7 +799,7 @@ func TestIPv6_WithPointer(t *testing.T) {
 
 func TestIPv6_NilPointer(t *testing.T) {
 	type Server struct {
-		IP *string `json:"ip" validate:"ipv6"`
+		IP *string `json:"ip" pedantigo:"ipv6"`
 	}
 
 	validator := New[Server]()

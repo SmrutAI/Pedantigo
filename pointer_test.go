@@ -126,7 +126,7 @@ func TestPointer_Missing(t *testing.T) {
 // Test required pointer field with explicit value
 func TestPointer_RequiredWithValue(t *testing.T) {
 	type User struct {
-		Name *string `json:"name" validate:"required"`
+		Name *string `json:"name" pedantigo:"required"`
 	}
 
 	validator := New[User]()
@@ -148,7 +148,7 @@ func TestPointer_RequiredWithValue(t *testing.T) {
 // Test required pointer field missing (should fail)
 func TestPointer_RequiredMissing(t *testing.T) {
 	type User struct {
-		Name *string `json:"name" validate:"required"`
+		Name *string `json:"name" pedantigo:"required"`
 	}
 
 	validator := New[User]()
@@ -175,7 +175,7 @@ func TestPointer_RequiredMissing(t *testing.T) {
 // Test required pointer field with explicit null (should pass - field is present)
 func TestPointer_RequiredWithNull(t *testing.T) {
 	type User struct {
-		Name *string `json:"name" validate:"required"`
+		Name *string `json:"name" pedantigo:"required"`
 	}
 
 	validator := New[User]()
@@ -195,7 +195,7 @@ func TestPointer_RequiredWithNull(t *testing.T) {
 // Test pointer field with default value
 func TestPointer_WithDefault(t *testing.T) {
 	type Config struct {
-		Port *int `json:"port" validate:"default=8080"`
+		Port *int `json:"port" pedantigo:"default=8080"`
 	}
 
 	validator := New[Config]()
@@ -218,7 +218,7 @@ func TestPointer_WithDefault(t *testing.T) {
 // Test pointer field with explicit zero and default (should keep zero)
 func TestPointer_ExplicitZeroWithDefault(t *testing.T) {
 	type Config struct {
-		Port *int `json:"port" validate:"default=8080"`
+		Port *int `json:"port" pedantigo:"default=8080"`
 	}
 
 	validator := New[Config]()

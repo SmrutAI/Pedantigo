@@ -551,7 +551,7 @@ func (v *Validator[T]) validateValue(val reflect.Value, path string) ValidationE
 		}
 
 		// Build constraint validators (required is already skipped in buildConstraints)
-		validators := buildConstraints(constraints)
+		validators := buildConstraints(constraints, field.Type)
 
 		// For slices, validate each element instead of the slice itself
 		if fieldValue.Kind() == reflect.Slice {

@@ -10,7 +10,7 @@ import (
 
 func TestGt_Int_Valid(t *testing.T) {
 	type Product struct {
-		Stock int `json:"stock" validate:"gt=0"`
+		Stock int `json:"stock" pedantigo:"gt=0"`
 	}
 
 	validator := New[Product]()
@@ -28,7 +28,7 @@ func TestGt_Int_Valid(t *testing.T) {
 
 func TestGt_Int_EqualToThreshold(t *testing.T) {
 	type Product struct {
-		Stock int `json:"stock" validate:"gt=0"`
+		Stock int `json:"stock" pedantigo:"gt=0"`
 	}
 
 	validator := New[Product]()
@@ -53,7 +53,7 @@ func TestGt_Int_EqualToThreshold(t *testing.T) {
 
 func TestGt_Int_BelowThreshold(t *testing.T) {
 	type Product struct {
-		Stock int `json:"stock" validate:"gt=0"`
+		Stock int `json:"stock" pedantigo:"gt=0"`
 	}
 
 	validator := New[Product]()
@@ -78,7 +78,7 @@ func TestGt_Int_BelowThreshold(t *testing.T) {
 
 func TestGt_Float_Valid(t *testing.T) {
 	type Product struct {
-		Price float64 `json:"price" validate:"gt=0"`
+		Price float64 `json:"price" pedantigo:"gt=0"`
 	}
 
 	validator := New[Product]()
@@ -96,7 +96,7 @@ func TestGt_Float_Valid(t *testing.T) {
 
 func TestGt_Float_BelowThreshold(t *testing.T) {
 	type Product struct {
-		Price float64 `json:"price" validate:"gt=0"`
+		Price float64 `json:"price" pedantigo:"gt=0"`
 	}
 
 	validator := New[Product]()
@@ -121,7 +121,7 @@ func TestGt_Float_BelowThreshold(t *testing.T) {
 
 func TestGt_Uint_Valid(t *testing.T) {
 	type Config struct {
-		Port uint `json:"port" validate:"gt=1024"`
+		Port uint `json:"port" pedantigo:"gt=1024"`
 	}
 
 	validator := New[Config]()
@@ -139,7 +139,7 @@ func TestGt_Uint_Valid(t *testing.T) {
 
 func TestGt_WithPointer(t *testing.T) {
 	type Product struct {
-		Stock *int `json:"stock" validate:"gt=0"`
+		Stock *int `json:"stock" pedantigo:"gt=0"`
 	}
 
 	validator := New[Product]()
@@ -165,7 +165,7 @@ func TestGt_WithPointer(t *testing.T) {
 
 func TestGt_NilPointer(t *testing.T) {
 	type Product struct {
-		Stock *int `json:"stock" validate:"gt=0"`
+		Stock *int `json:"stock" pedantigo:"gt=0"`
 	}
 
 	validator := New[Product]()
@@ -187,7 +187,7 @@ func TestGt_NilPointer(t *testing.T) {
 
 func TestGe_Int_Valid(t *testing.T) {
 	type Product struct {
-		Stock int `json:"stock" validate:"ge=0"`
+		Stock int `json:"stock" pedantigo:"gte=0"`
 	}
 
 	validator := New[Product]()
@@ -205,7 +205,7 @@ func TestGe_Int_Valid(t *testing.T) {
 
 func TestGe_Int_EqualToThreshold(t *testing.T) {
 	type Product struct {
-		Stock int `json:"stock" validate:"ge=0"`
+		Stock int `json:"stock" pedantigo:"gte=0"`
 	}
 
 	validator := New[Product]()
@@ -223,7 +223,7 @@ func TestGe_Int_EqualToThreshold(t *testing.T) {
 
 func TestGe_Int_BelowThreshold(t *testing.T) {
 	type Product struct {
-		Stock int `json:"stock" validate:"ge=0"`
+		Stock int `json:"stock" pedantigo:"gte=0"`
 	}
 
 	validator := New[Product]()
@@ -252,7 +252,7 @@ func TestGe_Int_BelowThreshold(t *testing.T) {
 
 func TestLt_Int_Valid(t *testing.T) {
 	type Product struct {
-		Discount int `json:"discount" validate:"lt=100"`
+		Discount int `json:"discount" pedantigo:"lt=100"`
 	}
 
 	validator := New[Product]()
@@ -270,7 +270,7 @@ func TestLt_Int_Valid(t *testing.T) {
 
 func TestLt_Int_EqualToThreshold(t *testing.T) {
 	type Product struct {
-		Discount int `json:"discount" validate:"lt=100"`
+		Discount int `json:"discount" pedantigo:"lt=100"`
 	}
 
 	validator := New[Product]()
@@ -295,7 +295,7 @@ func TestLt_Int_EqualToThreshold(t *testing.T) {
 
 func TestLt_Int_AboveThreshold(t *testing.T) {
 	type Product struct {
-		Discount int `json:"discount" validate:"lt=100"`
+		Discount int `json:"discount" pedantigo:"lt=100"`
 	}
 
 	validator := New[Product]()
@@ -324,7 +324,7 @@ func TestLt_Int_AboveThreshold(t *testing.T) {
 
 func TestLe_Int_Valid(t *testing.T) {
 	type Product struct {
-		Discount int `json:"discount" validate:"le=100"`
+		Discount int `json:"discount" pedantigo:"lte=100"`
 	}
 
 	validator := New[Product]()
@@ -342,7 +342,7 @@ func TestLe_Int_Valid(t *testing.T) {
 
 func TestLe_Int_EqualToThreshold(t *testing.T) {
 	type Product struct {
-		Discount int `json:"discount" validate:"le=100"`
+		Discount int `json:"discount" pedantigo:"lte=100"`
 	}
 
 	validator := New[Product]()
@@ -360,7 +360,7 @@ func TestLe_Int_EqualToThreshold(t *testing.T) {
 
 func TestLe_Int_AboveThreshold(t *testing.T) {
 	type Product struct {
-		Discount int `json:"discount" validate:"le=100"`
+		Discount int `json:"discount" pedantigo:"lte=100"`
 	}
 
 	validator := New[Product]()

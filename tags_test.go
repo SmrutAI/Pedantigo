@@ -6,7 +6,7 @@ import (
 )
 
 func TestParseTag_Required(t *testing.T) {
-	tag := reflect.StructTag(`validate:"required"`)
+	tag := reflect.StructTag(`pedantigo:"required"`)
 	constraints := parseTag(tag)
 
 	if constraints == nil {
@@ -19,7 +19,7 @@ func TestParseTag_Required(t *testing.T) {
 }
 
 func TestParseTag_Email(t *testing.T) {
-	tag := reflect.StructTag(`validate:"required,email"`)
+	tag := reflect.StructTag(`pedantigo:"required,email"`)
 	constraints := parseTag(tag)
 
 	if constraints == nil {
@@ -36,7 +36,7 @@ func TestParseTag_Email(t *testing.T) {
 }
 
 func TestParseTag_MinMax(t *testing.T) {
-	tag := reflect.StructTag(`validate:"min=18,max=120"`)
+	tag := reflect.StructTag(`pedantigo:"min=18,max=120"`)
 	constraints := parseTag(tag)
 
 	if constraints == nil {
@@ -53,7 +53,7 @@ func TestParseTag_MinMax(t *testing.T) {
 }
 
 func TestParseTag_Default(t *testing.T) {
-	tag := reflect.StructTag(`validate:"default=active"`)
+	tag := reflect.StructTag(`pedantigo:"default=active"`)
 	constraints := parseTag(tag)
 
 	if constraints == nil {

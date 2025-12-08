@@ -8,9 +8,9 @@ import (
 // Test that missing fields with defaults get the default value
 func TestDeserializer_MissingFieldWithDefault(t *testing.T) {
 	type Config struct {
-		Name    string `json:"name" validate:"required"`
-		Port    int    `json:"port" validate:"default=8080"`
-		Timeout int    `json:"timeout" validate:"default=30"`
+		Name    string `json:"name" pedantigo:"required"`
+		Port    int    `json:"port" pedantigo:"default=8080"`
+		Timeout int    `json:"timeout" pedantigo:"default=30"`
 	}
 
 	validator := New[Config]()
@@ -42,9 +42,9 @@ func TestDeserializer_MissingFieldWithDefault(t *testing.T) {
 // Test that explicit zero values with defaults keep the zero (not the default)
 func TestDeserializer_ExplicitZeroWithDefault(t *testing.T) {
 	type Config struct {
-		Name    string `json:"name" validate:"required"`
-		Port    int    `json:"port" validate:"default=8080"`
-		Timeout int    `json:"timeout" validate:"default=30"`
+		Name    string `json:"name" pedantigo:"required"`
+		Port    int    `json:"port" pedantigo:"default=8080"`
+		Timeout int    `json:"timeout" pedantigo:"default=30"`
 	}
 
 	validator := New[Config]()
@@ -72,8 +72,8 @@ func TestDeserializer_ExplicitZeroWithDefault(t *testing.T) {
 // Test that explicit false values pass required validation
 func TestDeserializer_RequiredWithExplicitFalse(t *testing.T) {
 	type Settings struct {
-		Name   string `json:"name" validate:"required"`
-		Active bool   `json:"active" validate:"required"`
+		Name   string `json:"name" pedantigo:"required"`
+		Active bool   `json:"active" pedantigo:"required"`
 	}
 
 	validator := New[Settings]()
@@ -97,8 +97,8 @@ func TestDeserializer_RequiredWithExplicitFalse(t *testing.T) {
 // Test that missing required field fails validation
 func TestDeserializer_MissingRequiredField(t *testing.T) {
 	type Settings struct {
-		Name   string `json:"name" validate:"required"`
-		Active bool   `json:"active" validate:"required"`
+		Name   string `json:"name" pedantigo:"required"`
+		Active bool   `json:"active" pedantigo:"required"`
 	}
 
 	validator := New[Settings]()
@@ -131,9 +131,9 @@ func TestDeserializer_MissingRequiredField(t *testing.T) {
 
 // Test type for defaultUsingMethod
 type UserWithTimestamp struct {
-	Email     string    `json:"email" validate:"required"`
-	Role      string    `json:"role" validate:"default=user"`
-	CreatedAt time.Time `json:"created_at" validate:"defaultUsingMethod=SetCreationTime"`
+	Email     string    `json:"email" pedantigo:"required"`
+	Role      string    `json:"role" pedantigo:"default=user"`
+	CreatedAt time.Time `json:"created_at" pedantigo:"defaultUsingMethod=SetCreationTime"`
 }
 
 // Method that provides dynamic default value
@@ -192,7 +192,7 @@ func TestDeserializer_DefaultUsingMethod_NotCalledForExplicit(t *testing.T) {
 // Test type with invalid method signature (should panic at New() time)
 type InvalidMethodType struct {
 	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at" validate:"defaultUsingMethod=WrongSignature"`
+	CreatedAt time.Time `json:"created_at" pedantigo:"defaultUsingMethod=WrongSignature"`
 }
 
 // Wrong signature: returns only value, no error
@@ -215,7 +215,7 @@ func TestDeserializer_InvalidMethodSignature_Panics(t *testing.T) {
 // Test type with non-existent method
 type NonExistentMethodType struct {
 	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at" validate:"defaultUsingMethod=DoesNotExist"`
+	CreatedAt time.Time `json:"created_at" pedantigo:"defaultUsingMethod=DoesNotExist"`
 }
 
 // Test that non-existent method panics at New() time (fail-fast)
@@ -233,8 +233,8 @@ func TestDeserializer_NonExistentMethod_Panics(t *testing.T) {
 // Test StrictMissingFields option (relaxed mode)
 func TestDeserializer_RelaxedMode(t *testing.T) {
 	type Config struct {
-		Name string `json:"name" validate:"required"`
-		Port int    `json:"port" validate:"required"`
+		Name string `json:"name" pedantigo:"required"`
+		Port int    `json:"port" pedantigo:"required"`
 	}
 
 	// Create validator with StrictMissingFields=false (relaxed mode)
@@ -260,8 +260,8 @@ func TestDeserializer_RelaxedMode(t *testing.T) {
 // Test StrictMissingFields option (strict mode - default)
 func TestDeserializer_StrictMode(t *testing.T) {
 	type Config struct {
-		Name string `json:"name" validate:"required"`
-		Port int    `json:"port" validate:"required"`
+		Name string `json:"name" pedantigo:"required"`
+		Port int    `json:"port" pedantigo:"required"`
 	}
 
 	// Create validator with default options (StrictMissingFields=true)

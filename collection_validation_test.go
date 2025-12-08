@@ -10,7 +10,7 @@ import (
 
 func TestSlice_ValidEmails(t *testing.T) {
 	type Config struct {
-		Admins []string `json:"admins" validate:"email"`
+		Admins []string `json:"admins" pedantigo:"email"`
 	}
 
 	validator := New[Config]()
@@ -28,7 +28,7 @@ func TestSlice_ValidEmails(t *testing.T) {
 
 func TestSlice_InvalidEmail_SingleElement(t *testing.T) {
 	type Config struct {
-		Admins []string `json:"admins" validate:"email"`
+		Admins []string `json:"admins" pedantigo:"email"`
 	}
 
 	validator := New[Config]()
@@ -53,7 +53,7 @@ func TestSlice_InvalidEmail_SingleElement(t *testing.T) {
 
 func TestSlice_InvalidEmail_MultipleElements(t *testing.T) {
 	type Config struct {
-		Admins []string `json:"admins" validate:"email"`
+		Admins []string `json:"admins" pedantigo:"email"`
 	}
 
 	validator := New[Config]()
@@ -89,7 +89,7 @@ func TestSlice_InvalidEmail_MultipleElements(t *testing.T) {
 
 func TestSlice_MinLength(t *testing.T) {
 	type User struct {
-		Tags []string `json:"tags" validate:"min_length=3"`
+		Tags []string `json:"tags" pedantigo:"min=3"`
 	}
 
 	validator := New[User]()
@@ -114,8 +114,8 @@ func TestSlice_MinLength(t *testing.T) {
 
 func TestSlice_NestedStructValidation(t *testing.T) {
 	type Address struct {
-		City string `json:"city" validate:"required"`
-		Zip  string `json:"zip" validate:"min_length=5"`
+		City string `json:"city" pedantigo:"required"`
+		Zip  string `json:"zip" pedantigo:"min=5"`
 	}
 
 	type User struct {
@@ -155,7 +155,7 @@ func TestSlice_NestedStructValidation(t *testing.T) {
 
 func TestSlice_EmptySlice(t *testing.T) {
 	type Config struct {
-		Admins []string `json:"admins" validate:"email"`
+		Admins []string `json:"admins" pedantigo:"email"`
 	}
 
 	validator := New[Config]()
@@ -173,7 +173,7 @@ func TestSlice_EmptySlice(t *testing.T) {
 
 func TestSlice_NilSlice(t *testing.T) {
 	type Config struct {
-		Admins []string `json:"admins" validate:"email"`
+		Admins []string `json:"admins" pedantigo:"email"`
 	}
 
 	validator := New[Config]()

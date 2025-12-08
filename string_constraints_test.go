@@ -10,7 +10,7 @@ import (
 
 func TestMinLength_Valid(t *testing.T) {
 	type User struct {
-		Username string `json:"username" validate:"min_length=3"`
+		Username string `json:"username" pedantigo:"min=3"`
 	}
 
 	validator := New[User]()
@@ -28,7 +28,7 @@ func TestMinLength_Valid(t *testing.T) {
 
 func TestMinLength_ExactlyAtMinimum(t *testing.T) {
 	type User struct {
-		Username string `json:"username" validate:"min_length=3"`
+		Username string `json:"username" pedantigo:"min=3"`
 	}
 
 	validator := New[User]()
@@ -46,7 +46,7 @@ func TestMinLength_ExactlyAtMinimum(t *testing.T) {
 
 func TestMinLength_BelowMinimum(t *testing.T) {
 	type User struct {
-		Username string `json:"username" validate:"min_length=3"`
+		Username string `json:"username" pedantigo:"min=3"`
 	}
 
 	validator := New[User]()
@@ -72,7 +72,7 @@ func TestMinLength_BelowMinimum(t *testing.T) {
 
 func TestMinLength_EmptyString(t *testing.T) {
 	type User struct {
-		Username string `json:"username" validate:"min_length=1"`
+		Username string `json:"username" pedantigo:"min=1"`
 	}
 
 	validator := New[User]()
@@ -97,7 +97,7 @@ func TestMinLength_EmptyString(t *testing.T) {
 
 func TestMinLength_WithPointer(t *testing.T) {
 	type User struct {
-		Bio *string `json:"bio" validate:"min_length=10"`
+		Bio *string `json:"bio" pedantigo:"min=10"`
 	}
 
 	validator := New[User]()
@@ -136,7 +136,7 @@ func TestMinLength_WithPointer(t *testing.T) {
 
 func TestMinLength_NilPointer(t *testing.T) {
 	type User struct {
-		Bio *string `json:"bio" validate:"min_length=10"`
+		Bio *string `json:"bio" pedantigo:"min=10"`
 	}
 
 	validator := New[User]()
@@ -158,7 +158,7 @@ func TestMinLength_NilPointer(t *testing.T) {
 
 func TestMaxLength_Valid(t *testing.T) {
 	type User struct {
-		Username string `json:"username" validate:"max_length=10"`
+		Username string `json:"username" pedantigo:"max=10"`
 	}
 
 	validator := New[User]()
@@ -176,7 +176,7 @@ func TestMaxLength_Valid(t *testing.T) {
 
 func TestMaxLength_ExactlyAtMaximum(t *testing.T) {
 	type User struct {
-		Username string `json:"username" validate:"max_length=5"`
+		Username string `json:"username" pedantigo:"max=5"`
 	}
 
 	validator := New[User]()
@@ -194,7 +194,7 @@ func TestMaxLength_ExactlyAtMaximum(t *testing.T) {
 
 func TestMaxLength_AboveMaximum(t *testing.T) {
 	type User struct {
-		Username string `json:"username" validate:"max_length=5"`
+		Username string `json:"username" pedantigo:"max=5"`
 	}
 
 	validator := New[User]()
@@ -220,7 +220,7 @@ func TestMaxLength_AboveMaximum(t *testing.T) {
 
 func TestMaxLength_EmptyString(t *testing.T) {
 	type User struct {
-		Username string `json:"username" validate:"max_length=10"`
+		Username string `json:"username" pedantigo:"max=10"`
 	}
 
 	validator := New[User]()
@@ -238,7 +238,7 @@ func TestMaxLength_EmptyString(t *testing.T) {
 
 func TestMaxLength_WithPointer(t *testing.T) {
 	type User struct {
-		Bio *string `json:"bio" validate:"max_length=20"`
+		Bio *string `json:"bio" pedantigo:"max=20"`
 	}
 
 	validator := New[User]()
@@ -274,7 +274,7 @@ func TestMaxLength_WithPointer(t *testing.T) {
 
 func TestMaxLength_NilPointer(t *testing.T) {
 	type User struct {
-		Bio *string `json:"bio" validate:"max_length=20"`
+		Bio *string `json:"bio" pedantigo:"max=20"`
 	}
 
 	validator := New[User]()
@@ -292,7 +292,7 @@ func TestMaxLength_NilPointer(t *testing.T) {
 
 func TestMaxLength_Combined_MinMaxLength(t *testing.T) {
 	type User struct {
-		Password string `json:"password" validate:"min_length=8,max_length=20"`
+		Password string `json:"password" pedantigo:"min=8,max=20"`
 	}
 
 	validator := New[User]()

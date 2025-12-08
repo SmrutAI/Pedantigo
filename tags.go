@@ -6,9 +6,10 @@ import (
 )
 
 // parseTag parses a struct tag and returns constraints
-// Example: validate:"required,email,min=18" -> map{"required": "", "email": "", "min": "18"}
+// Example: pedantigo:"required,email,min=18" -> map{"required": "", "email": "", "min": "18"}
+// Special handling for oneof which has space-separated values: oneof=admin user guest
 func parseTag(tag reflect.StructTag) map[string]string {
-	validateTag := tag.Get("validate")
+	validateTag := tag.Get("pedantigo")
 	if validateTag == "" {
 		return nil
 	}

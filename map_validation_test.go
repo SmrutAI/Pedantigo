@@ -10,7 +10,7 @@ import (
 
 func TestMap_ValidEmails(t *testing.T) {
 	type Config struct {
-		Contacts map[string]string `json:"contacts" validate:"email"`
+		Contacts map[string]string `json:"contacts" pedantigo:"email"`
 	}
 
 	validator := New[Config]()
@@ -28,7 +28,7 @@ func TestMap_ValidEmails(t *testing.T) {
 
 func TestMap_InvalidEmail_SingleValue(t *testing.T) {
 	type Config struct {
-		Contacts map[string]string `json:"contacts" validate:"email"`
+		Contacts map[string]string `json:"contacts" pedantigo:"email"`
 	}
 
 	validator := New[Config]()
@@ -53,7 +53,7 @@ func TestMap_InvalidEmail_SingleValue(t *testing.T) {
 
 func TestMap_InvalidEmail_MultipleValues(t *testing.T) {
 	type Config struct {
-		Contacts map[string]string `json:"contacts" validate:"email"`
+		Contacts map[string]string `json:"contacts" pedantigo:"email"`
 	}
 
 	validator := New[Config]()
@@ -87,7 +87,7 @@ func TestMap_InvalidEmail_MultipleValues(t *testing.T) {
 
 func TestMap_MinLength(t *testing.T) {
 	type Config struct {
-		Tags map[string]string `json:"tags" validate:"min_length=3"`
+		Tags map[string]string `json:"tags" pedantigo:"min=3"`
 	}
 
 	validator := New[Config]()
@@ -112,8 +112,8 @@ func TestMap_MinLength(t *testing.T) {
 
 func TestMap_NestedStructValidation(t *testing.T) {
 	type Address struct {
-		City string `json:"city" validate:"required"`
-		Zip  string `json:"zip" validate:"min_length=5"`
+		City string `json:"city" pedantigo:"required"`
+		Zip  string `json:"zip" pedantigo:"min=5"`
 	}
 
 	type Company struct {
@@ -153,7 +153,7 @@ func TestMap_NestedStructValidation(t *testing.T) {
 
 func TestMap_EmptyMap(t *testing.T) {
 	type Config struct {
-		Contacts map[string]string `json:"contacts" validate:"email"`
+		Contacts map[string]string `json:"contacts" pedantigo:"email"`
 	}
 
 	validator := New[Config]()
@@ -171,7 +171,7 @@ func TestMap_EmptyMap(t *testing.T) {
 
 func TestMap_NilMap(t *testing.T) {
 	type Config struct {
-		Contacts map[string]string `json:"contacts" validate:"email"`
+		Contacts map[string]string `json:"contacts" pedantigo:"email"`
 	}
 
 	validator := New[Config]()

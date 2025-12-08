@@ -9,7 +9,7 @@ import (
 
 func TestValidator_Required_Present(t *testing.T) {
 	type User struct {
-		Email string `validate:"required"`
+		Email string `pedantigo:"required"`
 	}
 
 	validator := New[User]()
@@ -23,7 +23,7 @@ func TestValidator_Required_Present(t *testing.T) {
 
 func TestValidator_Min_BelowMinimum(t *testing.T) {
 	type User struct {
-		Age int `validate:"min=18"`
+		Age int `pedantigo:"min=18"`
 	}
 
 	validator := New[User]()
@@ -37,7 +37,7 @@ func TestValidator_Min_BelowMinimum(t *testing.T) {
 
 func TestValidator_Min_AtMinimum(t *testing.T) {
 	type User struct {
-		Age int `validate:"min=18"`
+		Age int `pedantigo:"min=18"`
 	}
 
 	validator := New[User]()
@@ -51,7 +51,7 @@ func TestValidator_Min_AtMinimum(t *testing.T) {
 
 func TestValidator_Max_AboveMaximum(t *testing.T) {
 	type User struct {
-		Age int `validate:"max=120"`
+		Age int `pedantigo:"max=120"`
 	}
 
 	validator := New[User]()
@@ -65,7 +65,7 @@ func TestValidator_Max_AboveMaximum(t *testing.T) {
 
 func TestValidator_Max_AtMaximum(t *testing.T) {
 	type User struct {
-		Age int `validate:"max=120"`
+		Age int `pedantigo:"max=120"`
 	}
 
 	validator := New[User]()
@@ -79,7 +79,7 @@ func TestValidator_Max_AtMaximum(t *testing.T) {
 
 func TestValidator_MinMax_InRange(t *testing.T) {
 	type User struct {
-		Age int `validate:"min=18,max=120"`
+		Age int `pedantigo:"min=18,max=120"`
 	}
 
 	validator := New[User]()
@@ -93,8 +93,8 @@ func TestValidator_MinMax_InRange(t *testing.T) {
 
 // Test type for cross-field validation
 type testPasswordChange struct {
-	Password string `validate:"required"`
-	Confirm  string `validate:"required"`
+	Password string `pedantigo:"required"`
+	Confirm  string `pedantigo:"required"`
 }
 
 func (vpc *testPasswordChange) Validate() error {
