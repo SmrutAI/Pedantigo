@@ -752,6 +752,11 @@ func (v *Validator[T]) setDefaultValue(fieldValue reflect.Value, defaultValue st
 
 // Marshal validates and marshals struct to JSON
 func (v *Validator[T]) Marshal(obj *T) ([]byte, error) {
-	// TODO: implement validate + marshal
-	return nil, nil
+	// Validate before marshaling
+	if err := v.Validate(obj); err != nil {
+		return nil, err
+	}
+
+	// Marshal to JSON
+	return json.Marshal(obj)
 }
