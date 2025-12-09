@@ -124,6 +124,20 @@ Alternatively, use pointer types (`*int`, `*bool`, `*string`) where `nil` indica
 | `ipv6` | Valid IPv6 address | `pedantigo:"ipv6"` |
 | `regexp` | Match regular expression | `pedantigo:"regexp=^[A-Z]+$"` |
 | `oneof` | Value must be one of specified options | `pedantigo:"oneof=red green blue"` |
+| `eqfield` | Field equals another field | `pedantigo:"eqfield=Password"` |
+| `nefield` | Field not equal to another field | `pedantigo:"nefield=OldPassword"` |
+| `gtfield` | Greater than another field | `pedantigo:"gtfield=MinPrice"` |
+| `gtefield` | Greater than or equal to another field | `pedantigo:"gtefield=StartDate"` |
+| `ltfield` | Less than another field | `pedantigo:"ltfield=MaxPrice"` |
+| `ltefield` | Less than or equal to another field | `pedantigo:"ltefield=EndDate"` |
+| `required_if` | Required if another field has value | `pedantigo:"required_if=Country:USA"` |
+| `required_unless` | Required unless another field has value | `pedantigo:"required_unless=Type:guest"` |
+| `required_with` | Required if another field is present | `pedantigo:"required_with=Address"` |
+| `required_without` | Required if another field is absent | `pedantigo:"required_without=Email"` |
+| `excluded_if` | Excluded if another field has value | `pedantigo:"excluded_if=Type admin"` |
+| `excluded_unless` | Excluded unless another field has value | `pedantigo:"excluded_unless=Role user"` |
+| `excluded_with` | Excluded if another field is present | `pedantigo:"excluded_with=TempToken"` |
+| `excluded_without` | Excluded if another field is absent | `pedantigo:"excluded_without=PermanentID"` |
 
 Combine multiple constraints with commas: `pedantigo:"required,min=3,max=50"`
 
@@ -163,7 +177,26 @@ Methods must have signature `func(*T) (FieldType, error)`.
 
 ### Cross-Field Validation
 
-Implement the `Validatable` interface for custom validation logic:
+Use cross-field tags to compare or conditionally require fields:
+
+```go
+type PriceRange struct {
+    MinPrice int `json:"min_price" pedantigo:"required,min=0"`
+    MaxPrice int `json:"max_price" pedantigo:"required,gtfield=MinPrice"`
+}
+
+type Registration struct {
+    Password        string `json:"password" pedantigo:"required,min=8"`
+    PasswordConfirm string `json:"password_confirm" pedantigo:"required,eqfield=Password"`
+}
+
+type Address struct {
+    Country    string `json:"country"`
+    PostalCode string `json:"postal_code" pedantigo:"required_if=Country:USA"`
+}
+```
+
+For custom validation logic, implement the `Validatable` interface:
 
 ```go
 type Registration struct {

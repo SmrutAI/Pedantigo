@@ -95,10 +95,10 @@ JSON Schema standard support.
 | Feature                      | Pedantigo | Pydantic v2 | Go Validator | Supported by JSON Schema standard? |
 |------------------------------|-----------|-------------|--------------|------------------------------------|
 | Struct-level validators      | √         | √           | √            | ×                                  |
-| Field comparisons            | ×         | √           | √            | ×                                  |
+| Field comparisons            | √         | √           | √            | ×                                  |
 | Cross-struct validation      | ×         | √           | √            | ×                                  |
-| Conditional required         | ×         | √           | √            | √                                  |
-| Conditional exclusion        | ×         | √           | √            | √                                  |
+| Conditional required         | √         | √           | √            | √                                  |
+| Conditional exclusion        | √         | √           | √            | √                                  |
 | Before validators            | ×         | √           | ×            | ×                                  |
 | After validators             | √         | √           | ×            | ×                                  |
 | Wrap validators              | ×         | √           | ×            | ×                                  |
@@ -210,7 +210,7 @@ JSON Schema standard support.
 | Struct field reflection      | ×         | √           | ×            | ×                                  |
 | Recursive structs            | √         | √           | √            | √                                  |
 
-**Summary**: 47/137 features implemented (34%)
+**Summary**: 61/137 features implemented (45%)
 
 **Legend**: √ = Supported, × = Not supported, Partial = Limited support
 
