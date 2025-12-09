@@ -763,10 +763,288 @@ func TestSetFieldValue_PointerPointer(t *testing.T) {
 	}
 }
 
+// ==================== SetDefaultValue Tests ====================
+
+func TestSetDefaultValue_StringDefaults(t *testing.T) {
+	type TestStruct struct {
+		Name    string
+		Message string
+		Empty   string
+	}
+
+	tests := []struct {
+		name         string
+		fieldName    string
+		defaultValue string
+		expected     string
+	}{
+		{name: "string simple", fieldName: "Name", defaultValue: "John", expected: "John"},
+		{name: "string empty", fieldName: "Empty", defaultValue: "", expected: ""},
+		{name: "string with spaces", fieldName: "Message", defaultValue: "Hello World", expected: "Hello World"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &TestStruct{}
+			v := reflect.ValueOf(s).Elem()
+			field := v.FieldByName(tt.fieldName)
+
+			SetDefaultValue(field, tt.defaultValue, recursiveSetDefault)
+
+			if field.String() != tt.expected {
+				t.Errorf("expected %q, got %q", tt.expected, field.String())
+			}
+		})
+	}
+}
+
+func TestSetDefaultValue_IntDefaults(t *testing.T) {
+	type TestStruct struct {
+		Int     int
+		Int8    int8
+		Int16   int16
+		Int32   int32
+		Int64   int64
+		Invalid int
+	}
+
+	tests := []struct {
+		name         string
+		fieldName    string
+		defaultValue string
+		expected     int64
+	}{
+		{name: "int positive", fieldName: "Int", defaultValue: "42", expected: 42},
+		{name: "int zero", fieldName: "Int", defaultValue: "0", expected: 0},
+		{name: "int negative", fieldName: "Int", defaultValue: "-100", expected: -100},
+		{name: "int8 max", fieldName: "Int8", defaultValue: "127", expected: 127},
+		{name: "int16 max", fieldName: "Int16", defaultValue: "32767", expected: 32767},
+		{name: "int32 max", fieldName: "Int32", defaultValue: "2147483647", expected: 2147483647},
+		{name: "int64 max", fieldName: "Int64", defaultValue: "9223372036854775807", expected: 9223372036854775807},
+		{name: "int invalid parse", fieldName: "Invalid", defaultValue: "not-a-number", expected: 0}, // Silent failure
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &TestStruct{}
+			v := reflect.ValueOf(s).Elem()
+			field := v.FieldByName(tt.fieldName)
+
+			SetDefaultValue(field, tt.defaultValue, recursiveSetDefault)
+
+			if field.Int() != tt.expected {
+				t.Errorf("expected %d, got %d", tt.expected, field.Int())
+			}
+		})
+	}
+}
+
+func TestSetDefaultValue_UintDefaults(t *testing.T) {
+	type TestStruct struct {
+		Uint    uint
+		Uint8   uint8
+		Uint16  uint16
+		Uint32  uint32
+		Uint64  uint64
+		Invalid uint
+	}
+
+	tests := []struct {
+		name         string
+		fieldName    string
+		defaultValue string
+		expected     uint64
+	}{
+		{name: "uint positive", fieldName: "Uint", defaultValue: "42", expected: 42},
+		{name: "uint zero", fieldName: "Uint", defaultValue: "0", expected: 0},
+		{name: "uint8 max", fieldName: "Uint8", defaultValue: "255", expected: 255},
+		{name: "uint16 max", fieldName: "Uint16", defaultValue: "65535", expected: 65535},
+		{name: "uint32 max", fieldName: "Uint32", defaultValue: "4294967295", expected: 4294967295},
+		{name: "uint64 max", fieldName: "Uint64", defaultValue: "18446744073709551615", expected: 18446744073709551615},
+		{name: "uint invalid parse", fieldName: "Invalid", defaultValue: "not-a-number", expected: 0}, // Silent failure
+		{name: "uint negative invalid", fieldName: "Invalid", defaultValue: "-1", expected: 0},        // Silent failure on negative
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &TestStruct{}
+			v := reflect.ValueOf(s).Elem()
+			field := v.FieldByName(tt.fieldName)
+
+			SetDefaultValue(field, tt.defaultValue, recursiveSetDefault)
+
+			if field.Uint() != tt.expected {
+				t.Errorf("expected %d, got %d", tt.expected, field.Uint())
+			}
+		})
+	}
+}
+
+func TestSetDefaultValue_FloatDefaults(t *testing.T) {
+	type TestStruct struct {
+		Float32 float32
+		Float64 float64
+		Invalid float64
+	}
+
+	tests := []struct {
+		name         string
+		fieldName    string
+		defaultValue string
+		expected     float64
+	}{
+		{name: "float64 positive", fieldName: "Float64", defaultValue: "3.14", expected: 3.14},
+		{name: "float64 zero", fieldName: "Float64", defaultValue: "0.0", expected: 0.0},
+		{name: "float64 negative", fieldName: "Float64", defaultValue: "-10.5", expected: -10.5},
+		{name: "float32 valid", fieldName: "Float32", defaultValue: "2.5", expected: 2.5},
+		{name: "float invalid parse", fieldName: "Invalid", defaultValue: "not-a-float", expected: 0.0}, // Silent failure
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &TestStruct{}
+			v := reflect.ValueOf(s).Elem()
+			field := v.FieldByName(tt.fieldName)
+
+			SetDefaultValue(field, tt.defaultValue, recursiveSetDefault)
+
+			if field.Float() != tt.expected {
+				t.Errorf("expected %f, got %f", tt.expected, field.Float())
+			}
+		})
+	}
+}
+
+func TestSetDefaultValue_BoolDefaults(t *testing.T) {
+	type TestStruct struct {
+		Active  bool
+		Enabled bool
+		Invalid bool
+	}
+
+	tests := []struct {
+		name         string
+		fieldName    string
+		defaultValue string
+		expected     bool
+	}{
+		{name: "bool true", fieldName: "Active", defaultValue: "true", expected: true},
+		{name: "bool false", fieldName: "Enabled", defaultValue: "false", expected: false},
+		{name: "bool 1", fieldName: "Active", defaultValue: "1", expected: true},
+		{name: "bool 0", fieldName: "Enabled", defaultValue: "0", expected: false},
+		{name: "bool invalid parse", fieldName: "Invalid", defaultValue: "not-a-bool", expected: false}, // Silent failure
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &TestStruct{}
+			v := reflect.ValueOf(s).Elem()
+			field := v.FieldByName(tt.fieldName)
+
+			SetDefaultValue(field, tt.defaultValue, recursiveSetDefault)
+
+			if field.Bool() != tt.expected {
+				t.Errorf("expected %v, got %v", tt.expected, field.Bool())
+			}
+		})
+	}
+}
+
+func TestSetDefaultValue_PointerDefaults(t *testing.T) {
+	type TestStruct struct {
+		StringPtr *string
+		IntPtr    *int
+		FloatPtr  *float64
+		BoolPtr   *bool
+	}
+
+	tests := []struct {
+		name         string
+		fieldName    string
+		defaultValue string
+		checkFn      func(*TestStruct) bool
+	}{
+		{
+			name:         "pointer string",
+			fieldName:    "StringPtr",
+			defaultValue: "hello",
+			checkFn: func(s *TestStruct) bool {
+				return s.StringPtr != nil && *s.StringPtr == "hello"
+			},
+		},
+		{
+			name:         "pointer int",
+			fieldName:    "IntPtr",
+			defaultValue: "42",
+			checkFn: func(s *TestStruct) bool {
+				return s.IntPtr != nil && *s.IntPtr == 42
+			},
+		},
+		{
+			name:         "pointer float",
+			fieldName:    "FloatPtr",
+			defaultValue: "3.14",
+			checkFn: func(s *TestStruct) bool {
+				return s.FloatPtr != nil && *s.FloatPtr == 3.14
+			},
+		},
+		{
+			name:         "pointer bool",
+			fieldName:    "BoolPtr",
+			defaultValue: "true",
+			checkFn: func(s *TestStruct) bool {
+				return s.BoolPtr != nil && *s.BoolPtr == true
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &TestStruct{}
+			v := reflect.ValueOf(s).Elem()
+			field := v.FieldByName(tt.fieldName)
+
+			SetDefaultValue(field, tt.defaultValue, recursiveSetDefault)
+
+			if !tt.checkFn(s) {
+				t.Errorf("pointer default value check failed")
+			}
+		})
+	}
+}
+
+func TestSetDefaultValue_UnsettableField(t *testing.T) {
+	type TestStruct struct {
+		_unexported string //nolint:unused // unexported field for testing CanSet()
+		Exported    string
+	}
+
+	s := &TestStruct{}
+	v := reflect.ValueOf(s).Elem()
+
+	// Try to set unexported field - should silently fail (CanSet() returns false)
+	unexported := v.FieldByName("_unexported")
+	SetDefaultValue(unexported, "test", recursiveSetDefault)
+	// No panic should occur, field remains zero value
+
+	// Set exported field - should work
+	exported := v.FieldByName("Exported")
+	SetDefaultValue(exported, "success", recursiveSetDefault)
+
+	if exported.String() != "success" {
+		t.Errorf("expected exported field to be set to 'success', got %q", exported.String())
+	}
+}
+
 // ==================== Helper Functions ====================
 
 // recursiveSetFuncNoop is a no-op recursive set function for testing
 func recursiveSetFuncNoop(fieldValue reflect.Value, inValue any, fieldType reflect.Type) error {
 	// For primitive types, delegate to SetFieldValue
 	return SetFieldValue(fieldValue, inValue, fieldType, recursiveSetFuncNoop)
+}
+
+// recursiveSetDefault is a helper for SetDefaultValue recursive calls
+func recursiveSetDefault(fieldValue reflect.Value, defaultValue string) {
+	SetDefaultValue(fieldValue, defaultValue, recursiveSetDefault)
 }

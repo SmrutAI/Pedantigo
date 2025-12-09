@@ -594,6 +594,132 @@ func TestApplyConstraintsToItems(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:     "url format constraint",
+			elemType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"url": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				if schema.Format != "uri" {
+					t.Errorf("format should be uri, got %s", schema.Format)
+				}
+			},
+		},
+		{
+			name:     "uuid format constraint",
+			elemType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"uuid": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				if schema.Format != "uuid" {
+					t.Errorf("format should be uuid, got %s", schema.Format)
+				}
+			},
+		},
+		{
+			name:     "ipv4 format constraint",
+			elemType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"ipv4": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				if schema.Format != "ipv4" {
+					t.Errorf("format should be ipv4, got %s", schema.Format)
+				}
+			},
+		},
+		{
+			name:     "ipv6 format constraint",
+			elemType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"ipv6": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				if schema.Format != "ipv6" {
+					t.Errorf("format should be ipv6, got %s", schema.Format)
+				}
+			},
+		},
+		{
+			name:     "regexp pattern constraint",
+			elemType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"regexp": "^[a-z]+$",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				if schema.Pattern != "^[a-z]+$" {
+					t.Errorf("pattern should be '^[a-z]+$', got %s", schema.Pattern)
+				}
+			},
+		},
+		{
+			name:     "oneof enum constraint",
+			elemType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"oneof": "red green blue",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				if len(schema.Enum) != 3 {
+					t.Errorf("enum should have 3 values, got %d", len(schema.Enum))
+				}
+				expected := []string{"red", "green", "blue"}
+				for i, val := range schema.Enum {
+					if val != expected[i] {
+						t.Errorf("enum[%d] should be %s, got %v", i, expected[i], val)
+					}
+				}
+			},
+		},
+		{
+			name:     "gt exclusive minimum",
+			elemType: reflect.TypeOf(0),
+			constraints: map[string]string{
+				"gt": "0",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				if schema.ExclusiveMinimum != "0" {
+					t.Errorf("exclusiveMinimum should be 0, got %s", schema.ExclusiveMinimum)
+				}
+			},
+		},
+		{
+			name:     "gte inclusive minimum",
+			elemType: reflect.TypeOf(0),
+			constraints: map[string]string{
+				"gte": "1",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				if schema.Minimum != "1" {
+					t.Errorf("minimum should be 1, got %s", schema.Minimum)
+				}
+			},
+		},
+		{
+			name:     "lt exclusive maximum",
+			elemType: reflect.TypeOf(0),
+			constraints: map[string]string{
+				"lt": "100",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				if schema.ExclusiveMaximum != "100" {
+					t.Errorf("exclusiveMaximum should be 100, got %s", schema.ExclusiveMaximum)
+				}
+			},
+		},
+		{
+			name:     "lte inclusive maximum",
+			elemType: reflect.TypeOf(0),
+			constraints: map[string]string{
+				"lte": "99",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				if schema.Maximum != "99" {
+					t.Errorf("maximum should be 99, got %s", schema.Maximum)
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {

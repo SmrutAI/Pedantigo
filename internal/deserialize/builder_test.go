@@ -843,6 +843,118 @@ func TestValidateDefaultMethod_SignatureValidation(t *testing.T) {
 	}
 }
 
+// Test types for ValidateDefaultMethod tests
+type ValidMethodStruct struct{ Name string }
+
+func (v *ValidMethodStruct) GetName() (string, error) { return "test", nil }
+
+type WrongInputArgsStruct struct{ Age int }
+
+func (w *WrongInputArgsStruct) GetAge(arg int) (int, error) { return 0, nil }
+
+type WrongOutputCountStruct struct{ Score float64 }
+
+func (w *WrongOutputCountStruct) GetScore() float64 { return 0.0 }
+
+type WrongFirstReturnStruct struct{ ID int }
+
+func (w *WrongFirstReturnStruct) GetID() (string, error) { return "", nil } // Returns string instead of int
+
+type WrongSecondReturnStruct struct{ Count int }
+
+func (w *WrongSecondReturnStruct) GetCount() (int, string) { return 0, "" } // Returns string instead of error
+
+type ThreeReturnsStruct struct{ Data string }
+
+func (t *ThreeReturnsStruct) GetData() (string, error, bool) { return "", nil, false }
+
+// TestValidateDefaultMethod_ComprehensiveCases tests all validation paths
+func TestValidateDefaultMethod_ComprehensiveCases(t *testing.T) {
+
+	tests := []struct {
+		name        string
+		structType  any
+		methodName  string
+		fieldType   reflect.Type
+		shouldErr   bool
+		errContains string
+	}{
+		{
+			name:        "valid method signature",
+			structType:  ValidMethodStruct{},
+			methodName:  "GetName",
+			fieldType:   reflect.TypeOf(""),
+			shouldErr:   false,
+			errContains: "",
+		},
+		{
+			name:        "method with input arguments",
+			structType:  WrongInputArgsStruct{},
+			methodName:  "GetAge",
+			fieldType:   reflect.TypeOf(0),
+			shouldErr:   true,
+			errContains: "should take no arguments",
+		},
+		{
+			name:        "method with single return value",
+			structType:  WrongOutputCountStruct{},
+			methodName:  "GetScore",
+			fieldType:   reflect.TypeOf(0.0),
+			shouldErr:   true,
+			errContains: "should return (value, error), got 1 return values",
+		},
+		{
+			name:        "method with three return values",
+			structType:  ThreeReturnsStruct{},
+			methodName:  "GetData",
+			fieldType:   reflect.TypeOf(""),
+			shouldErr:   true,
+			errContains: "should return (value, error), got 3 return values",
+		},
+		{
+			name:        "method with wrong first return type",
+			structType:  WrongFirstReturnStruct{},
+			methodName:  "GetID",
+			fieldType:   reflect.TypeOf(0), // Expects int, but method returns string
+			shouldErr:   true,
+			errContains: "should return int as first value, got string",
+		},
+		{
+			name:        "method with wrong second return type",
+			structType:  WrongSecondReturnStruct{},
+			methodName:  "GetCount",
+			fieldType:   reflect.TypeOf(0),
+			shouldErr:   true,
+			errContains: "should return error as second value, got string",
+		},
+		{
+			name:        "method does not exist",
+			structType:  ValidMethodStruct{},
+			methodName:  "NonExistent",
+			fieldType:   reflect.TypeOf(""),
+			shouldErr:   true,
+			errContains: "method NonExistent not found",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			typ := reflect.TypeOf(tt.structType)
+			err := ValidateDefaultMethod(typ, tt.methodName, tt.fieldType)
+
+			if tt.shouldErr && err == nil {
+				t.Error("expected error, got nil")
+			}
+			if !tt.shouldErr && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			if tt.shouldErr && err != nil && !contains(err.Error(), tt.errContains) {
+				t.Errorf("error %q does not contain %q", err.Error(), tt.errContains)
+			}
+		})
+	}
+}
+
 // Helper functions
 
 func getMapKeys(m map[string]FieldDeserializer) []string {

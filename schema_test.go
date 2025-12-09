@@ -826,3 +826,534 @@ func bytesEqual(a, b []byte) bool {
 	}
 	return true
 }
+
+// ==================================================
+// findTypeForDefinition, searchSliceType, searchMapType coverage tests
+// ==================================================
+
+// TestSchemaOpenAPI_SliceOfStructs tests schema generation with slices of structs
+// This exercises searchSliceType() code path (currently 0% coverage)
+func TestSchemaOpenAPI_SliceOfStructs(t *testing.T) {
+	type Author struct {
+		Name  string `json:"name" pedantigo:"required,min=2"`
+		Email string `json:"email" pedantigo:"email"`
+	}
+
+	type Book struct {
+		Title   string   `json:"title" pedantigo:"required,min=1"`
+		Authors []Author `json:"authors" pedantigo:"required"`
+	}
+
+	validator := New[Book]()
+	schema := validator.SchemaOpenAPI()
+
+	// Should have Author in definitions
+	authorDef, hasAuthor := schema.Definitions["Author"]
+	if !hasAuthor {
+		t.Fatal("expected Author definition in $defs")
+	}
+
+	// Verify Author definition has constraints from pedantigo tags
+	hasNameRequired := false
+	for _, req := range authorDef.Required {
+		if req == "name" {
+			hasNameRequired = true
+			break
+		}
+	}
+	if !hasNameRequired {
+		t.Error("expected 'name' to be required in Author definition")
+	}
+
+	nameProp, _ := authorDef.Properties.Get("name")
+	if nameProp == nil || nameProp.MinLength == nil || *nameProp.MinLength != 2 {
+		t.Errorf("expected name minLength 2 in Author, got %v", nameProp)
+	}
+
+	emailProp, _ := authorDef.Properties.Get("email")
+	if emailProp == nil || emailProp.Format != "email" {
+		t.Errorf("expected email format 'email' in Author, got %v", emailProp)
+	}
+}
+
+// TestSchemaOpenAPI_PointerSliceOfStructs tests schema with pointer slices
+// This exercises searchSliceType() with pointer unwrapping
+func TestSchemaOpenAPI_PointerSliceOfStructs(t *testing.T) {
+	type Tag struct {
+		Name  string `json:"name" pedantigo:"required,min=1"`
+		Color string `json:"color" pedantigo:"regexp=^#[0-9a-fA-F]{6}$"`
+	}
+
+	type Article struct {
+		Title string `json:"title" pedantigo:"required"`
+		Tags  []*Tag `json:"tags"` // Pointer slice
+	}
+
+	validator := New[Article]()
+	schema := validator.SchemaOpenAPI()
+
+	// Should have Tag in definitions even though it's []*Tag
+	tagDef, hasTag := schema.Definitions["Tag"]
+	if !hasTag {
+		t.Fatal("expected Tag definition in $defs (pointer slice)")
+	}
+
+	// Verify Tag constraints are applied
+	colorProp, _ := tagDef.Properties.Get("color")
+	if colorProp == nil || colorProp.Pattern != "^#[0-9a-fA-F]{6}$" {
+		t.Errorf("expected color pattern in Tag definition, got %v", colorProp)
+	}
+}
+
+// TestSchemaOpenAPI_MapOfStructs tests schema generation with maps of structs
+// This exercises searchMapType() code path (currently 0% coverage)
+func TestSchemaOpenAPI_MapOfStructs(t *testing.T) {
+	type Contact struct {
+		Email string `json:"email" pedantigo:"required,email"`
+		Phone string `json:"phone" pedantigo:"min=10,max=15"`
+	}
+
+	type Company struct {
+		Name     string             `json:"name" pedantigo:"required,min=1"`
+		Contacts map[string]Contact `json:"contacts"`
+	}
+
+	validator := New[Company]()
+	schema := validator.SchemaOpenAPI()
+
+	// Should have Contact in definitions
+	contactDef, hasContact := schema.Definitions["Contact"]
+	if !hasContact {
+		t.Fatal("expected Contact definition in $defs")
+	}
+
+	// Verify Contact definition has constraints
+	hasEmailRequired := false
+	for _, req := range contactDef.Required {
+		if req == "email" {
+			hasEmailRequired = true
+			break
+		}
+	}
+	if !hasEmailRequired {
+		t.Error("expected 'email' to be required in Contact definition")
+	}
+
+	emailProp, _ := contactDef.Properties.Get("email")
+	if emailProp == nil || emailProp.Format != "email" {
+		t.Errorf("expected email format 'email' in Contact, got %v", emailProp)
+	}
+
+	phoneProp, _ := contactDef.Properties.Get("phone")
+	if phoneProp == nil || phoneProp.MinLength == nil || *phoneProp.MinLength != 10 {
+		t.Errorf("expected phone minLength 10 in Contact, got %v", phoneProp)
+	}
+}
+
+// TestSchemaOpenAPI_PointerMapOfStructs tests schema with pointer map values
+// This exercises searchMapType() with pointer unwrapping
+func TestSchemaOpenAPI_PointerMapOfStructs(t *testing.T) {
+	type Address struct {
+		Street  string `json:"street" pedantigo:"required,min=1"`
+		City    string `json:"city" pedantigo:"required,min=2"`
+		ZipCode string `json:"zipCode" pedantigo:"regexp=^[0-9]{5}$"`
+	}
+
+	type Organization struct {
+		Name      string              `json:"name" pedantigo:"required"`
+		Locations map[string]*Address `json:"locations"` // Pointer map values
+	}
+
+	validator := New[Organization]()
+	schema := validator.SchemaOpenAPI()
+
+	// Should have Address in definitions even though it's map[string]*Address
+	addressDef, hasAddress := schema.Definitions["Address"]
+	if !hasAddress {
+		t.Fatal("expected Address definition in $defs (pointer map values)")
+	}
+
+	// Verify Address constraints are applied
+	zipProp, _ := addressDef.Properties.Get("zipCode")
+	if zipProp == nil || zipProp.Pattern != "^[0-9]{5}$" {
+		t.Errorf("expected zipCode pattern in Address definition, got %v", zipProp)
+	}
+
+	cityProp, _ := addressDef.Properties.Get("city")
+	if cityProp == nil || cityProp.MinLength == nil || *cityProp.MinLength != 2 {
+		t.Errorf("expected city minLength 2 in Address, got %v", cityProp)
+	}
+}
+
+// TestSchemaOpenAPI_NestedStructInSlice tests deeply nested struct in slice
+// This exercises recursive findTypeForDefinition through searchSliceType
+func TestSchemaOpenAPI_NestedStructInSlice(t *testing.T) {
+	type Permission struct {
+		Name string `json:"name" pedantigo:"required,min=1"`
+	}
+
+	type Role struct {
+		Title       string       `json:"title" pedantigo:"required,min=1"`
+		Permissions []Permission `json:"permissions"`
+	}
+
+	type User struct {
+		Username string `json:"username" pedantigo:"required,min=3"`
+		Roles    []Role `json:"roles"`
+	}
+
+	validator := New[User]()
+	schema := validator.SchemaOpenAPI()
+
+	// Should have both Role and Permission in definitions
+	roleDef, hasRole := schema.Definitions["Role"]
+	if !hasRole {
+		t.Fatal("expected Role definition in $defs")
+	}
+
+	permDef, hasPerm := schema.Definitions["Permission"]
+	if !hasPerm {
+		t.Fatal("expected Permission definition in $defs (nested in slice)")
+	}
+
+	// Verify Permission constraints applied
+	nameProp, _ := permDef.Properties.Get("name")
+	if nameProp == nil || nameProp.MinLength == nil || *nameProp.MinLength != 1 {
+		t.Errorf("expected name minLength 1 in Permission, got %v", nameProp)
+	}
+
+	// Verify Role constraints applied
+	titleProp, _ := roleDef.Properties.Get("title")
+	if titleProp == nil || titleProp.MinLength == nil || *titleProp.MinLength != 1 {
+		t.Errorf("expected title minLength 1 in Role, got %v", titleProp)
+	}
+}
+
+// TestSchemaOpenAPI_NestedStructInMap tests deeply nested struct in map
+// This exercises recursive findTypeForDefinition through searchMapType
+func TestSchemaOpenAPI_NestedStructInMap(t *testing.T) {
+	type Metadata struct {
+		Key   string `json:"key" pedantigo:"required,min=1"`
+		Value string `json:"value" pedantigo:"required"`
+	}
+
+	type Resource struct {
+		Name     string              `json:"name" pedantigo:"required,min=1"`
+		Metadata map[string]Metadata `json:"metadata"`
+	}
+
+	type Project struct {
+		Title     string              `json:"title" pedantigo:"required,min=1"`
+		Resources map[string]Resource `json:"resources"`
+	}
+
+	validator := New[Project]()
+	schema := validator.SchemaOpenAPI()
+
+	// Should have Resource and Metadata in definitions
+	resourceDef, hasResource := schema.Definitions["Resource"]
+	if !hasResource {
+		t.Fatal("expected Resource definition in $defs")
+	}
+
+	metadataDef, hasMetadata := schema.Definitions["Metadata"]
+	if !hasMetadata {
+		t.Fatal("expected Metadata definition in $defs (nested in map)")
+	}
+
+	// Verify Metadata constraints applied
+	keyProp, _ := metadataDef.Properties.Get("key")
+	if keyProp == nil || keyProp.MinLength == nil || *keyProp.MinLength != 1 {
+		t.Errorf("expected key minLength 1 in Metadata, got %v", keyProp)
+	}
+
+	// Verify Resource constraints applied
+	nameProp, _ := resourceDef.Properties.Get("name")
+	if nameProp == nil || nameProp.MinLength == nil || *nameProp.MinLength != 1 {
+		t.Errorf("expected name minLength 1 in Resource, got %v", nameProp)
+	}
+}
+
+// TestSchemaOpenAPI_DirectTypeMatch tests findTypeForDefinition direct name matching
+func TestSchemaOpenAPI_DirectTypeMatch(t *testing.T) {
+	type Address struct {
+		Street string `json:"street" pedantigo:"required"`
+		City   string `json:"city" pedantigo:"required,min=2"`
+	}
+
+	type Person struct {
+		Name    string  `json:"name" pedantigo:"required"`
+		Address Address `json:"address" pedantigo:"required"`
+	}
+
+	validator := New[Person]()
+	schema := validator.SchemaOpenAPI()
+
+	// Should have Address in definitions
+	addressDef, hasAddress := schema.Definitions["Address"]
+	if !hasAddress {
+		t.Fatal("expected Address definition in $defs")
+	}
+
+	// Verify Address definition has constraints
+	streetProp, _ := addressDef.Properties.Get("street")
+	if streetProp == nil {
+		t.Error("expected 'street' property in Address definition")
+	}
+
+	cityProp, _ := addressDef.Properties.Get("city")
+	if cityProp == nil || cityProp.MinLength == nil || *cityProp.MinLength != 2 {
+		t.Errorf("expected city minLength 2 in Address, got %v", cityProp)
+	}
+}
+
+// TestSchemaOpenAPI_PointerFieldType tests findTypeForDefinition with pointer field types
+func TestSchemaOpenAPI_PointerFieldType(t *testing.T) {
+	type Config struct {
+		Key   string `json:"key" pedantigo:"required"`
+		Value string `json:"value" pedantigo:"min=1"`
+	}
+
+	type Service struct {
+		Name   string  `json:"name" pedantigo:"required"`
+		Config *Config `json:"config"` // Pointer to nested struct
+	}
+
+	validator := New[Service]()
+	schema := validator.SchemaOpenAPI()
+
+	// Should have Config in definitions (pointer should be unwrapped)
+	configDef, hasConfig := schema.Definitions["Config"]
+	if !hasConfig {
+		t.Fatal("expected Config definition in $defs (pointer should be unwrapped)")
+	}
+
+	// Verify Config definition has constraints
+	keyProp, _ := configDef.Properties.Get("key")
+	if keyProp == nil {
+		t.Error("expected 'key' property in Config definition")
+	}
+
+	valueProp, _ := configDef.Properties.Get("value")
+	if valueProp == nil || valueProp.MinLength == nil || *valueProp.MinLength != 1 {
+		t.Errorf("expected value minLength 1 in Config, got %v", valueProp)
+	}
+}
+
+// TestSchemaOpenAPI_DeeplyNestedStruct tests findTypeForDefinition recursive search
+func TestSchemaOpenAPI_DeeplyNestedStruct(t *testing.T) {
+	type Level3 struct {
+		Data string `json:"data" pedantigo:"required,min=5"`
+	}
+
+	type Level2 struct {
+		Info   string `json:"info" pedantigo:"required"`
+		Nested Level3 `json:"nested"`
+	}
+
+	type Level1 struct {
+		Title string `json:"title" pedantigo:"required"`
+		Mid   Level2 `json:"mid"`
+	}
+
+	validator := New[Level1]()
+	schema := validator.SchemaOpenAPI()
+
+	// Should have all levels in definitions
+	_, hasLevel2 := schema.Definitions["Level2"]
+	if !hasLevel2 {
+		t.Error("expected Level2 definition in $defs")
+	}
+
+	level3Def, hasLevel3 := schema.Definitions["Level3"]
+	if !hasLevel3 {
+		t.Fatal("expected Level3 definition in $defs (deeply nested)")
+	}
+
+	// Verify Level3 definition has constraints
+	dataProp, _ := level3Def.Properties.Get("data")
+	if dataProp == nil || dataProp.MinLength == nil || *dataProp.MinLength != 5 {
+		t.Errorf("expected data minLength 5 in Level3, got %v", dataProp)
+	}
+}
+
+// TestSchemaOpenAPI_MixedNestedTypes tests all search paths together
+func TestSchemaOpenAPI_MixedNestedTypes(t *testing.T) {
+	type Tag struct {
+		Name string `json:"name" pedantigo:"required,min=1"`
+	}
+
+	type Metadata struct {
+		Key string `json:"key" pedantigo:"required"`
+	}
+
+	type Comment struct {
+		Text string `json:"text" pedantigo:"required,min=3"`
+	}
+
+	type Article struct {
+		Title    string              `json:"title" pedantigo:"required"`
+		Tags     []Tag               `json:"tags"`     // Slice of structs
+		Meta     map[string]Metadata `json:"meta"`     // Map of structs
+		Comments []Comment           `json:"comments"` // Another slice
+		Author   *Tag                `json:"author"`   // Pointer to struct
+	}
+
+	validator := New[Article]()
+	schema := validator.SchemaOpenAPI()
+
+	// Should have all nested types in definitions
+	tagDef, hasTag := schema.Definitions["Tag"]
+	if !hasTag {
+		t.Error("expected Tag definition")
+	}
+	if tagDef.Properties.Len() == 0 {
+		t.Error("expected Tag definition to have properties")
+	}
+
+	metaDef, hasMeta := schema.Definitions["Metadata"]
+	if !hasMeta {
+		t.Error("expected Metadata definition from map values")
+	}
+	if metaDef.Properties.Len() == 0 {
+		t.Error("expected Metadata definition to have properties")
+	}
+
+	commentDef, hasComment := schema.Definitions["Comment"]
+	if !hasComment {
+		t.Error("expected Comment definition from slice")
+	}
+
+	// Verify Comment definition has constraints
+	textProp, _ := commentDef.Properties.Get("text")
+	if textProp == nil || textProp.MinLength == nil || *textProp.MinLength != 3 {
+		t.Errorf("expected text minLength 3 in Comment, got %v", textProp)
+	}
+}
+
+// TestSchemaJSON_Caching tests all caching paths in SchemaJSON
+func TestSchemaJSON_Caching(t *testing.T) {
+	type Product struct {
+		Name  string `json:"name" pedantigo:"required,min=1"`
+		Price int    `json:"price" pedantigo:"gt=0"`
+	}
+
+	t.Run("first call generates and caches", func(t *testing.T) {
+		validator := New[Product]()
+
+		// First call should generate schema and JSON
+		jsonBytes1, err := validator.SchemaJSON()
+		if err != nil {
+			t.Fatalf("expected no error on first call, got %v", err)
+		}
+
+		if len(jsonBytes1) == 0 {
+			t.Error("expected non-empty JSON bytes")
+		}
+
+		// Verify it's valid JSON
+		var schema1 map[string]any
+		if err := json.Unmarshal(jsonBytes1, &schema1); err != nil {
+			t.Fatalf("expected valid JSON, got error: %v", err)
+		}
+	})
+
+	t.Run("second call returns cached JSON", func(t *testing.T) {
+		validator := New[Product]()
+
+		// First call
+		jsonBytes1, err1 := validator.SchemaJSON()
+		if err1 != nil {
+			t.Fatalf("first call error: %v", err1)
+		}
+
+		// Second call should return cached JSON (same pointer)
+		jsonBytes2, err2 := validator.SchemaJSON()
+		if err2 != nil {
+			t.Fatalf("second call error: %v", err2)
+		}
+
+		// Should return exact same cached bytes
+		if string(jsonBytes1) != string(jsonBytes2) {
+			t.Error("expected cached JSON to match")
+		}
+	})
+
+	t.Run("Schema called first then SchemaJSON uses cached schema", func(t *testing.T) {
+		validator := New[Product]()
+
+		// Call Schema() first to cache schema object
+		schema1 := validator.Schema()
+		if schema1 == nil {
+			t.Fatal("expected schema to be generated")
+		}
+
+		// Call SchemaJSON() - should use cached schema but generate JSON
+		jsonBytes, err := validator.SchemaJSON()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if len(jsonBytes) == 0 {
+			t.Error("expected non-empty JSON bytes")
+		}
+
+		// Verify constraints are in the JSON
+		var schemaMap map[string]any
+		if err := json.Unmarshal(jsonBytes, &schemaMap); err != nil {
+			t.Fatalf("expected valid JSON, got error: %v", err)
+		}
+
+		properties, ok := schemaMap["properties"].(map[string]any)
+		if !ok {
+			t.Fatal("expected properties object")
+		}
+
+		nameProp, ok := properties["name"].(map[string]any)
+		if !ok {
+			t.Fatal("expected name property")
+		}
+
+		// Check min length constraint
+		if minLen, ok := nameProp["minLength"].(float64); !ok || minLen != 1 {
+			t.Errorf("expected name minLength 1, got %v", nameProp["minLength"])
+		}
+	})
+}
+
+// TestSchemaJSON_DefinitionUnwrapping tests definition unwrapping path
+func TestSchemaJSON_DefinitionUnwrapping(t *testing.T) {
+	// This tests the path where baseSchema.Properties is nil but has definitions
+	// This happens with certain struct configurations
+	type Config struct {
+		Host string `json:"host" pedantigo:"required,url"`
+		Port int    `json:"port" pedantigo:"gte=1,lte=65535"`
+	}
+
+	validator := New[Config]()
+	jsonBytes, err := validator.SchemaJSON()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	var schemaMap map[string]any
+	if err := json.Unmarshal(jsonBytes, &schemaMap); err != nil {
+		t.Fatalf("expected valid JSON, got error: %v", err)
+	}
+
+	// Should have properties (unwrapped from definition if needed)
+	properties, ok := schemaMap["properties"].(map[string]any)
+	if !ok {
+		t.Fatal("expected properties object after unwrapping")
+	}
+
+	// Verify constraints are applied
+	hostProp, ok := properties["host"].(map[string]any)
+	if !ok {
+		t.Fatal("expected host property")
+	}
+
+	if format, ok := hostProp["format"].(string); !ok || format != "uri" {
+		t.Errorf("expected host format 'uri', got %v", hostProp["format"])
+	}
+}
