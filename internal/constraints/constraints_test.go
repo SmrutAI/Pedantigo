@@ -5,6 +5,9 @@ import (
 	"regexp"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestMaxConstraint tests maxConstraint.Validate() for numeric values
@@ -70,8 +73,10 @@ func TestMaxConstraint(t *testing.T) {
 			constraint := maxConstraint{max: tt.max}
 			err := constraint.Validate(tt.value)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -115,8 +120,10 @@ func TestMaxLengthConstraint(t *testing.T) {
 			constraint := maxLengthConstraint{maxLength: tt.maxLength}
 			err := constraint.Validate(tt.value)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -169,8 +176,10 @@ func TestLtConstraint(t *testing.T) {
 			constraint := ltConstraint{threshold: tt.threshold}
 			err := constraint.Validate(tt.value)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -219,8 +228,10 @@ func TestLeConstraint(t *testing.T) {
 			constraint := leConstraint{threshold: tt.threshold}
 			err := constraint.Validate(tt.value)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -275,8 +286,10 @@ func TestUrlConstraint(t *testing.T) {
 			constraint := urlConstraint{}
 			err := constraint.Validate(tt.value)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -326,8 +339,10 @@ func TestUuidConstraint(t *testing.T) {
 			constraint := uuidConstraint{}
 			err := constraint.Validate(tt.value)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -379,14 +394,14 @@ func TestRegexConstraint(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			regex, err := regexp.Compile(tt.pattern)
-			if err != nil {
-				t.Fatalf("failed to compile regex: %v", err)
-			}
+			require.NoError(t, err, "failed to compile regex")
 			constraint := regexConstraint{pattern: tt.pattern, regex: regex}
 			err = constraint.Validate(tt.value)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -441,8 +456,10 @@ func TestIpv4Constraint(t *testing.T) {
 			constraint := ipv4Constraint{}
 			err := constraint.Validate(tt.value)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -500,8 +517,10 @@ func TestIpv6Constraint(t *testing.T) {
 			constraint := ipv6Constraint{}
 			err := constraint.Validate(tt.value)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -565,8 +584,10 @@ func TestEnumConstraint(t *testing.T) {
 			constraint := enumConstraint{values: tt.values}
 			err := constraint.Validate(tt.value)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -595,9 +616,7 @@ func TestDefaultConstraint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// defaultConstraint always returns nil - it's a no-op validator
 			err := constraint.Validate(tt.value)
-			if err != nil {
-				t.Errorf("expected no error, got %v", err)
-			}
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -647,8 +666,10 @@ func TestMinConstraint(t *testing.T) {
 			constraint := minConstraint{min: tt.min}
 			err := constraint.Validate(tt.value)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -690,8 +711,10 @@ func TestGtConstraint(t *testing.T) {
 			constraint := gtConstraint{threshold: tt.threshold}
 			err := constraint.Validate(tt.value)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -733,8 +756,10 @@ func TestGeConstraint(t *testing.T) {
 			constraint := geConstraint{threshold: tt.threshold}
 			err := constraint.Validate(tt.value)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -775,8 +800,10 @@ func TestMinLengthConstraint(t *testing.T) {
 			constraint := minLengthConstraint{minLength: tt.minLength}
 			err := constraint.Validate(tt.value)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -821,8 +848,10 @@ func TestEmailConstraint(t *testing.T) {
 			constraint := emailConstraint{}
 			err := constraint.Validate(tt.value)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -860,9 +889,7 @@ func TestBuildMaxConstraint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			constraint, ok := buildMaxConstraint(tt.value, tt.fieldType)
 
-			if ok != tt.wantOk {
-				t.Errorf("expected ok=%v, got %v", tt.wantOk, ok)
-			}
+			assert.Equal(t, tt.wantOk, ok)
 
 			if !ok {
 				return
@@ -870,13 +897,11 @@ func TestBuildMaxConstraint(t *testing.T) {
 
 			switch tt.wantType {
 			case "maxLengthConstraint":
-				if _, isMaxLength := constraint.(maxLengthConstraint); !isMaxLength {
-					t.Errorf("expected maxLengthConstraint, got %T", constraint)
-				}
+				_, isMaxLength := constraint.(maxLengthConstraint)
+				assert.True(t, isMaxLength, "expected maxLengthConstraint, got %T", constraint)
 			case "maxConstraint":
-				if _, isMax := constraint.(maxConstraint); !isMax {
-					t.Errorf("expected maxConstraint, got %T", constraint)
-				}
+				_, isMax := constraint.(maxConstraint)
+				assert.True(t, isMax, "expected maxConstraint, got %T", constraint)
 			}
 		})
 	}
@@ -906,25 +931,22 @@ func TestBuildRegexConstraint(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.shouldPanic {
-				defer func() {
-					if r := recover(); r == nil {
-						t.Error("expected panic but did not panic")
-					}
-				}()
-				_ = buildRegexConstraint(tt.pattern)
+				assert.Panics(t, func() {
+					_ = buildRegexConstraint(tt.pattern)
+				})
 				return
 			}
 
 			constraint := buildRegexConstraint(tt.pattern)
-			if constraint == nil {
-				t.Fatal("expected non-nil constraint")
-			}
+			require.NotNil(t, constraint, "expected non-nil constraint")
 
 			// Test validation if we have a test value
 			if tt.testValue != "" {
 				err := constraint.Validate(tt.testValue)
-				if (err != nil) != tt.wantErr {
-					t.Errorf("Validate(%q) wantErr=%v, got err=%v", tt.testValue, tt.wantErr, err)
+				if tt.wantErr {
+					assert.Error(t, err)
+				} else {
+					assert.NoError(t, err)
 				}
 			}
 		})
@@ -959,13 +981,13 @@ func TestBuildEnumConstraint(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			constraint := buildEnumConstraint(tt.value)
-			if constraint == nil {
-				t.Fatal("expected non-nil constraint")
-			}
+			require.NotNil(t, constraint, "expected non-nil constraint")
 
 			err := constraint.Validate(tt.testValue)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Validate(%v) wantErr=%v, got err=%v", tt.testValue, tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -1001,9 +1023,7 @@ func TestToFloat64_AllNumericTypes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			val := reflect.ValueOf(tt.value)
 			result := toFloat64(val)
-			if result != tt.expected {
-				t.Errorf("toFloat64(%v) = %v, want %v", tt.value, result, tt.expected)
-			}
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
@@ -1031,8 +1051,10 @@ func TestCheckTypeCompatibility_BoolAndTime(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := CheckTypeCompatibility(tt.a, tt.b)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("CheckTypeCompatibility(%v, %v) wantErr=%v, got err=%v", tt.a, tt.b, tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -1082,9 +1104,7 @@ func TestDereference_PointerLevels(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := Dereference(tt.getType())
-			if result.Kind() != tt.expected {
-				t.Errorf("Dereference() kind = %v, want %v", result.Kind(), tt.expected)
-			}
+			assert.Equal(t, tt.expected, result.Kind())
 		})
 	}
 }
@@ -1115,9 +1135,7 @@ func TestCompareToString_BoolAndDefault(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := CompareToString(tt.value)
-			if result != tt.expected {
-				t.Errorf("CompareToString(%v) = %q, want %q", tt.value, result, tt.expected)
-			}
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
@@ -1262,9 +1280,7 @@ func TestBuildConstraints_MissingBranches(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := BuildConstraints(tt.constraints, tt.fieldType)
-			if len(result) != tt.expectedCount {
-				t.Errorf("BuildConstraints() returned %d constraints, want %d", len(result), tt.expectedCount)
-			}
+			assert.Equal(t, tt.expectedCount, len(result))
 
 			// Verify constraint types (order may vary due to map iteration)
 			if len(tt.expectedTypes) > 0 {
@@ -1274,9 +1290,7 @@ func TestBuildConstraints_MissingBranches(t *testing.T) {
 					foundTypes[typeName] = true
 				}
 				for _, expectedType := range tt.expectedTypes {
-					if !foundTypes[expectedType] {
-						t.Errorf("Expected constraint type %s not found", expectedType)
-					}
+					assert.True(t, foundTypes[expectedType], "Expected constraint type %s not found", expectedType)
 				}
 			}
 		})
@@ -1338,15 +1352,9 @@ func TestParseConditionalConstraint_ErrorPath(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			first, second, ok := parseConditionalConstraint(tt.value, tt.separator)
-			if ok != tt.wantOk {
-				t.Errorf("parseConditionalConstraint() ok = %v, want %v", ok, tt.wantOk)
-			}
-			if first != tt.wantFirst {
-				t.Errorf("parseConditionalConstraint() first = %q, want %q", first, tt.wantFirst)
-			}
-			if second != tt.wantSecond {
-				t.Errorf("parseConditionalConstraint() second = %q, want %q", second, tt.wantSecond)
-			}
+			assert.Equal(t, tt.wantOk, ok)
+			assert.Equal(t, tt.wantFirst, first)
+			assert.Equal(t, tt.wantSecond, second)
 		})
 	}
 }

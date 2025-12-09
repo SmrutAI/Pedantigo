@@ -3,6 +3,9 @@ package pedantigo
 import (
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // ==================== Format Constraints ====================
@@ -41,32 +44,23 @@ func TestURL(t *testing.T) {
 				config, err := validator.Unmarshal([]byte(tt.json))
 
 				if tt.expectErr {
-					if err == nil {
-						t.Fatal("expected validation error")
-					}
+					require.Error(t, err)
 					ve, ok := err.(*ValidationError)
-					if !ok {
-						t.Fatalf("expected *ValidationError, got %T", err)
-					}
+					require.True(t, ok, "expected *ValidationError, got %T", err)
 					foundError := false
 					for _, fieldErr := range ve.Errors {
 						if fieldErr.Field == "Website" && fieldErr.Message == "must be a valid URL (http or https)" {
 							foundError = true
 						}
 					}
-					if !foundError {
-						t.Errorf("expected 'must be a valid URL (http or https)' error, got %v", ve.Errors)
-					}
+					assert.True(t, foundError, "expected 'must be a valid URL (http or https)' error, got %v", ve.Errors)
 				} else {
-					if err != nil {
-						t.Errorf("unexpected error: %v", err)
-					}
+					assert.NoError(t, err)
 					if tt.expectNil {
-						if config.Website != nil {
-							t.Errorf("expected nil Website pointer, got %v", config.Website)
-						}
-					} else if config.Website == nil || *config.Website != tt.expectVal {
-						t.Errorf("expected website %q, got %v", tt.expectVal, config.Website)
+						assert.Nil(t, config.Website)
+					} else {
+						require.NotNil(t, config.Website)
+						assert.Equal(t, tt.expectVal, *config.Website)
 					}
 				}
 			} else {
@@ -77,29 +71,19 @@ func TestURL(t *testing.T) {
 				config, err := validator.Unmarshal([]byte(tt.json))
 
 				if tt.expectErr {
-					if err == nil {
-						t.Fatal("expected validation error")
-					}
+					require.Error(t, err)
 					ve, ok := err.(*ValidationError)
-					if !ok {
-						t.Fatalf("expected *ValidationError, got %T", err)
-					}
+					require.True(t, ok, "expected *ValidationError, got %T", err)
 					foundError := false
 					for _, fieldErr := range ve.Errors {
 						if fieldErr.Field == "Website" && fieldErr.Message == "must be a valid URL (http or https)" {
 							foundError = true
 						}
 					}
-					if !foundError {
-						t.Errorf("expected 'must be a valid URL (http or https)' error, got %v", ve.Errors)
-					}
+					assert.True(t, foundError, "expected 'must be a valid URL (http or https)' error, got %v", ve.Errors)
 				} else {
-					if err != nil {
-						t.Errorf("unexpected error: %v", err)
-					}
-					if config.Website != tt.expectVal {
-						t.Errorf("expected website %q, got %q", tt.expectVal, config.Website)
-					}
+					assert.NoError(t, err)
+					assert.Equal(t, tt.expectVal, config.Website)
 				}
 			}
 		})
@@ -139,32 +123,23 @@ func TestUUID(t *testing.T) {
 				entity, err := validator.Unmarshal([]byte(tt.json))
 
 				if tt.expectErr {
-					if err == nil {
-						t.Fatal("expected validation error")
-					}
+					require.Error(t, err)
 					ve, ok := err.(*ValidationError)
-					if !ok {
-						t.Fatalf("expected *ValidationError, got %T", err)
-					}
+					require.True(t, ok, "expected *ValidationError, got %T", err)
 					foundError := false
 					for _, fieldErr := range ve.Errors {
 						if fieldErr.Field == "ID" && fieldErr.Message == "must be a valid UUID" {
 							foundError = true
 						}
 					}
-					if !foundError {
-						t.Errorf("expected 'must be a valid UUID' error, got %v", ve.Errors)
-					}
+					assert.True(t, foundError, "expected 'must be a valid UUID' error, got %v", ve.Errors)
 				} else {
-					if err != nil {
-						t.Errorf("unexpected error: %v", err)
-					}
+					assert.NoError(t, err)
 					if tt.expectNil {
-						if entity.ID != nil {
-							t.Errorf("expected nil ID pointer, got %v", entity.ID)
-						}
-					} else if entity.ID == nil || *entity.ID != tt.expectVal {
-						t.Errorf("expected id %q, got %v", tt.expectVal, entity.ID)
+						assert.Nil(t, entity.ID)
+					} else {
+						require.NotNil(t, entity.ID)
+						assert.Equal(t, tt.expectVal, *entity.ID)
 					}
 				}
 			} else {
@@ -175,29 +150,19 @@ func TestUUID(t *testing.T) {
 				entity, err := validator.Unmarshal([]byte(tt.json))
 
 				if tt.expectErr {
-					if err == nil {
-						t.Fatal("expected validation error")
-					}
+					require.Error(t, err)
 					ve, ok := err.(*ValidationError)
-					if !ok {
-						t.Fatalf("expected *ValidationError, got %T", err)
-					}
+					require.True(t, ok, "expected *ValidationError, got %T", err)
 					foundError := false
 					for _, fieldErr := range ve.Errors {
 						if fieldErr.Field == "ID" && fieldErr.Message == "must be a valid UUID" {
 							foundError = true
 						}
 					}
-					if !foundError {
-						t.Errorf("expected 'must be a valid UUID' error, got %v", ve.Errors)
-					}
+					assert.True(t, foundError, "expected 'must be a valid UUID' error, got %v", ve.Errors)
 				} else {
-					if err != nil {
-						t.Errorf("unexpected error: %v", err)
-					}
-					if entity.ID != tt.expectVal {
-						t.Errorf("expected id %q, got %q", tt.expectVal, entity.ID)
-					}
+					assert.NoError(t, err)
+					assert.Equal(t, tt.expectVal, entity.ID)
 				}
 			}
 		})
@@ -236,32 +201,23 @@ func TestRegex_UppercasePattern(t *testing.T) {
 				code, err := validator.Unmarshal([]byte(tt.json))
 
 				if tt.expectErr {
-					if err == nil {
-						t.Fatal("expected validation error")
-					}
+					require.Error(t, err)
 					ve, ok := err.(*ValidationError)
-					if !ok {
-						t.Fatalf("expected *ValidationError, got %T", err)
-					}
+					require.True(t, ok, "expected *ValidationError, got %T", err)
 					foundError := false
 					for _, fieldErr := range ve.Errors {
 						if fieldErr.Field == "Value" && fieldErr.Message == "must match pattern '^[A-Z]{3}$'" {
 							foundError = true
 						}
 					}
-					if !foundError {
-						t.Errorf("expected 'must match pattern' error, got %v", ve.Errors)
-					}
+					assert.True(t, foundError, "expected 'must match pattern' error, got %v", ve.Errors)
 				} else {
-					if err != nil {
-						t.Errorf("unexpected error: %v", err)
-					}
+					assert.NoError(t, err)
 					if tt.expectNil {
-						if code.Value != nil {
-							t.Errorf("expected nil Value pointer, got %v", code.Value)
-						}
-					} else if code.Value == nil || *code.Value != tt.expectVal {
-						t.Errorf("expected value %q, got %v", tt.expectVal, code.Value)
+						assert.Nil(t, code.Value)
+					} else {
+						require.NotNil(t, code.Value)
+						assert.Equal(t, tt.expectVal, *code.Value)
 					}
 				}
 			} else {
@@ -272,29 +228,19 @@ func TestRegex_UppercasePattern(t *testing.T) {
 				code, err := validator.Unmarshal([]byte(tt.json))
 
 				if tt.expectErr {
-					if err == nil {
-						t.Fatal("expected validation error")
-					}
+					require.Error(t, err)
 					ve, ok := err.(*ValidationError)
-					if !ok {
-						t.Fatalf("expected *ValidationError, got %T", err)
-					}
+					require.True(t, ok, "expected *ValidationError, got %T", err)
 					foundError := false
 					for _, fieldErr := range ve.Errors {
 						if fieldErr.Field == "Value" && fieldErr.Message == "must match pattern '^[A-Z]{3}$'" {
 							foundError = true
 						}
 					}
-					if !foundError {
-						t.Errorf("expected 'must match pattern' error, got %v", ve.Errors)
-					}
+					assert.True(t, foundError, "expected 'must match pattern' error, got %v", ve.Errors)
 				} else {
-					if err != nil {
-						t.Errorf("unexpected error: %v", err)
-					}
-					if code.Value != tt.expectVal {
-						t.Errorf("expected value %q, got %q", tt.expectVal, code.Value)
-					}
+					assert.NoError(t, err)
+					assert.Equal(t, tt.expectVal, code.Value)
 				}
 			}
 		})
@@ -321,16 +267,10 @@ func TestRegex_DigitsPattern(t *testing.T) {
 			code, err := validator.Unmarshal([]byte(tt.json))
 
 			if tt.expectErr {
-				if err == nil {
-					t.Fatal("expected validation error")
-				}
+				assert.Error(t, err)
 			} else {
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-				if code.Value != tt.expectVal {
-					t.Errorf("expected value %q, got %q", tt.expectVal, code.Value)
-				}
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectVal, code.Value)
 			}
 		})
 	}
@@ -369,32 +309,23 @@ func TestIPv4(t *testing.T) {
 				server, err := validator.Unmarshal([]byte(tt.json))
 
 				if tt.expectErr {
-					if err == nil {
-						t.Fatal("expected validation error")
-					}
+					require.Error(t, err)
 					ve, ok := err.(*ValidationError)
-					if !ok {
-						t.Fatalf("expected *ValidationError, got %T", err)
-					}
+					require.True(t, ok, "expected *ValidationError, got %T", err)
 					foundError := false
 					for _, fieldErr := range ve.Errors {
 						if fieldErr.Field == "IP" && fieldErr.Message == "must be a valid IPv4 address" {
 							foundError = true
 						}
 					}
-					if !foundError {
-						t.Errorf("expected 'must be a valid IPv4 address' error, got %v", ve.Errors)
-					}
+					assert.True(t, foundError, "expected 'must be a valid IPv4 address' error, got %v", ve.Errors)
 				} else {
-					if err != nil {
-						t.Errorf("unexpected error: %v", err)
-					}
+					assert.NoError(t, err)
 					if tt.expectNil {
-						if server.IP != nil {
-							t.Errorf("expected nil IP pointer, got %v", server.IP)
-						}
-					} else if server.IP == nil || *server.IP != tt.expectVal {
-						t.Errorf("expected ip %q, got %v", tt.expectVal, server.IP)
+						assert.Nil(t, server.IP)
+					} else {
+						require.NotNil(t, server.IP)
+						assert.Equal(t, tt.expectVal, *server.IP)
 					}
 				}
 			} else {
@@ -405,29 +336,19 @@ func TestIPv4(t *testing.T) {
 				server, err := validator.Unmarshal([]byte(tt.json))
 
 				if tt.expectErr {
-					if err == nil {
-						t.Fatal("expected validation error")
-					}
+					require.Error(t, err)
 					ve, ok := err.(*ValidationError)
-					if !ok {
-						t.Fatalf("expected *ValidationError, got %T", err)
-					}
+					require.True(t, ok, "expected *ValidationError, got %T", err)
 					foundError := false
 					for _, fieldErr := range ve.Errors {
 						if fieldErr.Field == "IP" && fieldErr.Message == "must be a valid IPv4 address" {
 							foundError = true
 						}
 					}
-					if !foundError {
-						t.Errorf("expected 'must be a valid IPv4 address' error, got %v", ve.Errors)
-					}
+					assert.True(t, foundError, "expected 'must be a valid IPv4 address' error, got %v", ve.Errors)
 				} else {
-					if err != nil {
-						t.Errorf("unexpected error: %v", err)
-					}
-					if server.IP != tt.expectVal {
-						t.Errorf("expected ip %q, got %q", tt.expectVal, server.IP)
-					}
+					assert.NoError(t, err)
+					assert.Equal(t, tt.expectVal, server.IP)
 				}
 			}
 		})
@@ -468,32 +389,23 @@ func TestIPv6(t *testing.T) {
 				server, err := validator.Unmarshal([]byte(tt.json))
 
 				if tt.expectErr {
-					if err == nil {
-						t.Fatal("expected validation error")
-					}
+					require.Error(t, err)
 					ve, ok := err.(*ValidationError)
-					if !ok {
-						t.Fatalf("expected *ValidationError, got %T", err)
-					}
+					require.True(t, ok, "expected *ValidationError, got %T", err)
 					foundError := false
 					for _, fieldErr := range ve.Errors {
 						if fieldErr.Field == "IP" && fieldErr.Message == "must be a valid IPv6 address" {
 							foundError = true
 						}
 					}
-					if !foundError {
-						t.Errorf("expected 'must be a valid IPv6 address' error, got %v", ve.Errors)
-					}
+					assert.True(t, foundError, "expected 'must be a valid IPv6 address' error, got %v", ve.Errors)
 				} else {
-					if err != nil {
-						t.Errorf("unexpected error: %v", err)
-					}
+					assert.NoError(t, err)
 					if tt.expectNil {
-						if server.IP != nil {
-							t.Errorf("expected nil IP pointer, got %v", server.IP)
-						}
-					} else if server.IP == nil || *server.IP != tt.expectVal {
-						t.Errorf("expected ip %q, got %v", tt.expectVal, server.IP)
+						assert.Nil(t, server.IP)
+					} else {
+						require.NotNil(t, server.IP)
+						assert.Equal(t, tt.expectVal, *server.IP)
 					}
 				}
 			} else {
@@ -504,29 +416,19 @@ func TestIPv6(t *testing.T) {
 				server, err := validator.Unmarshal([]byte(tt.json))
 
 				if tt.expectErr {
-					if err == nil {
-						t.Fatal("expected validation error")
-					}
+					require.Error(t, err)
 					ve, ok := err.(*ValidationError)
-					if !ok {
-						t.Fatalf("expected *ValidationError, got %T", err)
-					}
+					require.True(t, ok, "expected *ValidationError, got %T", err)
 					foundError := false
 					for _, fieldErr := range ve.Errors {
 						if fieldErr.Field == "IP" && fieldErr.Message == "must be a valid IPv6 address" {
 							foundError = true
 						}
 					}
-					if !foundError {
-						t.Errorf("expected 'must be a valid IPv6 address' error, got %v", ve.Errors)
-					}
+					assert.True(t, foundError, "expected 'must be a valid IPv6 address' error, got %v", ve.Errors)
 				} else {
-					if err != nil {
-						t.Errorf("unexpected error: %v", err)
-					}
-					if server.IP != tt.expectVal {
-						t.Errorf("expected ip %q, got %q", tt.expectVal, server.IP)
-					}
+					assert.NoError(t, err)
+					assert.Equal(t, tt.expectVal, server.IP)
 				}
 			}
 		})
@@ -638,18 +540,10 @@ func TestMinLength(t *testing.T) {
 					validator := New[UserMin1]()
 					_, err := validator.Unmarshal([]byte(tt.json))
 
-					if tt.expectErr && err == nil {
-						t.Fatal("expected validation error, got none")
-					}
-					if !tt.expectErr && err != nil {
-						t.Errorf("expected no error, got %v", err)
-					}
-
 					if tt.expectErr {
+						require.Error(t, err)
 						ve, ok := err.(*ValidationError)
-						if !ok {
-							t.Fatalf("expected *ValidationError, got %T", err)
-						}
+						require.True(t, ok, "expected *ValidationError, got %T", err)
 						expectedMsg := "must be at least 1 characters"
 						foundError := false
 						for _, fieldErr := range ve.Errors {
@@ -658,32 +552,18 @@ func TestMinLength(t *testing.T) {
 								break
 							}
 						}
-						if !foundError {
-							t.Errorf("expected error message %q, got %v", expectedMsg, ve.Errors)
-						}
+						assert.True(t, foundError, "expected error message %q, got %v", expectedMsg, ve.Errors)
+					} else {
+						assert.NoError(t, err)
 					}
 				} else {
 					validator := New[User]()
 					user, err := validator.Unmarshal([]byte(tt.json))
 
-					if tt.expectErr && err == nil {
-						t.Fatal("expected validation error, got none")
-					}
-					if !tt.expectErr && err != nil {
-						t.Errorf("expected no error, got %v", err)
-					}
-
-					if !tt.expectErr {
-						if user.Username != tt.expectVal {
-							t.Errorf("expected value %q, got %q", tt.expectVal, user.Username)
-						}
-					}
-
 					if tt.expectErr {
+						require.Error(t, err)
 						ve, ok := err.(*ValidationError)
-						if !ok {
-							t.Fatalf("expected *ValidationError, got %T", err)
-						}
+						require.True(t, ok, "expected *ValidationError, got %T", err)
 						expectedMsg := "must be at least 3 characters"
 						foundError := false
 						for _, fieldErr := range ve.Errors {
@@ -692,9 +572,10 @@ func TestMinLength(t *testing.T) {
 								break
 							}
 						}
-						if !foundError {
-							t.Errorf("expected error message %q, got %v", expectedMsg, ve.Errors)
-						}
+						assert.True(t, foundError, "expected error message %q, got %v", expectedMsg, ve.Errors)
+					} else {
+						assert.NoError(t, err)
+						assert.Equal(t, tt.expectVal, user.Username)
 					}
 				}
 			} else {
@@ -706,30 +587,10 @@ func TestMinLength(t *testing.T) {
 				validator := New[User]()
 				user, err := validator.Unmarshal([]byte(tt.json))
 
-				if tt.expectErr && err == nil {
-					t.Fatal("expected validation error, got none")
-				}
-				if !tt.expectErr && err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
-
-				if !tt.expectErr {
-					if tt.expectNil {
-						if user.Bio != nil {
-							t.Errorf("expected nil pointer, got %v", user.Bio)
-						}
-					} else {
-						if user.Bio == nil || *user.Bio != tt.expectVal {
-							t.Errorf("expected value %q, got %v", tt.expectVal, user.Bio)
-						}
-					}
-				}
-
 				if tt.expectErr {
+					require.Error(t, err)
 					ve, ok := err.(*ValidationError)
-					if !ok {
-						t.Fatalf("expected *ValidationError, got %T", err)
-					}
+					require.True(t, ok, "expected *ValidationError, got %T", err)
 					expectedMsg := "must be at least 10 characters"
 					foundError := false
 					for _, fieldErr := range ve.Errors {
@@ -738,8 +599,14 @@ func TestMinLength(t *testing.T) {
 							break
 						}
 					}
-					if !foundError {
-						t.Errorf("expected error message %q, got %v", expectedMsg, ve.Errors)
+					assert.True(t, foundError, "expected error message %q, got %v", expectedMsg, ve.Errors)
+				} else {
+					assert.NoError(t, err)
+					if tt.expectNil {
+						assert.Nil(t, user.Bio)
+					} else {
+						require.NotNil(t, user.Bio)
+						assert.Equal(t, tt.expectVal, *user.Bio)
 					}
 				}
 			}
@@ -887,24 +754,10 @@ func TestMaxLength(t *testing.T) {
 					validator := New[UserWithPassword]()
 					user, err := validator.Unmarshal([]byte(tt.json))
 
-					if tt.expectErr && err == nil {
-						t.Fatal("expected validation error, got none")
-					}
-					if !tt.expectErr && err != nil {
-						t.Errorf("expected no error, got %v", err)
-					}
-
-					if !tt.expectErr {
-						if user.Password != tt.expectVal {
-							t.Errorf("expected value %q, got %q", tt.expectVal, user.Password)
-						}
-					}
-
 					if tt.expectErr {
+						require.Error(t, err)
 						ve, ok := err.(*ValidationError)
-						if !ok {
-							t.Fatalf("expected *ValidationError, got %T", err)
-						}
+						require.True(t, ok, "expected *ValidationError, got %T", err)
 						foundError := false
 						for _, fieldErr := range ve.Errors {
 							if fieldErr.Field == "Password" {
@@ -912,9 +765,10 @@ func TestMaxLength(t *testing.T) {
 								break
 							}
 						}
-						if !foundError {
-							t.Errorf("expected error for Password field, got %v", ve.Errors)
-						}
+						assert.True(t, foundError, "expected error for Password field, got %v", ve.Errors)
+					} else {
+						assert.NoError(t, err)
+						assert.Equal(t, tt.expectVal, user.Password)
 					}
 				} else {
 					// Max-only tests - use Username field with only max constraint
@@ -930,24 +784,10 @@ func TestMaxLength(t *testing.T) {
 						validator := New[UserMax5]()
 						user, err := validator.Unmarshal([]byte(tt.json))
 
-						if tt.expectErr && err == nil {
-							t.Fatal("expected validation error, got none")
-						}
-						if !tt.expectErr && err != nil {
-							t.Errorf("expected no error, got %v", err)
-						}
-
-						if !tt.expectErr {
-							if user.Username != tt.expectVal {
-								t.Errorf("expected value %q, got %q", tt.expectVal, user.Username)
-							}
-						}
-
 						if tt.expectErr {
+							require.Error(t, err)
 							ve, ok := err.(*ValidationError)
-							if !ok {
-								t.Fatalf("expected *ValidationError, got %T", err)
-							}
+							require.True(t, ok, "expected *ValidationError, got %T", err)
 							expectedMsg := fmt.Sprintf("must be at most %d characters", tt.maxVal)
 							foundError := false
 							for _, fieldErr := range ve.Errors {
@@ -956,32 +796,19 @@ func TestMaxLength(t *testing.T) {
 									break
 								}
 							}
-							if !foundError {
-								t.Errorf("expected error message %q, got %v", expectedMsg, ve.Errors)
-							}
+							assert.True(t, foundError, "expected error message %q, got %v", expectedMsg, ve.Errors)
+						} else {
+							assert.NoError(t, err)
+							assert.Equal(t, tt.expectVal, user.Username)
 						}
 					} else {
 						validator := New[UserWithUsername]()
 						user, err := validator.Unmarshal([]byte(tt.json))
 
-						if tt.expectErr && err == nil {
-							t.Fatal("expected validation error, got none")
-						}
-						if !tt.expectErr && err != nil {
-							t.Errorf("expected no error, got %v", err)
-						}
-
-						if !tt.expectErr {
-							if user.Username != tt.expectVal {
-								t.Errorf("expected value %q, got %q", tt.expectVal, user.Username)
-							}
-						}
-
 						if tt.expectErr {
+							require.Error(t, err)
 							ve, ok := err.(*ValidationError)
-							if !ok {
-								t.Fatalf("expected *ValidationError, got %T", err)
-							}
+							require.True(t, ok, "expected *ValidationError, got %T", err)
 							expectedMsg := fmt.Sprintf("must be at most %d characters", tt.maxVal)
 							foundError := false
 							for _, fieldErr := range ve.Errors {
@@ -990,9 +817,10 @@ func TestMaxLength(t *testing.T) {
 									break
 								}
 							}
-							if !foundError {
-								t.Errorf("expected error message %q, got %v", expectedMsg, ve.Errors)
-							}
+							assert.True(t, foundError, "expected error message %q, got %v", expectedMsg, ve.Errors)
+						} else {
+							assert.NoError(t, err)
+							assert.Equal(t, tt.expectVal, user.Username)
 						}
 					}
 				}
@@ -1005,30 +833,10 @@ func TestMaxLength(t *testing.T) {
 				validator := New[User]()
 				user, err := validator.Unmarshal([]byte(tt.json))
 
-				if tt.expectErr && err == nil {
-					t.Fatal("expected validation error, got none")
-				}
-				if !tt.expectErr && err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
-
-				if !tt.expectErr {
-					if tt.expectNil {
-						if user.Bio != nil {
-							t.Errorf("expected nil pointer, got %v", user.Bio)
-						}
-					} else {
-						if user.Bio == nil || *user.Bio != tt.expectVal {
-							t.Errorf("expected value %q, got %v", tt.expectVal, user.Bio)
-						}
-					}
-				}
-
 				if tt.expectErr {
+					require.Error(t, err)
 					ve, ok := err.(*ValidationError)
-					if !ok {
-						t.Fatalf("expected *ValidationError, got %T", err)
-					}
+					require.True(t, ok, "expected *ValidationError, got %T", err)
 					expectedMsg := "must be at most 20 characters"
 					foundError := false
 					for _, fieldErr := range ve.Errors {
@@ -1037,8 +845,14 @@ func TestMaxLength(t *testing.T) {
 							break
 						}
 					}
-					if !foundError {
-						t.Errorf("expected error message %q, got %v", expectedMsg, ve.Errors)
+					assert.True(t, foundError, "expected error message %q, got %v", expectedMsg, ve.Errors)
+				} else {
+					assert.NoError(t, err)
+					if tt.expectNil {
+						assert.Nil(t, user.Bio)
+					} else {
+						require.NotNil(t, user.Bio)
+						assert.Equal(t, tt.expectVal, *user.Bio)
 					}
 				}
 			}
@@ -1154,14 +968,10 @@ func TestGt(t *testing.T) {
 				product, err := validator.Unmarshal(jsonData)
 
 				if tt.expectErr {
-					if err == nil {
-						t.Fatalf("expected validation error, got nil")
-					}
+					require.Error(t, err)
 
 					ve, ok := err.(*ValidationError)
-					if !ok {
-						t.Fatalf("expected *ValidationError, got %T", err)
-					}
+					require.True(t, ok, "expected *ValidationError, got %T", err)
 
 					foundError := false
 					for _, fieldErr := range ve.Errors {
@@ -1171,17 +981,10 @@ func TestGt(t *testing.T) {
 						}
 					}
 
-					if !foundError {
-						t.Errorf("expected error message %q, got %v", tt.expectErrMsg, ve.Errors)
-					}
+					assert.True(t, foundError, "expected error message %q, got %v", tt.expectErrMsg, ve.Errors)
 				} else {
-					if err != nil {
-						t.Errorf("expected no errors, got %v", err)
-					}
-
-					if product.Stock != tt.expectVal.(int) {
-						t.Errorf("expected %v, got %v", tt.expectVal, product.Stock)
-					}
+					assert.NoError(t, err)
+					assert.Equal(t, tt.expectVal.(int), product.Stock)
 				}
 
 			case "float64":
@@ -1194,14 +997,10 @@ func TestGt(t *testing.T) {
 				product, err := validator.Unmarshal(jsonData)
 
 				if tt.expectErr {
-					if err == nil {
-						t.Fatalf("expected validation error, got nil")
-					}
+					require.Error(t, err)
 
 					ve, ok := err.(*ValidationError)
-					if !ok {
-						t.Fatalf("expected *ValidationError, got %T", err)
-					}
+					require.True(t, ok, "expected *ValidationError, got %T", err)
 
 					foundError := false
 					for _, fieldErr := range ve.Errors {
@@ -1211,17 +1010,10 @@ func TestGt(t *testing.T) {
 						}
 					}
 
-					if !foundError {
-						t.Errorf("expected error message %q, got %v", tt.expectErrMsg, ve.Errors)
-					}
+					assert.True(t, foundError, "expected error message %q, got %v", tt.expectErrMsg, ve.Errors)
 				} else {
-					if err != nil {
-						t.Errorf("expected no errors, got %v", err)
-					}
-
-					if product.Price != tt.expectVal.(float64) {
-						t.Errorf("expected %v, got %v", tt.expectVal, product.Price)
-					}
+					assert.NoError(t, err)
+					assert.Equal(t, tt.expectVal.(float64), product.Price)
 				}
 
 			case "uint":
@@ -1234,14 +1026,10 @@ func TestGt(t *testing.T) {
 				config, err := validator.Unmarshal(jsonData)
 
 				if tt.expectErr {
-					if err == nil {
-						t.Fatalf("expected validation error, got nil")
-					}
+					require.Error(t, err)
 
 					ve, ok := err.(*ValidationError)
-					if !ok {
-						t.Fatalf("expected *ValidationError, got %T", err)
-					}
+					require.True(t, ok, "expected *ValidationError, got %T", err)
 
 					foundError := false
 					for _, fieldErr := range ve.Errors {
@@ -1251,17 +1039,10 @@ func TestGt(t *testing.T) {
 						}
 					}
 
-					if !foundError {
-						t.Errorf("expected error message %q, got %v", tt.expectErrMsg, ve.Errors)
-					}
+					assert.True(t, foundError, "expected error message %q, got %v", tt.expectErrMsg, ve.Errors)
 				} else {
-					if err != nil {
-						t.Errorf("expected no errors, got %v", err)
-					}
-
-					if config.Port != tt.expectVal.(uint) {
-						t.Errorf("expected %v, got %v", tt.expectVal, config.Port)
-					}
+					assert.NoError(t, err)
+					assert.Equal(t, tt.expectVal.(uint), config.Port)
 				}
 
 			case "intPtr":
@@ -1274,14 +1055,10 @@ func TestGt(t *testing.T) {
 				product, err := validator.Unmarshal(jsonData)
 
 				if tt.expectErr {
-					if err == nil {
-						t.Fatalf("expected validation error, got nil")
-					}
+					require.Error(t, err)
 
 					ve, ok := err.(*ValidationError)
-					if !ok {
-						t.Fatalf("expected *ValidationError, got %T", err)
-					}
+					require.True(t, ok, "expected *ValidationError, got %T", err)
 
 					foundError := false
 					for _, fieldErr := range ve.Errors {
@@ -1291,24 +1068,15 @@ func TestGt(t *testing.T) {
 						}
 					}
 
-					if !foundError {
-						t.Errorf("expected error message %q, got %v", tt.expectErrMsg, ve.Errors)
-					}
+					assert.True(t, foundError, "expected error message %q, got %v", tt.expectErrMsg, ve.Errors)
 				} else {
-					if err != nil {
-						t.Errorf("expected no errors, got %v", err)
-					}
+					assert.NoError(t, err)
 
 					if tt.expectNil {
-						if product.Stock != nil {
-							t.Errorf("expected nil pointer, got %v", product.Stock)
-						}
+						assert.Nil(t, product.Stock)
 					} else {
-						if product.Stock == nil {
-							t.Errorf("expected non-nil pointer, got nil")
-						} else if *product.Stock != tt.expectVal.(int) {
-							t.Errorf("expected %v, got %v", tt.expectVal, *product.Stock)
-						}
+						require.NotNil(t, product.Stock)
+						assert.Equal(t, tt.expectVal.(int), *product.Stock)
 					}
 				}
 			}
@@ -1358,14 +1126,10 @@ func TestGe(t *testing.T) {
 			product, err := validator.Unmarshal(tt.jsonData)
 
 			if tt.expectError {
-				if err == nil {
-					t.Fatal("expected validation error, got none")
-				}
+				require.Error(t, err)
 
 				ve, ok := err.(*ValidationError)
-				if !ok {
-					t.Fatalf("expected *ValidationError, got %T", err)
-				}
+				require.True(t, ok, "expected *ValidationError, got %T", err)
 
 				foundError := false
 				for _, fieldErr := range ve.Errors {
@@ -1375,17 +1139,10 @@ func TestGe(t *testing.T) {
 					}
 				}
 
-				if !foundError {
-					t.Errorf("expected error message %q, got %v", tt.expectedMessage, ve.Errors)
-				}
+				assert.True(t, foundError, "expected error message %q, got %v", tt.expectedMessage, ve.Errors)
 			} else {
-				if err != nil {
-					t.Errorf("expected no errors, got %v", err)
-				}
-
-				if product.Stock != tt.expectedValue {
-					t.Errorf("expected stock %d, got %d", tt.expectedValue, product.Stock)
-				}
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedValue, product.Stock)
 			}
 		})
 	}
@@ -1432,14 +1189,10 @@ func TestLt(t *testing.T) {
 			product, err := validator.Unmarshal(tt.jsonData)
 
 			if tt.expectedErr {
-				if err == nil {
-					t.Fatal("expected validation error, got nil")
-				}
+				require.Error(t, err)
 
 				ve, ok := err.(*ValidationError)
-				if !ok {
-					t.Fatalf("expected *ValidationError, got %T", err)
-				}
+				require.True(t, ok, "expected *ValidationError, got %T", err)
 
 				foundError := false
 				for _, fieldErr := range ve.Errors {
@@ -1448,17 +1201,10 @@ func TestLt(t *testing.T) {
 					}
 				}
 
-				if !foundError {
-					t.Errorf("expected 'must be less than 100' error, got %v", ve.Errors)
-				}
+				assert.True(t, foundError, "expected 'must be less than 100' error, got %v", ve.Errors)
 			} else {
-				if err != nil {
-					t.Errorf("expected no errors, got %v", err)
-				}
-
-				if product.Discount != tt.expectedVal {
-					t.Errorf("expected discount %d, got %d", tt.expectedVal, product.Discount)
-				}
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedVal, product.Discount)
 			}
 		})
 	}
@@ -1505,14 +1251,10 @@ func TestLe(t *testing.T) {
 			product, err := validator.Unmarshal(tt.jsonData)
 
 			if tt.expectedErr {
-				if err == nil {
-					t.Fatal("expected validation error, got nil")
-				}
+				require.Error(t, err)
 
 				ve, ok := err.(*ValidationError)
-				if !ok {
-					t.Fatalf("expected *ValidationError, got %T", err)
-				}
+				require.True(t, ok, "expected *ValidationError, got %T", err)
 
 				foundError := false
 				for _, fieldErr := range ve.Errors {
@@ -1521,17 +1263,10 @@ func TestLe(t *testing.T) {
 					}
 				}
 
-				if !foundError {
-					t.Errorf("expected 'must be at most 100' error, got %v", ve.Errors)
-				}
+				assert.True(t, foundError, "expected 'must be at most 100' error, got %v", ve.Errors)
 			} else {
-				if err != nil {
-					t.Errorf("expected no errors, got %v", err)
-				}
-
-				if product.Discount != tt.expectedVal {
-					t.Errorf("expected discount %d, got %d", tt.expectedVal, product.Discount)
-				}
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedVal, product.Discount)
 			}
 		})
 	}
@@ -1616,12 +1351,8 @@ func TestEnum(t *testing.T) {
 				}
 				validator := New[User]()
 				user, err := validator.Unmarshal([]byte(tt.json))
-				if err != nil {
-					t.Errorf("expected no errors for valid enum value, got %v", err)
-				}
-				if user.Role != "admin" {
-					t.Errorf("expected role 'admin', got %s", user.Role)
-				}
+				assert.NoError(t, err)
+				assert.Equal(t, "admin", user.Role)
 
 			case "string_invalid":
 				type User struct {
@@ -1629,22 +1360,16 @@ func TestEnum(t *testing.T) {
 				}
 				validator := New[User]()
 				_, err := validator.Unmarshal([]byte(tt.json))
-				if err == nil {
-					t.Error("expected validation error for invalid enum value")
-				}
+				require.Error(t, err)
 				ve, ok := err.(*ValidationError)
-				if !ok {
-					t.Fatalf("expected *ValidationError, got %T", err)
-				}
+				require.True(t, ok, "expected *ValidationError, got %T", err)
 				foundError := false
 				for _, fieldErr := range ve.Errors {
 					if fieldErr.Field == tt.errorField && fieldErr.Message == tt.errorMsg {
 						foundError = true
 					}
 				}
-				if !foundError {
-					t.Errorf("expected error field=%s msg=%s, got %v", tt.errorField, tt.errorMsg, ve.Errors)
-				}
+				assert.True(t, foundError, "expected error field=%s msg=%s, got %v", tt.errorField, tt.errorMsg, ve.Errors)
 
 			case "int_valid":
 				type Status struct {
@@ -1652,12 +1377,8 @@ func TestEnum(t *testing.T) {
 				}
 				validator := New[Status]()
 				status, err := validator.Unmarshal([]byte(tt.json))
-				if err != nil {
-					t.Errorf("expected no errors for valid enum value, got %v", err)
-				}
-				if status.Code != 200 {
-					t.Errorf("expected code 200, got %d", status.Code)
-				}
+				assert.NoError(t, err)
+				assert.Equal(t, 200, status.Code)
 
 			case "int_invalid":
 				type Status struct {
@@ -1665,22 +1386,16 @@ func TestEnum(t *testing.T) {
 				}
 				validator := New[Status]()
 				_, err := validator.Unmarshal([]byte(tt.json))
-				if err == nil {
-					t.Error("expected validation error for invalid enum value")
-				}
+				require.Error(t, err)
 				ve, ok := err.(*ValidationError)
-				if !ok {
-					t.Fatalf("expected *ValidationError, got %T", err)
-				}
+				require.True(t, ok, "expected *ValidationError, got %T", err)
 				foundError := false
 				for _, fieldErr := range ve.Errors {
 					if fieldErr.Field == tt.errorField && fieldErr.Message == tt.errorMsg {
 						foundError = true
 					}
 				}
-				if !foundError {
-					t.Errorf("expected error field=%s msg=%s, got %v", tt.errorField, tt.errorMsg, ve.Errors)
-				}
+				assert.True(t, foundError, "expected error field=%s msg=%s, got %v", tt.errorField, tt.errorMsg, ve.Errors)
 
 			case "slice":
 				type Config struct {
@@ -1688,25 +1403,17 @@ func TestEnum(t *testing.T) {
 				}
 				validator := New[Config]()
 				_, err := validator.Unmarshal([]byte(tt.json))
-				if err == nil {
-					t.Fatal("expected validation error, got nil")
-				}
+				require.Error(t, err)
 				ve, ok := err.(*ValidationError)
-				if !ok {
-					t.Fatalf("expected *ValidationError, got %T", err)
-				}
-				if len(ve.Errors) != 1 {
-					t.Errorf("expected 1 validation error, got %d: %v", len(ve.Errors), ve.Errors)
-				}
+				require.True(t, ok, "expected *ValidationError, got %T", err)
+				assert.Len(t, ve.Errors, 1)
 				foundError := false
 				for _, fieldErr := range ve.Errors {
 					if fieldErr.Field == tt.errorField && fieldErr.Message == tt.errorMsg {
 						foundError = true
 					}
 				}
-				if !foundError {
-					t.Errorf("expected error at field=%s, got %v", tt.errorField, ve.Errors)
-				}
+				assert.True(t, foundError, "expected error at field=%s, got %v", tt.errorField, ve.Errors)
 
 			case "map":
 				type Config struct {
@@ -1714,25 +1421,17 @@ func TestEnum(t *testing.T) {
 				}
 				validator := New[Config]()
 				_, err := validator.Unmarshal([]byte(tt.json))
-				if err == nil {
-					t.Fatal("expected validation error, got nil")
-				}
+				require.Error(t, err)
 				ve, ok := err.(*ValidationError)
-				if !ok {
-					t.Fatalf("expected *ValidationError, got %T", err)
-				}
-				if len(ve.Errors) != 1 {
-					t.Errorf("expected 1 validation error, got %d: %v", len(ve.Errors), ve.Errors)
-				}
+				require.True(t, ok, "expected *ValidationError, got %T", err)
+				assert.Len(t, ve.Errors, 1)
 				foundError := false
 				for _, fieldErr := range ve.Errors {
 					if fieldErr.Field == tt.errorField && fieldErr.Message == tt.errorMsg {
 						foundError = true
 					}
 				}
-				if !foundError {
-					t.Errorf("expected error at field=%s, got %v", tt.errorField, ve.Errors)
-				}
+				assert.True(t, foundError, "expected error at field=%s, got %v", tt.errorField, ve.Errors)
 
 			case "schema":
 				type User struct {
@@ -1742,13 +1441,9 @@ func TestEnum(t *testing.T) {
 				schema := validator.Schema()
 
 				roleProp, ok := schema.Properties.Get("role")
-				if !ok || roleProp == nil {
-					t.Fatal("expected 'role' property to exist")
-				}
+				require.True(t, ok && roleProp != nil, "expected 'role' property to exist")
 
-				if len(roleProp.Enum) != 3 {
-					t.Errorf("expected 3 enum values, got %d", len(roleProp.Enum))
-				}
+				assert.Len(t, roleProp.Enum, 3)
 
 				expectedValues := map[string]bool{"admin": false, "user": false, "guest": false}
 				for _, val := range roleProp.Enum {
@@ -1763,9 +1458,7 @@ func TestEnum(t *testing.T) {
 				}
 
 				for val, found := range expectedValues {
-					if !found {
-						t.Errorf("expected enum value '%s' not found", val)
-					}
+					assert.True(t, found, "expected enum value '%s' not found", val)
 				}
 			}
 		})
