@@ -107,161 +107,97 @@ func TestURL(t *testing.T) {
 // uuid constraint tests
 // ==================================================
 
-func TestUUID_Valid_V4(t *testing.T) {
-	type Entity struct {
-		ID string `json:"id" pedantigo:"uuid"`
+func TestUUID(t *testing.T) {
+	tests := []struct {
+		name       string
+		json       string
+		usePointer bool
+		expectErr  bool
+		expectVal  string
+		expectNil  bool
+	}{
+		{"Valid V4", `{"id":"550e8400-e29b-41d4-a716-446655440000"}`, false, false, "550e8400-e29b-41d4-a716-446655440000", false},
+		{"Valid V5", `{"id":"886313e1-3b8a-5372-9b90-0c9aee199e5d"}`, false, false, "886313e1-3b8a-5372-9b90-0c9aee199e5d", false},
+		{"Invalid format", `{"id":"not-a-uuid"}`, false, true, "", false},
+		{"Wrong dashes", `{"id":"550e8400e29b41d4a716446655440000"}`, false, true, "", false},
+		{"Empty string", `{"id":""}`, false, false, "", false},
+		{"Pointer invalid", `{"id":"not-a-uuid"}`, true, true, "", false},
+		{"Pointer valid", `{"id":"550e8400-e29b-41d4-a716-446655440000"}`, true, false, "550e8400-e29b-41d4-a716-446655440000", false},
+		{"Nil pointer", `{"id":null}`, true, false, "", true},
 	}
 
-	validator := New[Entity]()
-	jsonData := []byte(`{"id":"550e8400-e29b-41d4-a716-446655440000"}`)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.usePointer {
+				type Entity struct {
+					ID *string `json:"id" pedantigo:"uuid"`
+				}
+				validator := New[Entity]()
+				entity, err := validator.Unmarshal([]byte(tt.json))
 
-	entity, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for valid UUID v4, got %v", err)
-	}
+				if tt.expectErr {
+					if err == nil {
+						t.Fatal("expected validation error")
+					}
+					ve, ok := err.(*ValidationError)
+					if !ok {
+						t.Fatalf("expected *ValidationError, got %T", err)
+					}
+					foundError := false
+					for _, fieldErr := range ve.Errors {
+						if fieldErr.Field == "ID" && fieldErr.Message == "must be a valid UUID" {
+							foundError = true
+						}
+					}
+					if !foundError {
+						t.Errorf("expected 'must be a valid UUID' error, got %v", ve.Errors)
+					}
+				} else {
+					if err != nil {
+						t.Errorf("unexpected error: %v", err)
+					}
+					if tt.expectNil {
+						if entity.ID != nil {
+							t.Errorf("expected nil ID pointer, got %v", entity.ID)
+						}
+					} else if entity.ID == nil || *entity.ID != tt.expectVal {
+						t.Errorf("expected id %q, got %v", tt.expectVal, entity.ID)
+					}
+				}
+			} else {
+				type Entity struct {
+					ID string `json:"id" pedantigo:"uuid"`
+				}
+				validator := New[Entity]()
+				entity, err := validator.Unmarshal([]byte(tt.json))
 
-	if entity.ID != "550e8400-e29b-41d4-a716-446655440000" {
-		t.Errorf("expected id '550e8400-e29b-41d4-a716-446655440000', got %q", entity.ID)
-	}
-}
-
-func TestUUID_Valid_V5(t *testing.T) {
-	type Entity struct {
-		ID string `json:"id" pedantigo:"uuid"`
-	}
-
-	validator := New[Entity]()
-	jsonData := []byte(`{"id":"886313e1-3b8a-5372-9b90-0c9aee199e5d"}`)
-
-	entity, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for valid UUID v5, got %v", err)
-	}
-
-	if entity.ID != "886313e1-3b8a-5372-9b90-0c9aee199e5d" {
-		t.Errorf("expected id '886313e1-3b8a-5372-9b90-0c9aee199e5d', got %q", entity.ID)
-	}
-}
-
-func TestUUID_InvalidFormat(t *testing.T) {
-	type Entity struct {
-		ID string `json:"id" pedantigo:"uuid"`
-	}
-
-	validator := New[Entity]()
-	jsonData := []byte(`{"id":"not-a-uuid"}`)
-
-	_, err := validator.Unmarshal(jsonData)
-	if err == nil {
-		t.Fatal("expected validation error for invalid UUID format")
-	}
-
-	ve, ok := err.(*ValidationError)
-	if !ok {
-		t.Fatalf("expected *ValidationError, got %T", err)
-	}
-
-	foundError := false
-	for _, fieldErr := range ve.Errors {
-		if fieldErr.Field == "ID" && fieldErr.Message == "must be a valid UUID" {
-			foundError = true
-		}
-	}
-
-	if !foundError {
-		t.Errorf("expected 'must be a valid UUID' error, got %v", ve.Errors)
-	}
-}
-
-func TestUUID_InvalidFormat_WrongDashes(t *testing.T) {
-	type Entity struct {
-		ID string `json:"id" pedantigo:"uuid"`
-	}
-
-	validator := New[Entity]()
-	jsonData := []byte(`{"id":"550e8400e29b41d4a716446655440000"}`)
-
-	_, err := validator.Unmarshal(jsonData)
-	if err == nil {
-		t.Fatal("expected validation error for UUID without dashes")
-	}
-
-	ve, ok := err.(*ValidationError)
-	if !ok {
-		t.Fatalf("expected *ValidationError, got %T", err)
-	}
-
-	foundError := false
-	for _, fieldErr := range ve.Errors {
-		if fieldErr.Field == "ID" && fieldErr.Message == "must be a valid UUID" {
-			foundError = true
-		}
-	}
-
-	if !foundError {
-		t.Errorf("expected 'must be a valid UUID' error, got %v", ve.Errors)
-	}
-}
-
-func TestUUID_EmptyString(t *testing.T) {
-	type Entity struct {
-		ID string `json:"id" pedantigo:"uuid"`
-	}
-
-	validator := New[Entity]()
-	jsonData := []byte(`{"id":""}`)
-
-	entity, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for empty UUID (validation skips empty), got %v", err)
-	}
-
-	if entity.ID != "" {
-		t.Errorf("expected empty id, got %q", entity.ID)
-	}
-}
-
-func TestUUID_WithPointer(t *testing.T) {
-	type Entity struct {
-		ID *string `json:"id" pedantigo:"uuid"`
-	}
-
-	validator := New[Entity]()
-
-	// Test invalid UUID
-	jsonData := []byte(`{"id":"not-a-uuid"}`)
-	_, err := validator.Unmarshal(jsonData)
-	if err == nil {
-		t.Fatal("expected validation error for invalid UUID with pointer")
-	}
-
-	// Test valid UUID
-	jsonData = []byte(`{"id":"550e8400-e29b-41d4-a716-446655440000"}`)
-	entity, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for valid UUID with pointer, got %v", err)
-	}
-
-	if entity.ID == nil || *entity.ID != "550e8400-e29b-41d4-a716-446655440000" {
-		t.Errorf("expected id '550e8400-e29b-41d4-a716-446655440000', got %v", entity.ID)
-	}
-}
-
-func TestUUID_NilPointer(t *testing.T) {
-	type Entity struct {
-		ID *string `json:"id" pedantigo:"uuid"`
-	}
-
-	validator := New[Entity]()
-	jsonData := []byte(`{"id":null}`)
-
-	entity, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for nil pointer (validation skips nil), got %v", err)
-	}
-
-	if entity.ID != nil {
-		t.Errorf("expected nil ID pointer, got %v", entity.ID)
+				if tt.expectErr {
+					if err == nil {
+						t.Fatal("expected validation error")
+					}
+					ve, ok := err.(*ValidationError)
+					if !ok {
+						t.Fatalf("expected *ValidationError, got %T", err)
+					}
+					foundError := false
+					for _, fieldErr := range ve.Errors {
+						if fieldErr.Field == "ID" && fieldErr.Message == "must be a valid UUID" {
+							foundError = true
+						}
+					}
+					if !foundError {
+						t.Errorf("expected 'must be a valid UUID' error, got %v", ve.Errors)
+					}
+				} else {
+					if err != nil {
+						t.Errorf("unexpected error: %v", err)
+					}
+					if entity.ID != tt.expectVal {
+						t.Errorf("expected id %q, got %q", tt.expectVal, entity.ID)
+					}
+				}
+			}
+		})
 	}
 }
 
