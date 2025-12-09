@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SmrutAI/Pedantigo/internal/tags"
 	"github.com/SmrutAI/Pedantigo/schema"
 	"github.com/invopop/jsonschema"
 )
@@ -36,7 +37,7 @@ func (v *Validator[T]) Schema() *jsonschema.Schema {
 	actualSchema := schema.GenerateBaseSchema[T]()
 
 	// Enhance schema with our custom constraints
-	schema.EnhanceSchema(actualSchema, v.typ, parseTag)
+	schema.EnhanceSchema(actualSchema, v.typ, tags.ParseTag)
 
 	// Cache result
 	v.cachedSchema = actualSchema
@@ -84,7 +85,7 @@ func (v *Validator[T]) enhanceSchema(schema *jsonschema.Schema, typ reflect.Type
 		}
 
 		// Parse validation constraints
-		constraints := parseTag(field.Tag)
+		constraints := tags.ParseTag(field.Tag)
 		if constraints == nil {
 			// No constraints, but check for nested structs/slices/maps
 			v.enhanceNestedTypes(fieldSchema, field.Type)

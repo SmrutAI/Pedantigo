@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/SmrutAI/Pedantigo/internal/constraints"
+	"github.com/SmrutAI/Pedantigo/internal/tags"
 	"github.com/invopop/jsonschema"
 )
 
@@ -113,7 +114,7 @@ func (v *Validator[T]) buildFieldDeserializers(typ reflect.Type) {
 		}
 
 		// Parse validation constraints
-		constraints := parseTag(field.Tag)
+		constraints := tags.ParseTag(field.Tag)
 
 		// Safety check: panic if default tags are used when StrictMissingFields is disabled
 		if constraints != nil && !v.options.StrictMissingFields {
@@ -248,7 +249,7 @@ func (v *Validator[T]) buildCrossFieldConstraints(typ reflect.Type) {
 		}
 
 		// Parse pedantigo validation constraints
-		constraintsMap := parseTag(field.Tag)
+		constraintsMap := tags.ParseTag(field.Tag)
 		if constraintsMap == nil {
 			continue
 		}
@@ -598,7 +599,7 @@ func (v *Validator[T]) validateValue(val reflect.Value, path string) []FieldErro
 		}
 
 		// Parse validation tags
-		constraintsMap := parseTag(field.Tag)
+		constraintsMap := tags.ParseTag(field.Tag)
 		if constraintsMap == nil {
 			// No validation tags, but still check nested structs, slices, and maps
 			if fieldValue.Kind() == reflect.Struct {

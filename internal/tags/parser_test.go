@@ -1,4 +1,4 @@
-package pedantigo
+package tags
 
 import (
 	"reflect"
@@ -7,7 +7,7 @@ import (
 
 func TestParseTag_Required(t *testing.T) {
 	tag := reflect.StructTag(`pedantigo:"required"`)
-	constraints := parseTag(tag)
+	constraints := ParseTag(tag)
 
 	if constraints == nil {
 		t.Fatal("expected constraints map, got nil")
@@ -20,7 +20,7 @@ func TestParseTag_Required(t *testing.T) {
 
 func TestParseTag_Email(t *testing.T) {
 	tag := reflect.StructTag(`pedantigo:"required,email"`)
-	constraints := parseTag(tag)
+	constraints := ParseTag(tag)
 
 	if constraints == nil {
 		t.Fatal("expected constraints map, got nil")
@@ -37,7 +37,7 @@ func TestParseTag_Email(t *testing.T) {
 
 func TestParseTag_MinMax(t *testing.T) {
 	tag := reflect.StructTag(`pedantigo:"min=18,max=120"`)
-	constraints := parseTag(tag)
+	constraints := ParseTag(tag)
 
 	if constraints == nil {
 		t.Fatal("expected constraints map, got nil")
@@ -54,7 +54,7 @@ func TestParseTag_MinMax(t *testing.T) {
 
 func TestParseTag_Default(t *testing.T) {
 	tag := reflect.StructTag(`pedantigo:"default=active"`)
-	constraints := parseTag(tag)
+	constraints := ParseTag(tag)
 
 	if constraints == nil {
 		t.Fatal("expected constraints map, got nil")
@@ -67,7 +67,7 @@ func TestParseTag_Default(t *testing.T) {
 
 func TestParseTag_NoValidateTag(t *testing.T) {
 	tag := reflect.StructTag(`json:"email"`)
-	constraints := parseTag(tag)
+	constraints := ParseTag(tag)
 
 	if len(constraints) > 0 {
 		t.Errorf("expected empty constraints for tag without validate, got %v", constraints)

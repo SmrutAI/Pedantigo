@@ -1,14 +1,14 @@
-package pedantigo
+package tags
 
 import (
 	"reflect"
 	"strings"
 )
 
-// parseTag parses a struct tag and returns constraints
+// ParseTag parses a struct tag and returns constraints
 // Example: pedantigo:"required,email,min=18" -> map{"required": "", "email": "", "min": "18"}
 // Special handling for oneof which has space-separated values: oneof=admin user guest
-func parseTag(tag reflect.StructTag) map[string]string {
+func ParseTag(tag reflect.StructTag) map[string]string {
 	validateTag := tag.Get("pedantigo")
 	if validateTag == "" {
 		return nil
