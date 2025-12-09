@@ -94,6 +94,18 @@ if err != nil {
 }
 ```
 
+**Important**: `Validate()` works on Go structs, not JSON data. It **cannot distinguish between "missing" and "zero value"** because Go initializes all struct fields to their zero values (`0`, `false`, `""`).
+
+- For `int` fields: `0` is indistinguishable from "not set"
+- For `bool` fields: `false` is indistinguishable from "not set"
+- For `string` fields: `""` is indistinguishable from "not set"
+
+**If you need to detect missing fields**, use `Unmarshal()` instead, which parses JSON and can distinguish between:
+- `{"age": 0}` (age explicitly set to 0)
+- `{}` (age missing from JSON)
+
+Alternatively, use pointer types (`*int`, `*bool`, `*string`) where `nil` indicates "not set".
+
 ### Available Constraints
 
 | Constraint | Description | Example |

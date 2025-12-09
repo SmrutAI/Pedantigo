@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SmrutAI/Pedantigo/schema"
 	"github.com/invopop/jsonschema"
 )
 
@@ -31,34 +32,11 @@ func (v *Validator[T]) Schema() *jsonschema.Schema {
 		return v.cachedSchema
 	}
 
-	// Generate base schema using jsonschema library
-	// Create a zero value instance of T for reflection
-	var zero T
-	reflector := jsonschema.Reflector{
-		ExpandedStruct: true, // Expand root struct inline
-		DoNotReference: true, // Inline ALL nested structs without creating $ref
-	}
-	baseSchema := reflector.Reflect(zero)
-
-	// If the schema is a reference, unwrap it and return the actual definition
-	actualSchema := baseSchema
-	if baseSchema.Properties == nil && len(baseSchema.Definitions) > 0 {
-		// The jsonschema library creates a reference schema with definitions
-		// Find the actual struct schema in the definitions
-		for _, def := range baseSchema.Definitions {
-			if def.Type == "object" && def.Properties != nil {
-				actualSchema = def
-				break
-			}
-		}
-	}
-
-	// Clear the required fields set by jsonschema library
-	// We'll add our own based on pedantigo:"required" tags
-	actualSchema.Required = nil
+	// Generate base schema using schema package
+	actualSchema := schema.GenerateBaseSchema[T]()
 
 	// Enhance schema with our custom constraints
-	v.enhanceSchema(actualSchema, v.typ)
+	schema.EnhanceSchema(actualSchema, v.typ, parseTag)
 
 	// Cache result
 	v.cachedSchema = actualSchema

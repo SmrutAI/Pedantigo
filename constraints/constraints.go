@@ -1,4 +1,5 @@
-package pedantigo
+// Package constraints provides validation constraint types and builders for pedantigo.
+package constraints
 
 import (
 	"fmt"
@@ -10,8 +11,8 @@ import (
 	"strings"
 )
 
-// constraint represents a validation constraint
-type constraint interface {
+// Constraint represents a validation constraint
+type Constraint interface {
 	Validate(value any) error
 }
 
@@ -568,9 +569,9 @@ func (c defaultConstraint) Validate(value any) error {
 	return nil // No-op for validation
 }
 
-// buildConstraints creates constraint instances from parsed tag map
-func buildConstraints(constraints map[string]string, fieldType reflect.Type) []constraint {
-	var result []constraint
+// BuildConstraints creates constraint instances from parsed tag map
+func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []Constraint {
+	var result []Constraint
 
 	for name, value := range constraints {
 		switch name {

@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/SmrutAI/Pedantigo/constraints"
 	"github.com/invopop/jsonschema"
 )
 
@@ -43,6 +44,9 @@ type Validator[T any] struct {
 	options            ValidatorOptions
 	fieldDeserializers map[string]fieldDeserializer
 
+	// Cross-field validation constraints
+	fieldCrossConstraints map[string][]constraints.CrossFieldConstraint
+
 	// Schema caching (lazy initialization with double-checked locking)
 	schemaMu          sync.RWMutex
 	cachedSchema      *jsonschema.Schema // Schema() result
@@ -62,13 +66,17 @@ func New[T any](opts ...ValidatorOptions) *Validator[T] {
 	}
 
 	validator := &Validator[T]{
-		typ:                typ,
-		options:            options,
-		fieldDeserializers: make(map[string]fieldDeserializer),
+		typ:                   typ,
+		options:               options,
+		fieldDeserializers:    make(map[string]fieldDeserializer),
+		fieldCrossConstraints: make(map[string][]constraints.CrossFieldConstraint),
 	}
 
 	// Build field deserializers at creation time (fail-fast)
 	validator.buildFieldDeserializers(typ)
+
+	// Build cross-field constraints at creation time (fail-fast)
+	validator.buildCrossFieldConstraints(typ)
 
 	return validator
 }
@@ -218,6 +226,39 @@ func (v *Validator[T]) validateDefaultMethod(structType reflect.Type, methodName
 	}
 
 	return nil
+}
+
+// buildCrossFieldConstraints builds cross-field constraints for all struct fields
+func (v *Validator[T]) buildCrossFieldConstraints(typ reflect.Type) {
+	// Handle pointer types
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+
+	if typ.Kind() != reflect.Struct {
+		return
+	}
+
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+
+		// Skip unexported fields
+		if !field.IsExported() {
+			continue
+		}
+
+		// Parse pedantigo validation constraints
+		constraintsMap := parseTag(field.Tag)
+		if constraintsMap == nil {
+			continue
+		}
+
+		// Build cross-field constraints for this field (use struct field name, not JSON name)
+		crossConstraints := constraints.BuildCrossFieldConstraintsForField(constraintsMap, typ, i)
+		if len(crossConstraints) > 0 {
+			v.fieldCrossConstraints[field.Name] = crossConstraints
+		}
+	}
 }
 
 // setFieldValue sets a field value from a JSON value
@@ -472,6 +513,31 @@ func (v *Validator[T]) Validate(obj *T) error {
 	// Validate all fields using struct tags (required is skipped via buildConstraints)
 	errors = append(errors, v.validateValue(reflect.ValueOf(obj).Elem(), "")...)
 
+	// Run cross-field validation
+	structValue := reflect.ValueOf(obj).Elem()
+	for fieldName, crossConstraints := range v.fieldCrossConstraints {
+		// Get field value by struct field name
+		field := structValue.FieldByName(fieldName)
+		if !field.IsValid() {
+			continue
+		}
+		fieldValue := field.Interface()
+
+		// Run each cross-field constraint
+		for _, constraint := range crossConstraints {
+			if err := constraint.ValidateCrossField(fieldValue, structValue, fieldName); err != nil {
+				if valErr, ok := err.(*ValidationError); ok {
+					errors = append(errors, valErr.Errors...)
+				} else {
+					errors = append(errors, FieldError{
+						Field:   fieldName,
+						Message: err.Error(),
+					})
+				}
+			}
+		}
+	}
+
 	// Then, check if struct implements Validatable for cross-field validation
 	if validatable, ok := any(obj).(Validatable); ok {
 		if err := validatable.Validate(); err != nil {
@@ -532,8 +598,8 @@ func (v *Validator[T]) validateValue(val reflect.Value, path string) []FieldErro
 		}
 
 		// Parse validation tags
-		constraints := parseTag(field.Tag)
-		if constraints == nil {
+		constraintsMap := parseTag(field.Tag)
+		if constraintsMap == nil {
 			// No validation tags, but still check nested structs, slices, and maps
 			if fieldValue.Kind() == reflect.Struct {
 				errors = append(errors, v.validateValue(fieldValue, fieldPath)...)
@@ -565,7 +631,7 @@ func (v *Validator[T]) validateValue(val reflect.Value, path string) []FieldErro
 		// This is needed because nested structs in slices are deserialized via json.Unmarshal
 		// which bypasses our custom required field checking in Unmarshal()
 		if path != "" && v.options.StrictMissingFields {
-			if _, hasRequired := constraints["required"]; hasRequired {
+			if _, hasRequired := constraintsMap["required"]; hasRequired {
 				// Check if field is zero value (indicates it was missing from JSON)
 				if fieldValue.IsZero() {
 					errors = append(errors, FieldError{
@@ -579,8 +645,8 @@ func (v *Validator[T]) validateValue(val reflect.Value, path string) []FieldErro
 			}
 		}
 
-		// Build constraint validators (required is already skipped in buildConstraints)
-		validators := buildConstraints(constraints, field.Type)
+		// Build constraint validators (required is already skipped in BuildConstraints)
+		validators := constraints.BuildConstraints(constraintsMap, field.Type)
 
 		// For slices, validate each element instead of the slice itself
 		if fieldValue.Kind() == reflect.Slice {
