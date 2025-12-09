@@ -8,191 +8,98 @@ import (
 // url constraint tests
 // ==================================================
 
-func TestURL_Valid(t *testing.T) {
-	type Config struct {
-		Website string `json:"website" pedantigo:"url"`
+func TestURL(t *testing.T) {
+	tests := []struct {
+		name       string
+		json       string
+		usePointer bool
+		expectErr  bool
+		expectVal  string
+		expectNil  bool
+	}{
+		{"Valid HTTPS", `{"website":"https://example.com"}`, false, false, "https://example.com", false},
+		{"Valid HTTP", `{"website":"http://example.com"}`, false, false, "http://example.com", false},
+		{"Invalid format", `{"website":"not a url"}`, false, true, "", false},
+		{"No scheme", `{"website":"example.com"}`, false, true, "", false},
+		{"FTP scheme", `{"website":"ftp://example.com"}`, false, true, "", false},
+		{"Empty string", `{"website":""}`, false, false, "", false},
+		{"Pointer invalid", `{"website":"not a url"}`, true, true, "", false},
+		{"Pointer valid", `{"website":"https://example.com"}`, true, false, "https://example.com", false},
+		{"Nil pointer", `{"website":null}`, true, false, "", true},
 	}
 
-	validator := New[Config]()
-	jsonData := []byte(`{"website":"https://example.com"}`)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.usePointer {
+				type Config struct {
+					Website *string `json:"website" pedantigo:"url"`
+				}
+				validator := New[Config]()
+				config, err := validator.Unmarshal([]byte(tt.json))
 
-	config, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for valid URL, got %v", err)
-	}
+				if tt.expectErr {
+					if err == nil {
+						t.Fatal("expected validation error")
+					}
+					ve, ok := err.(*ValidationError)
+					if !ok {
+						t.Fatalf("expected *ValidationError, got %T", err)
+					}
+					foundError := false
+					for _, fieldErr := range ve.Errors {
+						if fieldErr.Field == "Website" && fieldErr.Message == "must be a valid URL (http or https)" {
+							foundError = true
+						}
+					}
+					if !foundError {
+						t.Errorf("expected 'must be a valid URL (http or https)' error, got %v", ve.Errors)
+					}
+				} else {
+					if err != nil {
+						t.Errorf("unexpected error: %v", err)
+					}
+					if tt.expectNil {
+						if config.Website != nil {
+							t.Errorf("expected nil Website pointer, got %v", config.Website)
+						}
+					} else if config.Website == nil || *config.Website != tt.expectVal {
+						t.Errorf("expected website %q, got %v", tt.expectVal, config.Website)
+					}
+				}
+			} else {
+				type Config struct {
+					Website string `json:"website" pedantigo:"url"`
+				}
+				validator := New[Config]()
+				config, err := validator.Unmarshal([]byte(tt.json))
 
-	if config.Website != "https://example.com" {
-		t.Errorf("expected website 'https://example.com', got %q", config.Website)
-	}
-}
-
-func TestURL_ValidHTTP(t *testing.T) {
-	type Config struct {
-		Website string `json:"website" pedantigo:"url"`
-	}
-
-	validator := New[Config]()
-	jsonData := []byte(`{"website":"http://example.com"}`)
-
-	config, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for valid HTTP URL, got %v", err)
-	}
-
-	if config.Website != "http://example.com" {
-		t.Errorf("expected website 'http://example.com', got %q", config.Website)
-	}
-}
-
-func TestURL_InvalidFormat(t *testing.T) {
-	type Config struct {
-		Website string `json:"website" pedantigo:"url"`
-	}
-
-	validator := New[Config]()
-	jsonData := []byte(`{"website":"not a url"}`)
-
-	_, err := validator.Unmarshal(jsonData)
-	if err == nil {
-		t.Fatal("expected validation error for invalid URL format")
-	}
-
-	ve, ok := err.(*ValidationError)
-	if !ok {
-		t.Fatalf("expected *ValidationError, got %T", err)
-	}
-
-	foundError := false
-	for _, fieldErr := range ve.Errors {
-		if fieldErr.Field == "Website" && fieldErr.Message == "must be a valid URL (http or https)" {
-			foundError = true
-		}
-	}
-
-	if !foundError {
-		t.Errorf("expected 'must be a valid URL (http or https)' error, got %v", ve.Errors)
-	}
-}
-
-func TestURL_NoScheme(t *testing.T) {
-	type Config struct {
-		Website string `json:"website" pedantigo:"url"`
-	}
-
-	validator := New[Config]()
-	jsonData := []byte(`{"website":"example.com"}`)
-
-	_, err := validator.Unmarshal(jsonData)
-	if err == nil {
-		t.Fatal("expected validation error for URL without scheme")
-	}
-
-	ve, ok := err.(*ValidationError)
-	if !ok {
-		t.Fatalf("expected *ValidationError, got %T", err)
-	}
-
-	foundError := false
-	for _, fieldErr := range ve.Errors {
-		if fieldErr.Field == "Website" && fieldErr.Message == "must be a valid URL (http or https)" {
-			foundError = true
-		}
-	}
-
-	if !foundError {
-		t.Errorf("expected 'must be a valid URL (http or https)' error, got %v", ve.Errors)
-	}
-}
-
-func TestURL_FTPScheme(t *testing.T) {
-	type Config struct {
-		Website string `json:"website" pedantigo:"url"`
-	}
-
-	validator := New[Config]()
-	jsonData := []byte(`{"website":"ftp://example.com"}`)
-
-	_, err := validator.Unmarshal(jsonData)
-	if err == nil {
-		t.Fatal("expected validation error for FTP URL (only http/https allowed)")
-	}
-
-	ve, ok := err.(*ValidationError)
-	if !ok {
-		t.Fatalf("expected *ValidationError, got %T", err)
-	}
-
-	foundError := false
-	for _, fieldErr := range ve.Errors {
-		if fieldErr.Field == "Website" && fieldErr.Message == "must be a valid URL (http or https)" {
-			foundError = true
-		}
-	}
-
-	if !foundError {
-		t.Errorf("expected 'must be a valid URL (http or https)' error, got %v", ve.Errors)
-	}
-}
-
-func TestURL_EmptyString(t *testing.T) {
-	type Config struct {
-		Website string `json:"website" pedantigo:"url"`
-	}
-
-	validator := New[Config]()
-	jsonData := []byte(`{"website":""}`)
-
-	config, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for empty URL (validation skips empty), got %v", err)
-	}
-
-	if config.Website != "" {
-		t.Errorf("expected empty website, got %q", config.Website)
-	}
-}
-
-func TestURL_WithPointer(t *testing.T) {
-	type Config struct {
-		Website *string `json:"website" pedantigo:"url"`
-	}
-
-	validator := New[Config]()
-
-	// Test invalid URL
-	jsonData := []byte(`{"website":"not a url"}`)
-	_, err := validator.Unmarshal(jsonData)
-	if err == nil {
-		t.Fatal("expected validation error for invalid URL with pointer")
-	}
-
-	// Test valid URL
-	jsonData = []byte(`{"website":"https://example.com"}`)
-	config, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for valid URL with pointer, got %v", err)
-	}
-
-	if config.Website == nil || *config.Website != "https://example.com" {
-		t.Errorf("expected website 'https://example.com', got %v", config.Website)
-	}
-}
-
-func TestURL_NilPointer(t *testing.T) {
-	type Config struct {
-		Website *string `json:"website" pedantigo:"url"`
-	}
-
-	validator := New[Config]()
-	jsonData := []byte(`{"website":null}`)
-
-	config, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for nil pointer (validation skips nil), got %v", err)
-	}
-
-	if config.Website != nil {
-		t.Errorf("expected nil Website pointer, got %v", config.Website)
+				if tt.expectErr {
+					if err == nil {
+						t.Fatal("expected validation error")
+					}
+					ve, ok := err.(*ValidationError)
+					if !ok {
+						t.Fatalf("expected *ValidationError, got %T", err)
+					}
+					foundError := false
+					for _, fieldErr := range ve.Errors {
+						if fieldErr.Field == "Website" && fieldErr.Message == "must be a valid URL (http or https)" {
+							foundError = true
+						}
+					}
+					if !foundError {
+						t.Errorf("expected 'must be a valid URL (http or https)' error, got %v", ve.Errors)
+					}
+				} else {
+					if err != nil {
+						t.Errorf("unexpected error: %v", err)
+					}
+					if config.Website != tt.expectVal {
+						t.Errorf("expected website %q, got %q", tt.expectVal, config.Website)
+					}
+				}
+			}
+		})
 	}
 }
 
