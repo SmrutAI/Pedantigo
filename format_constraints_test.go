@@ -337,161 +337,97 @@ func TestRegex_DigitsPattern(t *testing.T) {
 // ipv4 constraint tests
 // ==================================================
 
-func TestIPv4_Valid_Localhost(t *testing.T) {
-	type Server struct {
-		IP string `json:"ip" pedantigo:"ipv4"`
+func TestIPv4(t *testing.T) {
+	tests := []struct {
+		name       string
+		json       string
+		usePointer bool
+		expectErr  bool
+		expectVal  string
+		expectNil  bool
+	}{
+		{"Valid localhost", `{"ip":"127.0.0.1"}`, false, false, "127.0.0.1", false},
+		{"Valid private", `{"ip":"192.168.1.1"}`, false, false, "192.168.1.1", false},
+		{"Invalid format", `{"ip":"not-an-ip"}`, false, true, "", false},
+		{"Invalid IPv6", `{"ip":"2001:0db8:85a3::8a2e:0370:7334"}`, false, true, "", false},
+		{"Empty string", `{"ip":""}`, false, false, "", false},
+		{"Pointer invalid", `{"ip":"not-an-ip"}`, true, true, "", false},
+		{"Pointer valid", `{"ip":"10.0.0.1"}`, true, false, "10.0.0.1", false},
+		{"Nil pointer", `{"ip":null}`, true, false, "", true},
 	}
 
-	validator := New[Server]()
-	jsonData := []byte(`{"ip":"127.0.0.1"}`)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.usePointer {
+				type Server struct {
+					IP *string `json:"ip" pedantigo:"ipv4"`
+				}
+				validator := New[Server]()
+				server, err := validator.Unmarshal([]byte(tt.json))
 
-	server, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for valid IPv4 localhost, got %v", err)
-	}
+				if tt.expectErr {
+					if err == nil {
+						t.Fatal("expected validation error")
+					}
+					ve, ok := err.(*ValidationError)
+					if !ok {
+						t.Fatalf("expected *ValidationError, got %T", err)
+					}
+					foundError := false
+					for _, fieldErr := range ve.Errors {
+						if fieldErr.Field == "IP" && fieldErr.Message == "must be a valid IPv4 address" {
+							foundError = true
+						}
+					}
+					if !foundError {
+						t.Errorf("expected 'must be a valid IPv4 address' error, got %v", ve.Errors)
+					}
+				} else {
+					if err != nil {
+						t.Errorf("unexpected error: %v", err)
+					}
+					if tt.expectNil {
+						if server.IP != nil {
+							t.Errorf("expected nil IP pointer, got %v", server.IP)
+						}
+					} else if server.IP == nil || *server.IP != tt.expectVal {
+						t.Errorf("expected ip %q, got %v", tt.expectVal, server.IP)
+					}
+				}
+			} else {
+				type Server struct {
+					IP string `json:"ip" pedantigo:"ipv4"`
+				}
+				validator := New[Server]()
+				server, err := validator.Unmarshal([]byte(tt.json))
 
-	if server.IP != "127.0.0.1" {
-		t.Errorf("expected ip '127.0.0.1', got %q", server.IP)
-	}
-}
-
-func TestIPv4_Valid_PrivateNetwork(t *testing.T) {
-	type Server struct {
-		IP string `json:"ip" pedantigo:"ipv4"`
-	}
-
-	validator := New[Server]()
-	jsonData := []byte(`{"ip":"192.168.1.1"}`)
-
-	server, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for valid private IPv4, got %v", err)
-	}
-
-	if server.IP != "192.168.1.1" {
-		t.Errorf("expected ip '192.168.1.1', got %q", server.IP)
-	}
-}
-
-func TestIPv4_InvalidFormat(t *testing.T) {
-	type Server struct {
-		IP string `json:"ip" pedantigo:"ipv4"`
-	}
-
-	validator := New[Server]()
-	jsonData := []byte(`{"ip":"not-an-ip"}`)
-
-	_, err := validator.Unmarshal(jsonData)
-	if err == nil {
-		t.Fatal("expected validation error for invalid IPv4 format")
-	}
-
-	ve, ok := err.(*ValidationError)
-	if !ok {
-		t.Fatalf("expected *ValidationError, got %T", err)
-	}
-
-	foundError := false
-	for _, fieldErr := range ve.Errors {
-		if fieldErr.Field == "IP" && fieldErr.Message == "must be a valid IPv4 address" {
-			foundError = true
-		}
-	}
-
-	if !foundError {
-		t.Errorf("expected 'must be a valid IPv4 address' error, got %v", ve.Errors)
-	}
-}
-
-func TestIPv4_InvalidIPv6(t *testing.T) {
-	type Server struct {
-		IP string `json:"ip" pedantigo:"ipv4"`
-	}
-
-	validator := New[Server]()
-	jsonData := []byte(`{"ip":"2001:0db8:85a3::8a2e:0370:7334"}`)
-
-	_, err := validator.Unmarshal(jsonData)
-	if err == nil {
-		t.Fatal("expected validation error for IPv6 (not IPv4)")
-	}
-
-	ve, ok := err.(*ValidationError)
-	if !ok {
-		t.Fatalf("expected *ValidationError, got %T", err)
-	}
-
-	foundError := false
-	for _, fieldErr := range ve.Errors {
-		if fieldErr.Field == "IP" && fieldErr.Message == "must be a valid IPv4 address" {
-			foundError = true
-		}
-	}
-
-	if !foundError {
-		t.Errorf("expected 'must be a valid IPv4 address' error, got %v", ve.Errors)
-	}
-}
-
-func TestIPv4_EmptyString(t *testing.T) {
-	type Server struct {
-		IP string `json:"ip" pedantigo:"ipv4"`
-	}
-
-	validator := New[Server]()
-	jsonData := []byte(`{"ip":""}`)
-
-	server, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for empty IP (validation skips empty), got %v", err)
-	}
-
-	if server.IP != "" {
-		t.Errorf("expected empty ip, got %q", server.IP)
-	}
-}
-
-func TestIPv4_WithPointer(t *testing.T) {
-	type Server struct {
-		IP *string `json:"ip" pedantigo:"ipv4"`
-	}
-
-	validator := New[Server]()
-
-	// Test invalid IP
-	jsonData := []byte(`{"ip":"not-an-ip"}`)
-	_, err := validator.Unmarshal(jsonData)
-	if err == nil {
-		t.Fatal("expected validation error for invalid IPv4 with pointer")
-	}
-
-	// Test valid IP
-	jsonData = []byte(`{"ip":"10.0.0.1"}`)
-	server, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for valid IPv4 with pointer, got %v", err)
-	}
-
-	if server.IP == nil || *server.IP != "10.0.0.1" {
-		t.Errorf("expected ip '10.0.0.1', got %v", server.IP)
-	}
-}
-
-func TestIPv4_NilPointer(t *testing.T) {
-	type Server struct {
-		IP *string `json:"ip" pedantigo:"ipv4"`
-	}
-
-	validator := New[Server]()
-	jsonData := []byte(`{"ip":null}`)
-
-	server, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for nil pointer (validation skips nil), got %v", err)
-	}
-
-	if server.IP != nil {
-		t.Errorf("expected nil IP pointer, got %v", server.IP)
+				if tt.expectErr {
+					if err == nil {
+						t.Fatal("expected validation error")
+					}
+					ve, ok := err.(*ValidationError)
+					if !ok {
+						t.Fatalf("expected *ValidationError, got %T", err)
+					}
+					foundError := false
+					for _, fieldErr := range ve.Errors {
+						if fieldErr.Field == "IP" && fieldErr.Message == "must be a valid IPv4 address" {
+							foundError = true
+						}
+					}
+					if !foundError {
+						t.Errorf("expected 'must be a valid IPv4 address' error, got %v", ve.Errors)
+					}
+				} else {
+					if err != nil {
+						t.Errorf("unexpected error: %v", err)
+					}
+					if server.IP != tt.expectVal {
+						t.Errorf("expected ip %q, got %q", tt.expectVal, server.IP)
+					}
+				}
+			}
+		})
 	}
 }
 
