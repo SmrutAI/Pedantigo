@@ -1048,3 +1048,56 @@ func recursiveSetFuncNoop(fieldValue reflect.Value, inValue any, fieldType refle
 func recursiveSetDefault(fieldValue reflect.Value, defaultValue string) {
 	SetDefaultValue(fieldValue, defaultValue, recursiveSetDefault)
 }
+
+// ==================== isValidConversion Tests ====================
+
+func Test_isValidConversion(t *testing.T) {
+	tests := []struct {
+		name     string
+		from     reflect.Type
+		to       reflect.Type
+		expected bool
+	}{
+		// Numeric to numeric conversions - should be allowed
+		{name: "int to int64", from: reflect.TypeOf(int(0)), to: reflect.TypeOf(int64(0)), expected: true},
+		{name: "int32 to int", from: reflect.TypeOf(int32(0)), to: reflect.TypeOf(int(0)), expected: true},
+		{name: "uint to uint64", from: reflect.TypeOf(uint(0)), to: reflect.TypeOf(uint64(0)), expected: true},
+		{name: "int to float64", from: reflect.TypeOf(int(0)), to: reflect.TypeOf(float64(0)), expected: true},
+		{name: "float32 to float64", from: reflect.TypeOf(float32(0)), to: reflect.TypeOf(float64(0)), expected: true},
+		{name: "uint8 to int16", from: reflect.TypeOf(uint8(0)), to: reflect.TypeOf(int16(0)), expected: true},
+
+		// Numeric to string conversions - should be blocked (would convert to rune)
+		{name: "int to string blocked", from: reflect.TypeOf(int(0)), to: reflect.TypeOf(""), expected: false},
+		{name: "int64 to string blocked", from: reflect.TypeOf(int64(0)), to: reflect.TypeOf(""), expected: false},
+		{name: "uint to string blocked", from: reflect.TypeOf(uint(0)), to: reflect.TypeOf(""), expected: false},
+		{name: "float64 to string blocked", from: reflect.TypeOf(float64(0)), to: reflect.TypeOf(""), expected: false},
+
+		// String to numeric conversions - should be blocked (panics at runtime)
+		{name: "string to int blocked", from: reflect.TypeOf(""), to: reflect.TypeOf(int(0)), expected: false},
+		{name: "string to int64 blocked", from: reflect.TypeOf(""), to: reflect.TypeOf(int64(0)), expected: false},
+		{name: "string to uint blocked", from: reflect.TypeOf(""), to: reflect.TypeOf(uint(0)), expected: false},
+		{name: "string to float64 blocked", from: reflect.TypeOf(""), to: reflect.TypeOf(float64(0)), expected: false},
+
+		// Same kind conversions - should be allowed
+		{name: "string to string", from: reflect.TypeOf(""), to: reflect.TypeOf(""), expected: true},
+		{name: "bool to bool", from: reflect.TypeOf(false), to: reflect.TypeOf(false), expected: true},
+		{name: "slice to slice", from: reflect.TypeOf([]int{}), to: reflect.TypeOf([]int{}), expected: true},
+		{name: "map to map", from: reflect.TypeOf(map[string]int{}), to: reflect.TypeOf(map[string]int{}), expected: true},
+
+		// Different non-numeric kinds - should be blocked
+		{name: "string to bool blocked", from: reflect.TypeOf(""), to: reflect.TypeOf(false), expected: false},
+		{name: "bool to string blocked", from: reflect.TypeOf(false), to: reflect.TypeOf(""), expected: false},
+		{name: "slice to map blocked", from: reflect.TypeOf([]int{}), to: reflect.TypeOf(map[string]int{}), expected: false},
+		{name: "struct to string blocked", from: reflect.TypeOf(struct{}{}), to: reflect.TypeOf(""), expected: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isValidConversion(tt.from, tt.to)
+			if result != tt.expected {
+				t.Errorf("isValidConversion(%v, %v) = %v, expected %v",
+					tt.from, tt.to, result, tt.expected)
+			}
+		})
+	}
+}
