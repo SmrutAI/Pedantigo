@@ -435,178 +435,97 @@ func TestIPv4(t *testing.T) {
 // ipv6 constraint tests
 // ==================================================
 
-func TestIPv6_Valid_Localhost(t *testing.T) {
-	type Server struct {
-		IP string `json:"ip" pedantigo:"ipv6"`
+func TestIPv6(t *testing.T) {
+	tests := []struct {
+		name       string
+		json       string
+		usePointer bool
+		expectErr  bool
+		expectVal  string
+		expectNil  bool
+	}{
+		{"Valid localhost", `{"ip":"::1"}`, false, false, "::1", false},
+		{"Valid full", `{"ip":"2001:0db8:85a3:0000:0000:8a2e:0370:7334"}`, false, false, "2001:0db8:85a3:0000:0000:8a2e:0370:7334", false},
+		{"Valid compressed", `{"ip":"2001:db8:85a3::8a2e:370:7334"}`, false, false, "2001:db8:85a3::8a2e:370:7334", false},
+		{"Invalid format", `{"ip":"not-an-ip"}`, false, true, "", false},
+		{"Invalid IPv4", `{"ip":"192.168.1.1"}`, false, true, "", false},
+		{"Empty string", `{"ip":""}`, false, false, "", false},
+		{"Pointer invalid", `{"ip":"not-an-ip"}`, true, true, "", false},
+		{"Pointer valid", `{"ip":"fe80::1"}`, true, false, "fe80::1", false},
+		{"Nil pointer", `{"ip":null}`, true, false, "", true},
 	}
 
-	validator := New[Server]()
-	jsonData := []byte(`{"ip":"::1"}`)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.usePointer {
+				type Server struct {
+					IP *string `json:"ip" pedantigo:"ipv6"`
+				}
+				validator := New[Server]()
+				server, err := validator.Unmarshal([]byte(tt.json))
 
-	server, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for valid IPv6 localhost, got %v", err)
-	}
+				if tt.expectErr {
+					if err == nil {
+						t.Fatal("expected validation error")
+					}
+					ve, ok := err.(*ValidationError)
+					if !ok {
+						t.Fatalf("expected *ValidationError, got %T", err)
+					}
+					foundError := false
+					for _, fieldErr := range ve.Errors {
+						if fieldErr.Field == "IP" && fieldErr.Message == "must be a valid IPv6 address" {
+							foundError = true
+						}
+					}
+					if !foundError {
+						t.Errorf("expected 'must be a valid IPv6 address' error, got %v", ve.Errors)
+					}
+				} else {
+					if err != nil {
+						t.Errorf("unexpected error: %v", err)
+					}
+					if tt.expectNil {
+						if server.IP != nil {
+							t.Errorf("expected nil IP pointer, got %v", server.IP)
+						}
+					} else if server.IP == nil || *server.IP != tt.expectVal {
+						t.Errorf("expected ip %q, got %v", tt.expectVal, server.IP)
+					}
+				}
+			} else {
+				type Server struct {
+					IP string `json:"ip" pedantigo:"ipv6"`
+				}
+				validator := New[Server]()
+				server, err := validator.Unmarshal([]byte(tt.json))
 
-	if server.IP != "::1" {
-		t.Errorf("expected ip '::1', got %q", server.IP)
-	}
-}
-
-func TestIPv6_Valid_FullFormat(t *testing.T) {
-	type Server struct {
-		IP string `json:"ip" pedantigo:"ipv6"`
-	}
-
-	validator := New[Server]()
-	jsonData := []byte(`{"ip":"2001:0db8:85a3:0000:0000:8a2e:0370:7334"}`)
-
-	server, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for valid IPv6 full format, got %v", err)
-	}
-
-	if server.IP != "2001:0db8:85a3:0000:0000:8a2e:0370:7334" {
-		t.Errorf("expected ip '2001:0db8:85a3:0000:0000:8a2e:0370:7334', got %q", server.IP)
-	}
-}
-
-func TestIPv6_Valid_Compressed(t *testing.T) {
-	type Server struct {
-		IP string `json:"ip" pedantigo:"ipv6"`
-	}
-
-	validator := New[Server]()
-	jsonData := []byte(`{"ip":"2001:db8:85a3::8a2e:370:7334"}`)
-
-	server, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for valid IPv6 compressed format, got %v", err)
-	}
-
-	if server.IP != "2001:db8:85a3::8a2e:370:7334" {
-		t.Errorf("expected ip '2001:db8:85a3::8a2e:370:7334', got %q", server.IP)
-	}
-}
-
-func TestIPv6_InvalidFormat(t *testing.T) {
-	type Server struct {
-		IP string `json:"ip" pedantigo:"ipv6"`
-	}
-
-	validator := New[Server]()
-	jsonData := []byte(`{"ip":"not-an-ip"}`)
-
-	_, err := validator.Unmarshal(jsonData)
-	if err == nil {
-		t.Fatal("expected validation error for invalid IPv6 format")
-	}
-
-	ve, ok := err.(*ValidationError)
-	if !ok {
-		t.Fatalf("expected *ValidationError, got %T", err)
-	}
-
-	foundError := false
-	for _, fieldErr := range ve.Errors {
-		if fieldErr.Field == "IP" && fieldErr.Message == "must be a valid IPv6 address" {
-			foundError = true
-		}
-	}
-
-	if !foundError {
-		t.Errorf("expected 'must be a valid IPv6 address' error, got %v", ve.Errors)
-	}
-}
-
-func TestIPv6_InvalidIPv4(t *testing.T) {
-	type Server struct {
-		IP string `json:"ip" pedantigo:"ipv6"`
-	}
-
-	validator := New[Server]()
-	jsonData := []byte(`{"ip":"192.168.1.1"}`)
-
-	_, err := validator.Unmarshal(jsonData)
-	if err == nil {
-		t.Fatal("expected validation error for IPv4 (not IPv6)")
-	}
-
-	ve, ok := err.(*ValidationError)
-	if !ok {
-		t.Fatalf("expected *ValidationError, got %T", err)
-	}
-
-	foundError := false
-	for _, fieldErr := range ve.Errors {
-		if fieldErr.Field == "IP" && fieldErr.Message == "must be a valid IPv6 address" {
-			foundError = true
-		}
-	}
-
-	if !foundError {
-		t.Errorf("expected 'must be a valid IPv6 address' error, got %v", ve.Errors)
-	}
-}
-
-func TestIPv6_EmptyString(t *testing.T) {
-	type Server struct {
-		IP string `json:"ip" pedantigo:"ipv6"`
-	}
-
-	validator := New[Server]()
-	jsonData := []byte(`{"ip":""}`)
-
-	server, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for empty IP (validation skips empty), got %v", err)
-	}
-
-	if server.IP != "" {
-		t.Errorf("expected empty ip, got %q", server.IP)
-	}
-}
-
-func TestIPv6_WithPointer(t *testing.T) {
-	type Server struct {
-		IP *string `json:"ip" pedantigo:"ipv6"`
-	}
-
-	validator := New[Server]()
-
-	// Test invalid IP
-	jsonData := []byte(`{"ip":"not-an-ip"}`)
-	_, err := validator.Unmarshal(jsonData)
-	if err == nil {
-		t.Fatal("expected validation error for invalid IPv6 with pointer")
-	}
-
-	// Test valid IP
-	jsonData = []byte(`{"ip":"fe80::1"}`)
-	server, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for valid IPv6 with pointer, got %v", err)
-	}
-
-	if server.IP == nil || *server.IP != "fe80::1" {
-		t.Errorf("expected ip 'fe80::1', got %v", server.IP)
-	}
-}
-
-func TestIPv6_NilPointer(t *testing.T) {
-	type Server struct {
-		IP *string `json:"ip" pedantigo:"ipv6"`
-	}
-
-	validator := New[Server]()
-	jsonData := []byte(`{"ip":null}`)
-
-	server, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for nil pointer (validation skips nil), got %v", err)
-	}
-
-	if server.IP != nil {
-		t.Errorf("expected nil IP pointer, got %v", server.IP)
+				if tt.expectErr {
+					if err == nil {
+						t.Fatal("expected validation error")
+					}
+					ve, ok := err.(*ValidationError)
+					if !ok {
+						t.Fatalf("expected *ValidationError, got %T", err)
+					}
+					foundError := false
+					for _, fieldErr := range ve.Errors {
+						if fieldErr.Field == "IP" && fieldErr.Message == "must be a valid IPv6 address" {
+							foundError = true
+						}
+					}
+					if !foundError {
+						t.Errorf("expected 'must be a valid IPv6 address' error, got %v", ve.Errors)
+					}
+				} else {
+					if err != nil {
+						t.Errorf("unexpected error: %v", err)
+					}
+					if server.IP != tt.expectVal {
+						t.Errorf("expected ip %q, got %q", tt.expectVal, server.IP)
+					}
+				}
+			}
+		})
 	}
 }
