@@ -1,5 +1,5 @@
-// Package schema provides JSON Schema generation and enhancement utilities for pedantigo validators.
-package schema
+// Package schemagen provides JSON Schema generation and enhancement utilities for pedantigo validators.
+package schemagen
 
 import (
 	"encoding/json"

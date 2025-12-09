@@ -3,12 +3,9 @@ package pedantigo
 import (
 	"encoding/json"
 	"reflect"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/SmrutAI/Pedantigo/internal/tags"
-	"github.com/SmrutAI/Pedantigo/schema"
+	"github.com/SmrutAI/Pedantigo/schemagen"
 	"github.com/invopop/jsonschema"
 )
 
@@ -34,319 +31,14 @@ func (v *Validator[T]) Schema() *jsonschema.Schema {
 	}
 
 	// Generate base schema using schema package
-	actualSchema := schema.GenerateBaseSchema[T]()
+	actualSchema := schemagen.GenerateBaseSchema[T]()
 
 	// Enhance schema with our custom constraints
-	schema.EnhanceSchema(actualSchema, v.typ, tags.ParseTag)
+	schemagen.EnhanceSchema(actualSchema, v.typ, tags.ParseTag)
 
 	// Cache result
 	v.cachedSchema = actualSchema
 	return actualSchema
-}
-
-// enhanceSchema recursively enhances a JSON Schema with validation constraints
-func (v *Validator[T]) enhanceSchema(schema *jsonschema.Schema, typ reflect.Type) {
-	// Handle pointer types
-	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
-
-	if typ.Kind() != reflect.Struct {
-		return
-	}
-
-	// Iterate through struct fields
-	for i := 0; i < typ.NumField(); i++ {
-		field := typ.Field(i)
-
-		// Skip unexported fields
-		if !field.IsExported() {
-			continue
-		}
-
-		// Get JSON field name
-		jsonTag := field.Tag.Get("json")
-		fieldName := field.Name
-		if jsonTag != "" && jsonTag != "-" {
-			if name, _, found := strings.Cut(jsonTag, ","); found {
-				fieldName = name
-			} else {
-				fieldName = jsonTag
-			}
-		}
-
-		// Get field's schema property
-		if schema.Properties == nil {
-			continue
-		}
-		fieldSchema, ok := schema.Properties.Get(fieldName)
-		if !ok || fieldSchema == nil {
-			continue
-		}
-
-		// Parse validation constraints
-		constraints := tags.ParseTag(field.Tag)
-		if constraints == nil {
-			// No constraints, but check for nested structs/slices/maps
-			v.enhanceNestedTypes(fieldSchema, field.Type)
-			continue
-		}
-
-		// Apply constraints to field schema
-		v.applyConstraints(fieldSchema, constraints, field.Type)
-
-		// Check for required constraint
-		if _, hasRequired := constraints["required"]; hasRequired {
-			// Add to required array if not already there
-			found := false
-			for _, req := range schema.Required {
-				if req == fieldName {
-					found = true
-					break
-				}
-			}
-			if !found {
-				schema.Required = append(schema.Required, fieldName)
-			}
-		}
-
-		// Handle nested types
-		v.enhanceNestedTypes(fieldSchema, field.Type)
-	}
-}
-
-// enhanceNestedTypes handles nested structs, slices, and maps
-func (v *Validator[T]) enhanceNestedTypes(schema *jsonschema.Schema, typ reflect.Type) {
-	switch typ.Kind() {
-	case reflect.Struct:
-		// Recursively enhance nested struct
-		if typ != reflect.TypeOf((*time.Time)(nil)).Elem() {
-			// Clear required fields set by jsonschema for nested structs
-			schema.Required = nil
-			v.enhanceSchema(schema, typ)
-		}
-
-	case reflect.Slice:
-		// Enhance array items
-		if schema.Items != nil {
-			elemType := typ.Elem()
-			if elemType.Kind() == reflect.Struct {
-				// Clear required fields for nested struct items
-				schema.Items.Required = nil
-				v.enhanceSchema(schema.Items, elemType)
-			}
-		}
-
-	case reflect.Map:
-		// Enhance map values
-		if schema.AdditionalProperties != nil {
-			valueType := typ.Elem()
-			if valueType.Kind() == reflect.Struct {
-				// Clear required fields for nested struct values
-				schema.AdditionalProperties.Required = nil
-				v.enhanceSchema(schema.AdditionalProperties, valueType)
-			}
-		}
-	}
-}
-
-// applyConstraints applies validation constraints to a JSON Schema
-func (v *Validator[T]) applyConstraints(schema *jsonschema.Schema, constraints map[string]string, fieldType reflect.Type) {
-	for name, value := range constraints {
-		switch name {
-		case "required":
-			// Already handled in enhanceSchema
-			continue
-
-		case "min":
-			// Context-aware: numeric min for numbers, length min for strings/arrays
-			// Handle pointer types
-			checkType := fieldType
-			if checkType.Kind() == reflect.Ptr {
-				checkType = checkType.Elem()
-			}
-			kind := checkType.Kind()
-			if kind == reflect.String || kind == reflect.Slice || kind == reflect.Array {
-				// min → minLength for strings/arrays
-				if minLength, err := strconv.Atoi(value); err == nil {
-					ml := uint64(minLength)
-					schema.MinLength = &ml
-				}
-			} else {
-				// min → minimum for numbers
-				schema.Minimum = json.Number(value)
-			}
-
-		case "max":
-			// Context-aware: numeric max for numbers, length max for strings/arrays
-			// Handle pointer types
-			checkType := fieldType
-			if checkType.Kind() == reflect.Ptr {
-				checkType = checkType.Elem()
-			}
-			kind := checkType.Kind()
-			if kind == reflect.String || kind == reflect.Slice || kind == reflect.Array {
-				// max → maxLength for strings/arrays
-				if maxLength, err := strconv.Atoi(value); err == nil {
-					ml := uint64(maxLength)
-					schema.MaxLength = &ml
-				}
-			} else {
-				// max → maximum for numbers
-				schema.Maximum = json.Number(value)
-			}
-
-		case "gt":
-			// gt → exclusiveMinimum (exclusive)
-			schema.ExclusiveMinimum = json.Number(value)
-
-		case "gte":
-			// gte → minimum (inclusive)
-			schema.Minimum = json.Number(value)
-
-		case "lt":
-			// lt → exclusiveMaximum (exclusive)
-			schema.ExclusiveMaximum = json.Number(value)
-
-		case "lte":
-			// lte → maximum (inclusive)
-			schema.Maximum = json.Number(value)
-
-		case "email":
-			// email → format: email
-			schema.Format = "email"
-
-		case "url":
-			// url → format: uri
-			schema.Format = "uri"
-
-		case "uuid":
-			// uuid → format: uuid
-			schema.Format = "uuid"
-
-		case "ipv4":
-			// ipv4 → format: ipv4
-			schema.Format = "ipv4"
-
-		case "ipv6":
-			// ipv6 → format: ipv6
-			schema.Format = "ipv6"
-
-		case "regexp":
-			// regexp → pattern
-			schema.Pattern = value
-
-		case "oneof":
-			// oneof → enum array (space-separated values)
-			values := strings.Fields(value)
-			enumValues := make([]any, len(values))
-			for i, v := range values {
-				enumValues[i] = v
-			}
-			schema.Enum = enumValues
-
-		case "default":
-			// default → default value
-			schema.Default = parseDefaultValue(value, fieldType)
-
-		case "defaultUsingMethod":
-			// Skip - this is runtime behavior, not schema
-			continue
-		}
-	}
-
-	// For slices, apply constraints to items as well
-	if fieldType.Kind() == reflect.Slice && schema.Items != nil {
-		v.applyConstraintsToItems(schema.Items, constraints, fieldType.Elem())
-	}
-
-	// For maps, apply constraints to additionalProperties as well
-	if fieldType.Kind() == reflect.Map && schema.AdditionalProperties != nil {
-		v.applyConstraintsToItems(schema.AdditionalProperties, constraints, fieldType.Elem())
-	}
-}
-
-// applyConstraintsToItems applies constraints to array items or map values
-func (v *Validator[T]) applyConstraintsToItems(schema *jsonschema.Schema, constraints map[string]string, elemType reflect.Type) {
-	// Skip constraints that don't apply to elements
-	for name, value := range constraints {
-		switch name {
-		case "email":
-			schema.Format = "email"
-		case "url":
-			schema.Format = "uri"
-		case "uuid":
-			schema.Format = "uuid"
-		case "ipv4":
-			schema.Format = "ipv4"
-		case "ipv6":
-			schema.Format = "ipv6"
-		case "regexp":
-			schema.Pattern = value
-		case "oneof":
-			values := strings.Fields(value)
-			enumValues := make([]any, len(values))
-			for i, v := range values {
-				enumValues[i] = v
-			}
-			schema.Enum = enumValues
-		case "min":
-			// Context-aware for element type
-			kind := elemType.Kind()
-			if kind == reflect.String {
-				if minLength, err := strconv.Atoi(value); err == nil {
-					ml := uint64(minLength)
-					schema.MinLength = &ml
-				}
-			} else {
-				schema.Minimum = json.Number(value)
-			}
-		case "max":
-			// Context-aware for element type
-			kind := elemType.Kind()
-			if kind == reflect.String {
-				if maxLength, err := strconv.Atoi(value); err == nil {
-					ml := uint64(maxLength)
-					schema.MaxLength = &ml
-				}
-			} else {
-				schema.Maximum = json.Number(value)
-			}
-		case "gt":
-			schema.ExclusiveMinimum = json.Number(value)
-		case "gte":
-			schema.Minimum = json.Number(value)
-		case "lt":
-			schema.ExclusiveMaximum = json.Number(value)
-		case "lte":
-			schema.Maximum = json.Number(value)
-		}
-	}
-}
-
-// parseDefaultValue converts a string default value to the appropriate type
-func parseDefaultValue(value string, typ reflect.Type) any {
-	switch typ.Kind() {
-	case reflect.String:
-		return value
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		if i, err := strconv.ParseInt(value, 10, 64); err == nil {
-			return i
-		}
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		if u, err := strconv.ParseUint(value, 10, 64); err == nil {
-			return u
-		}
-	case reflect.Float32, reflect.Float64:
-		if f, err := strconv.ParseFloat(value, 64); err == nil {
-			return f
-		}
-	case reflect.Bool:
-		if b, err := strconv.ParseBool(value); err == nil {
-			return b
-		}
-	}
-	return value
 }
 
 // SchemaJSON generates JSON Schema as JSON bytes for LLM APIs
@@ -408,7 +100,7 @@ func (v *Validator[T]) SchemaJSON() ([]byte, error) {
 	}
 
 	actualSchema.Required = nil
-	v.enhanceSchema(actualSchema, v.typ)
+	schemagen.EnhanceSchema(actualSchema, v.typ, tags.ParseTag)
 
 	// Cache schema
 	v.cachedSchema = actualSchema
@@ -532,14 +224,14 @@ func (v *Validator[T]) enhanceSchemaWithDefs(schema *jsonschema.Schema, typ refl
 	schema.Required = nil
 
 	// Enhance root schema
-	v.enhanceSchema(schema, typ)
+	schemagen.EnhanceSchema(schema, typ, tags.ParseTag)
 
 	// Enhance all definitions
 	for name, def := range schema.Definitions {
 		def.Required = nil
 		// Find the type for this definition
 		if defTyp := v.findTypeForDefinition(typ, name); defTyp != nil {
-			v.enhanceSchema(def, defTyp)
+			schemagen.EnhanceSchema(def, defTyp, tags.ParseTag)
 		}
 	}
 }
