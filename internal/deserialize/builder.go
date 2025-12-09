@@ -93,13 +93,9 @@ func BuildFieldDeserializers(
 			}
 			if method, hasMethod := constraints["defaultUsingMethod"]; hasMethod {
 				methodName = &method
-				// Only validate method if StrictMissingFields is true
-				// (otherwise the panic at lines 74-76 should have already fired)
-				if opts.StrictMissingFields {
-					// Validate method exists and has correct signature (fail-fast)
-					if err := ValidateDefaultMethod(typ, method, field.Type); err != nil {
-						panic(fmt.Sprintf("field %s: %v", field.Name, err))
-					}
+				// Validate method exists and has correct signature (fail-fast)
+				if err := ValidateDefaultMethod(typ, method, field.Type); err != nil {
+					panic(fmt.Sprintf("field %s: %v", field.Name, err))
 				}
 			}
 		}
