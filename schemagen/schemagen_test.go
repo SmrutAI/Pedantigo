@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/invopop/jsonschema"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Test structs
@@ -96,38 +98,24 @@ func TestGenerateBaseSchema(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			schema := tt.generateFunc()
 
-			if schema == nil {
-				t.Fatal("schema is nil")
-			}
-			if schema.Type != tt.wantType {
-				t.Errorf("expected type=%s, got %s", tt.wantType, schema.Type)
-			}
-			if schema.Properties == nil {
-				t.Fatal("properties is nil")
-			}
+			require.NotNil(t, schema, "schema is nil")
+			assert.Equal(t, tt.wantType, schema.Type)
+			require.NotNil(t, schema.Properties, "properties is nil")
 
 			// Check all expected properties exist
 			for _, prop := range tt.checkProps {
-				if _, ok := schema.Properties.Get(prop); !ok {
-					t.Errorf("%s property not found", prop)
-				}
+				_, ok := schema.Properties.Get(prop)
+				assert.True(t, ok, "%s property not found", prop)
 			}
 
 			// Check required count
-			if len(schema.Required) != tt.wantRequired {
-				t.Errorf("expected %d required fields, got %d", tt.wantRequired, len(schema.Required))
-			}
+			assert.Equal(t, tt.wantRequired, len(schema.Required))
 
 			// Optional: check specific property types
 			for propName, expectedType := range tt.checkPropType {
 				prop, ok := schema.Properties.Get(propName)
-				if !ok {
-					t.Errorf("%s property not found", propName)
-					continue
-				}
-				if prop.Type != expectedType {
-					t.Errorf("%s type: expected %s, got %s", propName, expectedType, prop.Type)
-				}
+				require.True(t, ok, "%s property not found", propName)
+				assert.Equal(t, expectedType, prop.Type)
 			}
 		})
 	}
@@ -136,12 +124,8 @@ func TestGenerateBaseSchema(t *testing.T) {
 func TestGenerateOpenAPIBaseSchema(t *testing.T) {
 	schema := GenerateOpenAPIBaseSchema[SimpleStruct]()
 
-	if schema == nil {
-		t.Fatal("schema is nil")
-	}
-	if schema.Type != "object" {
-		t.Errorf("expected type=object, got %s", schema.Type)
-	}
+	require.NotNil(t, schema, "schema is nil")
+	assert.Equal(t, "object", schema.Type)
 }
 
 func TestEnhanceSchema(t *testing.T) {
@@ -178,24 +162,19 @@ func TestEnhanceSchema(t *testing.T) {
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
 				// Check name constraints
 				nameProp, _ := schema.Properties.Get("name")
-				if nameProp.MinLength == nil || *nameProp.MinLength != 3 {
-					t.Error("name minLength should be 3")
-				}
-				if nameProp.MaxLength == nil || *nameProp.MaxLength != 50 {
-					t.Error("name maxLength should be 50")
-				}
+				require.NotNil(t, nameProp.MinLength)
+				assert.Equal(t, uint64(3), *nameProp.MinLength)
+				require.NotNil(t, nameProp.MaxLength)
+				assert.Equal(t, uint64(50), *nameProp.MaxLength)
 
 				// Check age constraints
 				ageProp, _ := schema.Properties.Get("age")
-				if ageProp.Minimum != "18" || ageProp.Maximum != "100" {
-					t.Errorf("age constraints wrong: min=%s, max=%s", ageProp.Minimum, ageProp.Maximum)
-				}
+				assert.Equal(t, json.Number("18"), ageProp.Minimum)
+				assert.Equal(t, json.Number("100"), ageProp.Maximum)
 
 				// Check email format
 				emailProp, _ := schema.Properties.Get("email")
-				if emailProp.Format != "email" {
-					t.Errorf("email format should be 'email', got %s", emailProp.Format)
-				}
+				assert.Equal(t, "email", emailProp.Format)
 			},
 		},
 		{
@@ -217,16 +196,7 @@ func TestEnhanceSchema(t *testing.T) {
 
 			// Check required fields
 			for _, reqField := range tt.wantRequired {
-				found := false
-				for _, req := range schema.Required {
-					if req == reqField {
-						found = true
-						break
-					}
-				}
-				if !found {
-					t.Errorf("%s should be in required fields", reqField)
-				}
+				assert.Contains(t, schema.Required, reqField)
 			}
 
 			// Optional custom validation
@@ -252,12 +222,10 @@ func TestApplyConstraints(t *testing.T) {
 				"max": "100",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.MinLength == nil || *schema.MinLength != 5 {
-					t.Error("minLength should be 5")
-				}
-				if schema.MaxLength == nil || *schema.MaxLength != 100 {
-					t.Error("maxLength should be 100")
-				}
+				require.NotNil(t, schema.MinLength)
+				assert.Equal(t, uint64(5), *schema.MinLength)
+				require.NotNil(t, schema.MaxLength)
+				assert.Equal(t, uint64(100), *schema.MaxLength)
 			},
 		},
 		{
@@ -268,12 +236,8 @@ func TestApplyConstraints(t *testing.T) {
 				"max": "100",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.Minimum != "10" {
-					t.Errorf("minimum should be 10, got %s", schema.Minimum)
-				}
-				if schema.Maximum != "100" {
-					t.Errorf("maximum should be 100, got %s", schema.Maximum)
-				}
+				assert.Equal(t, json.Number("10"), schema.Minimum)
+				assert.Equal(t, json.Number("100"), schema.Maximum)
 			},
 		},
 		{
@@ -284,12 +248,8 @@ func TestApplyConstraints(t *testing.T) {
 				"lte": "100",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.ExclusiveMinimum != "0" {
-					t.Errorf("exclusiveMinimum should be 0, got %s", schema.ExclusiveMinimum)
-				}
-				if schema.Maximum != "100" {
-					t.Errorf("maximum should be 100, got %s", schema.Maximum)
-				}
+				assert.Equal(t, json.Number("0"), schema.ExclusiveMinimum)
+				assert.Equal(t, json.Number("100"), schema.Maximum)
 			},
 		},
 		{
@@ -299,9 +259,7 @@ func TestApplyConstraints(t *testing.T) {
 				"email": "",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.Format != "email" {
-					t.Errorf("format should be email, got %s", schema.Format)
-				}
+				assert.Equal(t, "email", schema.Format)
 			},
 		},
 		{
@@ -311,9 +269,7 @@ func TestApplyConstraints(t *testing.T) {
 				"url": "",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.Format != "uri" {
-					t.Errorf("format should be uri, got %s", schema.Format)
-				}
+				assert.Equal(t, "uri", schema.Format)
 			},
 		},
 		{
@@ -323,9 +279,7 @@ func TestApplyConstraints(t *testing.T) {
 				"uuid": "",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.Format != "uuid" {
-					t.Errorf("format should be uuid, got %s", schema.Format)
-				}
+				assert.Equal(t, "uuid", schema.Format)
 			},
 		},
 		{
@@ -335,9 +289,7 @@ func TestApplyConstraints(t *testing.T) {
 				"ipv4": "",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.Format != "ipv4" {
-					t.Errorf("format should be ipv4, got %s", schema.Format)
-				}
+				assert.Equal(t, "ipv4", schema.Format)
 			},
 		},
 		{
@@ -347,9 +299,7 @@ func TestApplyConstraints(t *testing.T) {
 				"ipv6": "",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.Format != "ipv6" {
-					t.Errorf("format should be ipv6, got %s", schema.Format)
-				}
+				assert.Equal(t, "ipv6", schema.Format)
 			},
 		},
 		{
@@ -359,9 +309,7 @@ func TestApplyConstraints(t *testing.T) {
 				"regexp": "^[A-Z]+$",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.Pattern != "^[A-Z]+$" {
-					t.Errorf("pattern should be ^[A-Z]+$, got %s", schema.Pattern)
-				}
+				assert.Equal(t, "^[A-Z]+$", schema.Pattern)
 			},
 		},
 		{
@@ -371,9 +319,7 @@ func TestApplyConstraints(t *testing.T) {
 				"oneof": "red green blue",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if len(schema.Enum) != 3 {
-					t.Errorf("enum should have 3 values, got %d", len(schema.Enum))
-				}
+				assert.Len(t, schema.Enum, 3)
 			},
 		},
 		{
@@ -383,9 +329,7 @@ func TestApplyConstraints(t *testing.T) {
 				"default": "hello",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.Default != "hello" {
-					t.Errorf("default should be hello, got %v", schema.Default)
-				}
+				assert.Equal(t, "hello", schema.Default)
 			},
 		},
 	}
@@ -453,9 +397,7 @@ func TestParseDefaultValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := ParseDefaultValue(tt.value, tt.typ)
-			if result != tt.expected {
-				t.Errorf("expected %v (%T), got %v (%T)", tt.expected, tt.expected, result, result)
-			}
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
@@ -528,16 +470,14 @@ func TestEnhanceNestedTypes(t *testing.T) {
 
 			// Check property exists
 			prop, ok := schema.Properties.Get(tt.checkProp)
-			if !ok {
-				t.Fatalf("%s property not found", tt.checkProp)
-			}
+			require.True(t, ok, "%s property not found", tt.checkProp)
 
 			// Check expected fields (max 4 lines)
-			if tt.expectItems && prop.Items == nil {
-				t.Fatal("items schema is nil")
+			if tt.expectItems {
+				require.NotNil(t, prop.Items, "items schema is nil")
 			}
-			if tt.expectAdditional && prop.AdditionalProperties == nil {
-				t.Fatal("additionalProperties schema is nil")
+			if tt.expectAdditional {
+				require.NotNil(t, prop.AdditionalProperties, "additionalProperties schema is nil")
 			}
 		})
 	}
@@ -557,9 +497,7 @@ func TestApplyConstraintsToItems(t *testing.T) {
 				"email": "",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.Format != "email" {
-					t.Errorf("format should be email, got %s", schema.Format)
-				}
+				assert.Equal(t, "email", schema.Format)
 			},
 		},
 		{
@@ -570,12 +508,10 @@ func TestApplyConstraintsToItems(t *testing.T) {
 				"max": "50",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.MinLength == nil || *schema.MinLength != 5 {
-					t.Error("minLength should be 5")
-				}
-				if schema.MaxLength == nil || *schema.MaxLength != 50 {
-					t.Error("maxLength should be 50")
-				}
+				require.NotNil(t, schema.MinLength)
+				assert.Equal(t, uint64(5), *schema.MinLength)
+				require.NotNil(t, schema.MaxLength)
+				assert.Equal(t, uint64(50), *schema.MaxLength)
 			},
 		},
 		{
@@ -586,12 +522,8 @@ func TestApplyConstraintsToItems(t *testing.T) {
 				"max": "100",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.Minimum != "1" {
-					t.Errorf("minimum should be 1, got %s", schema.Minimum)
-				}
-				if schema.Maximum != "100" {
-					t.Errorf("maximum should be 100, got %s", schema.Maximum)
-				}
+				assert.Equal(t, json.Number("1"), schema.Minimum)
+				assert.Equal(t, json.Number("100"), schema.Maximum)
 			},
 		},
 		{
@@ -601,9 +533,7 @@ func TestApplyConstraintsToItems(t *testing.T) {
 				"url": "",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.Format != "uri" {
-					t.Errorf("format should be uri, got %s", schema.Format)
-				}
+				assert.Equal(t, "uri", schema.Format)
 			},
 		},
 		{
@@ -613,9 +543,7 @@ func TestApplyConstraintsToItems(t *testing.T) {
 				"uuid": "",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.Format != "uuid" {
-					t.Errorf("format should be uuid, got %s", schema.Format)
-				}
+				assert.Equal(t, "uuid", schema.Format)
 			},
 		},
 		{
@@ -625,9 +553,7 @@ func TestApplyConstraintsToItems(t *testing.T) {
 				"ipv4": "",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.Format != "ipv4" {
-					t.Errorf("format should be ipv4, got %s", schema.Format)
-				}
+				assert.Equal(t, "ipv4", schema.Format)
 			},
 		},
 		{
@@ -637,9 +563,7 @@ func TestApplyConstraintsToItems(t *testing.T) {
 				"ipv6": "",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.Format != "ipv6" {
-					t.Errorf("format should be ipv6, got %s", schema.Format)
-				}
+				assert.Equal(t, "ipv6", schema.Format)
 			},
 		},
 		{
@@ -649,9 +573,7 @@ func TestApplyConstraintsToItems(t *testing.T) {
 				"regexp": "^[a-z]+$",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.Pattern != "^[a-z]+$" {
-					t.Errorf("pattern should be '^[a-z]+$', got %s", schema.Pattern)
-				}
+				assert.Equal(t, "^[a-z]+$", schema.Pattern)
 			},
 		},
 		{
@@ -661,14 +583,10 @@ func TestApplyConstraintsToItems(t *testing.T) {
 				"oneof": "red green blue",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if len(schema.Enum) != 3 {
-					t.Errorf("enum should have 3 values, got %d", len(schema.Enum))
-				}
+				assert.Len(t, schema.Enum, 3)
 				expected := []string{"red", "green", "blue"}
 				for i, val := range schema.Enum {
-					if val != expected[i] {
-						t.Errorf("enum[%d] should be %s, got %v", i, expected[i], val)
-					}
+					assert.Equal(t, expected[i], val)
 				}
 			},
 		},
@@ -679,9 +597,7 @@ func TestApplyConstraintsToItems(t *testing.T) {
 				"gt": "0",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.ExclusiveMinimum != "0" {
-					t.Errorf("exclusiveMinimum should be 0, got %s", schema.ExclusiveMinimum)
-				}
+				assert.Equal(t, json.Number("0"), schema.ExclusiveMinimum)
 			},
 		},
 		{
@@ -691,9 +607,7 @@ func TestApplyConstraintsToItems(t *testing.T) {
 				"gte": "1",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.Minimum != "1" {
-					t.Errorf("minimum should be 1, got %s", schema.Minimum)
-				}
+				assert.Equal(t, json.Number("1"), schema.Minimum)
 			},
 		},
 		{
@@ -703,9 +617,7 @@ func TestApplyConstraintsToItems(t *testing.T) {
 				"lt": "100",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.ExclusiveMaximum != "100" {
-					t.Errorf("exclusiveMaximum should be 100, got %s", schema.ExclusiveMaximum)
-				}
+				assert.Equal(t, json.Number("100"), schema.ExclusiveMaximum)
 			},
 		},
 		{
@@ -715,9 +627,7 @@ func TestApplyConstraintsToItems(t *testing.T) {
 				"lte": "99",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				if schema.Maximum != "99" {
-					t.Errorf("maximum should be 99, got %s", schema.Maximum)
-				}
+				assert.Equal(t, json.Number("99"), schema.Maximum)
 			},
 		},
 	}
@@ -756,26 +666,16 @@ func TestFullIntegration(t *testing.T) {
 
 	// Marshal to JSON to verify structure
 	jsonData, err := json.MarshalIndent(schema, "", "  ")
-	if err != nil {
-		t.Fatalf("failed to marshal schema: %v", err)
-	}
+	require.NoError(t, err, "failed to marshal schema")
 
 	// Basic sanity checks
-	if schema.Type != "object" {
-		t.Errorf("expected type=object, got %s", schema.Type)
-	}
-	if schema.Properties == nil {
-		t.Fatal("properties is nil")
-	}
+	assert.Equal(t, "object", schema.Type)
+	require.NotNil(t, schema.Properties, "properties is nil")
 
 	// Verify at least one property was enhanced
 	urlProp, ok := schema.Properties.Get("url")
-	if !ok {
-		t.Error("url property not found")
-	}
-	if urlProp.Format != "uri" {
-		t.Errorf("url format should be uri, got %s", urlProp.Format)
-	}
+	require.True(t, ok, "url property not found")
+	assert.Equal(t, "uri", urlProp.Format)
 
 	t.Logf("Generated schema:\n%s", string(jsonData))
 }
