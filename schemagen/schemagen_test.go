@@ -109,7 +109,8 @@ func TestGenerateBaseSchema(t *testing.T) {
 			}
 
 			// Check required count
-			assert.Equal(t, tt.wantRequired, len(schema.Required))
+			assert.
+				Equal(t, tt.wantRequired, len(schema.Required))
 
 			// Optional: check specific property types
 			for propName, expectedType := range tt.checkPropType {

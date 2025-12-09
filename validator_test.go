@@ -604,15 +604,9 @@ func TestDeserializer_UnmarshalBehavior(t *testing.T) {
 			wantErr: false,
 			assertions: func(t *testing.T, result any) {
 				config := result.(*Config)
-				if config.Port != 8080 {
-					t.Errorf("expected default port 8080, got %d", config.Port)
-				}
-				if config.Timeout != 30 {
-					t.Errorf("expected default timeout 30, got %d", config.Timeout)
-				}
-				if config.Name != "myapp" {
-					t.Errorf("expected name 'myapp', got %q", config.Name)
-				}
+				assert.Equal(t, 8080, config.Port)
+				assert.Equal(t, 30, config.Timeout)
+				assert.Equal(t, "myapp", config.Name)
 			},
 		},
 		{
@@ -626,12 +620,8 @@ func TestDeserializer_UnmarshalBehavior(t *testing.T) {
 			assertions: func(t *testing.T, result any) {
 				config := result.(*Config)
 				// Explicit zeros should be kept, NOT replaced with defaults
-				if config.Port != 0 {
-					t.Errorf("expected port 0 (not default), got %d", config.Port)
-				}
-				if config.Timeout != 0 {
-					t.Errorf("expected timeout 0 (not default), got %d", config.Timeout)
-				}
+				assert.Equal(t, 0, config.Port)
+				assert.Equal(t, 0, config.Timeout)
 			},
 		},
 		{
@@ -644,9 +634,7 @@ func TestDeserializer_UnmarshalBehavior(t *testing.T) {
 			wantErr: false,
 			assertions: func(t *testing.T, result any) {
 				settings := result.(*Settings)
-				if settings.Active != false {
-					t.Errorf("expected active=false, got %v", settings.Active)
-				}
+				assert.False(t, settings.Active)
 			},
 		},
 		{
@@ -662,9 +650,7 @@ func TestDeserializer_UnmarshalBehavior(t *testing.T) {
 				v := New[Settings]()
 				_, err := v.Unmarshal([]byte(`{"name":"test"}`))
 				ve, ok := err.(*ValidationError)
-				if !ok {
-					t.Fatalf("expected *ValidationError, got %T", err)
-				}
+				require.True(t, ok, "expected *ValidationError, got %T", err)
 
 				foundError := false
 				for _, fieldErr := range ve.Errors {
@@ -672,9 +658,7 @@ func TestDeserializer_UnmarshalBehavior(t *testing.T) {
 						foundError = true
 					}
 				}
-				if !foundError {
-					t.Errorf("expected 'is required' error for field 'active', got errors: %+v", ve.Errors)
-				}
+				assert.True(t, foundError, "expected 'is required' error for field 'active', got errors: %+v", ve.Errors)
 			},
 		},
 		{
@@ -688,12 +672,8 @@ func TestDeserializer_UnmarshalBehavior(t *testing.T) {
 			assertions: func(t *testing.T, result any) {
 				user := result.(*UserWithTimestamp)
 				expectedTime := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-				if !user.CreatedAt.Equal(expectedTime) {
-					t.Errorf("expected created_at to be %v, got %v", expectedTime, user.CreatedAt)
-				}
-				if user.Role != "user" {
-					t.Errorf("expected default role 'user', got %q", user.Role)
-				}
+				assert.True(t, user.CreatedAt.Equal(expectedTime), "expected created_at to be %v, got %v", expectedTime, user.CreatedAt)
+				assert.Equal(t, "user", user.Role)
 			},
 		},
 		{
@@ -707,9 +687,7 @@ func TestDeserializer_UnmarshalBehavior(t *testing.T) {
 			assertions: func(t *testing.T, result any) {
 				user := result.(*UserWithTimestamp)
 				explicitTime := time.Date(2023, 6, 15, 12, 30, 0, 0, time.UTC)
-				if !user.CreatedAt.Equal(explicitTime) {
-					t.Errorf("expected created_at to be %v (explicit), got %v", explicitTime, user.CreatedAt)
-				}
+				assert.True(t, user.CreatedAt.Equal(explicitTime), "expected created_at to be %v (explicit), got %v", explicitTime, user.CreatedAt)
 			},
 		},
 		{
@@ -722,12 +700,8 @@ func TestDeserializer_UnmarshalBehavior(t *testing.T) {
 			wantErr: false,
 			assertions: func(t *testing.T, result any) {
 				config := result.(*Config)
-				if config.Port != 8080 {
-					t.Errorf("expected port 8080 (default applied), got %d", config.Port)
-				}
-				if config.Timeout != 30 {
-					t.Errorf("expected timeout 30 (default applied), got %d", config.Timeout)
-				}
+				assert.Equal(t, 8080, config.Port)
+				assert.Equal(t, 30, config.Timeout)
 			},
 		},
 		{
@@ -841,15 +815,9 @@ func TestValidatorOptions_StrictMissingFields(t *testing.T) {
 			jsonInput:  `{"name":"John","email":"john@example.com","age":25}`,
 			expectErr:  false,
 			checkValues: func(t *testing.T, user *User) {
-				if user.Name != "John" {
-					t.Errorf("expected Name='John', got %q", user.Name)
-				}
-				if user.Email != "john@example.com" {
-					t.Errorf("expected Email='john@example.com', got %q", user.Email)
-				}
-				if user.Age != 25 {
-					t.Errorf("expected Age=25, got %d", user.Age)
-				}
+				assert.Equal(t, "John", user.Name)
+				assert.Equal(t, "john@example.com", user.Email)
+				assert.Equal(t, 25, user.Age)
 			},
 		},
 		{
@@ -925,16 +893,10 @@ func TestValidatorOptions_PointerFields(t *testing.T) {
 			expectErrFields: []string{"Name"}, // Only Name should error (non-pointer zero value)
 			checkValues: func(t *testing.T, settings *Settings) {
 				// Port and Enabled should be nil (pointers skip validation when missing)
-				if settings.Port != nil {
-					t.Errorf("expected Port to be nil, got %v", *settings.Port)
-				}
-				if settings.Enabled != nil {
-					t.Errorf("expected Enabled to be nil, got %v", *settings.Enabled)
-				}
+				assert.Nil(t, settings.Port)
+				assert.Nil(t, settings.Enabled)
 				// Name should have zero value ""
-				if settings.Name != "" {
-					t.Errorf("expected Name to be empty string, got %q", settings.Name)
-				}
+				assert.Equal(t, "", settings.Name)
 			},
 		},
 		{
@@ -942,15 +904,11 @@ func TestValidatorOptions_PointerFields(t *testing.T) {
 			jsonInput: `{"port":8080,"enabled":true,"name":"John"}`,
 			expectErr: false,
 			checkValues: func(t *testing.T, settings *Settings) {
-				if settings.Port == nil || *settings.Port != 8080 {
-					t.Errorf("expected Port=8080, got %v", settings.Port)
-				}
-				if settings.Enabled == nil || *settings.Enabled != true {
-					t.Errorf("expected Enabled=true, got %v", settings.Enabled)
-				}
-				if settings.Name != "John" {
-					t.Errorf("expected Name='John', got %q", settings.Name)
-				}
+				require.NotNil(t, settings.Port)
+				assert.Equal(t, 8080, *settings.Port)
+				require.NotNil(t, settings.Enabled)
+				assert.True(t, *settings.Enabled)
+				assert.Equal(t, "John", settings.Name)
 			},
 		},
 		{
@@ -960,9 +918,8 @@ func TestValidatorOptions_PointerFields(t *testing.T) {
 			expectErrFields: []string{"Port", "Name"}, // Port too low, Name missing/empty
 			checkValues: func(t *testing.T, settings *Settings) {
 				// Pointer should still be set even with validation error
-				if settings.Port == nil || *settings.Port != 80 {
-					t.Errorf("expected Port=80 (even with error), got %v", settings.Port)
-				}
+				require.NotNil(t, settings.Port)
+				assert.Equal(t, 80, *settings.Port)
 			},
 		},
 		{
@@ -970,15 +927,10 @@ func TestValidatorOptions_PointerFields(t *testing.T) {
 			jsonInput: `{"port":2048,"name":"Alice"}`,
 			expectErr: false,
 			checkValues: func(t *testing.T, settings *Settings) {
-				if settings.Port == nil || *settings.Port != 2048 {
-					t.Errorf("expected Port=2048, got %v", settings.Port)
-				}
-				if settings.Enabled != nil {
-					t.Errorf("expected Enabled to be nil, got %v", *settings.Enabled)
-				}
-				if settings.Name != "Alice" {
-					t.Errorf("expected Name='Alice', got %q", settings.Name)
-				}
+				require.NotNil(t, settings.Port)
+				assert.Equal(t, 2048, *settings.Port)
+				assert.Nil(t, settings.Enabled)
+				assert.Equal(t, "Alice", settings.Name)
 			},
 		},
 	}
@@ -1044,28 +996,22 @@ func TestValidatorOptions_PanicOnIncompatibleTags(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			defer func() {
-				if r := recover(); r == nil {
-					t.Error("expected panic but didn't panic")
-				} else {
-					panicMsg := r.(string)
-					// Verify all expected strings are in panic message
-					for _, expectedStr := range tt.expectPanicStrs {
-						if !strings.Contains(panicMsg, expectedStr) {
-							t.Errorf("panic message missing '%s', got: %s", expectedStr, panicMsg)
-						}
-					}
-					// Verify at least one expected field is mentioned
-					foundField := false
-					for _, expectedField := range tt.expectPanicFields {
-						if strings.Contains(panicMsg, expectedField) {
-							foundField = true
-							break
-						}
-					}
-					if !foundField {
-						t.Errorf("panic message should mention one of %v, got: %s", tt.expectPanicFields, panicMsg)
+				r := recover()
+				require.NotNil(t, r, "expected panic but didn't panic")
+				panicMsg := r.(string)
+				// Verify all expected strings are in panic message
+				for _, expectedStr := range tt.expectPanicStrs {
+					assert.True(t, strings.Contains(panicMsg, expectedStr), "panic message missing '%s', got: %s", expectedStr, panicMsg)
+				}
+				// Verify at least one expected field is mentioned
+				foundField := false
+				for _, expectedField := range tt.expectPanicFields {
+					if strings.Contains(panicMsg, expectedField) {
+						foundField = true
+						break
 					}
 				}
+				assert.True(t, foundField, "panic message should mention one of %v, got: %s", tt.expectPanicFields, panicMsg)
 			}()
 
 			// Use testCase discriminator to handle different struct types
