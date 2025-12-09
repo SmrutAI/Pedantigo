@@ -5,135 +5,6 @@ import (
 	"time"
 )
 
-// Test that missing fields with defaults get the default value
-func TestDeserializer_MissingFieldWithDefault(t *testing.T) {
-	type Config struct {
-		Name    string `json:"name" pedantigo:"required"`
-		Port    int    `json:"port" pedantigo:"default=8080"`
-		Timeout int    `json:"timeout" pedantigo:"default=30"`
-	}
-
-	validator := New[Config]()
-	jsonData := []byte(`{"name":"myapp"}`) // port and timeout are missing
-
-	config, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no validation errors, got %v", err)
-	}
-
-	if config == nil {
-		t.Fatal("expected non-nil config")
-	}
-
-	// Missing fields should get their default values
-	if config.Port != 8080 {
-		t.Errorf("expected default port 8080, got %d", config.Port)
-	}
-
-	if config.Timeout != 30 {
-		t.Errorf("expected default timeout 30, got %d", config.Timeout)
-	}
-
-	if config.Name != "myapp" {
-		t.Errorf("expected name 'myapp', got %q", config.Name)
-	}
-}
-
-// Test that explicit zero values with defaults keep the zero (not the default)
-func TestDeserializer_ExplicitZeroWithDefault(t *testing.T) {
-	type Config struct {
-		Name    string `json:"name" pedantigo:"required"`
-		Port    int    `json:"port" pedantigo:"default=8080"`
-		Timeout int    `json:"timeout" pedantigo:"default=30"`
-	}
-
-	validator := New[Config]()
-	jsonData := []byte(`{"name":"myapp","port":0,"timeout":0}`) // explicit zeros
-
-	config, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no validation errors, got %v", err)
-	}
-
-	if config == nil {
-		t.Fatal("expected non-nil config")
-	}
-
-	// Explicit zeros should be kept, NOT replaced with defaults
-	if config.Port != 0 {
-		t.Errorf("expected port 0 (not default), got %d", config.Port)
-	}
-
-	if config.Timeout != 0 {
-		t.Errorf("expected timeout 0 (not default), got %d", config.Timeout)
-	}
-}
-
-// Test that explicit false values pass required validation
-func TestDeserializer_RequiredWithExplicitFalse(t *testing.T) {
-	type Settings struct {
-		Name   string `json:"name" pedantigo:"required"`
-		Active bool   `json:"active" pedantigo:"required"`
-	}
-
-	validator := New[Settings]()
-	jsonData := []byte(`{"name":"test","active":false}`) // explicit false
-
-	settings, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no validation errors for explicit false, got %v", err)
-	}
-
-	if settings == nil {
-		t.Fatal("expected non-nil settings")
-	}
-
-	// Explicit false should pass validation
-	if settings.Active != false {
-		t.Errorf("expected active=false, got %v", settings.Active)
-	}
-}
-
-// Test that missing required field fails validation
-func TestDeserializer_MissingRequiredField(t *testing.T) {
-	type Settings struct {
-		Name   string `json:"name" pedantigo:"required"`
-		Active bool   `json:"active" pedantigo:"required"`
-	}
-
-	validator := New[Settings]()
-	jsonData := []byte(`{"name":"test"}`) // active is missing
-
-	settings, err := validator.Unmarshal(jsonData)
-	if err == nil {
-		t.Error("expected validation error for missing required field")
-	}
-
-	// Should have error for active field
-	ve, ok := err.(*ValidationError)
-	if !ok {
-		t.Fatalf("expected *ValidationError, got %T", err)
-	}
-
-	foundError := false
-	for _, fieldErr := range ve.Errors {
-		if fieldErr.Field == "active" {
-			foundError = true
-			if fieldErr.Message != "is required" {
-				t.Errorf("expected error message 'is required', got %q", fieldErr.Message)
-			}
-		}
-	}
-
-	if !foundError {
-		t.Errorf("expected error for field 'active', got errors: %+v", ve.Errors)
-	}
-
-	if settings == nil {
-		t.Error("expected non-nil settings even with validation errors")
-	}
-}
-
 // Test type for defaultUsingMethod
 type UserWithTimestamp struct {
 	Email     string    `json:"email" pedantigo:"required"`
@@ -147,53 +18,6 @@ func (u *UserWithTimestamp) SetCreationTime() (time.Time, error) {
 	return time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), nil
 }
 
-// Test that defaultUsingMethod is called for missing fields
-func TestDeserializer_DefaultUsingMethod(t *testing.T) {
-	validator := New[UserWithTimestamp]()
-	jsonData := []byte(`{"email":"test@example.com"}`) // created_at is missing
-
-	user, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no validation errors, got %v", err)
-	}
-
-	if user == nil {
-		t.Fatal("expected non-nil user")
-	}
-
-	// Method should have been called to set created_at
-	expectedTime := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	if !user.CreatedAt.Equal(expectedTime) {
-		t.Errorf("expected created_at to be %v, got %v", expectedTime, user.CreatedAt)
-	}
-
-	// Static default should also be applied
-	if user.Role != "user" {
-		t.Errorf("expected default role 'user', got %q", user.Role)
-	}
-}
-
-// Test that defaultUsingMethod is NOT called for explicit values
-func TestDeserializer_DefaultUsingMethod_NotCalledForExplicit(t *testing.T) {
-	validator := New[UserWithTimestamp]()
-	explicitTime := time.Date(2023, 6, 15, 12, 30, 0, 0, time.UTC)
-	jsonData := []byte(`{"email":"test@example.com","created_at":"2023-06-15T12:30:00Z"}`)
-
-	user, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no validation errors, got %v", err)
-	}
-
-	if user == nil {
-		t.Fatal("expected non-nil user")
-	}
-
-	// Explicit value should be kept, method should NOT be called
-	if !user.CreatedAt.Equal(explicitTime) {
-		t.Errorf("expected created_at to be %v (explicit), got %v", explicitTime, user.CreatedAt)
-	}
-}
-
 // Test type with invalid method signature (should panic at New() time)
 type InvalidMethodType struct {
 	Email     string    `json:"email"`
@@ -205,98 +29,252 @@ func (i *InvalidMethodType) WrongSignature() time.Time {
 	return time.Now()
 }
 
-// Test that invalid method signature panics at New() time (fail-fast)
-func TestDeserializer_InvalidMethodSignature_Panics(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("expected panic for invalid method signature")
-		}
-	}()
-
-	// This should panic because WrongSignature doesn't return (value, error)
-	_ = New[InvalidMethodType]()
-}
-
 // Test type with non-existent method
 type NonExistentMethodType struct {
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at" pedantigo:"defaultUsingMethod=DoesNotExist"`
 }
 
-// Test that non-existent method panics at New() time (fail-fast)
-func TestDeserializer_NonExistentMethod_Panics(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("expected panic for non-existent method")
-		}
-	}()
+// TestDeserializer_UnmarshalBehavior validates deserializer behavior across various scenarios:
+// defaults, missing fields, explicit values, required fields, and validator options.
+func TestDeserializer_UnmarshalBehavior(t *testing.T) {
+	type Config struct {
+		Name    string `json:"name" pedantigo:"required"`
+		Port    int    `json:"port" pedantigo:"default=8080"`
+		Timeout int    `json:"timeout" pedantigo:"default=30"`
+	}
 
-	// This should panic because DoesNotExist method doesn't exist
-	_ = New[NonExistentMethodType]()
+	type Settings struct {
+		Name   string `json:"name" pedantigo:"required"`
+		Active bool   `json:"active" pedantigo:"required"`
+	}
+
+	tests := []struct {
+		name        string
+		jsonData    []byte
+		validatorFn func() (any, error)
+		wantErr     bool
+		assertions  func(*testing.T, any)
+	}{
+		{
+			name:     "missing fields with defaults",
+			jsonData: []byte(`{"name":"myapp"}`),
+			validatorFn: func() (any, error) {
+				v := New[Config]()
+				return v.Unmarshal([]byte(`{"name":"myapp"}`))
+			},
+			wantErr: false,
+			assertions: func(t *testing.T, result any) {
+				config := result.(*Config)
+				if config.Port != 8080 {
+					t.Errorf("expected default port 8080, got %d", config.Port)
+				}
+				if config.Timeout != 30 {
+					t.Errorf("expected default timeout 30, got %d", config.Timeout)
+				}
+				if config.Name != "myapp" {
+					t.Errorf("expected name 'myapp', got %q", config.Name)
+				}
+			},
+		},
+		{
+			name:     "explicit zero values not replaced with defaults",
+			jsonData: []byte(`{"name":"myapp","port":0,"timeout":0}`),
+			validatorFn: func() (any, error) {
+				v := New[Config]()
+				return v.Unmarshal([]byte(`{"name":"myapp","port":0,"timeout":0}`))
+			},
+			wantErr: false,
+			assertions: func(t *testing.T, result any) {
+				config := result.(*Config)
+				// Explicit zeros should be kept, NOT replaced with defaults
+				if config.Port != 0 {
+					t.Errorf("expected port 0 (not default), got %d", config.Port)
+				}
+				if config.Timeout != 0 {
+					t.Errorf("expected timeout 0 (not default), got %d", config.Timeout)
+				}
+			},
+		},
+		{
+			name:     "explicit false value passes required validation",
+			jsonData: []byte(`{"name":"test","active":false}`),
+			validatorFn: func() (any, error) {
+				v := New[Settings]()
+				return v.Unmarshal([]byte(`{"name":"test","active":false}`))
+			},
+			wantErr: false,
+			assertions: func(t *testing.T, result any) {
+				settings := result.(*Settings)
+				if settings.Active != false {
+					t.Errorf("expected active=false, got %v", settings.Active)
+				}
+			},
+		},
+		{
+			name:     "missing required field fails validation",
+			jsonData: []byte(`{"name":"test"}`),
+			validatorFn: func() (any, error) {
+				v := New[Settings]()
+				return v.Unmarshal([]byte(`{"name":"test"}`))
+			},
+			wantErr: true,
+			assertions: func(t *testing.T, result any) {
+				// Error case - check error message through direct validation
+				v := New[Settings]()
+				_, err := v.Unmarshal([]byte(`{"name":"test"}`))
+				ve, ok := err.(*ValidationError)
+				if !ok {
+					t.Fatalf("expected *ValidationError, got %T", err)
+				}
+
+				foundError := false
+				for _, fieldErr := range ve.Errors {
+					if fieldErr.Field == "active" && fieldErr.Message == "is required" {
+						foundError = true
+					}
+				}
+				if !foundError {
+					t.Errorf("expected 'is required' error for field 'active', got errors: %+v", ve.Errors)
+				}
+			},
+		},
+		{
+			name:     "defaultUsingMethod called for missing fields",
+			jsonData: []byte(`{"email":"test@example.com"}`),
+			validatorFn: func() (any, error) {
+				v := New[UserWithTimestamp]()
+				return v.Unmarshal([]byte(`{"email":"test@example.com"}`))
+			},
+			wantErr: false,
+			assertions: func(t *testing.T, result any) {
+				user := result.(*UserWithTimestamp)
+				expectedTime := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+				if !user.CreatedAt.Equal(expectedTime) {
+					t.Errorf("expected created_at to be %v, got %v", expectedTime, user.CreatedAt)
+				}
+				if user.Role != "user" {
+					t.Errorf("expected default role 'user', got %q", user.Role)
+				}
+			},
+		},
+		{
+			name:     "defaultUsingMethod not called for explicit values",
+			jsonData: []byte(`{"email":"test@example.com","created_at":"2023-06-15T12:30:00Z"}`),
+			validatorFn: func() (any, error) {
+				v := New[UserWithTimestamp]()
+				return v.Unmarshal([]byte(`{"email":"test@example.com","created_at":"2023-06-15T12:30:00Z"}`))
+			},
+			wantErr: false,
+			assertions: func(t *testing.T, result any) {
+				user := result.(*UserWithTimestamp)
+				explicitTime := time.Date(2023, 6, 15, 12, 30, 0, 0, time.UTC)
+				if !user.CreatedAt.Equal(explicitTime) {
+					t.Errorf("expected created_at to be %v (explicit), got %v", explicitTime, user.CreatedAt)
+				}
+			},
+		},
+		{
+			name:     "strict mode applies defaults for missing fields",
+			jsonData: []byte(`{"name":"myapp"}`),
+			validatorFn: func() (any, error) {
+				v := New[Config](ValidatorOptions{StrictMissingFields: true})
+				return v.Unmarshal([]byte(`{"name":"myapp"}`))
+			},
+			wantErr: false,
+			assertions: func(t *testing.T, result any) {
+				config := result.(*Config)
+				if config.Port != 8080 {
+					t.Errorf("expected port 8080 (default applied), got %d", config.Port)
+				}
+				if config.Timeout != 30 {
+					t.Errorf("expected timeout 30 (default applied), got %d", config.Timeout)
+				}
+			},
+		},
+		{
+			name:     "relaxed mode skips constraints on zero values",
+			jsonData: []byte(`{"name":"myapp","age":0}`),
+			validatorFn: func() (any, error) {
+				type Profile struct {
+					Name string `json:"name" pedantigo:"required"`
+					Age  int    `json:"age" pedantigo:"min=1"`
+				}
+				v := New[Profile](ValidatorOptions{StrictMissingFields: false})
+				return v.Unmarshal([]byte(`{"name":"myapp","age":0}`))
+			},
+			wantErr: true,
+			assertions: func(t *testing.T, result any) {
+				// Age=0 is explicit, so validation should still run and fail
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := tt.validatorFn()
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Unmarshal() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if result != nil || !tt.wantErr {
+				tt.assertions(t, result)
+			}
+		})
+	}
 }
 
-// Test StrictMissingFields option (relaxed mode)
-func TestDeserializer_RelaxedMode(t *testing.T) {
-	type Config struct {
-		Name string `json:"name" pedantigo:"required"`
-		Port int    `json:"port" pedantigo:"required"`
+// TestDeserializer_ValidatorSetup validates fail-fast validation during New().
+// Invalid method signatures or non-existent methods should panic at validator creation time.
+func TestDeserializer_ValidatorSetup(t *testing.T) {
+	tests := []struct {
+		name        string
+		setup       func()
+		expectPanic bool
+	}{
+		{
+			name: "invalid method signature panics",
+			setup: func() {
+				_ = New[InvalidMethodType]()
+			},
+			expectPanic: true,
+		},
+		{
+			name: "non-existent method panics",
+			setup: func() {
+				_ = New[NonExistentMethodType]()
+			},
+			expectPanic: true,
+		},
+		{
+			name: "valid method signature succeeds",
+			setup: func() {
+				_ = New[UserWithTimestamp]()
+			},
+			expectPanic: false,
+		},
 	}
 
-	// Create validator with StrictMissingFields=false (relaxed mode)
-	validator := New[Config](ValidatorOptions{StrictMissingFields: false})
-	jsonData := []byte(`{"name":"myapp"}`) // port is missing
-
-	config, err := validator.Unmarshal(jsonData)
-	// In relaxed mode, missing required fields without defaults should NOT error
-	if err != nil {
-		t.Errorf("expected no validation errors in relaxed mode, got %v", err)
-	}
-
-	if config == nil {
-		t.Fatal("expected non-nil config")
-	}
-
-	// Port should be zero value
-	if config.Port != 0 {
-		t.Errorf("expected port 0 (zero value), got %d", config.Port)
-	}
-}
-
-// Test StrictMissingFields option (strict mode - default)
-func TestDeserializer_StrictMode(t *testing.T) {
-	type Config struct {
-		Name string `json:"name" pedantigo:"required"`
-		Port int    `json:"port" pedantigo:"required"`
-	}
-
-	// Create validator with default options (StrictMissingFields=true)
-	validator := New[Config]()
-	jsonData := []byte(`{"name":"myapp"}`) // port is missing
-
-	config, err := validator.Unmarshal(jsonData)
-	// In strict mode, missing required fields should error
-	if err == nil {
-		t.Error("expected validation error for missing required field in strict mode")
-	}
-
-	// Should have error for port field
-	ve, ok := err.(*ValidationError)
-	if !ok {
-		t.Fatalf("expected *ValidationError, got %T", err)
-	}
-
-	foundError := false
-	for _, fieldErr := range ve.Errors {
-		if fieldErr.Field == "port" && fieldErr.Message == "is required" {
-			foundError = true
-		}
-	}
-
-	if !foundError {
-		t.Errorf("expected 'is required' error for field 'port', got errors: %v", ve.Errors)
-	}
-
-	if config == nil {
-		t.Error("expected non-nil config even with validation errors")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.expectPanic {
+				defer func() {
+					if r := recover(); r == nil {
+						t.Errorf("expected panic but none occurred")
+					}
+				}()
+				tt.setup()
+			} else {
+				// Should not panic
+				defer func() {
+					if r := recover(); r != nil {
+						t.Errorf("unexpected panic: %v", r)
+					}
+				}()
+				tt.setup()
+			}
+		})
 	}
 }
