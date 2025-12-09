@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/SmrutAI/Pedantigo/internal/constraints"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // parseTestTag is a test helper that parses pedantigo:"..." tags
@@ -135,9 +137,8 @@ func TestValidate_FlatStruct(t *testing.T) {
 			input:    Person{Name: "J", Email: "john@example.com", Age: 25},
 			wantErrs: 1,
 			errCheck: func(t *testing.T, errs []FieldError) {
-				if len(errs) > 0 && errs[0].Field != "Name" {
-					t.Errorf("expected Name field error, got %s", errs[0].Field)
-				}
+				require.Greater(t, len(errs), 0)
+				assert.Equal(t, "Name", errs[0].Field)
 			},
 		},
 		{
@@ -145,9 +146,8 @@ func TestValidate_FlatStruct(t *testing.T) {
 			input:    Person{Name: "John", Email: "john@example.com", Age: 10},
 			wantErrs: 1,
 			errCheck: func(t *testing.T, errs []FieldError) {
-				if len(errs) > 0 && errs[0].Field != "Age" {
-					t.Errorf("expected Age field error, got %s", errs[0].Field)
-				}
+				require.Greater(t, len(errs), 0)
+				assert.Equal(t, "Age", errs[0].Field)
 			},
 		},
 		{
@@ -155,9 +155,8 @@ func TestValidate_FlatStruct(t *testing.T) {
 			input:    Person{Name: "John", Email: "john@example.com", Age: 150},
 			wantErrs: 1,
 			errCheck: func(t *testing.T, errs []FieldError) {
-				if len(errs) > 0 && errs[0].Field != "Age" {
-					t.Errorf("expected Age field error, got %s", errs[0].Field)
-				}
+				require.Greater(t, len(errs), 0)
+				assert.Equal(t, "Age", errs[0].Field)
 			},
 		},
 		{
@@ -165,9 +164,8 @@ func TestValidate_FlatStruct(t *testing.T) {
 			input:    Person{Name: "John", Email: "invalid-email", Age: 25},
 			wantErrs: 1,
 			errCheck: func(t *testing.T, errs []FieldError) {
-				if len(errs) > 0 && errs[0].Field != "Email" {
-					t.Errorf("expected Email field error, got %s", errs[0].Field)
-				}
+				require.Greater(t, len(errs), 0)
+				assert.Equal(t, "Email", errs[0].Field)
 			},
 		},
 		{
@@ -205,9 +203,7 @@ func TestValidate_FlatStruct(t *testing.T) {
 				},
 			)
 
-			if len(errs) != tt.wantErrs {
-				t.Errorf("expected %d errors, got %d: %+v", tt.wantErrs, len(errs), errs)
-			}
+			assert.Len(t, errs, tt.wantErrs)
 
 			if tt.errCheck != nil {
 				tt.errCheck(t, errs)
@@ -256,9 +252,8 @@ func TestValidate_NestedStruct(t *testing.T) {
 			},
 			wantErrs: 1,
 			errCheck: func(t *testing.T, errs []FieldError) {
-				if len(errs) > 0 && errs[0].Field != "Address.City" {
-					t.Errorf("expected Address.City field error, got %s", errs[0].Field)
-				}
+				require.Greater(t, len(errs), 0)
+				assert.Equal(t, "Address.City", errs[0].Field)
 			},
 		},
 		{
@@ -272,8 +267,8 @@ func TestValidate_NestedStruct(t *testing.T) {
 			},
 			wantErrs: 0, // 'required' only checked during Unmarshal, not Validate
 			errCheck: func(t *testing.T, errs []FieldError) {
-				if len(errs) > 0 && errs[0].Field != "Address.Country" {
-					t.Errorf("expected Address.Country field error, got %s", errs[0].Field)
+				if len(errs) > 0 {
+					assert.NotEqual(t, "Address.Country", errs[0].Field)
 				}
 			},
 		},
@@ -288,9 +283,8 @@ func TestValidate_NestedStruct(t *testing.T) {
 			},
 			wantErrs: 1,
 			errCheck: func(t *testing.T, errs []FieldError) {
-				if len(errs) > 0 && errs[0].Field != "Name" {
-					t.Errorf("expected Name field error, got %s", errs[0].Field)
-				}
+				require.Greater(t, len(errs), 0)
+				assert.Equal(t, "Name", errs[0].Field)
 			},
 		},
 		{
@@ -315,9 +309,7 @@ func TestValidate_NestedStruct(t *testing.T) {
 
 			errs := validateFunc(reflect.ValueOf(tt.input), "")
 
-			if len(errs) != tt.wantErrs {
-				t.Errorf("expected %d errors, got %d: %+v", tt.wantErrs, len(errs), errs)
-			}
+			assert.Len(t, errs, tt.wantErrs)
 
 			if tt.errCheck != nil {
 				tt.errCheck(t, errs)
@@ -348,8 +340,8 @@ func TestValidate_Slices(t *testing.T) {
 			input:    Team{Members: []string{"Alice", "B", "Charlie"}},
 			wantErrs: 0, // "B" has length 1, satisfies min=1
 			errCheck: func(t *testing.T, errs []FieldError) {
-				if len(errs) > 0 && errs[0].Field != "Members[1]" {
-					t.Errorf("expected Members[1] field error, got %s", errs[0].Field)
+				if len(errs) > 0 {
+					assert.Equal(t, "Members[1]", errs[0].Field)
 				}
 			},
 		},
@@ -383,9 +375,7 @@ func TestValidate_Slices(t *testing.T) {
 				},
 			)
 
-			if len(errs) != tt.wantErrs {
-				t.Errorf("expected %d errors, got %d: %+v", tt.wantErrs, len(errs), errs)
-			}
+			assert.Len(t, errs, tt.wantErrs)
 
 			if tt.errCheck != nil {
 				tt.errCheck(t, errs)
@@ -426,9 +416,8 @@ func TestValidate_SliceOfStructs(t *testing.T) {
 			}},
 			wantErrs: 1,
 			errCheck: func(t *testing.T, errs []FieldError) {
-				if len(errs) > 0 && errs[0].Field != "Items[1].Name" {
-					t.Errorf("expected Items[1].Name field error, got %s", errs[0].Field)
-				}
+				require.Greater(t, len(errs), 0)
+				assert.Equal(t, "Items[1].Name", errs[0].Field)
 			},
 		},
 		{
@@ -451,9 +440,7 @@ func TestValidate_SliceOfStructs(t *testing.T) {
 
 			errs := validateFunc(reflect.ValueOf(tt.input), "")
 
-			if len(errs) != tt.wantErrs {
-				t.Errorf("expected %d errors, got %d: %+v", tt.wantErrs, len(errs), errs)
-			}
+			assert.Len(t, errs, tt.wantErrs)
 
 			if tt.errCheck != nil {
 				tt.errCheck(t, errs)
@@ -484,11 +471,8 @@ func TestValidate_Maps(t *testing.T) {
 			input:    Scores{Values: map[string]int{"Alice": 95, "Bob": -5}},
 			wantErrs: 1,
 			errCheck: func(t *testing.T, errs []FieldError) {
-				if len(errs) > 0 {
-					if errs[0].Field != "Values[Bob]" {
-						t.Errorf("expected Values[Bob] field error, got %s", errs[0].Field)
-					}
-				}
+				require.Greater(t, len(errs), 0)
+				assert.Equal(t, "Values[Bob]", errs[0].Field)
 			},
 		},
 		{
@@ -496,11 +480,8 @@ func TestValidate_Maps(t *testing.T) {
 			input:    Scores{Values: map[string]int{"Alice": 150, "Bob": 87}},
 			wantErrs: 1,
 			errCheck: func(t *testing.T, errs []FieldError) {
-				if len(errs) > 0 {
-					if errs[0].Field != "Values[Alice]" {
-						t.Errorf("expected Values[Alice] field error, got %s", errs[0].Field)
-					}
-				}
+				require.Greater(t, len(errs), 0)
+				assert.Equal(t, "Values[Alice]", errs[0].Field)
 			},
 		},
 		{
@@ -533,9 +514,7 @@ func TestValidate_Maps(t *testing.T) {
 				},
 			)
 
-			if len(errs) != tt.wantErrs {
-				t.Errorf("expected %d errors, got %d: %+v", tt.wantErrs, len(errs), errs)
-			}
+			assert.Len(t, errs, tt.wantErrs)
 
 			if tt.errCheck != nil {
 				tt.errCheck(t, errs)
@@ -576,9 +555,8 @@ func TestValidate_MapOfStructs(t *testing.T) {
 			}},
 			wantErrs: 1,
 			errCheck: func(t *testing.T, errs []FieldError) {
-				if len(errs) > 0 && errs[0].Field != "Entries[key2].Value" {
-					t.Errorf("expected Entries[key2].Value field error, got %s", errs[0].Field)
-				}
+				require.Greater(t, len(errs), 0)
+				assert.Equal(t, "Entries[key2].Value", errs[0].Field)
 			},
 		},
 	}
@@ -592,9 +570,7 @@ func TestValidate_MapOfStructs(t *testing.T) {
 
 			errs := validateFunc(reflect.ValueOf(tt.input), "")
 
-			if len(errs) != tt.wantErrs {
-				t.Errorf("expected %d errors, got %d: %+v", tt.wantErrs, len(errs), errs)
-			}
+			assert.Len(t, errs, tt.wantErrs)
 
 			if tt.errCheck != nil {
 				tt.errCheck(t, errs)
@@ -653,9 +629,7 @@ func TestValidate_ErrorAggregation(t *testing.T) {
 			},
 			wantCount: 4,
 			errCheck: func(t *testing.T, errs []FieldError) {
-				if len(errs) != 4 {
-					t.Errorf("expected exactly 4 errors, got %d", len(errs))
-				}
+				assert.Len(t, errs, 4)
 				// Verify we collected errors from all 4 fields
 				fields := make(map[string]bool)
 				for _, err := range errs {
@@ -668,9 +642,7 @@ func TestValidate_ErrorAggregation(t *testing.T) {
 					"Age":       true,
 				}
 				for field := range expectedFields {
-					if !fields[field] {
-						t.Errorf("missing error for field %s", field)
-					}
+					assert.True(t, fields[field], "missing error for field %s", field)
 				}
 			},
 		},
@@ -689,9 +661,7 @@ func TestValidate_ErrorAggregation(t *testing.T) {
 				},
 			)
 
-			if len(errs) != tt.wantCount {
-				t.Errorf("expected %d errors, got %d: %+v", tt.wantCount, len(errs), errs)
-			}
+			assert.Len(t, errs, tt.wantCount)
 
 			if tt.errCheck != nil {
 				tt.errCheck(t, errs)
@@ -754,9 +724,7 @@ func TestValidate_CrossFieldValidation(t *testing.T) {
 				},
 			)
 
-			if len(errs) != tt.wantFieldErr {
-				t.Errorf("expected %d field errors, got %d: %+v", tt.wantFieldErr, len(errs), errs)
-			}
+			assert.Len(t, errs, tt.wantFieldErr)
 
 			if tt.errCheck != nil {
 				tt.errCheck(t, errs)
@@ -802,9 +770,8 @@ func TestValidate_NestedCollections(t *testing.T) {
 			},
 			wantErrs: 1,
 			errCheck: func(t *testing.T, errs []FieldError) {
-				if len(errs) > 0 && errs[0].Field != "Configs[0].Name" {
-					t.Errorf("expected Configs[0].Name error, got %s", errs[0].Field)
-				}
+				require.Greater(t, len(errs), 0)
+				assert.Equal(t, "Configs[0].Name", errs[0].Field)
 			},
 		},
 		{
@@ -829,9 +796,7 @@ func TestValidate_NestedCollections(t *testing.T) {
 
 			errs := validateFunc(reflect.ValueOf(tt.input), "")
 
-			if len(errs) != tt.wantErrs {
-				t.Errorf("expected %d errors, got %d: %+v", tt.wantErrs, len(errs), errs)
-			}
+			assert.Len(t, errs, tt.wantErrs)
 
 			if tt.errCheck != nil {
 				tt.errCheck(t, errs)
@@ -889,9 +854,7 @@ func TestValidate_PointerFields(t *testing.T) {
 				},
 			)
 
-			if len(errs) != tt.wantErrs {
-				t.Errorf("expected %d errors, got %d: %+v", tt.wantErrs, len(errs), errs)
-			}
+			assert.Len(t, errs, tt.wantErrs)
 
 			if tt.errCheck != nil {
 				tt.errCheck(t, errs)
@@ -955,9 +918,7 @@ func TestValidate_ConstraintTypes(t *testing.T) {
 				},
 			)
 
-			if len(errs) != tt.wantErrs {
-				t.Errorf("expected %d errors, got %d: %+v", tt.wantErrs, len(errs), errs)
-			}
+			assert.Len(t, errs, tt.wantErrs)
 		})
 	}
 }
@@ -999,9 +960,7 @@ func TestValidate_UnexportedFields(t *testing.T) {
 				},
 			)
 
-			if len(errs) != tt.wantErrs {
-				t.Errorf("expected %d errors, got %d: %+v", tt.wantErrs, len(errs), errs)
-			}
+			assert.Len(t, errs, tt.wantErrs)
 		})
 	}
 }
@@ -1044,9 +1003,7 @@ func TestValidate_NoConstraints(t *testing.T) {
 				},
 			)
 
-			if len(errs) != tt.wantErrs {
-				t.Errorf("expected %d errors, got %d: %+v", tt.wantErrs, len(errs), errs)
-			}
+			assert.Len(t, errs, tt.wantErrs)
 		})
 	}
 }
@@ -1108,9 +1065,7 @@ func TestValidateNestedElements(t *testing.T) {
 
 			errs := validateFunc(reflect.ValueOf(tt.input), "")
 
-			if len(errs) != tt.wantNestedErrs {
-				t.Errorf("expected %d nested errors, got %d: %+v", tt.wantNestedErrs, len(errs), errs)
-			}
+			assert.Len(t, errs, tt.wantNestedErrs)
 		})
 	}
 }
@@ -1144,9 +1099,7 @@ func TestValidate_EmptyStruct(t *testing.T) {
 				},
 			)
 
-			if len(errs) != tt.wantErrs {
-				t.Errorf("expected %d errors, got %d", tt.wantErrs, len(errs))
-			}
+			assert.Len(t, errs, tt.wantErrs)
 		})
 	}
 }
@@ -1190,9 +1143,8 @@ func TestValidate_PathConstruction(t *testing.T) {
 
 			errs := validateFunc(reflect.ValueOf(tt.input), "")
 
-			if len(errs) > 0 && errs[0].Field != tt.wantPath {
-				t.Errorf("expected path %s, got %s", tt.wantPath, errs[0].Field)
-			}
+			require.Greater(t, len(errs), 0)
+			assert.Equal(t, tt.wantPath, errs[0].Field)
 		})
 	}
 }

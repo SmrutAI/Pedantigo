@@ -3,6 +3,9 @@ package deserialize
 import (
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestBuildFieldDeserializers_BasicTypes tests deserializer creation for primitive types
@@ -107,14 +110,11 @@ func TestBuildFieldDeserializers_BasicTypes(t *testing.T) {
 			typ := reflect.TypeOf(tt.structType)
 			deserializers := BuildFieldDeserializers(typ, opts, nil, nil)
 
-			if len(deserializers) != tt.expectedFieldCount {
-				t.Errorf("expected %d deserializers, got %d", tt.expectedFieldCount, len(deserializers))
-			}
+			assert.Equal(t, tt.expectedFieldCount, len(deserializers), "deserializer count mismatch")
 
 			for _, fieldName := range tt.expectedFields {
-				if _, exists := deserializers[fieldName]; !exists {
-					t.Errorf("expected deserializer for field %q, not found", fieldName)
-				}
+				_, exists := deserializers[fieldName]
+				assert.True(t, exists, "expected deserializer for field %q", fieldName)
 			}
 		})
 	}
@@ -174,14 +174,11 @@ func TestBuildFieldDeserializers_JSONTags(t *testing.T) {
 			typ := reflect.TypeOf(tt.structType)
 			deserializers := BuildFieldDeserializers(typ, opts, nil, nil)
 
-			if len(deserializers) != len(tt.expectedFields) {
-				t.Errorf("expected %d deserializers, got %d", len(tt.expectedFields), len(deserializers))
-			}
+			assert.Equal(t, len(tt.expectedFields), len(deserializers), "deserializer count mismatch")
 
 			for _, fieldName := range tt.expectedFields {
-				if _, exists := deserializers[fieldName]; !exists {
-					t.Errorf("expected deserializer for field %q, not found", fieldName)
-				}
+				_, exists := deserializers[fieldName]
+				assert.True(t, exists, "expected deserializer for field %q", fieldName)
 			}
 		})
 	}
@@ -227,14 +224,11 @@ func TestBuildFieldDeserializers_UnexportedFields(t *testing.T) {
 			typ := reflect.TypeOf(tt.structType)
 			deserializers := BuildFieldDeserializers(typ, opts, nil, nil)
 
-			if len(deserializers) != len(tt.expectedFields) {
-				t.Errorf("expected %d deserializers, got %d; got fields: %v", len(tt.expectedFields), len(deserializers), getMapKeys(deserializers))
-			}
+			assert.Equal(t, len(tt.expectedFields), len(deserializers), "expected %d deserializers, got %d; got fields: %v", len(tt.expectedFields), len(deserializers), getMapKeys(deserializers))
 
 			for _, fieldName := range tt.expectedFields {
-				if _, exists := deserializers[fieldName]; !exists {
-					t.Errorf("expected deserializer for field %q, not found", fieldName)
-				}
+				_, exists := deserializers[fieldName]
+				assert.True(t, exists, "expected deserializer for field %q", fieldName)
 			}
 		})
 	}
@@ -316,26 +310,13 @@ func TestBuildFieldDeserializers_Defaults(t *testing.T) {
 			typ := reflect.TypeOf(tt.structType)
 
 			if tt.shouldPanic {
-				defer func() {
-					if r := recover(); r == nil {
-						t.Error("expected panic, but got none")
-					} else if tt.panicMessageContains != "" {
-						msg := r.(string)
-						if !contains(msg, tt.panicMessageContains) {
-							t.Errorf("panic message %q does not contain %q", msg, tt.panicMessageContains)
-						}
-					}
-				}()
-				BuildFieldDeserializers(typ, opts, nil, nil)
-			} else {
-				func() {
-					defer func() {
-						if r := recover(); r != nil {
-							t.Errorf("unexpected panic: %v", r)
-						}
-					}()
+				assert.Panics(t, func() {
 					BuildFieldDeserializers(typ, opts, nil, nil)
-				}()
+				}, "expected panic")
+			} else {
+				assert.NotPanics(t, func() {
+					BuildFieldDeserializers(typ, opts, nil, nil)
+				}, "unexpected panic")
 			}
 		})
 	}
@@ -376,17 +357,9 @@ func TestBuildFieldDeserializers_DefaultUsingMethod(t *testing.T) {
 			typ := reflect.TypeOf(tt.structType)
 
 			if tt.shouldPanic {
-				defer func() {
-					if r := recover(); r == nil {
-						t.Error("expected panic, but got none")
-					} else if tt.panicMessageContains != "" {
-						msg := r.(string)
-						if !contains(msg, tt.panicMessageContains) {
-							t.Errorf("panic message %q does not contain %q", msg, tt.panicMessageContains)
-						}
-					}
-				}()
-				BuildFieldDeserializers(typ, opts, nil, nil)
+				assert.Panics(t, func() {
+					BuildFieldDeserializers(typ, opts, nil, nil)
+				}, "expected panic")
 			}
 		})
 	}
@@ -476,14 +449,11 @@ func TestBuildFieldDeserializers_Collections(t *testing.T) {
 			typ := reflect.TypeOf(tt.structType)
 			deserializers := BuildFieldDeserializers(typ, opts, nil, nil)
 
-			if len(deserializers) != tt.expectedFieldCount {
-				t.Errorf("expected %d deserializers, got %d", tt.expectedFieldCount, len(deserializers))
-			}
+			assert.Equal(t, tt.expectedFieldCount, len(deserializers), "deserializer count mismatch")
 
 			for _, fieldName := range tt.expectedFields {
-				if _, exists := deserializers[fieldName]; !exists {
-					t.Errorf("expected deserializer for field %q, not found", fieldName)
-				}
+				_, exists := deserializers[fieldName]
+				assert.True(t, exists, "expected deserializer for field %q", fieldName)
 			}
 		})
 	}
@@ -525,9 +495,7 @@ func TestBuildFieldDeserializers_NonStructType(t *testing.T) {
 			typ := reflect.TypeOf(tt.inputType)
 			deserializers := BuildFieldDeserializers(typ, opts, nil, nil)
 
-			if len(deserializers) != tt.expectedFieldCount {
-				t.Errorf("expected %d deserializers, got %d", tt.expectedFieldCount, len(deserializers))
-			}
+			assert.Equal(t, tt.expectedFieldCount, len(deserializers), "deserializer count mismatch")
 		})
 	}
 }
@@ -555,29 +523,18 @@ func TestBuildFieldDeserializers_FieldDeserializerCallable(t *testing.T) {
 	outPtr := reflect.ValueOf(&instance).Elem()
 
 	// Test that deserializer can be called with a present field
-	if nameDeserializer, exists := deserializers["Name"]; exists {
-		err := nameDeserializer(&outPtr, "John")
-		if err != nil {
-			t.Errorf("unexpected error calling deserializer: %v", err)
-		}
-		if !mockSetFieldCalled {
-			t.Error("expected setFieldValueFunc to be called")
-		}
-	} else {
-		t.Error("expected Name deserializer to exist")
-	}
+	nameDeserializer, exists := deserializers["Name"]
+	require.True(t, exists, "expected Name deserializer to exist")
+
+	err := nameDeserializer(&outPtr, "John")
+	assert.NoError(t, err, "unexpected error calling deserializer")
+	assert.True(t, mockSetFieldCalled, "expected setFieldValueFunc to be called")
 
 	// Test that deserializer can be called with missing field (sentinel)
 	mockSetFieldCalled = false
-	if nameDeserializer, exists := deserializers["Name"]; exists {
-		err := nameDeserializer(&outPtr, FieldMissingSentinel)
-		if err != nil {
-			t.Errorf("unexpected error calling deserializer with sentinel: %v", err)
-		}
-		if mockSetFieldCalled {
-			t.Error("expected setFieldValueFunc NOT to be called for missing field")
-		}
-	}
+	err = nameDeserializer(&outPtr, FieldMissingSentinel)
+	assert.NoError(t, err, "unexpected error calling deserializer with sentinel")
+	assert.False(t, mockSetFieldCalled, "expected setFieldValueFunc NOT to be called for missing field")
 }
 
 // TestBuildFieldDeserializers_RequiredFieldValidation tests required field tag validation
@@ -625,17 +582,15 @@ func TestBuildFieldDeserializers_RequiredFieldValidation(t *testing.T) {
 			instance := TestStruct{}
 			outPtr := reflect.ValueOf(&instance).Elem()
 
-			if nameDeserializer, exists := deserializers["Name"]; exists {
-				err := nameDeserializer(&outPtr, tt.fieldValue)
+			nameDeserializer, exists := deserializers["Name"]
+			require.True(t, exists, "expected Name deserializer to exist")
 
-				if tt.expectError && err == nil {
-					t.Error("expected error for required field, got nil")
-				}
-				if !tt.expectError && err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
+			err := nameDeserializer(&outPtr, tt.fieldValue)
+
+			if tt.expectError {
+				assert.Error(t, err, "expected error for required field")
 			} else {
-				t.Error("expected Name deserializer to exist")
+				assert.NoError(t, err, "unexpected error")
 			}
 		})
 	}
@@ -686,9 +641,8 @@ func TestBuildFieldDeserializers_ConstraintsParsed(t *testing.T) {
 			deserializers := BuildFieldDeserializers(typ, opts, nil, nil)
 
 			for _, fieldName := range tt.expectedFields {
-				if _, exists := deserializers[fieldName]; !exists {
-					t.Errorf("expected deserializer for field %q, not found", fieldName)
-				}
+				_, exists := deserializers[fieldName]
+				assert.True(t, exists, "expected deserializer for field %q", fieldName)
 			}
 		})
 	}
@@ -746,14 +700,11 @@ func TestBuildFieldDeserializers_EdgeCases(t *testing.T) {
 			typ := reflect.TypeOf(tt.structType)
 			deserializers := BuildFieldDeserializers(typ, opts, nil, nil)
 
-			if len(deserializers) != tt.expectedFieldCount {
-				t.Errorf("expected %d deserializers, got %d", tt.expectedFieldCount, len(deserializers))
-			}
+			assert.Equal(t, tt.expectedFieldCount, len(deserializers), "deserializer count mismatch")
 
 			for _, fieldName := range tt.expectedFields {
-				if _, exists := deserializers[fieldName]; !exists {
-					t.Errorf("expected deserializer for field %q, not found", fieldName)
-				}
+				_, exists := deserializers[fieldName]
+				assert.True(t, exists, "expected deserializer for field %q", fieldName)
 			}
 		})
 	}
@@ -784,14 +735,11 @@ func TestValidateDefaultMethod_ValidMethod(t *testing.T) {
 			typ := reflect.TypeOf(tt.structType)
 			err := ValidateDefaultMethod(typ, tt.methodName, tt.fieldType)
 
-			if tt.shouldErr && err == nil {
-				t.Error("expected error, got nil")
-			}
-			if !tt.shouldErr && err != nil {
-				t.Errorf("unexpected error: %v", err)
-			}
-			if tt.shouldErr && err != nil && !contains(err.Error(), tt.errContains) {
-				t.Errorf("error %q does not contain %q", err.Error(), tt.errContains)
+			if tt.shouldErr {
+				require.Error(t, err, "expected error, got nil")
+				assert.Contains(t, err.Error(), tt.errContains, "error message should contain expected text")
+			} else {
+				assert.NoError(t, err, "unexpected error")
 			}
 		})
 	}
@@ -830,14 +778,11 @@ func TestValidateDefaultMethod_SignatureValidation(t *testing.T) {
 			typ := reflect.TypeOf(tt.structType)
 			err := ValidateDefaultMethod(typ, tt.methodName, tt.fieldType)
 
-			if tt.shouldErr && err == nil {
-				t.Error("expected error, got nil")
-			}
-			if !tt.shouldErr && err != nil {
-				t.Errorf("unexpected error: %v", err)
-			}
-			if tt.shouldErr && err != nil && !contains(err.Error(), tt.contains) {
-				t.Errorf("error %q does not contain %q", err.Error(), tt.contains)
+			if tt.shouldErr {
+				require.Error(t, err, "expected error, got nil")
+				assert.Contains(t, err.Error(), tt.contains, "error message should contain expected text")
+			} else {
+				assert.NoError(t, err, "unexpected error")
 			}
 		})
 	}
@@ -942,14 +887,11 @@ func TestValidateDefaultMethod_ComprehensiveCases(t *testing.T) {
 			typ := reflect.TypeOf(tt.structType)
 			err := ValidateDefaultMethod(typ, tt.methodName, tt.fieldType)
 
-			if tt.shouldErr && err == nil {
-				t.Error("expected error, got nil")
-			}
-			if !tt.shouldErr && err != nil {
-				t.Errorf("unexpected error: %v", err)
-			}
-			if tt.shouldErr && err != nil && !contains(err.Error(), tt.errContains) {
-				t.Errorf("error %q does not contain %q", err.Error(), tt.errContains)
+			if tt.shouldErr {
+				require.Error(t, err, "expected error, got nil")
+				assert.Contains(t, err.Error(), tt.errContains, "error message should contain expected text")
+			} else {
+				assert.NoError(t, err, "unexpected error")
 			}
 		})
 	}
@@ -963,13 +905,4 @@ func getMapKeys(m map[string]FieldDeserializer) []string {
 		keys = append(keys, k)
 	}
 	return keys
-}
-
-func contains(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

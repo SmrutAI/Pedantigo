@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // ==================== Primitive Types ====================
@@ -56,28 +58,19 @@ func TestSetFieldValue_PrimitiveTypes(t *testing.T) {
 			field := v.FieldByName(tt.fieldName)
 
 			err := SetFieldValue(field, tt.value, field.Type(), recursiveSetFuncNoop)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
-			}
-
-			if !tt.wantErr {
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 				switch tt.fieldName {
 				case "Name":
-					if field.String() != tt.value.(string) {
-						t.Errorf("expected %q, got %q", tt.value, field.String())
-					}
+					assert.Equal(t, tt.value.(string), field.String())
 				case "Age":
-					if field.Int() != int64(tt.value.(int)) {
-						t.Errorf("expected %d, got %d", tt.value, field.Int())
-					}
+					assert.Equal(t, int64(tt.value.(int)), field.Int())
 				case "Score":
-					if field.Float() != tt.value.(float64) {
-						t.Errorf("expected %f, got %f", tt.value, field.Float())
-					}
+					assert.Equal(t, tt.value.(float64), field.Float())
 				case "Active":
-					if field.Bool() != tt.value.(bool) {
-						t.Errorf("expected %v, got %v", tt.value, field.Bool())
-					}
+					assert.Equal(t, tt.value.(bool), field.Bool())
 				}
 			}
 		})
@@ -130,8 +123,10 @@ func TestSetFieldValue_IntegerTypes(t *testing.T) {
 			field := v.FieldByName(tt.fieldName)
 
 			err := SetFieldValue(field, tt.value, field.Type(), recursiveSetFuncNoop)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -181,19 +176,14 @@ func TestSetFieldValue_Pointers(t *testing.T) {
 			field := v.FieldByName(tt.fieldName)
 
 			err := SetFieldValue(field, tt.value, field.Type(), recursiveSetFuncNoop)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
-			}
-
-			if !tt.wantErr {
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 				if tt.expectNil {
-					if !field.IsNil() {
-						t.Errorf("expected nil pointer, got %v", field.Elem())
-					}
+					assert.True(t, field.IsNil(), "expected nil pointer")
 				} else {
-					if field.IsNil() {
-						t.Errorf("expected non-nil pointer, got nil")
-					}
+					assert.False(t, field.IsNil(), "expected non-nil pointer")
 				}
 			}
 		})
@@ -238,13 +228,12 @@ func TestSetFieldValue_Slices(t *testing.T) {
 			field := v.FieldByName(tt.fieldName)
 
 			err := SetFieldValue(field, tt.value, field.Type(), recursiveSetFuncNoop)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
-			}
-
-			if !tt.wantErr && tt.value != nil {
-				if field.Len() != tt.expectLen {
-					t.Errorf("expected length %d, got %d", tt.expectLen, field.Len())
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				if tt.value != nil {
+					assert.Equal(t, tt.expectLen, field.Len())
 				}
 			}
 		})
@@ -283,13 +272,12 @@ func TestSetFieldValue_Maps(t *testing.T) {
 			field := v.FieldByName(tt.fieldName)
 
 			err := SetFieldValue(field, tt.value, field.Type(), recursiveSetFuncNoop)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
-			}
-
-			if !tt.wantErr && tt.value != nil {
-				if field.Len() != tt.expectLen {
-					t.Errorf("expected map length %d, got %d", tt.expectLen, field.Len())
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				if tt.value != nil {
+					assert.Equal(t, tt.expectLen, field.Len())
 				}
 			}
 		})
@@ -346,8 +334,10 @@ func TestSetFieldValue_TypeConversion(t *testing.T) {
 			field := v.FieldByName(tt.fieldName)
 
 			err := SetFieldValue(field, tt.value, field.Type(), recursiveSetFuncNoop)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -401,13 +391,12 @@ func TestSetFieldValue_TimeType(t *testing.T) {
 			field := v.FieldByName("CreatedAt")
 
 			err := SetFieldValue(field, tt.value, field.Type(), recursiveSetFuncNoop)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
-			}
-
-			if !tt.wantErr && tt.checkFn != nil {
-				if !tt.checkFn(s) {
-					t.Errorf("time value check failed")
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				if tt.checkFn != nil {
+					assert.True(t, tt.checkFn(s), "time value check failed")
 				}
 			}
 		})
@@ -465,13 +454,12 @@ func TestSetFieldValue_NestedStruct(t *testing.T) {
 			field := v.FieldByName("Address")
 
 			err := SetFieldValue(field, tt.value, field.Type(), recursiveSetFuncNoop)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
-			}
-
-			if !tt.wantErr && tt.checkFn != nil {
-				if !tt.checkFn(s) {
-					t.Errorf("struct value check failed")
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				if tt.checkFn != nil {
+					assert.True(t, tt.checkFn(s), "struct value check failed")
 				}
 			}
 		})
@@ -506,8 +494,10 @@ func TestSetFieldValue_UnsetField(t *testing.T) {
 			field := v.FieldByName(tt.fieldName)
 
 			err := SetFieldValue(field, tt.value, field.Type(), recursiveSetFuncNoop)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -559,13 +549,12 @@ func TestSetFieldValue_SliceOfStructs(t *testing.T) {
 			field := v.FieldByName("Items")
 
 			err := SetFieldValue(field, tt.value, field.Type(), recursiveSetFuncNoop)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
-			}
-
-			if !tt.wantErr && tt.checkFn != nil {
-				if !tt.checkFn(s) {
-					t.Errorf("slice of structs value check failed")
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				if tt.checkFn != nil {
+					assert.True(t, tt.checkFn(s), "slice of structs value check failed")
 				}
 			}
 		})
@@ -618,13 +607,12 @@ func TestSetFieldValue_MapWithStructValues(t *testing.T) {
 			field := v.FieldByName("Users")
 
 			err := SetFieldValue(field, tt.value, field.Type(), recursiveSetFuncNoop)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
-			}
-
-			if !tt.wantErr && tt.checkFn != nil {
-				if !tt.checkFn(s) {
-					t.Errorf("map with struct values check failed")
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				if tt.checkFn != nil {
+					assert.True(t, tt.checkFn(s), "map with struct values check failed")
 				}
 			}
 		})
@@ -668,8 +656,10 @@ func TestSetFieldValue_EdgeCases(t *testing.T) {
 			field := v.FieldByName(tt.fieldName)
 
 			err := SetFieldValue(field, tt.value, field.Type(), recursiveSetFuncNoop)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -720,13 +710,12 @@ func TestSetFieldValue_PointerSlice(t *testing.T) {
 			field := v.FieldByName(tt.fieldName)
 
 			err := SetFieldValue(field, tt.value, field.Type(), recursiveSetFuncNoop)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
-			}
-
-			if !tt.wantErr && tt.value != nil {
-				if field.Len() != tt.expectLen {
-					t.Errorf("expected length %d, got %d", tt.expectLen, field.Len())
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				if tt.value != nil {
+					assert.Equal(t, tt.expectLen, field.Len())
 				}
 			}
 		})
@@ -756,8 +745,10 @@ func TestSetFieldValue_PointerPointer(t *testing.T) {
 			field := v.FieldByName("DoublePtr")
 
 			err := SetFieldValue(field, tt.value, field.Type(), recursiveSetFuncNoop)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -791,9 +782,7 @@ func TestSetDefaultValue_StringDefaults(t *testing.T) {
 
 			SetDefaultValue(field, tt.defaultValue, recursiveSetDefault)
 
-			if field.String() != tt.expected {
-				t.Errorf("expected %q, got %q", tt.expected, field.String())
-			}
+			assert.Equal(t, tt.expected, field.String())
 		})
 	}
 }
@@ -832,9 +821,7 @@ func TestSetDefaultValue_IntDefaults(t *testing.T) {
 
 			SetDefaultValue(field, tt.defaultValue, recursiveSetDefault)
 
-			if field.Int() != tt.expected {
-				t.Errorf("expected %d, got %d", tt.expected, field.Int())
-			}
+			assert.Equal(t, tt.expected, field.Int())
 		})
 	}
 }
@@ -873,9 +860,7 @@ func TestSetDefaultValue_UintDefaults(t *testing.T) {
 
 			SetDefaultValue(field, tt.defaultValue, recursiveSetDefault)
 
-			if field.Uint() != tt.expected {
-				t.Errorf("expected %d, got %d", tt.expected, field.Uint())
-			}
+			assert.Equal(t, tt.expected, field.Uint())
 		})
 	}
 }
@@ -908,9 +893,7 @@ func TestSetDefaultValue_FloatDefaults(t *testing.T) {
 
 			SetDefaultValue(field, tt.defaultValue, recursiveSetDefault)
 
-			if field.Float() != tt.expected {
-				t.Errorf("expected %f, got %f", tt.expected, field.Float())
-			}
+			assert.Equal(t, tt.expected, field.Float())
 		})
 	}
 }
@@ -943,9 +926,7 @@ func TestSetDefaultValue_BoolDefaults(t *testing.T) {
 
 			SetDefaultValue(field, tt.defaultValue, recursiveSetDefault)
 
-			if field.Bool() != tt.expected {
-				t.Errorf("expected %v, got %v", tt.expected, field.Bool())
-			}
+			assert.Equal(t, tt.expected, field.Bool())
 		})
 	}
 }
@@ -1006,9 +987,7 @@ func TestSetDefaultValue_PointerDefaults(t *testing.T) {
 
 			SetDefaultValue(field, tt.defaultValue, recursiveSetDefault)
 
-			if !tt.checkFn(s) {
-				t.Errorf("pointer default value check failed")
-			}
+			assert.True(t, tt.checkFn(s), "pointer default value check failed")
 		})
 	}
 }
@@ -1031,9 +1010,7 @@ func TestSetDefaultValue_UnsettableField(t *testing.T) {
 	exported := v.FieldByName("Exported")
 	SetDefaultValue(exported, "success", recursiveSetDefault)
 
-	if exported.String() != "success" {
-		t.Errorf("expected exported field to be set to 'success', got %q", exported.String())
-	}
+	assert.Equal(t, "success", exported.String())
 }
 
 // ==================== Helper Functions ====================
@@ -1094,10 +1071,7 @@ func Test_isValidConversion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := isValidConversion(tt.from, tt.to)
-			if result != tt.expected {
-				t.Errorf("isValidConversion(%v, %v) = %v, expected %v",
-					tt.from, tt.to, result, tt.expected)
-			}
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

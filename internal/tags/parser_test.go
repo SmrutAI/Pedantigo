@@ -3,6 +3,9 @@ package tags
 import (
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestParseTag_ValidConstraints tests valid constraint parsing in table-driven format.
@@ -87,25 +90,16 @@ func TestParseTag_ValidConstraints(t *testing.T) {
 			constraints := ParseTag(tt.tag)
 
 			// Check non-nil for valid pedantigo tags
-			if constraints == nil {
-				t.Fatal("expected constraints map, got nil")
-			}
+			require.NotNil(t, constraints, "expected constraints map, got nil")
 
 			// Check length
-			if len(constraints) != tt.wantLength {
-				t.Errorf("expected %d constraints, got %d: %v", tt.wantLength, len(constraints), constraints)
-			}
+			assert.Len(t, constraints, tt.wantLength, "expected %d constraints, got %d", tt.wantLength, len(constraints))
 
 			// Check each expected key and value
 			for key, expectedVal := range tt.wantKeys {
 				val, ok := constraints[key]
-				if !ok {
-					t.Errorf("expected constraint key %q, not found in %v", key, constraints)
-					continue
-				}
-				if val != expectedVal {
-					t.Errorf("constraint %q: expected value %q, got %q", key, expectedVal, val)
-				}
+				require.True(t, ok, "expected constraint key %q, not found in %v", key, constraints)
+				assert.Equal(t, expectedVal, val, "constraint %q: expected value %q, got %q", key, expectedVal, val)
 			}
 		})
 	}
@@ -158,35 +152,24 @@ func TestParseTag_InvalidInputs(t *testing.T) {
 			constraints := ParseTag(tt.tag)
 
 			// Check nil expectation
-			if tt.wantNil && constraints != nil {
-				t.Errorf("expected nil constraints, got %v", constraints)
+			if tt.wantNil {
+				assert.Nil(t, constraints, "expected nil constraints, got %v", constraints)
 				return
 			}
-			if !tt.wantNil && constraints == nil {
-				t.Error("expected non-nil constraints, got nil")
-				return
+			require.NotNil(t, constraints, "expected non-nil constraints, got nil")
+
+			// Check empty expectation
+			if tt.wantEmpty {
+				assert.Empty(t, constraints, "expected empty constraints, got %v", constraints)
+			} else {
+				assert.NotEmpty(t, constraints, "expected non-empty constraints, got empty")
 			}
 
-			// Check empty expectation (if not nil)
-			if constraints != nil {
-				if tt.wantEmpty && len(constraints) != 0 {
-					t.Errorf("expected empty constraints, got %v", constraints)
-				}
-				if !tt.wantEmpty && len(constraints) == 0 {
-					t.Error("expected non-empty constraints, got empty")
-				}
-
-				// Verify any specified keys
-				for key, expectedVal := range tt.wantKeys {
-					val, ok := constraints[key]
-					if !ok {
-						t.Errorf("expected constraint key %q, not found in %v", key, constraints)
-						continue
-					}
-					if val != expectedVal {
-						t.Errorf("constraint %q: expected value %q, got %q", key, expectedVal, val)
-					}
-				}
+			// Verify any specified keys
+			for key, expectedVal := range tt.wantKeys {
+				val, ok := constraints[key]
+				require.True(t, ok, "expected constraint key %q, not found in %v", key, constraints)
+				assert.Equal(t, expectedVal, val, "constraint %q: expected value %q, got %q", key, expectedVal, val)
 			}
 		})
 	}
