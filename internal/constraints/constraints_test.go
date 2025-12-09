@@ -1,8 +1,10 @@
 package constraints
 
 import (
+	"reflect"
 	"regexp"
 	"testing"
+	"time"
 )
 
 // TestMaxConstraint tests maxConstraint.Validate() for numeric values
@@ -821,6 +823,529 @@ func TestEmailConstraint(t *testing.T) {
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			}
+		})
+	}
+}
+
+// TestBuildMaxConstraint tests buildMaxConstraint builder function
+func TestBuildMaxConstraint(t *testing.T) {
+	tests := []struct {
+		name      string
+		value     string
+		fieldType reflect.Type
+		wantType  string
+		wantOk    bool
+	}{
+		// String type should create maxLengthConstraint
+		{name: "string field", value: "10", fieldType: reflect.TypeOf(""), wantType: "maxLengthConstraint", wantOk: true},
+		{name: "slice field", value: "5", fieldType: reflect.TypeOf([]int{}), wantType: "maxLengthConstraint", wantOk: true},
+		{name: "array field", value: "3", fieldType: reflect.TypeOf([3]int{}), wantType: "maxLengthConstraint", wantOk: true},
+
+		// Numeric types should create maxConstraint
+		{name: "int field", value: "100", fieldType: reflect.TypeOf(0), wantType: "maxConstraint", wantOk: true},
+		{name: "int64 field", value: "100", fieldType: reflect.TypeOf(int64(0)), wantType: "maxConstraint", wantOk: true},
+		{name: "uint field", value: "100", fieldType: reflect.TypeOf(uint(0)), wantType: "maxConstraint", wantOk: true},
+		{name: "float64 field", value: "100", fieldType: reflect.TypeOf(float64(0)), wantType: "maxConstraint", wantOk: true},
+
+		// Pointer types should unwrap
+		{name: "pointer to string", value: "10", fieldType: reflect.TypeOf((*string)(nil)), wantType: "maxLengthConstraint", wantOk: true},
+		{name: "pointer to int", value: "100", fieldType: reflect.TypeOf((*int)(nil)), wantType: "maxConstraint", wantOk: true},
+
+		// Invalid value should fail
+		{name: "invalid value", value: "not-a-number", fieldType: reflect.TypeOf(0), wantType: "", wantOk: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			constraint, ok := buildMaxConstraint(tt.value, tt.fieldType)
+
+			if ok != tt.wantOk {
+				t.Errorf("expected ok=%v, got %v", tt.wantOk, ok)
+			}
+
+			if !ok {
+				return
+			}
+
+			switch tt.wantType {
+			case "maxLengthConstraint":
+				if _, isMaxLength := constraint.(maxLengthConstraint); !isMaxLength {
+					t.Errorf("expected maxLengthConstraint, got %T", constraint)
+				}
+			case "maxConstraint":
+				if _, isMax := constraint.(maxConstraint); !isMax {
+					t.Errorf("expected maxConstraint, got %T", constraint)
+				}
+			}
+		})
+	}
+}
+
+// TestBuildRegexConstraint tests buildRegexConstraint builder function
+func TestBuildRegexConstraint(t *testing.T) {
+	tests := []struct {
+		name        string
+		pattern     string
+		shouldPanic bool
+		testValue   string
+		wantErr     bool
+	}{
+		// Valid patterns
+		{name: "valid pattern lowercase", pattern: "^[a-z]+$", shouldPanic: false, testValue: "hello", wantErr: false},
+		{name: "valid pattern digits", pattern: "^[0-9]+$", shouldPanic: false, testValue: "12345", wantErr: false},
+		{name: "valid pattern email-like", pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", shouldPanic: false, testValue: "test@example.com", wantErr: false},
+
+		// Invalid value should fail validation
+		{name: "pattern mismatch", pattern: "^[a-z]+$", shouldPanic: false, testValue: "HELLO", wantErr: true},
+
+		// Invalid pattern should panic
+		{name: "invalid regex", pattern: "[unclosed", shouldPanic: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.shouldPanic {
+				defer func() {
+					if r := recover(); r == nil {
+						t.Error("expected panic but did not panic")
+					}
+				}()
+				_ = buildRegexConstraint(tt.pattern)
+				return
+			}
+
+			constraint := buildRegexConstraint(tt.pattern)
+			if constraint == nil {
+				t.Fatal("expected non-nil constraint")
+			}
+
+			// Test validation if we have a test value
+			if tt.testValue != "" {
+				err := constraint.Validate(tt.testValue)
+				if (err != nil) != tt.wantErr {
+					t.Errorf("Validate(%q) wantErr=%v, got err=%v", tt.testValue, tt.wantErr, err)
+				}
+			}
+		})
+	}
+}
+
+// TestBuildEnumConstraint tests buildEnumConstraint builder function
+func TestBuildEnumConstraint(t *testing.T) {
+	tests := []struct {
+		name      string
+		value     string
+		testValue any
+		wantErr   bool
+	}{
+		// Valid enum values
+		{name: "single value match", value: "red", testValue: "red", wantErr: false},
+		{name: "multiple values match first", value: "red green blue", testValue: "red", wantErr: false},
+		{name: "multiple values match middle", value: "red green blue", testValue: "green", wantErr: false},
+		{name: "multiple values match last", value: "red green blue", testValue: "blue", wantErr: false},
+
+		// Invalid enum values
+		{name: "single value mismatch", value: "red", testValue: "blue", wantErr: true},
+		{name: "multiple values mismatch", value: "red green blue", testValue: "yellow", wantErr: true},
+		{name: "case sensitive mismatch", value: "red", testValue: "RED", wantErr: true},
+
+		// Empty and whitespace handling
+		{name: "multiple spaces", value: "red   green   blue", testValue: "green", wantErr: false},
+		{name: "trailing spaces", value: "red green blue  ", testValue: "blue", wantErr: false},
+		{name: "leading spaces", value: "  red green blue", testValue: "red", wantErr: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			constraint := buildEnumConstraint(tt.value)
+			if constraint == nil {
+				t.Fatal("expected non-nil constraint")
+			}
+
+			err := constraint.Validate(tt.testValue)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate(%v) wantErr=%v, got err=%v", tt.testValue, tt.wantErr, err)
+			}
+		})
+	}
+}
+
+// TestToFloat64_AllNumericTypes tests toFloat64 with all numeric type cases
+func TestToFloat64_AllNumericTypes(t *testing.T) {
+	tests := []struct {
+		name     string
+		value    any
+		expected float64
+	}{
+		// Signed integers
+		{name: "int", value: int(42), expected: 42.0},
+		{name: "int8", value: int8(42), expected: 42.0},
+		{name: "int16", value: int16(42), expected: 42.0},
+		{name: "int32", value: int32(42), expected: 42.0},
+		{name: "int64", value: int64(42), expected: 42.0},
+		// Unsigned integers
+		{name: "uint", value: uint(42), expected: 42.0},
+		{name: "uint8", value: uint8(42), expected: 42.0},
+		{name: "uint16", value: uint16(42), expected: 42.0},
+		{name: "uint32", value: uint32(42), expected: 42.0},
+		{name: "uint64", value: uint64(42), expected: 42.0},
+		// Floats
+		{name: "float32", value: float32(42.5), expected: 42.5},
+		{name: "float64", value: float64(42.5), expected: 42.5},
+		// Non-numeric (returns 0)
+		{name: "string", value: "test", expected: 0.0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val := reflect.ValueOf(tt.value)
+			result := toFloat64(val)
+			if result != tt.expected {
+				t.Errorf("toFloat64(%v) = %v, want %v", tt.value, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestCheckTypeCompatibility_BoolAndTime tests missing branches in CheckTypeCompatibility
+func TestCheckTypeCompatibility_BoolAndTime(t *testing.T) {
+	tests := []struct {
+		name    string
+		a       any
+		b       any
+		wantErr bool
+	}{
+		// Bool types
+		{name: "bool compatible", a: true, b: false, wantErr: false},
+		{name: "bool vs int incompatible", a: true, b: 42, wantErr: true},
+		// Time types
+		{name: "time.Time compatible", a: time.Now(), b: time.Now(), wantErr: false},
+		{name: "time vs string incompatible", a: time.Now(), b: "test", wantErr: true},
+		// Nil cases
+		{name: "both nil", a: nil, b: nil, wantErr: false},
+		{name: "one nil non-pointer", a: nil, b: 42, wantErr: true},
+		{name: "nil vs string", a: "test", b: nil, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := CheckTypeCompatibility(tt.a, tt.b)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CheckTypeCompatibility(%v, %v) wantErr=%v, got err=%v", tt.a, tt.b, tt.wantErr, err)
+			}
+		})
+	}
+}
+
+// TestDereference_PointerLevels tests Dereference with various pointer levels
+func TestDereference_PointerLevels(t *testing.T) {
+	tests := []struct {
+		name     string
+		getType  func() reflect.Type
+		expected reflect.Kind
+	}{
+		{
+			name:     "non-pointer",
+			getType:  func() reflect.Type { return reflect.TypeOf(42) },
+			expected: reflect.Int,
+		},
+		{
+			name: "single pointer",
+			getType: func() reflect.Type {
+				x := 42
+				return reflect.TypeOf(&x)
+			},
+			expected: reflect.Int,
+		},
+		{
+			name: "double pointer",
+			getType: func() reflect.Type {
+				x := 42
+				p1 := &x
+				return reflect.TypeOf(&p1)
+			},
+			expected: reflect.Int,
+		},
+		{
+			name: "triple pointer",
+			getType: func() reflect.Type {
+				x := 42
+				p1 := &x
+				p2 := &p1
+				return reflect.TypeOf(&p2)
+			},
+			expected: reflect.Int,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Dereference(tt.getType())
+			if result.Kind() != tt.expected {
+				t.Errorf("Dereference() kind = %v, want %v", result.Kind(), tt.expected)
+			}
+		})
+	}
+}
+
+// TestCompareToString_BoolAndDefault tests missing branches in CompareToString
+func TestCompareToString_BoolAndDefault(t *testing.T) {
+	tests := []struct {
+		name     string
+		value    any
+		expected string
+	}{
+		// Bool cases
+		{name: "bool true", value: true, expected: "true"},
+		{name: "bool false", value: false, expected: "false"},
+		// Pointer to bool
+		{name: "pointer to bool", value: func() *bool { b := true; return &b }(), expected: "true"},
+		{name: "nil pointer", value: (*int)(nil), expected: ""},
+		// Default case (non-standard types)
+		{name: "struct default", value: struct{ X int }{X: 42}, expected: "{42}"},
+		{name: "slice default", value: []int{1, 2, 3}, expected: "[1 2 3]"},
+		// Already covered types (sanity check)
+		{name: "string", value: "test", expected: "test"},
+		{name: "int", value: 42, expected: "42"},
+		{name: "uint", value: uint(42), expected: "42"},
+		{name: "float", value: 42.5, expected: "42.5"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := CompareToString(tt.value)
+			if result != tt.expected {
+				t.Errorf("CompareToString(%v) = %q, want %q", tt.value, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestBuildConstraints_MissingBranches tests uncovered constraint types in BuildConstraints
+func TestBuildConstraints_MissingBranches(t *testing.T) {
+	tests := []struct {
+		name          string
+		constraints   map[string]string
+		fieldType     reflect.Type
+		expectedCount int
+		expectedTypes []string
+	}{
+		{
+			name:          "gt constraint",
+			constraints:   map[string]string{"gt": "10.5"},
+			fieldType:     reflect.TypeOf(float64(0)),
+			expectedCount: 1,
+			expectedTypes: []string{"gtConstraint"},
+		},
+		{
+			name:          "gte constraint",
+			constraints:   map[string]string{"gte": "20.5"},
+			fieldType:     reflect.TypeOf(float64(0)),
+			expectedCount: 1,
+			expectedTypes: []string{"geConstraint"},
+		},
+		{
+			name:          "lt constraint",
+			constraints:   map[string]string{"lt": "30.5"},
+			fieldType:     reflect.TypeOf(float64(0)),
+			expectedCount: 1,
+			expectedTypes: []string{"ltConstraint"},
+		},
+		{
+			name:          "lte constraint",
+			constraints:   map[string]string{"lte": "40.5"},
+			fieldType:     reflect.TypeOf(float64(0)),
+			expectedCount: 1,
+			expectedTypes: []string{"leConstraint"},
+		},
+		{
+			name:          "ipv4 constraint",
+			constraints:   map[string]string{"ipv4": ""},
+			fieldType:     reflect.TypeOf(""),
+			expectedCount: 1,
+			expectedTypes: []string{"ipv4Constraint"},
+		},
+		{
+			name:          "ipv6 constraint",
+			constraints:   map[string]string{"ipv6": ""},
+			fieldType:     reflect.TypeOf(""),
+			expectedCount: 1,
+			expectedTypes: []string{"ipv6Constraint"},
+		},
+		{
+			name:          "default constraint",
+			constraints:   map[string]string{"default": "test"},
+			fieldType:     reflect.TypeOf(""),
+			expectedCount: 1,
+			expectedTypes: []string{"defaultConstraint"},
+		},
+		{
+			name:          "gt with invalid float",
+			constraints:   map[string]string{"gt": "invalid"},
+			fieldType:     reflect.TypeOf(float64(0)),
+			expectedCount: 0,
+			expectedTypes: []string{},
+		},
+		{
+			name:          "gte with invalid float",
+			constraints:   map[string]string{"gte": "not-a-number"},
+			fieldType:     reflect.TypeOf(float64(0)),
+			expectedCount: 0,
+			expectedTypes: []string{},
+		},
+		{
+			name:          "lt with invalid float",
+			constraints:   map[string]string{"lt": "xyz"},
+			fieldType:     reflect.TypeOf(float64(0)),
+			expectedCount: 0,
+			expectedTypes: []string{},
+		},
+		{
+			name:          "lte with invalid float",
+			constraints:   map[string]string{"lte": "abc"},
+			fieldType:     reflect.TypeOf(float64(0)),
+			expectedCount: 0,
+			expectedTypes: []string{},
+		},
+		{
+			name:          "email constraint",
+			constraints:   map[string]string{"email": ""},
+			fieldType:     reflect.TypeOf(""),
+			expectedCount: 1,
+			expectedTypes: []string{"emailConstraint"},
+		},
+		{
+			name:          "url constraint",
+			constraints:   map[string]string{"url": ""},
+			fieldType:     reflect.TypeOf(""),
+			expectedCount: 1,
+			expectedTypes: []string{"urlConstraint"},
+		},
+		{
+			name:          "uuid constraint",
+			constraints:   map[string]string{"uuid": ""},
+			fieldType:     reflect.TypeOf(""),
+			expectedCount: 1,
+			expectedTypes: []string{"uuidConstraint"},
+		},
+		{
+			name:          "regexp constraint",
+			constraints:   map[string]string{"regexp": "^[a-z]+$"},
+			fieldType:     reflect.TypeOf(""),
+			expectedCount: 1,
+			expectedTypes: []string{"regexConstraint"},
+		},
+		{
+			name:          "oneof constraint",
+			constraints:   map[string]string{"oneof": "red green blue"},
+			fieldType:     reflect.TypeOf(""),
+			expectedCount: 1,
+			expectedTypes: []string{"enumConstraint"},
+		},
+		{
+			name:          "required constraint (skipped)",
+			constraints:   map[string]string{"required": ""},
+			fieldType:     reflect.TypeOf(""),
+			expectedCount: 0,
+			expectedTypes: []string{},
+		},
+		{
+			name:          "multiple constraints",
+			constraints:   map[string]string{"gt": "5", "lte": "100", "ipv4": "", "default": "10"},
+			fieldType:     reflect.TypeOf(""),
+			expectedCount: 4,
+			expectedTypes: []string{"gtConstraint", "leConstraint", "ipv4Constraint", "defaultConstraint"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := BuildConstraints(tt.constraints, tt.fieldType)
+			if len(result) != tt.expectedCount {
+				t.Errorf("BuildConstraints() returned %d constraints, want %d", len(result), tt.expectedCount)
+			}
+
+			// Verify constraint types (order may vary due to map iteration)
+			if len(tt.expectedTypes) > 0 {
+				foundTypes := make(map[string]bool)
+				for _, c := range result {
+					typeName := reflect.TypeOf(c).Name()
+					foundTypes[typeName] = true
+				}
+				for _, expectedType := range tt.expectedTypes {
+					if !foundTypes[expectedType] {
+						t.Errorf("Expected constraint type %s not found", expectedType)
+					}
+				}
+			}
+		})
+	}
+}
+
+// TestParseConditionalConstraint_ErrorPath tests the false return branch
+func TestParseConditionalConstraint_ErrorPath(t *testing.T) {
+	tests := []struct {
+		name       string
+		value      string
+		separator  string
+		wantOk     bool
+		wantFirst  string
+		wantSecond string
+	}{
+		{
+			name:       "valid two parts",
+			value:      "field:value",
+			separator:  ":",
+			wantOk:     true,
+			wantFirst:  "field",
+			wantSecond: "value",
+		},
+		{
+			name:       "no separator",
+			value:      "fieldvalue",
+			separator:  ":",
+			wantOk:     false,
+			wantFirst:  "",
+			wantSecond: "",
+		},
+		{
+			name:       "empty value",
+			value:      "",
+			separator:  ":",
+			wantOk:     false,
+			wantFirst:  "",
+			wantSecond: "",
+		},
+		{
+			name:       "only separator",
+			value:      ":",
+			separator:  ":",
+			wantOk:     true,
+			wantFirst:  "",
+			wantSecond: "",
+		},
+		{
+			name:       "multiple separators (splits on first)",
+			value:      "field:value:extra",
+			separator:  ":",
+			wantOk:     true,
+			wantFirst:  "field",
+			wantSecond: "value:extra",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			first, second, ok := parseConditionalConstraint(tt.value, tt.separator)
+			if ok != tt.wantOk {
+				t.Errorf("parseConditionalConstraint() ok = %v, want %v", ok, tt.wantOk)
+			}
+			if first != tt.wantFirst {
+				t.Errorf("parseConditionalConstraint() first = %q, want %q", first, tt.wantFirst)
+			}
+			if second != tt.wantSecond {
+				t.Errorf("parseConditionalConstraint() second = %q, want %q", second, tt.wantSecond)
 			}
 		})
 	}
