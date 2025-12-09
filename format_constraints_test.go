@@ -205,169 +205,131 @@ func TestUUID(t *testing.T) {
 // regex constraint tests
 // ==================================================
 
-func TestRegex_ValidMatch(t *testing.T) {
-	type Code struct {
-		Value string `json:"value" pedantigo:"regexp=^[A-Z]{3}$"`
+func TestRegex_UppercasePattern(t *testing.T) {
+	tests := []struct {
+		name       string
+		json       string
+		usePointer bool
+		expectErr  bool
+		expectVal  string
+		expectNil  bool
+	}{
+		{"Valid match", `{"value":"ABC"}`, false, false, "ABC", false},
+		{"Invalid match", `{"value":"abc"}`, false, true, "", false},
+		{"Wrong length", `{"value":"ABCD"}`, false, true, "", false},
+		{"Empty string", `{"value":""}`, false, false, "", false},
+		{"Pointer invalid", `{"value":"abc"}`, true, true, "", false},
+		{"Pointer valid", `{"value":"ABC"}`, true, false, "ABC", false},
+		{"Nil pointer", `{"value":null}`, true, false, "", true},
 	}
 
-	validator := New[Code]()
-	jsonData := []byte(`{"value":"ABC"}`)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.usePointer {
+				type Code struct {
+					Value *string `json:"value" pedantigo:"regexp=^[A-Z]{3}$"`
+				}
+				validator := New[Code]()
+				code, err := validator.Unmarshal([]byte(tt.json))
 
-	code, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for valid regex match, got %v", err)
-	}
+				if tt.expectErr {
+					if err == nil {
+						t.Fatal("expected validation error")
+					}
+					ve, ok := err.(*ValidationError)
+					if !ok {
+						t.Fatalf("expected *ValidationError, got %T", err)
+					}
+					foundError := false
+					for _, fieldErr := range ve.Errors {
+						if fieldErr.Field == "Value" && fieldErr.Message == "must match pattern '^[A-Z]{3}$'" {
+							foundError = true
+						}
+					}
+					if !foundError {
+						t.Errorf("expected 'must match pattern' error, got %v", ve.Errors)
+					}
+				} else {
+					if err != nil {
+						t.Errorf("unexpected error: %v", err)
+					}
+					if tt.expectNil {
+						if code.Value != nil {
+							t.Errorf("expected nil Value pointer, got %v", code.Value)
+						}
+					} else if code.Value == nil || *code.Value != tt.expectVal {
+						t.Errorf("expected value %q, got %v", tt.expectVal, code.Value)
+					}
+				}
+			} else {
+				type Code struct {
+					Value string `json:"value" pedantigo:"regexp=^[A-Z]{3}$"`
+				}
+				validator := New[Code]()
+				code, err := validator.Unmarshal([]byte(tt.json))
 
-	if code.Value != "ABC" {
-		t.Errorf("expected value 'ABC', got %q", code.Value)
-	}
-}
-
-func TestRegex_InvalidMatch(t *testing.T) {
-	type Code struct {
-		Value string `json:"value" pedantigo:"regexp=^[A-Z]{3}$"`
-	}
-
-	validator := New[Code]()
-	jsonData := []byte(`{"value":"abc"}`)
-
-	_, err := validator.Unmarshal(jsonData)
-	if err == nil {
-		t.Fatal("expected validation error for invalid regex match")
-	}
-
-	ve, ok := err.(*ValidationError)
-	if !ok {
-		t.Fatalf("expected *ValidationError, got %T", err)
-	}
-
-	foundError := false
-	for _, fieldErr := range ve.Errors {
-		if fieldErr.Field == "Value" && fieldErr.Message == "must match pattern '^[A-Z]{3}$'" {
-			foundError = true
-		}
-	}
-
-	if !foundError {
-		t.Errorf("expected 'must match pattern' error, got %v", ve.Errors)
-	}
-}
-
-func TestRegex_WrongLength(t *testing.T) {
-	type Code struct {
-		Value string `json:"value" pedantigo:"regexp=^[A-Z]{3}$"`
-	}
-
-	validator := New[Code]()
-	jsonData := []byte(`{"value":"ABCD"}`)
-
-	_, err := validator.Unmarshal(jsonData)
-	if err == nil {
-		t.Fatal("expected validation error for wrong length")
-	}
-
-	ve, ok := err.(*ValidationError)
-	if !ok {
-		t.Fatalf("expected *ValidationError, got %T", err)
-	}
-
-	foundError := false
-	for _, fieldErr := range ve.Errors {
-		if fieldErr.Field == "Value" && fieldErr.Message == "must match pattern '^[A-Z]{3}$'" {
-			foundError = true
-		}
-	}
-
-	if !foundError {
-		t.Errorf("expected 'must match pattern' error, got %v", ve.Errors)
+				if tt.expectErr {
+					if err == nil {
+						t.Fatal("expected validation error")
+					}
+					ve, ok := err.(*ValidationError)
+					if !ok {
+						t.Fatalf("expected *ValidationError, got %T", err)
+					}
+					foundError := false
+					for _, fieldErr := range ve.Errors {
+						if fieldErr.Field == "Value" && fieldErr.Message == "must match pattern '^[A-Z]{3}$'" {
+							foundError = true
+						}
+					}
+					if !foundError {
+						t.Errorf("expected 'must match pattern' error, got %v", ve.Errors)
+					}
+				} else {
+					if err != nil {
+						t.Errorf("unexpected error: %v", err)
+					}
+					if code.Value != tt.expectVal {
+						t.Errorf("expected value %q, got %q", tt.expectVal, code.Value)
+					}
+				}
+			}
+		})
 	}
 }
 
 func TestRegex_DigitsPattern(t *testing.T) {
-	type Code struct {
-		Value string `json:"value" pedantigo:"regexp=^\\d{4}$"`
+	tests := []struct {
+		name      string
+		json      string
+		expectErr bool
+		expectVal string
+	}{
+		{"Valid digits", `{"value":"1234"}`, false, "1234"},
+		{"Invalid non-digits", `{"value":"abcd"}`, true, ""},
 	}
 
-	validator := New[Code]()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			type Code struct {
+				Value string `json:"value" pedantigo:"regexp=^\\d{4}$"`
+			}
+			validator := New[Code]()
+			code, err := validator.Unmarshal([]byte(tt.json))
 
-	// Test valid digits
-	jsonData := []byte(`{"value":"1234"}`)
-	code, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for valid digits, got %v", err)
-	}
-
-	if code.Value != "1234" {
-		t.Errorf("expected value '1234', got %q", code.Value)
-	}
-
-	// Test invalid non-digits
-	jsonData = []byte(`{"value":"abcd"}`)
-	_, err = validator.Unmarshal(jsonData)
-	if err == nil {
-		t.Fatal("expected validation error for non-digits")
-	}
-}
-
-func TestRegex_EmptyString(t *testing.T) {
-	type Code struct {
-		Value string `json:"value" pedantigo:"regexp=^[A-Z]{3}$"`
-	}
-
-	validator := New[Code]()
-	jsonData := []byte(`{"value":""}`)
-
-	code, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for empty string (validation skips empty), got %v", err)
-	}
-
-	if code.Value != "" {
-		t.Errorf("expected empty value, got %q", code.Value)
-	}
-}
-
-func TestRegex_WithPointer(t *testing.T) {
-	type Code struct {
-		Value *string `json:"value" pedantigo:"regexp=^[A-Z]{3}$"`
-	}
-
-	validator := New[Code]()
-
-	// Test invalid match
-	jsonData := []byte(`{"value":"abc"}`)
-	_, err := validator.Unmarshal(jsonData)
-	if err == nil {
-		t.Fatal("expected validation error for invalid regex match with pointer")
-	}
-
-	// Test valid match
-	jsonData = []byte(`{"value":"ABC"}`)
-	code, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for valid regex match with pointer, got %v", err)
-	}
-
-	if code.Value == nil || *code.Value != "ABC" {
-		t.Errorf("expected value 'ABC', got %v", code.Value)
-	}
-}
-
-func TestRegex_NilPointer(t *testing.T) {
-	type Code struct {
-		Value *string `json:"value" pedantigo:"regexp=^[A-Z]{3}$"`
-	}
-
-	validator := New[Code]()
-	jsonData := []byte(`{"value":null}`)
-
-	code, err := validator.Unmarshal(jsonData)
-	if err != nil {
-		t.Errorf("expected no errors for nil pointer (validation skips nil), got %v", err)
-	}
-
-	if code.Value != nil {
-		t.Errorf("expected nil Value pointer, got %v", code.Value)
+			if tt.expectErr {
+				if err == nil {
+					t.Fatal("expected validation error")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+				if code.Value != tt.expectVal {
+					t.Errorf("expected value %q, got %q", tt.expectVal, code.Value)
+				}
+			}
+		})
 	}
 }
 
