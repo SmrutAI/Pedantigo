@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SmrutAI/Pedantigo/constraints"
+	"github.com/SmrutAI/Pedantigo/internal/constraints"
 	"github.com/invopop/jsonschema"
 )
 
