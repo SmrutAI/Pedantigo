@@ -1644,3 +1644,49 @@ func TestExcludesConstraint(t *testing.T) {
 		})
 	}
 }
+
+// TestStartswithConstraint tests startswithConstraint.Validate() for prefix validation
+func TestStartswithConstraint(t *testing.T) {
+	tests := []struct {
+		name    string
+		value   any
+		prefix  string
+		wantErr bool
+	}{
+		// Valid cases - starts with prefix
+		{name: "starts with prefix", value: "helloworld", prefix: "hello", wantErr: false},
+		{name: "full match", value: "hello", prefix: "hello", wantErr: false},
+		{name: "single char prefix", value: "hello", prefix: "h", wantErr: false},
+		{name: "numeric prefix", value: "123abc", prefix: "123", wantErr: false},
+		{name: "unicode prefix", value: "café au lait", prefix: "café", wantErr: false},
+		{name: "special char prefix", value: "@user hello", prefix: "@user", wantErr: false},
+
+		// Invalid cases - doesn't start with prefix
+		{name: "prefix in middle", value: "world hello", prefix: "hello", wantErr: true},
+		{name: "prefix at end", value: "worldhello", prefix: "hello", wantErr: true},
+		{name: "case mismatch", value: "Hello", prefix: "hello", wantErr: true},
+		{name: "prefix not found", value: "hello", prefix: "world", wantErr: true},
+		{name: "prefix longer than string", value: "hi", prefix: "hello", wantErr: true},
+
+		// Edge cases
+		{name: "empty string", value: "", prefix: "test", wantErr: false},
+		{name: "nil pointer", value: (*string)(nil), prefix: "test", wantErr: false},
+
+		// Invalid types
+		{name: "invalid type - int", value: 123, prefix: "123", wantErr: true},
+		{name: "invalid type - bool", value: true, prefix: "true", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			constraint := startswithConstraint{prefix: tt.prefix}
+			err := constraint.Validate(tt.value)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

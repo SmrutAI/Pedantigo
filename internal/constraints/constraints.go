@@ -33,16 +33,17 @@ type (
 		pattern string
 		regex   *regexp.Regexp
 	}
-	ipv4Constraint     struct{}
-	ipv6Constraint     struct{}
-	enumConstraint     struct{ values []string }
-	defaultConstraint  struct{ value string }
-	lenConstraint      struct{ length int }
-	asciiConstraint    struct{}
-	alphaConstraint    struct{}
-	alphanumConstraint struct{}
-	containsConstraint struct{ substring string }
-	excludesConstraint struct{ substring string }
+	ipv4Constraint       struct{}
+	ipv6Constraint       struct{}
+	enumConstraint       struct{ values []string }
+	defaultConstraint    struct{ value string }
+	lenConstraint        struct{ length int }
+	asciiConstraint      struct{}
+	alphaConstraint      struct{}
+	alphanumConstraint   struct{}
+	containsConstraint   struct{ substring string }
+	excludesConstraint   struct{ substring string }
+	startswithConstraint struct{ prefix string }
 )
 
 var (
@@ -822,6 +823,44 @@ func (c excludesConstraint) Validate(value any) error {
 	return nil
 }
 
+// startswithConstraint validates that a string starts with a specific prefix
+// Validate checks if the value satisfies the constraint
+func (c startswithConstraint) Validate(value any) error {
+	// 1. Get reflect.Value
+	v := reflect.ValueOf(value)
+	if !v.IsValid() {
+		return nil // Skip validation for invalid values
+	}
+
+	// 2. Handle pointer indirection
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return nil // Skip validation for nil pointers
+		}
+		v = v.Elem()
+	}
+
+	// 3. Type check - ensure string
+	if v.Kind() != reflect.String {
+		return fmt.Errorf("startswith constraint requires string value")
+	}
+
+	// 4. Get string value
+	str := v.String()
+
+	// 5. Skip empty strings
+	if str == "" {
+		return nil
+	}
+
+	// 6. Validation logic - check if string starts with prefix
+	if !strings.HasPrefix(str, c.prefix) {
+		return fmt.Errorf("must start with '%s'", c.prefix)
+	}
+
+	return nil
+}
+
 // BuildConstraints creates constraint instances from parsed tag map
 func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []Constraint {
 	var result []Constraint
@@ -886,6 +925,10 @@ func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []C
 			}
 		case "excludes":
 			if constraint, ok := buildExcludesConstraint(value); ok {
+				result = append(result, constraint)
+			}
+		case "startswith":
+			if constraint, ok := buildStartswithConstraint(value); ok {
 				result = append(result, constraint)
 			}
 		case "default":
@@ -976,4 +1019,12 @@ func buildExcludesConstraint(value string) (Constraint, bool) {
 		return nil, false // Empty substring is invalid
 	}
 	return excludesConstraint{substring: value}, true
+}
+
+// buildStartswithConstraint creates a startswith constraint with the specified prefix
+func buildStartswithConstraint(value string) (Constraint, bool) {
+	if value == "" {
+		return nil, false // Empty prefix is invalid
+	}
+	return startswithConstraint{prefix: value}, true
 }
