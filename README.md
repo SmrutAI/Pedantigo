@@ -465,6 +465,18 @@ validator := pedantigo.New[User](pedantigo.ValidatorOptions{
 })
 ```
 
+## Controversies
+
+Some design decisions differ from Pydantic due to Go's type system:
+
+- **[Why No BaseModel?](documents/nuances/why_not_basemodel.md)** — External validators over embedding. BaseModel adds initialization boilerplate with minimal benefit; `validator.Validate(&user)` is more idiomatic than `user.Validate()`.
+
+- **[Why No `.model_rebuild()`?](documents/nuances/model_rebuild.md)** — Go resolves types at compile-time using pointers; no runtime forward reference resolution needed.
+
+- **[Computed Fields](documents/nuances/computed_derived_fields.md)** — Go uses `MarshalJSON()` interface instead of decorators. More boilerplate, but zero runtime overhead.
+
+I will revisit these based on what the community prefers.
+
 ## License
 
 MIT
