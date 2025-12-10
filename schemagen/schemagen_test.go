@@ -12,6 +12,7 @@ import (
 )
 
 // Test structs
+// SimpleStruct represents the data structure
 type SimpleStruct struct {
 	Name  string `json:"name" pedantigo:"required,min=3,max=50"`
 	Age   int    `json:"age" pedantigo:"min=18,max=100"`
@@ -46,6 +47,7 @@ type ConstraintsStruct struct {
 }
 
 // Test containers for nested types
+// SliceContainer represents the data structure
 type SliceContainer struct {
 	Items []SimpleStruct `json:"items"`
 }

@@ -14,6 +14,7 @@ import (
 // NOTE: 'required' is only checked during Unmarshal (missing JSON keys), not Validate()
 // Validate() only checks value constraints (min, max, email, etc.)
 
+// TestValidator_Required_Present tests Validator required present
 func TestValidator_Required_Present(t *testing.T) {
 	type User struct {
 		Email string `pedantigo:"required"`
@@ -217,6 +218,7 @@ func TestMarshal_Nil(t *testing.T) {
 
 // ==================== Unmarshal Tests ====================
 
+// TestUnmarshal_ValidJSON tests Unmarshal validjson
 func TestUnmarshal_ValidJSON(t *testing.T) {
 	type User struct {
 		Email string `json:"email" pedantigo:"required"`
@@ -342,6 +344,7 @@ func TestUnmarshal_NestedValidation(t *testing.T) {
 // ==================== Pointer Tests ====================
 
 // Test pointer field with explicit value
+// TestPointer_ExplicitValue tests Pointer explicitvalue
 func TestPointer_ExplicitValue(t *testing.T) {
 	type User struct {
 		Name *string `json:"name"`
@@ -362,6 +365,7 @@ func TestPointer_ExplicitValue(t *testing.T) {
 }
 
 // Test pointer field with explicit zero value (should create pointer to zero)
+// TestPointer_ExplicitZero tests Pointer explicitzero
 func TestPointer_ExplicitZero(t *testing.T) {
 	type Config struct {
 		Port    *int    `json:"port"`
@@ -387,6 +391,7 @@ func TestPointer_ExplicitZero(t *testing.T) {
 }
 
 // Test pointer field with explicit null (should be nil pointer)
+// TestPointer_ExplicitNull tests Pointer explicitnull
 func TestPointer_ExplicitNull(t *testing.T) {
 	type User struct {
 		Name *string `json:"name"`
@@ -405,6 +410,7 @@ func TestPointer_ExplicitNull(t *testing.T) {
 }
 
 // Test pointer field missing from JSON (should be nil pointer)
+// TestPointer_Missing tests Pointer missing
 func TestPointer_Missing(t *testing.T) {
 	type User struct {
 		Name *string `json:"name"`
@@ -423,6 +429,7 @@ func TestPointer_Missing(t *testing.T) {
 }
 
 // Test required pointer field with explicit value
+// TestPointer_RequiredWithValue tests Pointer requiredwithvalue
 func TestPointer_RequiredWithValue(t *testing.T) {
 	type User struct {
 		Name *string `json:"name" pedantigo:"required"`
@@ -439,6 +446,7 @@ func TestPointer_RequiredWithValue(t *testing.T) {
 }
 
 // Test required pointer field missing (should fail)
+// TestPointer_RequiredMissing tests Pointer requiredmissing
 func TestPointer_RequiredMissing(t *testing.T) {
 	type User struct {
 		Name *string `json:"name" pedantigo:"required"`
@@ -465,6 +473,7 @@ func TestPointer_RequiredMissing(t *testing.T) {
 }
 
 // Test required pointer field with explicit null (should pass - field is present)
+// TestPointer_RequiredWithNull tests Pointer requiredwithnull
 func TestPointer_RequiredWithNull(t *testing.T) {
 	type User struct {
 		Name *string `json:"name" pedantigo:"required"`
@@ -481,6 +490,7 @@ func TestPointer_RequiredWithNull(t *testing.T) {
 }
 
 // Test pointer field with default value
+// TestPointer_WithDefault tests Pointer withdefault
 func TestPointer_WithDefault(t *testing.T) {
 	type Config struct {
 		Port *int `json:"port" pedantigo:"default=8080"`
@@ -498,6 +508,7 @@ func TestPointer_WithDefault(t *testing.T) {
 }
 
 // Test pointer field with explicit zero and default (should keep zero)
+// TestPointer_ExplicitZeroWithDefault tests Pointer explicitzerowithdefault
 func TestPointer_ExplicitZeroWithDefault(t *testing.T) {
 	type Config struct {
 		Port *int `json:"port" pedantigo:"default=8080"`
@@ -515,6 +526,7 @@ func TestPointer_ExplicitZeroWithDefault(t *testing.T) {
 }
 
 // Test nested struct with pointer fields
+// TestPointer_NestedStruct tests Pointer nestedstruct
 func TestPointer_NestedStruct(t *testing.T) {
 	type Address struct {
 		Street *string `json:"street"`
@@ -544,6 +556,7 @@ func TestPointer_NestedStruct(t *testing.T) {
 // ==================== Deserializer Tests ====================
 
 // Test type for defaultUsingMethod
+// UserWithTimestamp represents the data structure
 type UserWithTimestamp struct {
 	Email     string    `json:"email" pedantigo:"required"`
 	Role      string    `json:"role" pedantigo:"default=user"`
@@ -551,23 +564,27 @@ type UserWithTimestamp struct {
 }
 
 // Method that provides dynamic default value
+// SetCreationTime sets the field value
 func (u *UserWithTimestamp) SetCreationTime() (time.Time, error) {
 	// Return a fixed time for testing (not time.Now())
 	return time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), nil
 }
 
 // Test type with invalid method signature (should panic at New() time)
+// InvalidMethodType represents the data structure
 type InvalidMethodType struct {
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at" pedantigo:"defaultUsingMethod=WrongSignature"`
 }
 
 // Wrong signature: returns only value, no error
+// WrongSignature implements the method
 func (i *InvalidMethodType) WrongSignature() time.Time {
 	return time.Now()
 }
 
 // Test type with non-existent method
+// NonExistentMethodType represents the data structure
 type NonExistentMethodType struct {
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at" pedantigo:"defaultUsingMethod=DoesNotExist"`
@@ -575,6 +592,7 @@ type NonExistentMethodType struct {
 
 // TestDeserializer_UnmarshalBehavior validates deserializer behavior across various scenarios:
 // defaults, missing fields, explicit values, required fields, and validator options.
+// TestDeserializer_UnmarshalBehavior tests Deserializer unmarshalbehavior
 func TestDeserializer_UnmarshalBehavior(t *testing.T) {
 	type Config struct {
 		Name    string `json:"name" pedantigo:"required"`
@@ -741,6 +759,7 @@ func TestDeserializer_UnmarshalBehavior(t *testing.T) {
 
 // TestDeserializer_ValidatorSetup validates fail-fast validation during New().
 // Invalid method signatures or non-existent methods should panic at validator creation time.
+// TestDeserializer_ValidatorSetup tests Deserializer validatorsetup
 func TestDeserializer_ValidatorSetup(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -794,6 +813,7 @@ func TestDeserializer_ValidatorSetup(t *testing.T) {
 
 // TestValidatorOptions_StrictMissingFields tests the StrictMissingFields behavior
 // with various configuration combinations and JSON inputs.
+// TestValidatorOptions_StrictMissingFields tests ValidatorOptions strictmissingfields
 func TestValidatorOptions_StrictMissingFields(t *testing.T) {
 	type User struct {
 		Name  string `json:"name" pedantigo:"required,min=2"`
@@ -872,6 +892,7 @@ func TestValidatorOptions_StrictMissingFields(t *testing.T) {
 
 // TestValidatorOptions_PointerFields tests pointer field behavior with StrictMissingFields=false.
 // Pointers to primitive types allow optional fields (nil when missing) while still validating when present.
+// TestValidatorOptions_PointerFields tests ValidatorOptions pointerfields
 func TestValidatorOptions_PointerFields(t *testing.T) {
 	type Settings struct {
 		Port    *int   `json:"port" pedantigo:"min=1024"`
@@ -966,6 +987,7 @@ func TestValidatorOptions_PointerFields(t *testing.T) {
 // with StrictMissingFields=false and default/defaultUsingMethod tags panics.
 // These combinations are incompatible because defaults only make sense when
 // StrictMissingFields=true (missing field handling is disabled).
+// TestValidatorOptions_PanicOnIncompatibleTags tests ValidatorOptions paniconincompatibletags
 func TestValidatorOptions_PanicOnIncompatibleTags(t *testing.T) {
 	tests := []struct {
 		name              string

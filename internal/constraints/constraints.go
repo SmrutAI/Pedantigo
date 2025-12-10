@@ -52,6 +52,7 @@ var (
 )
 
 // minConstraint validates that a numeric value is >= min
+// Validate checks if the value satisfies the constraint
 func (c minConstraint) Validate(value any) error {
 	v := reflect.ValueOf(value)
 	if !v.IsValid() {
@@ -91,6 +92,7 @@ func (c minConstraint) Validate(value any) error {
 }
 
 // maxConstraint validates that a numeric value is <= max
+// Validate checks if the value satisfies the constraint
 func (c maxConstraint) Validate(value any) error {
 	v := reflect.ValueOf(value)
 	if !v.IsValid() {
@@ -130,6 +132,7 @@ func (c maxConstraint) Validate(value any) error {
 }
 
 // minLengthConstraint validates that a string has at least minLength characters
+// Validate checks if the value satisfies the constraint
 func (c minLengthConstraint) Validate(value any) error {
 	v := reflect.ValueOf(value)
 	if !v.IsValid() {
@@ -158,6 +161,7 @@ func (c minLengthConstraint) Validate(value any) error {
 }
 
 // maxLengthConstraint validates that a string has at most maxLength characters
+// Validate checks if the value satisfies the constraint
 func (c maxLengthConstraint) Validate(value any) error {
 	v := reflect.ValueOf(value)
 	if !v.IsValid() {
@@ -186,6 +190,7 @@ func (c maxLengthConstraint) Validate(value any) error {
 }
 
 // gtConstraint validates that a numeric value is > threshold
+// Validate checks if the value satisfies the constraint
 func (c gtConstraint) Validate(value any) error {
 	v := reflect.ValueOf(value)
 	if !v.IsValid() {
@@ -220,6 +225,7 @@ func (c gtConstraint) Validate(value any) error {
 }
 
 // geConstraint validates that a numeric value is >= threshold
+// Validate checks if the value satisfies the constraint
 func (c geConstraint) Validate(value any) error {
 	v := reflect.ValueOf(value)
 	if !v.IsValid() {
@@ -254,6 +260,7 @@ func (c geConstraint) Validate(value any) error {
 }
 
 // ltConstraint validates that a numeric value is < threshold
+// Validate checks if the value satisfies the constraint
 func (c ltConstraint) Validate(value any) error {
 	v := reflect.ValueOf(value)
 	if !v.IsValid() {
@@ -288,6 +295,7 @@ func (c ltConstraint) Validate(value any) error {
 }
 
 // leConstraint validates that a numeric value is <= threshold
+// Validate checks if the value satisfies the constraint
 func (c leConstraint) Validate(value any) error {
 	v := reflect.ValueOf(value)
 	if !v.IsValid() {
@@ -322,6 +330,7 @@ func (c leConstraint) Validate(value any) error {
 }
 
 // emailConstraint validates that a string is a valid email format
+// Validate checks if the value satisfies the constraint
 func (c emailConstraint) Validate(value any) error {
 	str, ok := value.(string)
 	if !ok {
@@ -340,6 +349,7 @@ func (c emailConstraint) Validate(value any) error {
 }
 
 // urlConstraint validates that a string is a valid URL (http or https only)
+// Validate checks if the value satisfies the constraint
 func (c urlConstraint) Validate(value any) error {
 	v := reflect.ValueOf(value)
 	if !v.IsValid() {
@@ -384,6 +394,7 @@ func (c urlConstraint) Validate(value any) error {
 }
 
 // uuidConstraint validates that a string is a valid UUID
+// Validate checks if the value satisfies the constraint
 func (c uuidConstraint) Validate(value any) error {
 	v := reflect.ValueOf(value)
 	if !v.IsValid() {
@@ -417,6 +428,7 @@ func (c uuidConstraint) Validate(value any) error {
 }
 
 // regexConstraint validates that a string matches a custom regex pattern
+// Validate checks if the value satisfies the constraint
 func (c regexConstraint) Validate(value any) error {
 	v := reflect.ValueOf(value)
 	if !v.IsValid() {
@@ -450,6 +462,7 @@ func (c regexConstraint) Validate(value any) error {
 }
 
 // ipv4Constraint validates that a string is a valid IPv4 address
+// Validate checks if the value satisfies the constraint
 func (c ipv4Constraint) Validate(value any) error {
 	v := reflect.ValueOf(value)
 	if !v.IsValid() {
@@ -490,6 +503,7 @@ func (c ipv4Constraint) Validate(value any) error {
 }
 
 // ipv6Constraint validates that a string is a valid IPv6 address
+// Validate checks if the value satisfies the constraint
 func (c ipv6Constraint) Validate(value any) error {
 	v := reflect.ValueOf(value)
 	if !v.IsValid() {
@@ -530,6 +544,7 @@ func (c ipv6Constraint) Validate(value any) error {
 }
 
 // enumConstraint validates that value is one of the allowed values
+// Validate checks if the value satisfies the constraint
 func (c enumConstraint) Validate(value any) error {
 	v := reflect.ValueOf(value)
 	if !v.IsValid() {
@@ -572,11 +587,13 @@ func (c enumConstraint) Validate(value any) error {
 }
 
 // defaultConstraint is not a validator - it's handled during unmarshaling
+// Validate checks if the value satisfies the constraint
 func (c defaultConstraint) Validate(value any) error {
 	return nil // No-op for validation
 }
 
 // lenConstraint validates that a string has exact length
+// Validate checks if the value satisfies the constraint
 func (c lenConstraint) Validate(value any) error {
 	// 1. Get reflect.Value
 	v := reflect.ValueOf(value)
@@ -613,6 +630,7 @@ func (c lenConstraint) Validate(value any) error {
 }
 
 // asciiConstraint validates that a string contains only ASCII characters
+// Validate checks if the value satisfies the constraint
 func (c asciiConstraint) Validate(value any) error {
 	// 1. Get reflect.Value
 	v := reflect.ValueOf(value)
@@ -652,6 +670,7 @@ func (c asciiConstraint) Validate(value any) error {
 }
 
 // alphaConstraint validates that a string contains only alphabetic characters
+// Validate checks if the value satisfies the constraint
 func (c alphaConstraint) Validate(value any) error {
 	// 1. Get reflect.Value
 	v := reflect.ValueOf(value)
@@ -689,6 +708,7 @@ func (c alphaConstraint) Validate(value any) error {
 }
 
 // alphanumConstraint validates that a string contains only alphanumeric characters
+// Validate checks if the value satisfies the constraint
 func (c alphanumConstraint) Validate(value any) error {
 	// 1. Get reflect.Value
 	v := reflect.ValueOf(value)
@@ -726,6 +746,7 @@ func (c alphanumConstraint) Validate(value any) error {
 }
 
 // containsConstraint validates that a string contains a specific substring
+// Validate checks if the value satisfies the constraint
 func (c containsConstraint) Validate(value any) error {
 	// 1. Get reflect.Value
 	v := reflect.ValueOf(value)

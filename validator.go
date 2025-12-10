@@ -101,6 +101,7 @@ func (v *Validator[T]) setFieldValue(fieldValue reflect.Value, inValue any, fiel
 
 // Validate validates a struct and returns any validation errors
 // NOTE: 'required' is NOT checked here - it's only checked during Unmarshal
+// Validate checks if the value satisfies the constraint
 func (v *Validator[T]) Validate(obj *T) error {
 	if obj == nil {
 		return &ValidationError{

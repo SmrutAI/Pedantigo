@@ -9,6 +9,7 @@ import (
 // CompareValues compares two values using the specified operator
 // op values: "eq", "ne", "gt", "gte", "lt", "lte"
 // Returns true if comparison succeeds, false otherwise
+// CompareValues compares two values
 func CompareValues(op string, left, right any) (bool, error) {
 	// Handle nil values (including typed nil pointers)
 	leftIsNil := isNilValue(left)
@@ -190,6 +191,7 @@ func isNilValue(val any) bool {
 // IsZeroValue checks if a value is the zero value for its type.
 // Returns true for nil, zero integers, empty strings, false booleans, empty slices/maps, etc.
 // Returns false for non-zero values.
+// IsZeroValue checks the condition
 func IsZeroValue(value any) bool {
 	v := reflect.ValueOf(value)
 	return !v.IsValid() || v.IsZero()

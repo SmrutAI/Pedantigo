@@ -623,6 +623,7 @@ func TestDefaultConstraint(t *testing.T) {
 
 // TestMinConstraint tests minConstraint.Validate() for numeric values
 // Added to ensure comprehensive coverage of all constraints mentioned
+// TestMinConstraint tests MinConstraint validation
 func TestMinConstraint(t *testing.T) {
 	tests := []struct {
 		name    string

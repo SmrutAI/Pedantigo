@@ -54,6 +54,7 @@ func GenerateOpenAPIBaseSchema[T any]() *jsonschema.Schema {
 // EnhanceSchema recursively enhances a JSON Schema with validation constraints
 // parseTagFunc should parse struct tags and return constraint map, or nil if no constraints
 // typReflect is the reflect.Type of the struct being enhanced
+// EnhanceSchema implements the functionality
 func EnhanceSchema(schema *jsonschema.Schema, typ reflect.Type, parseTagFunc func(reflect.StructTag) map[string]string) {
 	// Handle pointer types
 	if typ.Kind() == reflect.Ptr {

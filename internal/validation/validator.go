@@ -7,6 +7,7 @@ import (
 
 // FieldError represents a validation error for a specific field
 // This is a copy of the root package's FieldError to avoid circular imports
+// FieldError represents an error condition
 type FieldError struct {
 	Field   string
 	Message string
@@ -26,6 +27,7 @@ type ConstraintBuilder func(constraints map[string]string, fieldType reflect.Typ
 
 // ValidateValue recursively validates a reflected value
 // NOTE: 'required' constraint is skipped (not built in BuildConstraints)
+// ValidateValue implements the functionality
 func ValidateValue(
 	val reflect.Value,
 	path string,

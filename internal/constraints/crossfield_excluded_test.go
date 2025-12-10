@@ -13,6 +13,7 @@ import (
 // ==================================================
 // Field must be absent (zero value) if another field equals specific value
 
+// TestExcludedIf tests ExcludedIf validation
 func TestExcludedIf(t *testing.T) {
 	type Payment struct {
 		Method     string `json:"method" pedantigo:"required"`
@@ -186,6 +187,7 @@ func TestExcludedIf(t *testing.T) {
 // ==================================================
 // Field must be absent (zero value) unless another field equals specific value
 
+// TestExcludedUnless tests ExcludedUnless validation
 func TestExcludedUnless(t *testing.T) {
 	type Document struct {
 		Status        string `json:"status" pedantigo:"required"`
@@ -267,6 +269,7 @@ func TestExcludedUnless(t *testing.T) {
 // ==================================================
 // Field must be absent (zero value) if another field is present (non-zero)
 
+// TestExcludedWith tests ExcludedWith validation
 func TestExcludedWith(t *testing.T) {
 	type User struct {
 		HomePhone string `json:"home_phone" pedantigo:"required"`
@@ -446,6 +449,7 @@ func TestExcludedWith(t *testing.T) {
 // ==================================================
 // Field must be absent (zero value) if another field is absent (zero)
 
+// TestExcludedWithout tests ExcludedWithout validation
 func TestExcludedWithout(t *testing.T) {
 	type Address struct {
 		Country string `json:"country" pedantigo:"required"`
@@ -575,6 +579,7 @@ func TestExcludedWithout(t *testing.T) {
 // excluded_without unmarshal integration tests
 // ==================================================
 
+// TestExcludedWithoutUnmarshal tests ExcludedWithoutUnmarshal validation
 func TestExcludedWithoutUnmarshal(t *testing.T) {
 	type Shipping struct {
 		Weight      int `json:"weight"`
@@ -639,6 +644,7 @@ func TestExcludedWithoutUnmarshal(t *testing.T) {
 // Integration tests combining multiple constraints
 // ==================================================
 
+// TestMultipleExclusionConstraints_Complex tests MultipleExclusionConstraints complex
 func TestMultipleExclusionConstraints_Complex(t *testing.T) {
 	type Subscription struct {
 		Status             string `json:"status" pedantigo:"required"`

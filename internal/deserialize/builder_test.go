@@ -789,6 +789,7 @@ func TestValidateDefaultMethod_SignatureValidation(t *testing.T) {
 }
 
 // Test types for ValidateDefaultMethod tests
+// ValidMethodStruct represents the data structure
 type ValidMethodStruct struct{ Name string }
 
 func (v *ValidMethodStruct) GetName() (string, error) { return "test", nil }

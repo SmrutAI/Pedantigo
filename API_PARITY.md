@@ -14,20 +14,20 @@ JSON Schema standard support.
 | Field presence detection     | √         | √           | √            | √                                  |
 | Zero vs missing distinction  | √         | √           | Partial      | ×                                  |
 
-**STRING CONSTRAINTS**       
+**STRING CONSTRAINTS**
 
 | Feature                      | Pedantigo | Pydantic v2 | Go Validator | Supported by JSON Schema standard? |
 |------------------------------|-----------|-------------|--------------|------------------------------------|
 | Min/Max length               | √         | √           | √            | √                                  |
-| Exact length                 | ×         | Partial     | √            | √                                  |
+| Exact length                 | √         | Partial     | √            | √                                  |
 | Email                        | √         | √           | √            | √                                  |
 | URL                          | √         | √           | √            | √                                  |
 | UUID                         | √         | √           | √            | √                                  |
 | Regex/Pattern                | √         | √           | √            | √                                  |
 | Enum/OneOf                   | √         | √           | √            | √                                  |
-| Alpha/Alphanumeric           | ×         | ×           | √            | √                                  |
-| ASCII only                   | ×         | ×           | √            | √                                  |
-| Contains/Excludes            | ×         | ×           | √            | √                                  |
+| Alpha/Alphanumeric           | √         | ×           | √            | √                                  |
+| ASCII only                   | √         | ×           | √            | √                                  |
+| Contains/Excludes            | Partial   | ×           | √            | √                                  |
 | Starts/Ends with             | ×         | ×           | √            | √                                  |
 | Case validation              | ×         | ×           | √            | ×                                  |
 | Strip whitespace             | ×         | √           | ×            | ×                                  |
@@ -210,7 +210,7 @@ JSON Schema standard support.
 | Struct field reflection      | ×         | √           | ×            | ×                                  |
 | Recursive structs            | √         | √           | √            | √                                  |
 
-**Summary**: 61/137 features implemented (45%)
+**Summary**: 66/137 features implemented (48%)
 
 **Legend**: √ = Supported, × = Not supported, Partial = Limited support
 

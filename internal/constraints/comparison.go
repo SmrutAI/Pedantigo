@@ -5,7 +5,7 @@ import (
 	"reflect"
 )
 
-// eqFieldConstraint: field must equal another field
+// ValidateCrossField for eqFieldConstraint: field must equal another field
 func (c eqFieldConstraint) ValidateCrossField(fieldValue any, structValue reflect.Value, fieldName string) error {
 	targetValue := structValue.Field(c.targetFieldIndex).Interface()
 
@@ -20,7 +20,7 @@ func (c eqFieldConstraint) ValidateCrossField(fieldValue any, structValue reflec
 	return nil
 }
 
-// neFieldConstraint: field must NOT equal another field
+// ValidateCrossField for neFieldConstraint: field must NOT equal another field
 func (c neFieldConstraint) ValidateCrossField(fieldValue any, structValue reflect.Value, fieldName string) error {
 	targetValue := structValue.Field(c.targetFieldIndex).Interface()
 
@@ -35,7 +35,7 @@ func (c neFieldConstraint) ValidateCrossField(fieldValue any, structValue reflec
 	return nil
 }
 
-// gtFieldConstraint: field must be > another field
+// ValidateCrossField for gtFieldConstraint: field must be > another field
 func (c gtFieldConstraint) ValidateCrossField(fieldValue any, structValue reflect.Value, fieldName string) error {
 	targetValue := structValue.Field(c.targetFieldIndex).Interface()
 
@@ -50,7 +50,7 @@ func (c gtFieldConstraint) ValidateCrossField(fieldValue any, structValue reflec
 	return nil
 }
 
-// gteFieldConstraint: field must be >= another field
+// ValidateCrossField for gteFieldConstraint: field must be >= another field
 func (c gteFieldConstraint) ValidateCrossField(fieldValue any, structValue reflect.Value, fieldName string) error {
 	targetValue := structValue.Field(c.targetFieldIndex).Interface()
 
@@ -65,7 +65,7 @@ func (c gteFieldConstraint) ValidateCrossField(fieldValue any, structValue refle
 	return nil
 }
 
-// ltFieldConstraint: field must be < another field
+// ValidateCrossField for ltFieldConstraint: field must be < another field
 func (c ltFieldConstraint) ValidateCrossField(fieldValue any, structValue reflect.Value, fieldName string) error {
 	targetValue := structValue.Field(c.targetFieldIndex).Interface()
 
@@ -80,7 +80,7 @@ func (c ltFieldConstraint) ValidateCrossField(fieldValue any, structValue reflec
 	return nil
 }
 
-// lteFieldConstraint: field must be <= another field
+// ValidateCrossField for lteFieldConstraint: field must be <= another field
 func (c lteFieldConstraint) ValidateCrossField(fieldValue any, structValue reflect.Value, fieldName string) error {
 	targetValue := structValue.Field(c.targetFieldIndex).Interface()
 

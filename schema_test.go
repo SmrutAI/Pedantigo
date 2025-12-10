@@ -709,6 +709,7 @@ func bytesEqual(a, b []byte) bool {
 
 // TestSchemaOpenAPI_SliceOfStructs tests schema generation with slices of structs
 // This exercises searchSliceType() code path (currently 0% coverage)
+// TestSchemaOpenAPI_SliceOfStructs tests SchemaOpenAPI sliceofstructs
 func TestSchemaOpenAPI_SliceOfStructs(t *testing.T) {
 	type Author struct {
 		Name  string `json:"name" pedantigo:"required,min=2"`
@@ -749,6 +750,7 @@ func TestSchemaOpenAPI_SliceOfStructs(t *testing.T) {
 
 // TestSchemaOpenAPI_PointerSliceOfStructs tests schema with pointer slices
 // This exercises searchSliceType() with pointer unwrapping
+// TestSchemaOpenAPI_PointerSliceOfStructs tests SchemaOpenAPI pointersliceofstructs
 func TestSchemaOpenAPI_PointerSliceOfStructs(t *testing.T) {
 	type Tag struct {
 		Name  string `json:"name" pedantigo:"required,min=1"`
@@ -775,6 +777,7 @@ func TestSchemaOpenAPI_PointerSliceOfStructs(t *testing.T) {
 
 // TestSchemaOpenAPI_MapOfStructs tests schema generation with maps of structs
 // This exercises searchMapType() code path (currently 0% coverage)
+// TestSchemaOpenAPI_MapOfStructs tests SchemaOpenAPI mapofstructs
 func TestSchemaOpenAPI_MapOfStructs(t *testing.T) {
 	type Contact struct {
 		Email string `json:"email" pedantigo:"required,email"`
@@ -815,6 +818,7 @@ func TestSchemaOpenAPI_MapOfStructs(t *testing.T) {
 
 // TestSchemaOpenAPI_PointerMapOfStructs tests schema with pointer map values
 // This exercises searchMapType() with pointer unwrapping
+// TestSchemaOpenAPI_PointerMapOfStructs tests SchemaOpenAPI pointermapofstructs
 func TestSchemaOpenAPI_PointerMapOfStructs(t *testing.T) {
 	type Address struct {
 		Street  string `json:"street" pedantigo:"required,min=1"`
@@ -847,6 +851,7 @@ func TestSchemaOpenAPI_PointerMapOfStructs(t *testing.T) {
 
 // TestSchemaOpenAPI_NestedStructInSlice tests deeply nested struct in slice
 // This exercises recursive findTypeForDefinition through searchSliceType
+// TestSchemaOpenAPI_NestedStructInSlice tests SchemaOpenAPI nestedstructinslice
 func TestSchemaOpenAPI_NestedStructInSlice(t *testing.T) {
 	type Permission struct {
 		Name string `json:"name" pedantigo:"required,min=1"`
@@ -887,6 +892,7 @@ func TestSchemaOpenAPI_NestedStructInSlice(t *testing.T) {
 
 // TestSchemaOpenAPI_NestedStructInMap tests deeply nested struct in map
 // This exercises recursive findTypeForDefinition through searchMapType
+// TestSchemaOpenAPI_NestedStructInMap tests SchemaOpenAPI nestedstructinmap
 func TestSchemaOpenAPI_NestedStructInMap(t *testing.T) {
 	type Metadata struct {
 		Key   string `json:"key" pedantigo:"required,min=1"`
@@ -1131,6 +1137,7 @@ func TestSchemaJSON_Caching(t *testing.T) {
 func TestSchemaJSON_DefinitionUnwrapping(t *testing.T) {
 	// This tests the path where baseSchema.Properties is nil but has definitions
 	// This happens with certain struct configurations
+	// Config contains configuration settings
 	type Config struct {
 		Host string `json:"host" pedantigo:"required,url"`
 		Port int    `json:"port" pedantigo:"gte=1,lte=65535"`

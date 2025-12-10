@@ -11,6 +11,7 @@ type FieldError struct {
 
 // ValidationError represents one or more validation errors
 // It implements the error interface for idiomatic Go error handling
+// ValidationError represents an error condition
 type ValidationError struct {
 	Errors []FieldError
 }

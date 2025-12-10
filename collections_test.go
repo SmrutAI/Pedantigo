@@ -13,6 +13,7 @@ import (
 // slice element validation tests
 // ==================================================
 
+// TestSlice_ValidEmails tests Slice validemails
 func TestSlice_ValidEmails(t *testing.T) {
 	type Config struct {
 		Admins []string `json:"admins" pedantigo:"email"`
@@ -180,6 +181,7 @@ func TestSlice_NilSlice(t *testing.T) {
 // map value validation tests
 // ==================================================
 
+// TestMap_ValidEmails tests Map validemails
 func TestMap_ValidEmails(t *testing.T) {
 	type Config struct {
 		Contacts map[string]string `json:"contacts" pedantigo:"email"`

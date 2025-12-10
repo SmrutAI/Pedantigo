@@ -14,6 +14,7 @@ import (
 // eqfield (field equals another field) constraint tests
 // ==================================================
 
+// TestEqField tests EqField validation
 func TestEqField(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -216,6 +217,7 @@ func TestEqField(t *testing.T) {
 // nefield (field not equal to another field) constraint tests
 // ==================================================
 
+// TestNeField tests NeField validation
 func TestNeField(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -349,6 +351,7 @@ func TestNeField(t *testing.T) {
 // gtfield (field greater than another field) constraint tests
 // ==================================================
 
+// TestGtField tests GtField validation
 func TestGtField(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -539,6 +542,7 @@ func TestGtField(t *testing.T) {
 // gtefield (field greater than or equal to another field) constraint tests
 // ==================================================
 
+// TestGteField tests GteField validation
 func TestGteField(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -672,6 +676,7 @@ func TestGteField(t *testing.T) {
 // ltfield (field less than another field) constraint tests
 // ==================================================
 
+// TestLtField tests LtField validation
 func TestLtField(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -862,6 +867,7 @@ func TestLtField(t *testing.T) {
 // ltefield (field less than or equal to another field) constraint tests
 // ==================================================
 
+// TestLteField tests LteField validation
 func TestLteField(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -995,6 +1001,7 @@ func TestLteField(t *testing.T) {
 // Cross-constraint combinations and edge cases
 // ==================================================
 
+// TestCrossFieldComparison tests CrossFieldComparison validation
 func TestCrossFieldComparison(t *testing.T) {
 	tests := []struct {
 		name      string

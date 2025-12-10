@@ -14,6 +14,7 @@ import (
 // url constraint tests
 // ==================================================
 
+// TestURL tests URL validation
 func TestURL(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -94,6 +95,7 @@ func TestURL(t *testing.T) {
 // uuid constraint tests
 // ==================================================
 
+// TestUUID tests UUID validation
 func TestUUID(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -173,6 +175,7 @@ func TestUUID(t *testing.T) {
 // regex constraint tests
 // ==================================================
 
+// TestRegex_UppercasePattern tests Regex uppercasepattern
 func TestRegex_UppercasePattern(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -280,6 +283,7 @@ func TestRegex_DigitsPattern(t *testing.T) {
 // ipv4 constraint tests
 // ==================================================
 
+// TestIPv4 tests IPv4 validation
 func TestIPv4(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -359,6 +363,7 @@ func TestIPv4(t *testing.T) {
 // ipv6 constraint tests
 // ==================================================
 
+// TestIPv6 tests IPv6 validation
 func TestIPv6(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -441,6 +446,7 @@ func TestIPv6(t *testing.T) {
 // min_length constraint tests
 // ==================================================
 
+// TestMinLength tests MinLength validation
 func TestMinLength(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -528,6 +534,7 @@ func TestMinLength(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if !tt.usePtr {
 				// Non-pointer test case
+				// User represents the data structure
 				type User struct {
 					Username string `json:"username" pedantigo:"min=3"`
 				}
@@ -580,6 +587,7 @@ func TestMinLength(t *testing.T) {
 				}
 			} else {
 				// Pointer test case
+				// User represents the data structure
 				type User struct {
 					Bio *string `json:"bio" pedantigo:"min=10"`
 				}
@@ -618,6 +626,7 @@ func TestMinLength(t *testing.T) {
 // max_length constraint tests
 // ==================================================
 
+// TestMaxLength tests MaxLength validation
 func TestMaxLength(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -748,6 +757,7 @@ func TestMaxLength(t *testing.T) {
 				// Non-pointer test case
 				if tt.minVal > 0 {
 					// Combined min/max test - use Password field with both constraints
+					// UserWithPassword represents the data structure
 					type UserWithPassword struct {
 						Password string `json:"password" pedantigo:"min=8,max=20"`
 					}
@@ -772,6 +782,7 @@ func TestMaxLength(t *testing.T) {
 					}
 				} else {
 					// Max-only tests - use Username field with only max constraint
+					// UserWithUsername represents the data structure
 					type UserWithUsername struct {
 						Username string `json:"username" pedantigo:"max=10"`
 					}
@@ -826,6 +837,7 @@ func TestMaxLength(t *testing.T) {
 				}
 			} else {
 				// Pointer test case
+				// User represents the data structure
 				type User struct {
 					Bio *string `json:"bio" pedantigo:"max=20"`
 				}
@@ -866,6 +878,7 @@ func TestMaxLength(t *testing.T) {
 // gt (greater than) constraint tests
 // ==================================================
 
+// TestGt tests Gt validation
 func TestGt(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -1088,6 +1101,7 @@ func TestGt(t *testing.T) {
 // ge (greater or equal) constraint tests
 // ==================================================
 
+// TestGe tests Ge validation
 func TestGe(t *testing.T) {
 	type Product struct {
 		Stock int `json:"stock" pedantigo:"gte=0"`
@@ -1152,6 +1166,7 @@ func TestGe(t *testing.T) {
 // lt (less than) constraint tests
 // ==================================================
 
+// TestLt tests Lt validation
 func TestLt(t *testing.T) {
 	type Product struct {
 		Discount int `json:"discount" pedantigo:"lt=100"`
@@ -1214,6 +1229,7 @@ func TestLt(t *testing.T) {
 // le (less or equal) constraint tests
 // ==================================================
 
+// TestLe tests Le validation
 func TestLe(t *testing.T) {
 	type Product struct {
 		Discount int `json:"discount" pedantigo:"lte=100"`
@@ -1278,6 +1294,7 @@ func TestLe(t *testing.T) {
 // enum constraint tests
 // ==================================================
 
+// TestEnum tests Enum validation
 func TestEnum(t *testing.T) {
 	tests := []struct {
 		name       string

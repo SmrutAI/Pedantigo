@@ -10,6 +10,7 @@ import (
 
 // TestParseTag_ValidConstraints tests valid constraint parsing in table-driven format.
 // Covers simple constraints, constraints with values, and multiple constraint combinations.
+// TestParseTag_ValidConstraints tests ParseTag validconstraints
 func TestParseTag_ValidConstraints(t *testing.T) {
 	tests := []struct {
 		name       string

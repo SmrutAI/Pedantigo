@@ -6,6 +6,7 @@ import (
 )
 
 // requiredIfConstraint: field is required if another field equals a specific value
+// ValidateCrossField validates the field against another field in the struct
 func (c requiredIfConstraint) ValidateCrossField(fieldValue any, structValue reflect.Value, fieldName string) error {
 	targetValue := structValue.Field(c.targetFieldIndex).Interface()
 
@@ -19,6 +20,7 @@ func (c requiredIfConstraint) ValidateCrossField(fieldValue any, structValue ref
 }
 
 // requiredUnlessConstraint: field is required unless another field equals a specific value
+// ValidateCrossField validates the field against another field in the struct
 func (c requiredUnlessConstraint) ValidateCrossField(fieldValue any, structValue reflect.Value, fieldName string) error {
 	targetValue := structValue.Field(c.targetFieldIndex).Interface()
 
@@ -32,6 +34,7 @@ func (c requiredUnlessConstraint) ValidateCrossField(fieldValue any, structValue
 }
 
 // requiredWithConstraint: field is required if another field is non-zero
+// ValidateCrossField validates the field against another field in the struct
 func (c requiredWithConstraint) ValidateCrossField(fieldValue any, structValue reflect.Value, fieldName string) error {
 	targetValue := structValue.Field(c.targetFieldIndex).Interface()
 
@@ -45,6 +48,7 @@ func (c requiredWithConstraint) ValidateCrossField(fieldValue any, structValue r
 }
 
 // requiredWithoutConstraint: field is required if another field is zero
+// ValidateCrossField validates the field against another field in the struct
 func (c requiredWithoutConstraint) ValidateCrossField(fieldValue any, structValue reflect.Value, fieldName string) error {
 	targetValue := structValue.Field(c.targetFieldIndex).Interface()
 

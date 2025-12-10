@@ -226,6 +226,7 @@ func IsNumericType(t reflect.Type) bool {
 
 // Compare returns -1 if a < b, 0 if a == b, 1 if a > b
 // This works for strings and numeric types
+// Compare compares two values
 func Compare(a, b any) int {
 	aVal := reflect.ValueOf(a)
 	bVal := reflect.ValueOf(b)

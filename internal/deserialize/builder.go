@@ -17,6 +17,7 @@ var FieldMissingSentinel = MissingFieldSentinel{}
 // FieldDeserializer is a closure that deserializes a single field
 // inValue is FieldMissingSentinel if field is missing from JSON,
 // nil if field is explicitly null, or the actual value if present
+// FieldDeserializer represents the data structure
 type FieldDeserializer func(outPtr *reflect.Value, inValue any) error
 
 // BuilderOptions configures the deserializer builder

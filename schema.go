@@ -11,6 +11,7 @@ import (
 
 // Schema generates a JSON Schema from the validator's type T
 // The schema includes all validation constraints mapped to JSON Schema properties
+// Schema implements the method
 func (v *Validator[T]) Schema() *jsonschema.Schema {
 	// Fast path: read lock check for cached schema
 	v.schemaMu.RLock()
@@ -44,6 +45,7 @@ func (v *Validator[T]) Schema() *jsonschema.Schema {
 // SchemaJSON generates JSON Schema as JSON bytes for LLM APIs
 // Returns expanded schema with nested objects inlined (no $ref/$defs)
 // Use this for: OpenAI function calling, Anthropic tool use, Claude structured outputs
+// SchemaJSON implements the method
 func (v *Validator[T]) SchemaJSON() ([]byte, error) {
 	// Fast path: read lock check for cached JSON
 	v.schemaMu.RLock()
@@ -119,6 +121,7 @@ func (v *Validator[T]) SchemaJSON() ([]byte, error) {
 // SchemaOpenAPI generates a JSON Schema with $ref support for OpenAPI/Swagger specs
 // Returns schema with $ref/$defs for type reusability and cleaner documentation
 // Use this for: OpenAPI 3.0 specs, Swagger documentation, API documentation tools
+// SchemaOpenAPI implements the method
 func (v *Validator[T]) SchemaOpenAPI() *jsonschema.Schema {
 	// Fast path: read lock check for cached OpenAPI schema
 	v.schemaMu.RLock()
@@ -156,6 +159,7 @@ func (v *Validator[T]) SchemaOpenAPI() *jsonschema.Schema {
 // SchemaJSONOpenAPI generates JSON Schema as JSON bytes for OpenAPI/Swagger specs
 // Returns schema with $ref/$defs for type reusability
 // Use this for: OpenAPI 3.0 specs, Swagger documentation, API documentation tools
+// SchemaJSONOpenAPI implements the method
 func (v *Validator[T]) SchemaJSONOpenAPI() ([]byte, error) {
 	// Fast path: read lock check for cached OpenAPI JSON
 	v.schemaMu.RLock()

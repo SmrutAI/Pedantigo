@@ -12,6 +12,7 @@ import (
 // required_if Tests
 // ============================================================================
 
+// TestRequiredIf tests RequiredIf validation
 func TestRequiredIf(t *testing.T) {
 	type FormStringCondition struct {
 		Country string `json:"country"`
@@ -166,6 +167,7 @@ func TestRequiredIf(t *testing.T) {
 // required_unless Tests
 // ============================================================================
 
+// TestRequiredUnless tests RequiredUnless validation
 func TestRequiredUnless(t *testing.T) {
 	type FormStringCondition struct {
 		Status   string `json:"status"`
@@ -283,6 +285,7 @@ func TestRequiredUnless(t *testing.T) {
 // required_with Tests
 // ============================================================================
 
+// TestRequiredWith tests RequiredWith validation
 func TestRequiredWith(t *testing.T) {
 	type FormStringCondition struct {
 		Method string `json:"method"`
@@ -437,6 +440,7 @@ func TestRequiredWith(t *testing.T) {
 // required_without Tests
 // ============================================================================
 
+// TestRequiredWithout tests RequiredWithout validation
 func TestRequiredWithout(t *testing.T) {
 	type FormStringCondition struct {
 		DefaultAddress string `json:"default_address"`
@@ -600,6 +604,7 @@ func TestRequiredWithout(t *testing.T) {
 // Cross-Constraint Integration Tests
 // ============================================================================
 
+// TestCrossFieldConstraints tests CrossFieldConstraints validation
 func TestCrossFieldConstraints(t *testing.T) {
 	t.Run("complex scenario - valid business account", func(t *testing.T) {
 		type UserProfile struct {
