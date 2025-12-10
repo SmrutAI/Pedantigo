@@ -220,6 +220,10 @@ func ApplyConstraints(schema *jsonschema.Schema, constraintsMap map[string]strin
 			// alpha → pattern for alphabetic characters only (a-z, A-Z)
 			schema.Pattern = "^[a-zA-Z]+$"
 
+		case "alphanum":
+			// alphanum → pattern for alphanumeric characters only (a-z, A-Z, 0-9)
+			schema.Pattern = "^[a-zA-Z0-9]+$"
+
 		case "default":
 			// default → default value
 			schema.Default = ParseDefaultValue(value, fieldType)

@@ -33,19 +33,21 @@ type (
 		pattern string
 		regex   *regexp.Regexp
 	}
-	ipv4Constraint    struct{}
-	ipv6Constraint    struct{}
-	enumConstraint    struct{ values []string }
-	defaultConstraint struct{ value string }
-	lenConstraint     struct{ length int }
-	asciiConstraint   struct{}
-	alphaConstraint   struct{}
+	ipv4Constraint     struct{}
+	ipv6Constraint     struct{}
+	enumConstraint     struct{ values []string }
+	defaultConstraint  struct{ value string }
+	lenConstraint      struct{ length int }
+	asciiConstraint    struct{}
+	alphaConstraint    struct{}
+	alphanumConstraint struct{}
 )
 
 var (
-	emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
-	uuidRegex  = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
-	alphaRegex = regexp.MustCompile(`^[a-zA-Z]+$`)
+	emailRegex    = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+	uuidRegex     = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+	alphaRegex    = regexp.MustCompile(`^[a-zA-Z]+$`)
+	alphanumRegex = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
 )
 
 // minConstraint validates that a numeric value is >= min
@@ -685,6 +687,43 @@ func (c alphaConstraint) Validate(value any) error {
 	return nil
 }
 
+// alphanumConstraint validates that a string contains only alphanumeric characters
+func (c alphanumConstraint) Validate(value any) error {
+	// 1. Get reflect.Value
+	v := reflect.ValueOf(value)
+	if !v.IsValid() {
+		return nil // Skip validation for invalid values
+	}
+
+	// 2. Handle pointer indirection
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return nil // Skip validation for nil pointers
+		}
+		v = v.Elem()
+	}
+
+	// 3. Type check - ensure string
+	if v.Kind() != reflect.String {
+		return fmt.Errorf("alphanum constraint requires string value")
+	}
+
+	// 4. Get string value
+	str := v.String()
+
+	// 5. Skip empty strings
+	if str == "" {
+		return nil
+	}
+
+	// 6. Validation logic - check if string matches alphanumeric pattern
+	if !alphanumRegex.MatchString(str) {
+		return fmt.Errorf("must contain only alphanumeric characters")
+	}
+
+	return nil
+}
+
 // BuildConstraints creates constraint instances from parsed tag map
 func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []Constraint {
 	var result []Constraint
@@ -741,6 +780,8 @@ func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []C
 			result = append(result, asciiConstraint{})
 		case "alpha":
 			result = append(result, alphaConstraint{})
+		case "alphanum":
+			result = append(result, alphanumConstraint{})
 		case "default":
 			result = append(result, defaultConstraint{value: value})
 		}

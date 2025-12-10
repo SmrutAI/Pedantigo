@@ -1497,3 +1497,49 @@ func TestAlphaConstraint(t *testing.T) {
 		})
 	}
 }
+
+func TestAlphanumConstraint(t *testing.T) {
+	tests := []struct {
+		name    string
+		value   any
+		wantErr bool
+	}{
+		// Valid cases - alphanumeric characters only
+		{name: "lowercase letters only", value: "hello", wantErr: false},
+		{name: "uppercase letters only", value: "WORLD", wantErr: false},
+		{name: "digits only", value: "12345", wantErr: false},
+		{name: "mixed letters and digits", value: "hello123", wantErr: false},
+		{name: "mixed case and digits", value: "Hello123World", wantErr: false},
+		{name: "single letter", value: "a", wantErr: false},
+		{name: "single digit", value: "5", wantErr: false},
+
+		// Invalid cases - non-alphanumeric characters
+		{name: "contains spaces", value: "hello world", wantErr: true},
+		{name: "contains symbols", value: "hello!", wantErr: true},
+		{name: "contains underscore", value: "hello_world", wantErr: true},
+		{name: "contains hyphen", value: "hello-123", wantErr: true},
+		{name: "unicode accented", value: "café123", wantErr: true},
+		{name: "emoji", value: "hello123👍", wantErr: true},
+
+		// Edge cases
+		{name: "empty string", value: "", wantErr: false},
+		{name: "nil pointer", value: (*string)(nil), wantErr: false},
+
+		// Invalid types
+		{name: "invalid type - int", value: 123, wantErr: true},
+		{name: "invalid type - bool", value: true, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			constraint := alphanumConstraint{}
+			err := constraint.Validate(tt.value)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
