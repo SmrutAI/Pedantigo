@@ -1452,3 +1452,48 @@ func TestAsciiConstraint(t *testing.T) {
 		})
 	}
 }
+
+func TestAlphaConstraint(t *testing.T) {
+	tests := []struct {
+		name    string
+		value   any
+		wantErr bool
+	}{
+		// Valid cases - alphabetic characters only
+		{name: "lowercase letters", value: "hello", wantErr: false},
+		{name: "uppercase letters", value: "WORLD", wantErr: false},
+		{name: "mixed case", value: "HelloWorld", wantErr: false},
+		{name: "single letter lowercase", value: "a", wantErr: false},
+		{name: "single letter uppercase", value: "Z", wantErr: false},
+		{name: "long alphabetic string", value: "thequickbrownfoxjumpsoverthelazydog", wantErr: false},
+
+		// Invalid cases - non-alphabetic characters
+		{name: "contains digits", value: "hello123", wantErr: true},
+		{name: "contains spaces", value: "hello world", wantErr: true},
+		{name: "contains symbols", value: "hello!", wantErr: true},
+		{name: "only digits", value: "12345", wantErr: true},
+		{name: "unicode accented", value: "café", wantErr: true},
+		{name: "emoji", value: "hello👍", wantErr: true},
+
+		// Edge cases
+		{name: "empty string", value: "", wantErr: false},
+		{name: "nil pointer", value: (*string)(nil), wantErr: false},
+
+		// Invalid types
+		{name: "invalid type - int", value: 123, wantErr: true},
+		{name: "invalid type - bool", value: true, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			constraint := alphaConstraint{}
+			err := constraint.Validate(tt.value)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

@@ -39,11 +39,13 @@ type (
 	defaultConstraint struct{ value string }
 	lenConstraint     struct{ length int }
 	asciiConstraint   struct{}
+	alphaConstraint   struct{}
 )
 
 var (
 	emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
 	uuidRegex  = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+	alphaRegex = regexp.MustCompile(`^[a-zA-Z]+$`)
 )
 
 // minConstraint validates that a numeric value is >= min
@@ -646,6 +648,43 @@ func (c asciiConstraint) Validate(value any) error {
 	return nil
 }
 
+// alphaConstraint validates that a string contains only alphabetic characters
+func (c alphaConstraint) Validate(value any) error {
+	// 1. Get reflect.Value
+	v := reflect.ValueOf(value)
+	if !v.IsValid() {
+		return nil // Skip validation for invalid values
+	}
+
+	// 2. Handle pointer indirection
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return nil // Skip validation for nil pointers
+		}
+		v = v.Elem()
+	}
+
+	// 3. Type check - ensure string
+	if v.Kind() != reflect.String {
+		return fmt.Errorf("alpha constraint requires string value")
+	}
+
+	// 4. Get string value
+	str := v.String()
+
+	// 5. Skip empty strings
+	if str == "" {
+		return nil
+	}
+
+	// 6. Validation logic - check if string matches alphabetic pattern
+	if !alphaRegex.MatchString(str) {
+		return fmt.Errorf("must contain only alphabetic characters")
+	}
+
+	return nil
+}
+
 // BuildConstraints creates constraint instances from parsed tag map
 func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []Constraint {
 	var result []Constraint
@@ -700,6 +739,8 @@ func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []C
 			}
 		case "ascii":
 			result = append(result, asciiConstraint{})
+		case "alpha":
+			result = append(result, alphaConstraint{})
 		case "default":
 			result = append(result, defaultConstraint{value: value})
 		}
