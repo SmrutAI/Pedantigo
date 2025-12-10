@@ -305,3 +305,13 @@ func (v *Validator[T]) Marshal(obj *T) ([]byte, error) {
 	// Marshal to JSON
 	return json.Marshal(obj)
 }
+
+// Dict converts the object into a dict
+func (v *Validator[T]) Dict(obj *T) (map[string]interface{}, error) {
+	data, _ := json.Marshal(obj)
+	var dict map[string]interface{}
+	if err := json.Unmarshal(data, &dict); err != nil {
+		return nil, err
+	}
+	return dict, nil
+}

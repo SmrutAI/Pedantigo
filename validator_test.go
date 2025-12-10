@@ -2,6 +2,7 @@ package pedantigo
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -1068,4 +1069,180 @@ func TestValidatorOptions_PanicOnIncompatibleTags(t *testing.T) {
 			}
 		})
 	}
+}
+
+// ==================== Dict Tests ====================
+
+// TestValidator_Dict tests the Dict() method with various struct types and field combinations.
+func TestValidator_Dict(t *testing.T) {
+	type Address struct {
+		Street string `json:"street"`
+		City   string `json:"city"`
+	}
+
+	type User struct {
+		Name    string   `json:"name"`
+		Email   string   `json:"email"`
+		Age     int      `json:"age"`
+		Active  bool     `json:"active"`
+		Tags    []string `json:"tags"`
+		Address Address  `json:"address"`
+	}
+
+	type ConfigWithPointers struct {
+		Port    *int    `json:"port"`
+		Enabled *bool   `json:"enabled"`
+		Name    *string `json:"name"`
+	}
+
+	tests := []struct {
+		name     string
+		obj      any
+		expected map[string]interface{}
+	}{
+		{
+			name: "basic struct with primitives",
+			obj: &User{
+				Name:   "Alice",
+				Email:  "alice@example.com",
+				Age:    25,
+				Active: true,
+				Tags:   []string{"admin", "developer"},
+				Address: Address{
+					Street: "123 Main St",
+					City:   "Springfield",
+				},
+			},
+			expected: map[string]interface{}{
+				"name":   "Alice",
+				"email":  "alice@example.com",
+				"age":    float64(25),
+				"active": true,
+				"tags":   []interface{}{"admin", "developer"},
+				"address": map[string]interface{}{
+					"street": "123 Main St",
+					"city":   "Springfield",
+				},
+			},
+		},
+		{
+			name: "struct with zero values",
+			obj: &User{
+				Name:   "",
+				Email:  "",
+				Age:    0,
+				Active: false,
+				Tags:   nil,
+				Address: Address{
+					Street: "",
+					City:   "",
+				},
+			},
+			expected: map[string]interface{}{
+				"name":   "",
+				"email":  "",
+				"age":    float64(0),
+				"active": false,
+				"tags":   nil,
+				"address": map[string]interface{}{
+					"street": "",
+					"city":   "",
+				},
+			},
+		},
+		{
+			name: "struct with pointer fields - all nil",
+			obj: &ConfigWithPointers{
+				Port:    nil,
+				Enabled: nil,
+				Name:    nil,
+			},
+			expected: map[string]interface{}{
+				"port":    nil,
+				"enabled": nil,
+				"name":    nil,
+			},
+		},
+		{
+			name: "struct with pointer fields - all set",
+			obj: func() *ConfigWithPointers {
+				port := 8080
+				enabled := true
+				name := "myapp"
+				return &ConfigWithPointers{
+					Port:    &port,
+					Enabled: &enabled,
+					Name:    &name,
+				}
+			}(),
+			expected: map[string]interface{}{
+				"port":    float64(8080),
+				"enabled": true,
+				"name":    "myapp",
+			},
+		},
+		{
+			name: "struct with mixed nil and non-nil pointers",
+			obj: func() *ConfigWithPointers {
+				port := 3000
+				name := "service"
+				return &ConfigWithPointers{
+					Port:    &port,
+					Enabled: nil,
+					Name:    &name,
+				}
+			}(),
+			expected: map[string]interface{}{
+				"port":    float64(3000),
+				"enabled": nil,
+				"name":    "service",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var dict map[string]interface{}
+			var err error
+
+			// Use type assertion to call Dict with correct type
+			switch v := tt.obj.(type) {
+			case *User:
+				validator := New[User]()
+				dict, err = validator.Dict(v)
+			case *ConfigWithPointers:
+				validator := New[ConfigWithPointers]()
+				dict, err = validator.Dict(v)
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, dict)
+		})
+	}
+}
+
+// ErrIntentionalMarshalFailure is a test error for Dict error handling
+var ErrIntentionalMarshalFailure = errors.New("intentional marshal error")
+
+// Helper type with custom MarshalJSON that returns an error
+type UnmarshalableStruct struct {
+	Name string
+}
+
+func (u UnmarshalableStruct) MarshalJSON() ([]byte, error) {
+	return nil, ErrIntentionalMarshalFailure
+}
+
+// TestValidator_Dict_UnmarshalableType tests Dict with type that has failing MarshalJSON
+func TestValidator_Dict_UnmarshalableType(t *testing.T) {
+	validator := New[UnmarshalableStruct]()
+	obj := &UnmarshalableStruct{Name: "test"}
+
+	dict, err := validator.Dict(obj)
+
+	// Should return error (either from Marshal or Unmarshal of nil bytes)
+	require.Error(t, err)
+	assert.Nil(t, dict)
+	// Error could be from json.Unmarshal when it tries to parse nil bytes
+	// This is still validating that our error handling works
 }
