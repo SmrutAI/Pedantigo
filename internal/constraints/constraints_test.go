@@ -2041,3 +2041,55 @@ func TestMaxDigitsConstraint(t *testing.T) {
 		})
 	}
 }
+
+func TestDecimalPlacesConstraint(t *testing.T) {
+	tests := []struct {
+		name      string
+		maxPlaces int
+		value     any
+		wantErr   bool
+	}{
+		// Valid cases - within max decimal places
+		{name: "integer no decimals", maxPlaces: 2, value: 123, wantErr: false},
+		{name: "float with 1 decimal within max 2", maxPlaces: 2, value: 12.3, wantErr: false},
+		{name: "float with 2 decimals at max 2", maxPlaces: 2, value: 12.34, wantErr: false},
+		{name: "zero value", maxPlaces: 2, value: 0, wantErr: false},
+		{name: "negative with 1 decimal", maxPlaces: 2, value: -12.3, wantErr: false},
+		{name: "float with max 0 decimals no decimal", maxPlaces: 0, value: 123.0, wantErr: false},
+
+		// Invalid cases - exceeds max decimal places
+		{name: "float with 3 decimals exceeds max 2", maxPlaces: 2, value: 12.345, wantErr: true},
+		{name: "float with 4 decimals exceeds max 2", maxPlaces: 2, value: 12.3456, wantErr: true},
+		{name: "float with 1 decimal exceeds max 0", maxPlaces: 0, value: 12.3, wantErr: true},
+		{name: "negative with 3 decimals exceeds max 2", maxPlaces: 2, value: -12.345, wantErr: true},
+
+		// Various numeric types
+		{name: "int64 no decimals", maxPlaces: 2, value: int64(12345), wantErr: false},
+		{name: "uint no decimals", maxPlaces: 2, value: uint(123), wantErr: false},
+		{name: "float32 within max", maxPlaces: 2, value: float32(12.5), wantErr: false},
+		{name: "float64 within max", maxPlaces: 3, value: float64(12.345), wantErr: false},
+		{name: "float64 exceeds max", maxPlaces: 2, value: float64(12.345), wantErr: true},
+
+		// Edge cases
+		{name: "nil pointer", maxPlaces: 2, value: (*float64)(nil), wantErr: false},
+		{name: "pointer to valid", maxPlaces: 2, value: func() *float64 { f := 12.34; return &f }(), wantErr: false},
+		{name: "pointer to invalid", maxPlaces: 2, value: func() *float64 { f := 12.345; return &f }(), wantErr: true},
+
+		// Invalid types
+		{name: "invalid type - string", maxPlaces: 2, value: "12.34", wantErr: true},
+		{name: "invalid type - bool", maxPlaces: 2, value: true, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			constraint := decimalPlacesConstraint{maxPlaces: tt.maxPlaces}
+			err := constraint.Validate(tt.value)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

@@ -34,24 +34,25 @@ type (
 		pattern string
 		regex   *regexp.Regexp
 	}
-	ipv4Constraint       struct{}
-	ipv6Constraint       struct{}
-	enumConstraint       struct{ values []string }
-	defaultConstraint    struct{ value string }
-	lenConstraint        struct{ length int }
-	asciiConstraint      struct{}
-	alphaConstraint      struct{}
-	alphanumConstraint   struct{}
-	containsConstraint   struct{ substring string }
-	excludesConstraint   struct{ substring string }
-	startswithConstraint struct{ prefix string }
-	endswithConstraint   struct{ suffix string }
-	lowercaseConstraint  struct{}
-	uppercaseConstraint  struct{}
-	positiveConstraint   struct{}
-	negativeConstraint   struct{}
-	multipleOfConstraint struct{ factor float64 }
-	maxDigitsConstraint  struct{ maxDigits int }
+	ipv4Constraint          struct{}
+	ipv6Constraint          struct{}
+	enumConstraint          struct{ values []string }
+	defaultConstraint       struct{ value string }
+	lenConstraint           struct{ length int }
+	asciiConstraint         struct{}
+	alphaConstraint         struct{}
+	alphanumConstraint      struct{}
+	containsConstraint      struct{ substring string }
+	excludesConstraint      struct{ substring string }
+	startswithConstraint    struct{ prefix string }
+	endswithConstraint      struct{ suffix string }
+	lowercaseConstraint     struct{}
+	uppercaseConstraint     struct{}
+	positiveConstraint      struct{}
+	negativeConstraint      struct{}
+	multipleOfConstraint    struct{ factor float64 }
+	maxDigitsConstraint     struct{ maxDigits int }
+	decimalPlacesConstraint struct{ maxPlaces int }
 )
 
 var (
@@ -1128,6 +1129,51 @@ func (c maxDigitsConstraint) Validate(value any) error {
 	return nil
 }
 
+// Validate for decimalPlacesConstraint validates that a numeric value has at most maxPlaces decimal places
+func (c decimalPlacesConstraint) Validate(value any) error {
+	// 1. Get reflect.Value
+	v := reflect.ValueOf(value)
+	if !v.IsValid() {
+		return nil // Skip validation for invalid values
+	}
+
+	// 2. Handle pointer indirection
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return nil // Skip validation for nil pointers
+		}
+		v = v.Elem()
+	}
+
+	// 3. Get numeric value as string
+	var str string
+	switch v.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		// Integers have no decimal places
+		return nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		// Unsigned integers have no decimal places
+		return nil
+	case reflect.Float32, reflect.Float64:
+		str = strconv.FormatFloat(v.Float(), 'f', -1, 64)
+	default:
+		return fmt.Errorf("decimal_places constraint requires numeric value")
+	}
+
+	// 4. Find decimal point and count places
+	decimalPlaces := 0
+	if idx := strings.Index(str, "."); idx >= 0 {
+		decimalPlaces = len(str) - idx - 1
+	}
+
+	// 5. Validation logic
+	if decimalPlaces > c.maxPlaces {
+		return fmt.Errorf("must have at most %d decimal places", c.maxPlaces)
+	}
+
+	return nil
+}
+
 // BuildConstraints creates constraint instances from parsed tag map
 func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []Constraint {
 	var result []Constraint
@@ -1216,6 +1262,10 @@ func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []C
 			}
 		case "max_digits":
 			if constraint, ok := buildMaxDigitsConstraint(value); ok {
+				result = append(result, constraint)
+			}
+		case "decimal_places":
+			if constraint, ok := buildDecimalPlacesConstraint(value); ok {
 				result = append(result, constraint)
 			}
 		case "default":
@@ -1340,4 +1390,13 @@ func buildMaxDigitsConstraint(value string) (Constraint, bool) {
 		return nil, false // Invalid or non-positive max digits
 	}
 	return maxDigitsConstraint{maxDigits: maxDigits}, true
+}
+
+// buildDecimalPlacesConstraint creates a decimal_places constraint with the specified maximum
+func buildDecimalPlacesConstraint(value string) (Constraint, bool) {
+	maxPlaces, err := strconv.Atoi(value)
+	if err != nil || maxPlaces < 0 {
+		return nil, false // Invalid or negative max places
+	}
+	return decimalPlacesConstraint{maxPlaces: maxPlaces}, true
 }
