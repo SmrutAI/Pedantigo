@@ -51,6 +51,7 @@ type (
 	positiveConstraint   struct{}
 	negativeConstraint   struct{}
 	multipleOfConstraint struct{ factor float64 }
+	maxDigitsConstraint  struct{ maxDigits int }
 )
 
 var (
@@ -1082,6 +1083,51 @@ func (c multipleOfConstraint) Validate(value any) error {
 	return nil
 }
 
+// Validate for maxDigitsConstraint validates that a numeric value has at most maxDigits digits
+func (c maxDigitsConstraint) Validate(value any) error {
+	// 1. Get reflect.Value
+	v := reflect.ValueOf(value)
+	if !v.IsValid() {
+		return nil // Skip validation for invalid values
+	}
+
+	// 2. Handle pointer indirection
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return nil // Skip validation for nil pointers
+		}
+		v = v.Elem()
+	}
+
+	// 3. Get numeric value as string
+	var str string
+	switch v.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		str = strconv.FormatInt(v.Int(), 10)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		str = strconv.FormatUint(v.Uint(), 10)
+	case reflect.Float32, reflect.Float64:
+		str = strconv.FormatFloat(v.Float(), 'f', -1, 64)
+	default:
+		return fmt.Errorf("max_digits constraint requires numeric value")
+	}
+
+	// 4. Count digits (exclude minus sign and decimal point)
+	digitCount := 0
+	for _, r := range str {
+		if r >= '0' && r <= '9' {
+			digitCount++
+		}
+	}
+
+	// 5. Validation logic
+	if digitCount > c.maxDigits {
+		return fmt.Errorf("must have at most %d digits", c.maxDigits)
+	}
+
+	return nil
+}
+
 // BuildConstraints creates constraint instances from parsed tag map
 func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []Constraint {
 	var result []Constraint
@@ -1166,6 +1212,10 @@ func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []C
 			result = append(result, negativeConstraint{})
 		case "multiple_of":
 			if constraint, ok := buildMultipleOfConstraint(value); ok {
+				result = append(result, constraint)
+			}
+		case "max_digits":
+			if constraint, ok := buildMaxDigitsConstraint(value); ok {
 				result = append(result, constraint)
 			}
 		case "default":
@@ -1281,4 +1331,13 @@ func buildMultipleOfConstraint(value string) (Constraint, bool) {
 		return nil, false // Invalid or zero factor
 	}
 	return multipleOfConstraint{factor: factor}, true
+}
+
+// buildMaxDigitsConstraint creates a max_digits constraint with the specified maximum
+func buildMaxDigitsConstraint(value string) (Constraint, bool) {
+	maxDigits, err := strconv.Atoi(value)
+	if err != nil || maxDigits <= 0 {
+		return nil, false // Invalid or non-positive max digits
+	}
+	return maxDigitsConstraint{maxDigits: maxDigits}, true
 }

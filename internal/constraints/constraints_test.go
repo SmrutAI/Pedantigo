@@ -1986,3 +1986,58 @@ func TestMultipleOfConstraint(t *testing.T) {
 		})
 	}
 }
+
+func TestMaxDigitsConstraint(t *testing.T) {
+	tests := []struct {
+		name      string
+		maxDigits int
+		value     any
+		wantErr   bool
+	}{
+		// Valid cases - within max digits
+		{name: "1 digit within max 3", maxDigits: 3, value: 5, wantErr: false},
+		{name: "2 digits within max 3", maxDigits: 3, value: 42, wantErr: false},
+		{name: "3 digits at max 3", maxDigits: 3, value: 123, wantErr: false},
+		{name: "zero within max", maxDigits: 3, value: 0, wantErr: false},
+		{name: "negative 2 digits within max 3", maxDigits: 3, value: -42, wantErr: false},
+		{name: "float 3.14 within max 5", maxDigits: 5, value: 3.14, wantErr: false},
+		{name: "1 integer digit within max 1", maxDigits: 1, value: 5, wantErr: false},
+
+		// Invalid cases - exceeds max digits
+		{name: "4 digits exceeds max 3", maxDigits: 3, value: 1234, wantErr: true},
+		{name: "5 digits exceeds max 3", maxDigits: 3, value: 12345, wantErr: true},
+		{name: "6 digits exceeds max 5", maxDigits: 5, value: 123456, wantErr: true},
+		{name: "negative 4 digits exceeds max 3", maxDigits: 3, value: -1234, wantErr: true},
+		{name: "float 123.45 has 5 digits exceeds max 3", maxDigits: 3, value: 123.45, wantErr: true},
+
+		// Various numeric types
+		{name: "int64 within max", maxDigits: 5, value: int64(12345), wantErr: false},
+		{name: "int64 exceeds max", maxDigits: 3, value: int64(12345), wantErr: true},
+		{name: "uint within max", maxDigits: 3, value: uint(123), wantErr: false},
+		{name: "uint exceeds max", maxDigits: 2, value: uint(123), wantErr: true},
+		{name: "float32 within max", maxDigits: 4, value: float32(12.5), wantErr: false},
+		{name: "float64 within max", maxDigits: 6, value: float64(123.456), wantErr: false},
+
+		// Edge cases
+		{name: "nil pointer", maxDigits: 3, value: (*int)(nil), wantErr: false},
+		{name: "pointer to valid", maxDigits: 3, value: intPtr(123), wantErr: false},
+		{name: "pointer to invalid", maxDigits: 3, value: intPtr(1234), wantErr: true},
+
+		// Invalid types
+		{name: "invalid type - string", maxDigits: 3, value: "123", wantErr: true},
+		{name: "invalid type - bool", maxDigits: 3, value: true, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			constraint := maxDigitsConstraint{maxDigits: tt.maxDigits}
+			err := constraint.Validate(tt.value)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
