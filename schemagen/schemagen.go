@@ -241,6 +241,11 @@ func ApplyConstraints(schema *jsonschema.Schema, constraintsMap map[string]strin
 			escapedPrefix := regexp.QuoteMeta(value)
 			schema.Pattern = "^" + escapedPrefix + ".*"
 
+		case "endswith":
+			// endswith → pattern anchored at end
+			escapedSuffix := regexp.QuoteMeta(value)
+			schema.Pattern = ".*" + escapedSuffix + "$"
+
 		case "default":
 			// default → default value
 			schema.Default = ParseDefaultValue(value, fieldType)

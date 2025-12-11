@@ -1690,3 +1690,49 @@ func TestStartswithConstraint(t *testing.T) {
 		})
 	}
 }
+
+// TestEndswithConstraint tests endswithConstraint.Validate() for suffix validation
+func TestEndswithConstraint(t *testing.T) {
+	tests := []struct {
+		name    string
+		value   any
+		suffix  string
+		wantErr bool
+	}{
+		// Valid cases - ends with suffix
+		{name: "ends with suffix", value: "helloworld", suffix: "world", wantErr: false},
+		{name: "full match", value: "world", suffix: "world", wantErr: false},
+		{name: "single char suffix", value: "hello", suffix: "o", wantErr: false},
+		{name: "numeric suffix", value: "abc123", suffix: "123", wantErr: false},
+		{name: "unicode suffix", value: "au lait café", suffix: "café", wantErr: false},
+		{name: "special char suffix", value: "hello @user", suffix: "@user", wantErr: false},
+
+		// Invalid cases - doesn't end with suffix
+		{name: "suffix in middle", value: "world hello", suffix: "world", wantErr: true},
+		{name: "suffix at start", value: "worldhello", suffix: "world", wantErr: true},
+		{name: "case mismatch", value: "helloWorld", suffix: "world", wantErr: true},
+		{name: "suffix not found", value: "hello", suffix: "world", wantErr: true},
+		{name: "suffix longer than string", value: "hi", suffix: "hello", wantErr: true},
+
+		// Edge cases
+		{name: "empty string", value: "", suffix: "test", wantErr: false},
+		{name: "nil pointer", value: (*string)(nil), suffix: "test", wantErr: false},
+
+		// Invalid types
+		{name: "invalid type - int", value: 123, suffix: "123", wantErr: true},
+		{name: "invalid type - bool", value: true, suffix: "true", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			constraint := endswithConstraint{suffix: tt.suffix}
+			err := constraint.Validate(tt.value)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

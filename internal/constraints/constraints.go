@@ -44,6 +44,7 @@ type (
 	containsConstraint   struct{ substring string }
 	excludesConstraint   struct{ substring string }
 	startswithConstraint struct{ prefix string }
+	endswithConstraint   struct{ suffix string }
 )
 
 var (
@@ -861,6 +862,44 @@ func (c startswithConstraint) Validate(value any) error {
 	return nil
 }
 
+// endswithConstraint validates that a string ends with a specific suffix
+// Validate checks if the value satisfies the constraint
+func (c endswithConstraint) Validate(value any) error {
+	// 1. Get reflect.Value
+	v := reflect.ValueOf(value)
+	if !v.IsValid() {
+		return nil // Skip validation for invalid values
+	}
+
+	// 2. Handle pointer indirection
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return nil // Skip validation for nil pointers
+		}
+		v = v.Elem()
+	}
+
+	// 3. Type check - ensure string
+	if v.Kind() != reflect.String {
+		return fmt.Errorf("endswith constraint requires string value")
+	}
+
+	// 4. Get string value
+	str := v.String()
+
+	// 5. Skip empty strings
+	if str == "" {
+		return nil
+	}
+
+	// 6. Validation logic - check if string ends with suffix
+	if !strings.HasSuffix(str, c.suffix) {
+		return fmt.Errorf("must end with '%s'", c.suffix)
+	}
+
+	return nil
+}
+
 // BuildConstraints creates constraint instances from parsed tag map
 func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []Constraint {
 	var result []Constraint
@@ -929,6 +968,10 @@ func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []C
 			}
 		case "startswith":
 			if constraint, ok := buildStartswithConstraint(value); ok {
+				result = append(result, constraint)
+			}
+		case "endswith":
+			if constraint, ok := buildEndswithConstraint(value); ok {
 				result = append(result, constraint)
 			}
 		case "default":
@@ -1027,4 +1070,12 @@ func buildStartswithConstraint(value string) (Constraint, bool) {
 		return nil, false // Empty prefix is invalid
 	}
 	return startswithConstraint{prefix: value}, true
+}
+
+// buildEndswithConstraint creates an endswith constraint with the specified suffix
+func buildEndswithConstraint(value string) (Constraint, bool) {
+	if value == "" {
+		return nil, false // Empty suffix is invalid
+	}
+	return endswithConstraint{suffix: value}, true
 }
