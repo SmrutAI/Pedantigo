@@ -3,6 +3,7 @@ package constraints
 
 import (
 	"fmt"
+	"math"
 	"net"
 	"net/url"
 	"reflect"
@@ -49,6 +50,7 @@ type (
 	uppercaseConstraint  struct{}
 	positiveConstraint   struct{}
 	negativeConstraint   struct{}
+	multipleOfConstraint struct{ factor float64 }
 )
 
 var (
@@ -1041,6 +1043,45 @@ func (c negativeConstraint) Validate(value any) error {
 	return nil
 }
 
+// Validate for multipleOfConstraint validates that a numeric value is divisible by factor
+func (c multipleOfConstraint) Validate(value any) error {
+	// 1. Get reflect.Value
+	v := reflect.ValueOf(value)
+	if !v.IsValid() {
+		return nil // Skip validation for invalid values
+	}
+
+	// 2. Handle pointer indirection
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return nil // Skip validation for nil pointers
+		}
+		v = v.Elem()
+	}
+
+	// 3. Get numeric value
+	var numValue float64
+	switch v.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		numValue = float64(v.Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		numValue = float64(v.Uint())
+	case reflect.Float32, reflect.Float64:
+		numValue = v.Float()
+	default:
+		return fmt.Errorf("multiple_of constraint requires numeric value")
+	}
+
+	// 4. Validation logic - check if value is divisible by factor
+	remainder := math.Mod(numValue, c.factor)
+	// Use small epsilon for floating point comparison
+	if math.Abs(remainder) > 1e-9 && math.Abs(remainder-c.factor) > 1e-9 {
+		return fmt.Errorf("must be a multiple of %v", c.factor)
+	}
+
+	return nil
+}
+
 // BuildConstraints creates constraint instances from parsed tag map
 func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []Constraint {
 	var result []Constraint
@@ -1123,6 +1164,10 @@ func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []C
 			result = append(result, positiveConstraint{})
 		case "negative":
 			result = append(result, negativeConstraint{})
+		case "multiple_of":
+			if constraint, ok := buildMultipleOfConstraint(value); ok {
+				result = append(result, constraint)
+			}
 		case "default":
 			result = append(result, defaultConstraint{value: value})
 		}
@@ -1227,4 +1272,13 @@ func buildEndswithConstraint(value string) (Constraint, bool) {
 		return nil, false // Empty suffix is invalid
 	}
 	return endswithConstraint{suffix: value}, true
+}
+
+// buildMultipleOfConstraint creates a multiple_of constraint with the specified factor
+func buildMultipleOfConstraint(value string) (Constraint, bool) {
+	factor, err := strconv.ParseFloat(value, 64)
+	if err != nil || factor == 0 {
+		return nil, false // Invalid or zero factor
+	}
+	return multipleOfConstraint{factor: factor}, true
 }

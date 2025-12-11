@@ -1929,3 +1929,60 @@ func TestNegativeConstraint(t *testing.T) {
 		})
 	}
 }
+
+func TestMultipleOfConstraint(t *testing.T) {
+	tests := []struct {
+		name    string
+		factor  float64
+		value   any
+		wantErr bool
+	}{
+		// Valid cases - exact multiples (integer factor)
+		{name: "10 is multiple of 5", factor: 5, value: 10, wantErr: false},
+		{name: "15 is multiple of 5", factor: 5, value: 15, wantErr: false},
+		{name: "0 is multiple of 5", factor: 5, value: 0, wantErr: false},
+		{name: "100 is multiple of 10", factor: 10, value: 100, wantErr: false},
+		{name: "-10 is multiple of 5", factor: 5, value: -10, wantErr: false},
+		{name: "negative multiple of negative", factor: -5, value: -10, wantErr: false},
+
+		// Valid cases - float factor
+		{name: "1.5 is multiple of 0.5", factor: 0.5, value: 1.5, wantErr: false},
+		{name: "3.0 is multiple of 0.5", factor: 0.5, value: 3.0, wantErr: false},
+		{name: "0.25 is multiple of 0.25", factor: 0.25, value: 0.25, wantErr: false},
+
+		// Invalid cases - not exact multiples
+		{name: "7 is not multiple of 5", factor: 5, value: 7, wantErr: true},
+		{name: "11 is not multiple of 3", factor: 3, value: 11, wantErr: true},
+		{name: "1.6 is not multiple of 0.5", factor: 0.5, value: 1.6, wantErr: true},
+		{name: "10 is not multiple of 3", factor: 3, value: 10, wantErr: true},
+
+		// Various numeric types
+		{name: "int64 multiple", factor: 5, value: int64(25), wantErr: false},
+		{name: "int32 multiple", factor: 5, value: int32(20), wantErr: false},
+		{name: "uint multiple", factor: 5, value: uint(15), wantErr: false},
+		{name: "float32 multiple", factor: 0.5, value: float32(2.5), wantErr: false},
+		{name: "float64 multiple", factor: 0.5, value: float64(3.5), wantErr: false},
+
+		// Edge cases
+		{name: "nil pointer", factor: 5, value: (*int)(nil), wantErr: false},
+		{name: "pointer to multiple", factor: 5, value: intPtr(10), wantErr: false},
+		{name: "pointer to non-multiple", factor: 5, value: intPtr(7), wantErr: true},
+
+		// Invalid types
+		{name: "invalid type - string", factor: 5, value: "10", wantErr: true},
+		{name: "invalid type - bool", factor: 5, value: true, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			constraint := multipleOfConstraint{factor: tt.factor}
+			err := constraint.Validate(tt.value)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

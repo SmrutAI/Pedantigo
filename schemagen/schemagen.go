@@ -262,6 +262,10 @@ func ApplyConstraints(schema *jsonschema.Schema, constraintsMap map[string]strin
 			// negative → exclusiveMaximum of 0
 			schema.ExclusiveMaximum = json.Number("0")
 
+		case "multiple_of":
+			// multiple_of → multipleOf (JSON Schema keyword)
+			schema.MultipleOf = json.Number(value)
+
 		case "default":
 			// default → default value
 			schema.Default = ParseDefaultValue(value, fieldType)
