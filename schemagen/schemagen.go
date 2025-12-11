@@ -254,6 +254,10 @@ func ApplyConstraints(schema *jsonschema.Schema, constraintsMap map[string]strin
 			// uppercase → pattern excluding lowercase letters
 			schema.Pattern = "^[^a-z]*$"
 
+		case "positive":
+			// positive → exclusiveMinimum of 0
+			schema.ExclusiveMinimum = json.Number("0")
+
 		case "default":
 			// default → default value
 			schema.Default = ParseDefaultValue(value, fieldType)

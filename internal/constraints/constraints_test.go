@@ -1828,3 +1828,56 @@ func TestUppercaseConstraint(t *testing.T) {
 		})
 	}
 }
+
+// TestPositiveConstraint tests positiveConstraint.Validate() for positive number validation
+func TestPositiveConstraint(t *testing.T) {
+	tests := []struct {
+		name    string
+		value   any
+		wantErr bool
+	}{
+		// Valid cases - positive numbers
+		{name: "positive int", value: 1, wantErr: false},
+		{name: "large positive int", value: 1000000, wantErr: false},
+		{name: "positive float", value: 0.1, wantErr: false},
+		{name: "positive float64", value: float64(3.14), wantErr: false},
+		{name: "positive uint", value: uint(5), wantErr: false},
+		{name: "positive int8", value: int8(127), wantErr: false},
+		{name: "positive int64", value: int64(9999), wantErr: false},
+
+		// Invalid cases - zero and negative
+		{name: "zero int", value: 0, wantErr: true},
+		{name: "zero float", value: 0.0, wantErr: true},
+		{name: "negative int", value: -1, wantErr: true},
+		{name: "negative float", value: -0.5, wantErr: true},
+		{name: "large negative", value: -1000000, wantErr: true},
+
+		// Edge cases
+		{name: "nil pointer", value: (*int)(nil), wantErr: false},
+		{name: "pointer to positive", value: intPtr(5), wantErr: false},
+		{name: "pointer to zero", value: intPtr(0), wantErr: true},
+		{name: "pointer to negative", value: intPtr(-5), wantErr: true},
+
+		// Invalid types
+		{name: "invalid type - string", value: "123", wantErr: true},
+		{name: "invalid type - bool", value: true, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			constraint := positiveConstraint{}
+			err := constraint.Validate(tt.value)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+// Helper function for int pointers
+func intPtr(i int) *int {
+	return &i
+}

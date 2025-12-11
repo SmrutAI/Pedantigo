@@ -47,6 +47,7 @@ type (
 	endswithConstraint   struct{ suffix string }
 	lowercaseConstraint  struct{}
 	uppercaseConstraint  struct{}
+	positiveConstraint   struct{}
 )
 
 var (
@@ -591,14 +592,12 @@ func (c enumConstraint) Validate(value any) error {
 	return fmt.Errorf("must be one of: %s", strings.Join(c.values, ", "))
 }
 
-// defaultConstraint is not a validator - it's handled during unmarshaling
-// Validate checks if the value satisfies the constraint
+// Validate for defaultConstraint is not a validator - it's handled during unmarshaling
 func (c defaultConstraint) Validate(value any) error {
 	return nil // No-op for validation
 }
 
-// lenConstraint validates that a string has exact length
-// Validate checks if the value satisfies the constraint
+// Validate for lenConstraint validates that a string has exact length
 func (c lenConstraint) Validate(value any) error {
 	// 1. Get reflect.Value
 	v := reflect.ValueOf(value)
@@ -788,8 +787,7 @@ func (c containsConstraint) Validate(value any) error {
 	return nil
 }
 
-// excludesConstraint validates that a string does NOT contain a specific substring
-// Validate checks if the value satisfies the constraint
+// Validate for excludesConstraint validates that a string does NOT contain a specific substring
 func (c excludesConstraint) Validate(value any) error {
 	// 1. Get reflect.Value
 	v := reflect.ValueOf(value)
@@ -826,8 +824,7 @@ func (c excludesConstraint) Validate(value any) error {
 	return nil
 }
 
-// startswithConstraint validates that a string starts with a specific prefix
-// Validate checks if the value satisfies the constraint
+// Validate for startswithConstraint validates that a string starts with a specific prefix
 func (c startswithConstraint) Validate(value any) error {
 	// 1. Get reflect.Value
 	v := reflect.ValueOf(value)
@@ -864,8 +861,7 @@ func (c startswithConstraint) Validate(value any) error {
 	return nil
 }
 
-// endswithConstraint validates that a string ends with a specific suffix
-// Validate checks if the value satisfies the constraint
+// Validate for endswithConstraint validates that a string ends with a specific suffix
 func (c endswithConstraint) Validate(value any) error {
 	// 1. Get reflect.Value
 	v := reflect.ValueOf(value)
@@ -902,8 +898,7 @@ func (c endswithConstraint) Validate(value any) error {
 	return nil
 }
 
-// lowercaseConstraint validates that a string contains only lowercase characters
-// Validate checks if the value satisfies the constraint
+// Validate for lowercaseConstraint validates that a string is all lowercase
 func (c lowercaseConstraint) Validate(value any) error {
 	// 1. Get reflect.Value
 	v := reflect.ValueOf(value)
@@ -940,8 +935,7 @@ func (c lowercaseConstraint) Validate(value any) error {
 	return nil
 }
 
-// uppercaseConstraint validates that a string contains only uppercase characters
-// Validate checks if the value satisfies the constraint
+// Validate for uppercaseConstraint validates that a string is all uppercase
 func (c uppercaseConstraint) Validate(value any) error {
 	// 1. Get reflect.Value
 	v := reflect.ValueOf(value)
@@ -973,6 +967,40 @@ func (c uppercaseConstraint) Validate(value any) error {
 	// 6. Validation logic - check if string is all uppercase
 	if str != strings.ToUpper(str) {
 		return fmt.Errorf("must be all uppercase")
+	}
+
+	return nil
+}
+
+// Validate for positiveConstraint validates that a numeric value is greater than 0
+func (c positiveConstraint) Validate(value any) error {
+	v := reflect.ValueOf(value)
+	if !v.IsValid() {
+		return nil // Skip validation for invalid values
+	}
+
+	// Handle pointer types
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return nil // Skip validation for nil pointers
+		}
+		v = v.Elem()
+	}
+
+	var numValue float64
+	switch v.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		numValue = float64(v.Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		numValue = float64(v.Uint())
+	case reflect.Float32, reflect.Float64:
+		numValue = v.Float()
+	default:
+		return fmt.Errorf("positive constraint requires numeric value")
+	}
+
+	if numValue <= 0 {
+		return fmt.Errorf("must be positive (greater than 0)")
 	}
 
 	return nil
@@ -1056,6 +1084,8 @@ func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []C
 			result = append(result, lowercaseConstraint{})
 		case "uppercase":
 			result = append(result, uppercaseConstraint{})
+		case "positive":
+			result = append(result, positiveConstraint{})
 		case "default":
 			result = append(result, defaultConstraint{value: value})
 		}
