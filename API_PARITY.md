@@ -27,9 +27,9 @@ JSON Schema standard support.
 | Enum/OneOf                   | √         | √           | √            | √                                  |
 | Alpha/Alphanumeric           | √         | ×           | √            | √                                  |
 | ASCII only                   | √         | ×           | √            | √                                  |
-| Contains/Excludes            | Partial   | ×           | √            | √                                  |
-| Starts/Ends with             | ×         | ×           | √            | √                                  |
-| Case validation              | ×         | ×           | √            | ×                                  |
+| Contains/Excludes            | √         | ×           | √            | √                                  |
+| Starts/Ends with             | √         | ×           | √            | √                                  |
+| Case validation              | √         | ×           | √            | ×                                  |
 | Strip whitespace             | ×         | √           | ×            | ×                                  |
 | String transform             | ×         | √           | ×            | ×                                  |
 
@@ -40,11 +40,11 @@ JSON Schema standard support.
 | Min/Max value                | √         | √           | √            | √                                  |
 | Greater/Less than            | √         | √           | √            | √                                  |
 | Greater/Less or equal        | √         | √           | √            | √                                  |
-| Multiple of                  | ×         | √           | ×            | √                                  |
-| Decimal precision            | ×         | √           | ×            | ×                                  |
-| Allow inf/nan                | ×         | √           | ×            | ×                                  |
-| Strict types                 | ×         | √           | ×            | ×                                  |
-| Positive/Negative            | ×         | √           | ×            | ×                                  |
+| Multiple of                  | √         | √           | ×            | √                                  |                                    |
+| Decimal precision            | √         | √           | ×            | ×                                  |                                    |
+| Allow inf/nan                | √         | √           | ×            | ×                                  | Inverted: `disallow_inf_nan` (opt-in rejection) |
+| Strict types                 | ×         | √           | ×            | ×                                  |                                    |
+| Positive/Negative            | √         | √           | ×            | ×                                  |                                    |
 
 **FORMAT VALIDATORS**
 
@@ -210,7 +210,7 @@ JSON Schema standard support.
 | Struct field reflection      | ×         | √           | ×            | ×                                  |
 | Recursive structs            | √         | √           | √            | √                                  |
 
-**Summary**: 66/137 features implemented (48%)
+**Summary**: 73/137 features implemented (53%)
 
 **Legend**: √ = Supported, × = Not supported, Partial = Limited support
 

@@ -163,6 +163,8 @@ func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []C
 			if constraint, ok := buildDecimalPlacesConstraint(value); ok {
 				result = append(result, constraint)
 			}
+		case "disallow_inf_nan":
+			result = append(result, disallowInfNanConstraint{})
 		case "default":
 			result = append(result, defaultConstraint{value: value})
 		}

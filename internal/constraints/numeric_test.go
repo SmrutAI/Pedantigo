@@ -1,6 +1,7 @@
 package constraints
 
 import (
+	"math"
 	"reflect"
 	"testing"
 
@@ -667,6 +668,63 @@ func TestDecimalPlacesConstraint(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			constraint := decimalPlacesConstraint{maxPlaces: tt.maxPlaces}
+			err := constraint.Validate(tt.value)
+			checkConstraintError(t, err, tt.wantErr)
+		})
+	}
+}
+
+// TestDisallowInfNanConstraint tests disallowInfNanConstraint.Validate() for Inf/NaN rejection.
+func TestDisallowInfNanConstraint(t *testing.T) {
+	tests := []struct {
+		name    string
+		value   any
+		wantErr bool
+	}{
+		// Valid cases - normal numbers
+		{name: "positive int", value: 42, wantErr: false},
+		{name: "negative int", value: -42, wantErr: false},
+		{name: "zero int", value: 0, wantErr: false},
+		{name: "float64 normal", value: 3.14, wantErr: false},
+		{name: "float32 normal", value: float32(3.14), wantErr: false},
+		{name: "negative float", value: -123.456, wantErr: false},
+		{name: "zero float", value: 0.0, wantErr: false},
+		{name: "very large float", value: 1e308, wantErr: false},
+		{name: "very small float", value: 1e-308, wantErr: false},
+
+		// Invalid cases - Inf
+		{name: "positive infinity float64", value: math.Inf(1), wantErr: true},
+		{name: "negative infinity float64", value: math.Inf(-1), wantErr: true},
+		{name: "positive infinity float32", value: float32(math.Inf(1)), wantErr: true},
+		{name: "negative infinity float32", value: float32(math.Inf(-1)), wantErr: true},
+
+		// Invalid cases - NaN
+		{name: "NaN float64", value: math.NaN(), wantErr: true},
+		{name: "NaN float32", value: float32(math.NaN()), wantErr: true},
+
+		// Edge cases - nil/pointer
+		{name: "nil pointer", value: (*float64)(nil), wantErr: false},
+		{name: "pointer to normal", value: func() *float64 { f := 3.14; return &f }(), wantErr: false},
+		{name: "pointer to Inf", value: func() *float64 { f := math.Inf(1); return &f }(), wantErr: true},
+		{name: "pointer to negative Inf", value: func() *float64 { f := math.Inf(-1); return &f }(), wantErr: true},
+		{name: "pointer to NaN", value: func() *float64 { f := math.NaN(); return &f }(), wantErr: true},
+
+		// Non-float types (should pass - constraint only applies to floats)
+		{name: "int type", value: int(100), wantErr: false},
+		{name: "int8 type", value: int8(100), wantErr: false},
+		{name: "int16 type", value: int16(100), wantErr: false},
+		{name: "int32 type", value: int32(100), wantErr: false},
+		{name: "int64 type", value: int64(100), wantErr: false},
+		{name: "uint type", value: uint(100), wantErr: false},
+		{name: "uint8 type", value: uint8(100), wantErr: false},
+		{name: "uint16 type", value: uint16(100), wantErr: false},
+		{name: "uint32 type", value: uint32(100), wantErr: false},
+		{name: "uint64 type", value: uint64(100), wantErr: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			constraint := disallowInfNanConstraint{}
 			err := constraint.Validate(tt.value)
 			checkConstraintError(t, err, tt.wantErr)
 		})

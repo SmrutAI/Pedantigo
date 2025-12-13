@@ -11,19 +11,20 @@ import (
 
 // Numeric constraint types.
 type (
-	minConstraint           struct{ min int }
-	maxConstraint           struct{ max int }
-	minLengthConstraint     struct{ minLength int }
-	maxLengthConstraint     struct{ maxLength int }
-	gtConstraint            struct{ threshold float64 }
-	geConstraint            struct{ threshold float64 }
-	ltConstraint            struct{ threshold float64 }
-	leConstraint            struct{ threshold float64 }
-	positiveConstraint      struct{}
-	negativeConstraint      struct{}
-	multipleOfConstraint    struct{ factor float64 }
-	maxDigitsConstraint     struct{ maxDigits int }
-	decimalPlacesConstraint struct{ maxPlaces int }
+	minConstraint            struct{ min int }
+	maxConstraint            struct{ max int }
+	minLengthConstraint      struct{ minLength int }
+	maxLengthConstraint      struct{ maxLength int }
+	gtConstraint             struct{ threshold float64 }
+	geConstraint             struct{ threshold float64 }
+	ltConstraint             struct{ threshold float64 }
+	leConstraint             struct{ threshold float64 }
+	positiveConstraint       struct{}
+	negativeConstraint       struct{}
+	multipleOfConstraint     struct{ factor float64 }
+	maxDigitsConstraint      struct{ maxDigits int }
+	decimalPlacesConstraint  struct{ maxPlaces int }
+	disallowInfNanConstraint struct{}
 )
 
 // boundMode distinguishes between min (lower bound) and max (upper bound) checks.
@@ -350,6 +351,30 @@ func (c decimalPlacesConstraint) Validate(value any) error {
 		return fmt.Errorf("must have at most %d decimal places", c.maxPlaces)
 	}
 
+	return nil
+}
+
+// disallowInfNanConstraint validates that a float is not Inf or NaN.
+// Note: Named "disallow" (not "allow") because Go defaults to allowing Inf/NaN.
+// Pydantic uses allow_inf_nan=True by default; we use disallow_inf_nan as opt-in rejection.
+func (c disallowInfNanConstraint) Validate(value any) error {
+	v, ok := derefValue(value)
+	if !ok {
+		return nil // Skip validation for invalid/nil values
+	}
+
+	// Only check float types - integers cannot be Inf/NaN
+	switch v.Kind() {
+	case reflect.Float32, reflect.Float64:
+		f := v.Float()
+		if math.IsInf(f, 0) {
+			return fmt.Errorf("infinity is not allowed")
+		}
+		if math.IsNaN(f) {
+			return fmt.Errorf("NaN is not allowed")
+		}
+	}
+	// Non-float types pass (integers can't be Inf/NaN)
 	return nil
 }
 
