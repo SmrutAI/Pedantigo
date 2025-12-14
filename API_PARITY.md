@@ -86,7 +86,7 @@ JSON Schema standard support.
 | Element validation (dive)    | √         | √           | √            | √                                  |
 | Map validation               | √         | √           | √            | √                                  |
 | Map key validation (keys)    | √         | √           | √            | √                                  |
-| Unique items                 | ×         | √           | √            | √                                  |
+| Unique items                 | √         | √           | √            | √                                  |
 | Set types                    | ×         | √           | ×            | ×                                  |
 | Tuple types                  | ×         | √           | ×            | √                                  |
 
@@ -210,7 +210,7 @@ JSON Schema standard support.
 | Struct field reflection      | ×         | √           | ×            | ×                                  |
 | Recursive structs            | √         | √           | √            | √                                  |
 
-**Summary**: 75/137 features implemented (55%)
+**Summary**: 76/137 features implemented (55%)
 
 **Legend**: √ = Supported, × = Not supported, Partial = Limited support
 
