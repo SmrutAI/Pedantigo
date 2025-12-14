@@ -526,6 +526,160 @@ validator := pedantigo.New[User](pedantigo.ValidatorOptions{
 })
 ```
 
+## Advanced: Extra Fields Handling (Optional)
+
+Control how unknown JSON fields are handled during unmarshaling.
+
+### Available Modes
+
+| Mode | Behavior | Use Case |
+|------|----------|----------|
+| `ExtraIgnore` | Silently discard unknown fields | Default Go behavior |
+| `ExtraForbid` | Return error on unknown fields | Strict API validation |
+| `ExtraAllow` | Store unknown fields for inspection | Flexible data handling |
+
+### Usage
+
+```go
+type User struct {
+    Name string `json:"name" pedantigo:"required"`
+    Age  int    `json:"age"`
+}
+
+// Default: ignores unknown fields
+validator := pedantigo.New[User]()
+
+// Strict mode: reject unknown fields
+strictValidator := pedantigo.New[User](pedantigo.ValidatorOptions{
+    ExtraFields: pedantigo.ExtraForbid,
+})
+
+jsonData := []byte(`{"name": "John", "age": 30, "unknown_field": true}`)
+
+// ExtraIgnore → succeeds, unknown_field discarded
+// ExtraForbid → error: "unknown field in JSON"
+```
+
+### When to Use
+
+- **ExtraIgnore** (default): API evolution, backward compatibility
+- **ExtraForbid**: Strict API contracts, prevent typos in field names
+- **ExtraAllow**: Audit logging, pass-through data
+
+## Advanced: Discriminated Unions (Optional)
+
+Validate JSON where a field determines which variant type applies. Like Pydantic's `Discriminator` or TypeScript's discriminated unions.
+
+### When to Use
+
+- API responses with different shapes based on `type` field
+- Polymorphic data (e.g., different payment methods, notification types)
+- Any tagged union pattern
+
+### Usage
+
+```go
+// Define variant types
+type Cat struct {
+    Name  string `json:"name" validate:"required"`
+    Lives int    `json:"lives" validate:"min=1,max=9"`
+}
+
+type Dog struct {
+    Name  string `json:"name" validate:"required"`
+    Breed string `json:"breed"`
+}
+
+// Create union validator with discriminator field
+validator, err := pedantigo.NewUnion[any](pedantigo.UnionOptions{
+    DiscriminatorField: "pet_type",
+    Variants: []pedantigo.UnionVariant{
+        pedantigo.VariantFor[Cat]("cat"),
+        pedantigo.VariantFor[Dog]("dog"),
+    },
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+// Unmarshal dispatches based on discriminator
+catJSON := []byte(`{"pet_type": "cat", "name": "Whiskers", "lives": 9}`)
+result, err := validator.Unmarshal(catJSON)
+if err != nil {
+    // Validation error or unknown variant
+}
+
+cat := result.(Cat) // Type assertion to concrete type
+fmt.Printf("Cat: %s has %d lives\n", cat.Name, cat.Lives)
+
+dogJSON := []byte(`{"pet_type": "dog", "name": "Rex", "breed": "German Shepherd"}`)
+result, err = validator.Unmarshal(dogJSON)
+dog := result.(Dog)
+fmt.Printf("Dog: %s is a %s\n", dog.Name, dog.Breed)
+```
+
+### Schema Generation
+
+Union validators generate JSON Schema with `oneOf`:
+
+```go
+schema := validator.Schema()
+jsonBytes, _ := json.MarshalIndent(schema, "", "  ")
+```
+
+Output:
+
+```json
+{
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "pet_type": {"const": "cat"},
+        "name": {"type": "string"},
+        "lives": {"type": "integer", "minimum": 1, "maximum": 9}
+      },
+      "required": ["name"]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "pet_type": {"const": "dog"},
+        "name": {"type": "string"},
+        "breed": {"type": "string"}
+      },
+      "required": ["name"]
+    }
+  ]
+}
+```
+
+### Validate Existing Values
+
+```go
+cat := Cat{Name: "Whiskers", Lives: 9}
+err := validator.Validate(cat)
+```
+
+### Error Handling
+
+```go
+// Missing discriminator field
+json := []byte(`{"name": "Unknown"}`)
+_, err := validator.Unmarshal(json)
+// Error: discriminator field "pet_type" is missing
+
+// Unknown discriminator value
+json = []byte(`{"pet_type": "fish", "name": "Nemo"}`)
+_, err = validator.Unmarshal(json)
+// Error: unknown discriminator value "fish" for field "pet_type"
+
+// Variant validation failure
+json = []byte(`{"pet_type": "cat", "name": "Whiskers", "lives": 15}`)
+_, err = validator.Unmarshal(json)
+// Error: lives: must be at most 9
+```
+
 ## Controversies
 
 Some design decisions differ from Pydantic due to Go's type system:

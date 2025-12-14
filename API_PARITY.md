@@ -117,8 +117,8 @@ JSON Schema standard support.
 | Secret types                 | ×         | √           | ×            | ×                                  |
 | Path types                   | ×         | √           | Partial      | ×                                  |
 | Literal types                | ×         | √           | ×            | √                                  |
-| Union types                  | ×         | √           | ×            | √                                  |
-| Discriminated unions         | ×         | √           | ×            | √                                  |
+| Union types                  | √         | √           | ×            | √                                  |
+| Discriminated unions         | √         | √           | ×            | √                                  |
 | Generic structs              | ×         | √           | ×            | ×                                  |
 | Enum types                   | Partial   | √           | Partial      | √                                  |
 | Decimal                      | ×         | √           | ×            | √                                  |
@@ -159,15 +159,15 @@ JSON Schema standard support.
 | Alias generator              | ×         | √           | ×            | ×                                  |
 | Immutable fields             | ×         | √           | ×            | ×                                  |
 | Computed fields              | ×         | √           | ×            | ×                                  |
-| Discriminator field          | ×         | √           | ×            | √                                  |
+| Discriminator field          | √         | √           | ×            | √                                  |
 
 **STRUCT CONFIGURATION**
 
 | Feature                      | Pedantigo | Pydantic v2 | Go Validator | Supported by JSON Schema standard? |
 |------------------------------|-----------|-------------|--------------|------------------------------------|
 | Strict mode                  | Partial   | √           | ×            | ×                                  |
-| Extra fields forbid          | ×         | √           | ×            | ×                                  |
-| Extra fields allow           | ×         | √           | ×            | √                                  |
+| Extra fields forbid          | √         | √           | ×            | ×                                  |
+| Extra fields allow           | √         | √           | ×            | √                                  |
 | Extra fields ignore          | √         | √           | ×            | ×                                  |
 | Validate on assignment       | ×         | √           | ×            | ×                                  |
 | Validate defaults            | √         | √           | ×            | ×                                  |
@@ -210,7 +210,7 @@ JSON Schema standard support.
 | Struct field reflection      | ×         | √           | ×            | ×                                  |
 | Recursive structs            | √         | √           | √            | √                                  |
 
-**Summary**: 76/137 features implemented (55%)
+**Summary**: 81/137 features implemented (59%)
 
 **Legend**: √ = Supported, × = Not supported, Partial = Limited support
 
