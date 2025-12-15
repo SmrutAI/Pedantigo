@@ -48,35 +48,51 @@ JSON Schema standard support.
 
 **FORMAT VALIDATORS**
 
-| Feature                      | Pedantigo | Pydantic v2 | Go Validator | Supported by JSON Schema standard? |
-|------------------------------|-----------|-------------|--------------|------------------------------------|
-| IPv4/IPv6                    | √         | √           | √            | √                                  |
-| IP (any)                     | ×         | √           | √            | √                                  |
-| CIDR                         | ×         | √           | √            | √                                  |
-| MAC address                  | ×         | ×           | √            | √                                  |
-| Hostname                     | ×         | ×           | √            | √                                  |
-| Port                         | ×         | ×           | √            | ×                                  |
-| TCP/UDP address              | ×         | ×           | √            | ×                                  |
-| Credit card                  | ×         | √           | √            | ×                                  |
-| Bitcoin/Ethereum             | ×         | ×           | √            | ×                                  |
-| ISBN/ISSN                    | ×         | ×           | √            | ×                                  |
-| SSN/EIN                      | ×         | ×           | √            | ×                                  |
-| Phone (E.164)                | ×         | Partial     | √            | ×                                  |
-| Lat/Long                     | ×         | ×           | √            | ×                                  |
-| Colors (hex, RGB, HSL)       | ×         | Partial     | √            | ×                                  |
-| HTML                         | ×         | ×           | √            | ×                                  |
-| JWT                          | ×         | Partial     | √            | ×                                  |
-| JSON string                  | ×         | √           | √            | ×                                  |
-| Hashes (MD5, SHA*)           | ×         | ×           | √            | ×                                  |
-| Base64                       | ×         | √           | √            | √                                  |
-| MongoDB ID                   | ×         | ×           | √            | ×                                  |
-| Cron                         | ×         | ×           | √            | ×                                  |
-| Semver                       | ×         | Partial     | √            | ×                                  |
-| ULID                         | ×         | ×           | √            | ×                                  |
-| Country codes                | ×         | Partial     | √            | ×                                  |
-| Currency codes               | ×         | Partial     | √            | ×                                  |
-| Language codes               | ×         | Partial     | √            | ×                                  |
-| Postal codes                 | ×         | ×           | √            | ×                                  |
+| Feature          | Pedantigo | Pydantic v2 | Go Validator | JSON Schema? | Standard/RFC                 |
+|------------------|-----------|-------------|--------------|--------------|------------------------------|
+| IPv4/IPv6        | √         | √           | √            | √            | Go `net.ParseIP`             |
+| IP (any)         | √         | √           | √            | √            | Go `net.ParseIP`             |
+| CIDR             | √         | √           | √            | √            | RFC 4632                     |
+| CIDRv4/CIDRv6    | √         | √           | √            | √            | RFC 4632                     |
+| MAC address      | √         | ×           | √            | √            | IEEE 802                     |
+| Hostname         | √         | ×           | √            | √            | RFC 952                      |
+| Hostname RFC1123 | √         | ×           | √            | √            | RFC 1123                     |
+| FQDN             | √         | ×           | √            | √            | DNS standard                 |
+| Port             | √         | ×           | √            | ×            | 0-65535                      |
+| TCP/UDP address  | √         | ×           | √            | ×            | `net.ResolveTCPAddr`         |
+| Credit card      | √         | √           | √            | ×            | ISO/IEC 7812 (Luhn)          |
+| Bitcoin address  | √         | ×           | √            | ×            | P2PKH/P2SH, Base58Check      |
+| Bitcoin Bech32   | √         | ×           | √            | ×            | BIP-0173                     |
+| Ethereum address | √         | ×           | √            | ×            | EIP-55                       |
+| ISBN             | √         | ×           | √            | ×            | ISO 2108                     |
+| ISBN-10/ISBN-13  | √         | ×           | √            | ×            | ISO 2108                     |
+| ISSN             | √         | ×           | √            | ×            | ISO 3297                     |
+| SSN              | √         | ×           | √            | ×            | U.S. SSA format              |
+| EIN              | √         | ×           | √            | ×            | U.S. IRS format              |
+| Phone (E.164)    | √         | Partial     | √            | ×            | ITU-T E.164                  |
+| Latitude         | √         | ×           | √            | ×            | WGS 84 (-90 to +90)          |
+| Longitude        | √         | ×           | √            | ×            | WGS 84 (-180 to +180)        |
+| Hex color        | √         | Partial     | √            | ×            | CSS Color spec               |
+| RGB/RGBA         | √         | Partial     | √            | ×            | CSS Color spec               |
+| HSL/HSLA         | √         | Partial     | √            | ×            | CSS Color spec               |
+| HTML             | √         | ×           | √            | ×            | HTML5                        |
+| JWT              | √         | Partial     | √            | ×            | RFC 7519                     |
+| JSON string      | √         | √           | √            | ×            | RFC 8259                     |
+| Base64           | √         | √           | √            | √            | RFC 4648                     |
+| Base64URL        | √         | √           | √            | √            | RFC 4648 §5                  |
+| Base64RawURL     | √         | ×           | √            | √            | RFC 4648 §3.2                |
+| MD4              | √         | ×           | √            | ×            | RFC 1320                     |
+| MD5              | √         | ×           | √            | ×            | RFC 1321                     |
+| SHA256/384/512   | √         | ×           | √            | ×            | FIPS 180-4                   |
+| MongoDB ID       | √         | ×           | √            | ×            | MongoDB ObjectId             |
+| Cron             | √         | ×           | √            | ×            | Cron expression              |
+| Semver           | √         | Partial     | √            | ×            | Semver 2.0.0                 |
+| ULID             | √         | ×           | √            | ×            | ULID spec (Crockford base32) |
+| Luhn checksum    | √         | ×           | √            | ×            | ISO/IEC 7812                 |
+| Country codes    | ×         | Partial     | √            | ×            | ISO 3166-1                   |
+| Currency codes   | ×         | Partial     | √            | ×            | ISO 4217                     |
+| Language codes   | ×         | Partial     | √            | ×            | BCP 47                       |
+| Postal codes     | ×         | ×           | √            | ×            | ISO 3166 per-country         |
 
 **COLLECTION VALIDATION**
 
@@ -210,7 +226,7 @@ JSON Schema standard support.
 | Struct field reflection      | ×         | √           | ×            | ×                                  |
 | Recursive structs            | √         | √           | √            | √                                  |
 
-**Summary**: 81/137 features implemented (59%)
+**Summary**: 119/141 features implemented (84%)
 
 **Legend**: √ = Supported, × = Not supported, Partial = Limited support
 

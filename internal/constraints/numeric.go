@@ -48,10 +48,10 @@ func validateBound(value any, bound int, mode boundMode) error {
 
 	switch mode {
 	case boundMin:
-		constraintName = "min"
+		constraintName = CMin
 		failed = checkMinViolation(v, bound)
 	case boundMax:
-		constraintName = "max"
+		constraintName = CMax
 		failed = checkMaxViolation(v, bound)
 	}
 

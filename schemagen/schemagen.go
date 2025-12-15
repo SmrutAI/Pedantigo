@@ -19,6 +19,68 @@ const (
 	fmtUUID  = "uuid"
 	fmtIPv4  = "ipv4"
 	fmtIPv6  = "ipv6"
+
+	// Network formats (Phase 10).
+	fmtIP          = "ip"
+	fmtCIDR        = "cidr"
+	fmtCIDRv4      = "cidrv4"
+	fmtCIDRv6      = "cidrv6"
+	fmtMAC         = "mac"
+	fmtHostname    = "hostname"
+	fmtHostnameRFC = "hostname_rfc1123"
+	fmtFQDN        = "fqdn"
+	fmtPort        = "port"
+	fmtTCPAddr     = "tcp_addr"
+	fmtUDPAddr     = "udp_addr"
+	fmtTCP4Addr    = "tcp4_addr"
+
+	// Finance formats (Phase 10).
+	fmtCreditCard    = "credit_card"
+	fmtBTCAddr       = "btc_addr"
+	fmtBTCAddrBech32 = "btc_addr_bech32"
+	fmtETHAddr       = "eth_addr"
+	fmtLuhnChecksum  = "luhn_checksum"
+
+	// Identity formats (Phase 10).
+	fmtISBN   = "isbn"
+	fmtISBN10 = "isbn10"
+	fmtISBN13 = "isbn13"
+	fmtISSN   = "issn"
+	fmtSSN    = "ssn"
+	fmtEIN    = "ein"
+	fmtE164   = "e164"
+
+	// Geo formats (Phase 10).
+	fmtLatitude  = "latitude"
+	fmtLongitude = "longitude"
+
+	// Color formats (Phase 10).
+	fmtHexColor = "hexcolor"
+	fmtRGB      = "rgb"
+	fmtRGBA     = "rgba"
+	fmtHSL      = "hsl"
+	fmtHSLA     = "hsla"
+
+	// Encoding formats (Phase 10).
+	fmtJWT          = "jwt"
+	fmtJSON         = "json"
+	fmtBase64       = "base64"
+	fmtBase64URL    = "base64url"
+	fmtBase64RawURL = "base64rawurl"
+
+	// Hash formats (Phase 10).
+	fmtMD4     = "md4"
+	fmtMD5     = "md5"
+	fmtSHA256  = "sha256"
+	fmtSHA384  = "sha384"
+	fmtSHA512  = "sha512"
+	fmtMongoDB = "mongodb"
+
+	// Misc formats (Phase 10).
+	fmtHTML   = "html"
+	fmtCron   = "cron"
+	fmtSemver = "semver"
+	fmtULID   = "ulid"
 )
 
 // GenerateBaseSchema creates base JSON schema for a type (all nested structs inlined).
@@ -199,7 +261,24 @@ func ApplyConstraints(schema *jsonschema.Schema, constraintsMap map[string]strin
 			// lte → maximum (inclusive)
 			schema.Maximum = json.Number(value)
 
-		case fmtEmail, fmtURL, fmtUUID, fmtIPv4, fmtIPv6:
+		case fmtEmail, fmtURL, fmtUUID, fmtIPv4, fmtIPv6,
+			// Network formats (Phase 10).
+			fmtIP, fmtCIDR, fmtCIDRv4, fmtCIDRv6, fmtMAC, fmtHostname, fmtHostnameRFC, fmtFQDN,
+			fmtPort, fmtTCPAddr, fmtUDPAddr, fmtTCP4Addr,
+			// Finance formats (Phase 10).
+			fmtCreditCard, fmtBTCAddr, fmtBTCAddrBech32, fmtETHAddr, fmtLuhnChecksum,
+			// Identity formats (Phase 10).
+			fmtISBN, fmtISBN10, fmtISBN13, fmtISSN, fmtSSN, fmtEIN, fmtE164,
+			// Geo formats (Phase 10).
+			fmtLatitude, fmtLongitude,
+			// Color formats (Phase 10).
+			fmtHexColor, fmtRGB, fmtRGBA, fmtHSL, fmtHSLA,
+			// Encoding formats (Phase 10).
+			fmtJWT, fmtJSON, fmtBase64, fmtBase64URL, fmtBase64RawURL,
+			// Hash formats (Phase 10).
+			fmtMD4, fmtMD5, fmtSHA256, fmtSHA384, fmtSHA512, fmtMongoDB,
+			// Misc formats (Phase 10).
+			fmtHTML, fmtCron, fmtSemver, fmtULID:
 			applyFormatConstraint(schema, name)
 
 		case "regexp":
@@ -432,6 +511,114 @@ func applyFormatConstraint(schema *jsonschema.Schema, constraintName string) {
 		schema.Format = fmtIPv4
 	case fmtIPv6:
 		schema.Format = fmtIPv6
+
+	// Network formats (Phase 10).
+	case fmtIP:
+		schema.Format = fmtIP
+	case fmtCIDR:
+		schema.Format = fmtCIDR
+	case fmtCIDRv4:
+		schema.Format = fmtCIDRv4
+	case fmtCIDRv6:
+		schema.Format = fmtCIDRv6
+	case fmtMAC:
+		schema.Format = fmtMAC
+	case fmtHostname:
+		schema.Format = fmtHostname
+	case fmtHostnameRFC:
+		schema.Format = fmtHostnameRFC
+	case fmtFQDN:
+		schema.Format = fmtFQDN
+	case fmtPort:
+		schema.Format = fmtPort
+	case fmtTCPAddr:
+		schema.Format = fmtTCPAddr
+	case fmtUDPAddr:
+		schema.Format = fmtUDPAddr
+	case fmtTCP4Addr:
+		schema.Format = fmtTCP4Addr
+
+	// Finance formats (Phase 10).
+	case fmtCreditCard:
+		schema.Format = fmtCreditCard
+	case fmtBTCAddr:
+		schema.Format = fmtBTCAddr
+	case fmtBTCAddrBech32:
+		schema.Format = fmtBTCAddrBech32
+	case fmtETHAddr:
+		schema.Format = fmtETHAddr
+	case fmtLuhnChecksum:
+		schema.Format = fmtLuhnChecksum
+
+	// Identity formats (Phase 10).
+	case fmtISBN:
+		schema.Format = fmtISBN
+	case fmtISBN10:
+		schema.Format = fmtISBN10
+	case fmtISBN13:
+		schema.Format = fmtISBN13
+	case fmtISSN:
+		schema.Format = fmtISSN
+	case fmtSSN:
+		schema.Format = fmtSSN
+	case fmtEIN:
+		schema.Format = fmtEIN
+	case fmtE164:
+		schema.Format = fmtE164
+
+	// Geo formats (Phase 10).
+	case fmtLatitude:
+		schema.Format = fmtLatitude
+	case fmtLongitude:
+		schema.Format = fmtLongitude
+
+	// Color formats (Phase 10).
+	case fmtHexColor:
+		schema.Format = fmtHexColor
+	case fmtRGB:
+		schema.Format = fmtRGB
+	case fmtRGBA:
+		schema.Format = fmtRGBA
+	case fmtHSL:
+		schema.Format = fmtHSL
+	case fmtHSLA:
+		schema.Format = fmtHSLA
+
+	// Encoding formats (Phase 10).
+	case fmtJWT:
+		schema.Format = fmtJWT
+	case fmtJSON:
+		schema.Format = fmtJSON
+	case fmtBase64:
+		schema.Format = fmtBase64
+	case fmtBase64URL:
+		schema.Format = fmtBase64URL
+	case fmtBase64RawURL:
+		schema.Format = fmtBase64RawURL
+
+	// Hash formats (Phase 10).
+	case fmtMD4:
+		schema.Format = fmtMD4
+	case fmtMD5:
+		schema.Format = fmtMD5
+	case fmtSHA256:
+		schema.Format = fmtSHA256
+	case fmtSHA384:
+		schema.Format = fmtSHA384
+	case fmtSHA512:
+		schema.Format = fmtSHA512
+	case fmtMongoDB:
+		schema.Format = fmtMongoDB
+
+	// Misc formats (Phase 10).
+	case fmtHTML:
+		schema.Format = fmtHTML
+	case fmtCron:
+		schema.Format = fmtCron
+	case fmtSemver:
+		schema.Format = fmtSemver
+	case fmtULID:
+		schema.Format = fmtULID
 	}
 }
 

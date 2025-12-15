@@ -165,6 +165,12 @@ Alternatively, use pointer types (`*int`, `*bool`, `*string`) where `nil` indica
 | `uuid`             | Valid UUID                                         | `pedantigo:"uuid"`                         |
 | `ipv4`             | Valid IPv4 address                                 | `pedantigo:"ipv4"`                         |
 | `ipv6`             | Valid IPv6 address                                 | `pedantigo:"ipv6"`                         |
+| `ip`               | Valid IP address (IPv4 or IPv6)                    | `pedantigo:"ip"`                           |
+| `cidr`             | Valid CIDR notation                                | `pedantigo:"cidr"`                         |
+| `mac`              | Valid MAC address                                  | `pedantigo:"mac"`                          |
+| `hostname`         | Valid RFC 952 hostname                             | `pedantigo:"hostname"`                     |
+| `fqdn`             | Valid fully qualified domain name                  | `pedantigo:"fqdn"`                         |
+| `port`             | Valid port number (0-65535)                        | `pedantigo:"port"`                         |
 | `regexp`           | Match regular expression                           | `pedantigo:"regexp=^[A-Z]+$"`              |
 | `oneof`            | Value must be one of specified options             | `pedantigo:"oneof=red green blue"`         |
 | `eqfield`          | Field equals another field                         | `pedantigo:"eqfield=Password"`             |
@@ -196,6 +202,21 @@ Alternatively, use pointer types (`*int`, `*bool`, `*string`) where `nil` indica
 | `multiple_of`      | Must be divisible by value                         | `pedantigo:"multiple_of=5"`                |
 | `max_digits`       | Maximum total digits                               | `pedantigo:"max_digits=10"`                |
 | `decimal_places`   | Maximum decimal places                             | `pedantigo:"decimal_places=2"`             |
+| `credit_card`      | Valid credit card number (Luhn)                    | `pedantigo:"credit_card"`                  |
+| `isbn`             | Valid ISBN-10 or ISBN-13                           | `pedantigo:"isbn"`                         |
+| `ssn`              | Valid U.S. SSN (XXX-XX-XXXX)                       | `pedantigo:"ssn"`                          |
+| `e164`             | Valid E.164 phone number                           | `pedantigo:"e164"`                         |
+| `latitude`         | Valid latitude (-90 to 90)                         | `pedantigo:"latitude"`                     |
+| `longitude`        | Valid longitude (-180 to 180)                      | `pedantigo:"longitude"`                    |
+| `hexcolor`         | Valid hex color (#RGB or #RRGGBB)                  | `pedantigo:"hexcolor"`                     |
+| `jwt`              | Valid JWT format                                   | `pedantigo:"jwt"`                          |
+| `json`             | Valid JSON string                                  | `pedantigo:"json"`                         |
+| `base64`           | Valid base64 encoding                              | `pedantigo:"base64"`                       |
+| `md5`              | Valid MD5 hash (32 hex chars)                      | `pedantigo:"md5"`                          |
+| `sha256`           | Valid SHA256 hash (64 hex chars)                   | `pedantigo:"sha256"`                       |
+| `semver`           | Valid semantic version (X.Y.Z)                     | `pedantigo:"semver"`                       |
+| `ulid`             | Valid ULID (26 chars)                              | `pedantigo:"ulid"`                         |
+| `cron`             | Valid cron expression                              | `pedantigo:"cron"`                         |
 
 Combine multiple constraints with commas: `pedantigo:"required,min=3,max=50"`
 
