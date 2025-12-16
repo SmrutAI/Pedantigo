@@ -1,7 +1,6 @@
 package constraints
 
 import (
-	"fmt"
 	"reflect"
 )
 
@@ -63,9 +62,9 @@ func (c uniqueConstraint) validateSlice(v reflect.Value) error {
 
 		if seen[key] {
 			if c.field != "" {
-				return fmt.Errorf("duplicate value for field %s", c.field)
+				return NewConstraintErrorf(CodeNotUnique, "duplicate value for field %s", c.field)
 			}
-			return fmt.Errorf("contains duplicate values")
+			return NewConstraintError(CodeNotUnique, "contains duplicate values")
 		}
 		seen[key] = true
 	}
@@ -89,7 +88,7 @@ func (c uniqueConstraint) validateMap(v reflect.Value) error {
 		}
 
 		if seen[key] {
-			return fmt.Errorf("contains duplicate values")
+			return NewConstraintError(CodeNotUnique, "contains duplicate values")
 		}
 		seen[key] = true
 	}

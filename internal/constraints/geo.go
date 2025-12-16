@@ -2,7 +2,6 @@
 package constraints
 
 import (
-	"fmt"
 	"reflect"
 )
 
@@ -26,11 +25,11 @@ func (c latitudeConstraint) Validate(value any) error {
 
 	num, err := extractNumericValue(v)
 	if err != nil {
-		return fmt.Errorf("latitude constraint %w", err)
+		return NewConstraintError(CodeInvalidType, "latitude constraint requires numeric value")
 	}
 
 	if num < -90 || num > 90 {
-		return fmt.Errorf("must be a valid latitude (-90 to 90)")
+		return NewConstraintError(CodeInvalidLatitude, "must be a valid latitude (-90 to 90)")
 	}
 	return nil
 }
@@ -49,11 +48,11 @@ func (c longitudeConstraint) Validate(value any) error {
 
 	num, err := extractNumericValue(v)
 	if err != nil {
-		return fmt.Errorf("longitude constraint %w", err)
+		return NewConstraintError(CodeInvalidType, "longitude constraint requires numeric value")
 	}
 
 	if num < -180 || num > 180 {
-		return fmt.Errorf("must be a valid longitude (-180 to 180)")
+		return NewConstraintError(CodeInvalidLongitude, "must be a valid longitude (-180 to 180)")
 	}
 	return nil
 }

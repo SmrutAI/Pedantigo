@@ -1,7 +1,6 @@
 package constraints
 
 import (
-	"fmt"
 	"reflect"
 )
 
@@ -13,7 +12,7 @@ func (c requiredIfConstraint) ValidateCrossField(fieldValue any, structValue ref
 	if CompareToString(targetValue) == c.compareValue {
 		// Condition is met - field must be non-zero
 		if IsZeroValue(fieldValue) {
-			return fmt.Errorf("is required when %s equals '%s'", c.targetFieldName, c.compareValue)
+			return NewConstraintErrorf(CodeRequiredIf, "is required when %s equals '%s'", c.targetFieldName, c.compareValue)
 		}
 	}
 	return nil
@@ -27,7 +26,7 @@ func (c requiredUnlessConstraint) ValidateCrossField(fieldValue any, structValue
 	if CompareToString(targetValue) != c.compareValue {
 		// Condition is met - field must be non-zero
 		if IsZeroValue(fieldValue) {
-			return fmt.Errorf("is required unless %s equals '%s'", c.targetFieldName, c.compareValue)
+			return NewConstraintErrorf(CodeRequiredUnless, "is required unless %s equals '%s'", c.targetFieldName, c.compareValue)
 		}
 	}
 	return nil
@@ -41,7 +40,7 @@ func (c requiredWithConstraint) ValidateCrossField(fieldValue any, structValue r
 	if !IsZeroValue(targetValue) {
 		// Target field is present - this field must also be present
 		if IsZeroValue(fieldValue) {
-			return fmt.Errorf("is required when %s is present", c.targetFieldName)
+			return NewConstraintErrorf(CodeRequiredWith, "is required when %s is present", c.targetFieldName)
 		}
 	}
 	return nil
@@ -55,7 +54,7 @@ func (c requiredWithoutConstraint) ValidateCrossField(fieldValue any, structValu
 	if IsZeroValue(targetValue) {
 		// Target field is absent - this field must be present
 		if IsZeroValue(fieldValue) {
-			return fmt.Errorf("is required when %s is absent", c.targetFieldName)
+			return NewConstraintErrorf(CodeRequiredWithout, "is required when %s is absent", c.targetFieldName)
 		}
 	}
 	return nil

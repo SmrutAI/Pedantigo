@@ -1,9 +1,11 @@
 package validation
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 
+	"github.com/SmrutAI/Pedantigo/internal/constraints"
 	"github.com/SmrutAI/Pedantigo/internal/tags"
 )
 
@@ -12,8 +14,26 @@ import (
 // FieldError represents an error condition.
 type FieldError struct {
 	Field   string
+	Code    string // Machine-readable error code (e.g., "INVALID_EMAIL")
 	Message string
 	Value   any
+}
+
+// newFieldError creates a FieldError, extracting Code from ConstraintError if available.
+func newFieldError(field string, err error, value any) FieldError {
+	fe := FieldError{
+		Field:   field,
+		Message: err.Error(),
+		Value:   value,
+	}
+
+	// Extract error code if the error is a ConstraintError
+	var ce *constraints.ConstraintError
+	if errors.As(err, &ce) {
+		fe.Code = ce.Code
+	}
+
+	return fe
 }
 
 // ConstraintValidator is the interface for validation constraints.
@@ -38,19 +58,19 @@ func ValidateValue(
 	buildConstraintsFunc ConstraintBuilder,
 	recursiveValidateFunc func(val reflect.Value, path string) []FieldError,
 ) []FieldError {
-	var errors []FieldError
+	var fieldErrs []FieldError
 
 	// Handle pointer indirection
 	for val.Kind() == reflect.Ptr {
 		if val.IsNil() {
-			return errors // nil pointers are handled by required constraint
+			return fieldErrs // nil pointers are handled by required constraint
 		}
 		val = val.Elem()
 	}
 
 	// Only validate structs
 	if val.Kind() != reflect.Struct {
-		return errors
+		return fieldErrs
 	}
 
 	typ := val.Type()
@@ -76,7 +96,7 @@ func ValidateValue(
 		if parsedTag == nil {
 			// No validation tags, but still check nested structs, slices, and maps
 			nestedErrors := validateNestedElements(fieldValue, recursiveValidateFunc, fieldPath)
-			errors = append(errors, nestedErrors...)
+			fieldErrs = append(fieldErrs, nestedErrors...)
 			continue
 		}
 
@@ -86,8 +106,9 @@ func ValidateValue(
 			if _, hasRequired := parsedTag.CollectionConstraints["required"]; hasRequired {
 				// Check if field is zero value (indicates it was missing from JSON)
 				if fieldValue.IsZero() {
-					errors = append(errors, FieldError{
+					fieldErrs = append(fieldErrs, FieldError{
 						Field:   fieldPath,
+						Code:    constraints.CodeRequired,
 						Message: "is required",
 						Value:   fieldValue.Interface(),
 					})
@@ -117,7 +138,7 @@ func ValidateValue(
 			// Always apply collection-level constraints first (constraints before dive)
 			if len(parsedTag.CollectionConstraints) > 0 {
 				collectionValidators := buildConstraintsFunc(parsedTag.CollectionConstraints, field.Type)
-				errors = append(errors, validateScalarField(fieldValue, fieldPath, collectionValidators, recursiveValidateFunc)...)
+				fieldErrs = append(fieldErrs, validateScalarField(fieldValue, fieldPath, collectionValidators, recursiveValidateFunc)...)
 			}
 
 			if parsedTag.DivePresent {
@@ -125,26 +146,26 @@ func ValidateValue(
 				elementValidators := buildConstraintsFunc(parsedTag.ElementConstraints, field.Type.Elem())
 				if isMap {
 					// Map with dive support
-					errors = append(errors, validateMapElementsWithDive(
+					fieldErrs = append(fieldErrs, validateMapElementsWithDive(
 						fieldValue, fieldPath, elementValidators, parsedTag.KeyConstraints,
 						buildConstraintsFunc, field.Type.Key(), recursiveValidateFunc)...)
 				} else {
 					// Slice with dive support
-					errors = append(errors, validateSliceElements(fieldValue, fieldPath, elementValidators, recursiveValidateFunc)...)
+					fieldErrs = append(fieldErrs, validateSliceElements(fieldValue, fieldPath, elementValidators, recursiveValidateFunc)...)
 				}
 			} else {
 				// No dive: still check nested structs in the collection
 				nestedErrors := validateNestedElements(fieldValue, recursiveValidateFunc, fieldPath)
-				errors = append(errors, nestedErrors...)
+				fieldErrs = append(fieldErrs, nestedErrors...)
 			}
 		} else {
 			// Non-collection field: apply constraints directly
 			validators := buildConstraintsFunc(parsedTag.CollectionConstraints, field.Type)
-			errors = append(errors, validateScalarField(fieldValue, fieldPath, validators, recursiveValidateFunc)...)
+			fieldErrs = append(fieldErrs, validateScalarField(fieldValue, fieldPath, validators, recursiveValidateFunc)...)
 		}
 	}
 
-	return errors
+	return fieldErrs
 }
 
 func validateNestedElements(fieldValue reflect.Value,
@@ -187,7 +208,7 @@ func validateSliceElements(
 	validators []ConstraintValidator,
 	recursiveValidateFunc func(val reflect.Value, path string) []FieldError,
 ) []FieldError {
-	var errors []FieldError
+	var fieldErrs []FieldError
 	for i := 0; i < fieldValue.Len(); i++ {
 		elemValue := fieldValue.Index(i)
 		elemPath := fmt.Sprintf("%s[%d]", fieldPath, i)
@@ -195,20 +216,16 @@ func validateSliceElements(
 		// Apply constraints to each element
 		for _, validator := range validators {
 			if err := validator.Validate(elemValue.Interface()); err != nil {
-				errors = append(errors, FieldError{
-					Field:   elemPath,
-					Message: err.Error(),
-					Value:   elemValue.Interface(),
-				})
+				fieldErrs = append(fieldErrs, newFieldError(elemPath, err, elemValue.Interface()))
 			}
 		}
 
 		// Recursively validate nested structs in slice
 		if elemValue.Kind() == reflect.Struct {
-			errors = append(errors, recursiveValidateFunc(elemValue, elemPath)...)
+			fieldErrs = append(fieldErrs, recursiveValidateFunc(elemValue, elemPath)...)
 		}
 	}
-	return errors
+	return fieldErrs
 }
 
 func validateMapElementsWithDive(
@@ -220,7 +237,7 @@ func validateMapElementsWithDive(
 	keyType reflect.Type,
 	recursiveValidateFunc func(val reflect.Value, path string) []FieldError,
 ) []FieldError {
-	var errors []FieldError
+	var fieldErrs []FieldError
 
 	// Build key validators
 	keyValidators := buildConstraintsFunc(keyConstraints, keyType)
@@ -234,31 +251,23 @@ func validateMapElementsWithDive(
 		// Validate keys if key constraints exist
 		for _, validator := range keyValidators {
 			if err := validator.Validate(mapKey.Interface()); err != nil {
-				errors = append(errors, FieldError{
-					Field:   mapPath,
-					Message: err.Error(),
-					Value:   mapKey.Interface(),
-				})
+				fieldErrs = append(fieldErrs, newFieldError(mapPath, err, mapKey.Interface()))
 			}
 		}
 
 		// Validate values
 		for _, validator := range elementValidators {
 			if err := validator.Validate(mapValue.Interface()); err != nil {
-				errors = append(errors, FieldError{
-					Field:   mapPath,
-					Message: err.Error(),
-					Value:   mapValue.Interface(),
-				})
+				fieldErrs = append(fieldErrs, newFieldError(mapPath, err, mapValue.Interface()))
 			}
 		}
 
 		// Recursively validate nested structs in map
 		if mapValue.Kind() == reflect.Struct {
-			errors = append(errors, recursiveValidateFunc(mapValue, mapPath)...)
+			fieldErrs = append(fieldErrs, recursiveValidateFunc(mapValue, mapPath)...)
 		}
 	}
-	return errors
+	return fieldErrs
 }
 
 func validateScalarField(
@@ -267,23 +276,19 @@ func validateScalarField(
 	validators []ConstraintValidator,
 	recursiveValidateFunc func(val reflect.Value, path string) []FieldError,
 ) []FieldError {
-	var errors []FieldError
+	var fieldErrs []FieldError
 
 	// Apply constraints directly
 	for _, validator := range validators {
 		if err := validator.Validate(fieldValue.Interface()); err != nil {
-			errors = append(errors, FieldError{
-				Field:   fieldPath,
-				Message: err.Error(),
-				Value:   fieldValue.Interface(),
-			})
+			fieldErrs = append(fieldErrs, newFieldError(fieldPath, err, fieldValue.Interface()))
 		}
 	}
 
 	// Recursively validate nested structs
 	if fieldValue.Kind() == reflect.Struct {
-		errors = append(errors, recursiveValidateFunc(fieldValue, fieldPath)...)
+		fieldErrs = append(fieldErrs, recursiveValidateFunc(fieldValue, fieldPath)...)
 	}
 
-	return errors
+	return fieldErrs
 }

@@ -43,7 +43,7 @@ func (c emailConstraint) Validate(value any) error {
 	}
 
 	if !emailRegex.MatchString(str) {
-		return fmt.Errorf("must be a valid email address")
+		return NewConstraintError(CodeInvalidEmail, "must be a valid email address")
 	}
 
 	return nil
@@ -66,17 +66,17 @@ func (c urlConstraint) Validate(value any) error {
 	// Parse the URL
 	parsedURL, err := url.Parse(str)
 	if err != nil {
-		return fmt.Errorf("must be a valid URL (http or https)")
+		return NewConstraintError(CodeInvalidURL, "must be a valid URL (http or https)")
 	}
 
 	// Check scheme is http or https
 	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
-		return fmt.Errorf("must be a valid URL (http or https)")
+		return NewConstraintError(CodeInvalidURL, "must be a valid URL (http or https)")
 	}
 
 	// Check host is non-empty
 	if parsedURL.Host == "" {
-		return fmt.Errorf("must be a valid URL (http or https)")
+		return NewConstraintError(CodeInvalidURL, "must be a valid URL (http or https)")
 	}
 
 	return nil
@@ -98,7 +98,7 @@ func (c uuidConstraint) Validate(value any) error {
 
 	// Validate UUID format using regex
 	if !uuidRegex.MatchString(str) {
-		return fmt.Errorf("must be a valid UUID")
+		return NewConstraintError(CodeInvalidUUID, "must be a valid UUID")
 	}
 
 	return nil
@@ -120,7 +120,7 @@ func (c regexConstraint) Validate(value any) error {
 
 	// Validate against the compiled regex
 	if !c.regex.MatchString(str) {
-		return fmt.Errorf("must match pattern '%s'", c.pattern)
+		return NewConstraintErrorf(CodePatternMismatch, "must match pattern '%s'", c.pattern)
 	}
 
 	return nil
@@ -145,7 +145,7 @@ func (c lenConstraint) Validate(value any) error {
 	// Validation logic - count runes, not bytes (for Unicode support)
 	runeCount := len([]rune(str))
 	if runeCount != c.length {
-		return fmt.Errorf("must be exactly %d characters", c.length)
+		return NewConstraintErrorf(CodeExactLength, "must be exactly %d characters", c.length)
 	}
 
 	return nil
@@ -168,7 +168,7 @@ func (c asciiConstraint) Validate(value any) error {
 	// Check all runes are ASCII (0-127)
 	for _, r := range str {
 		if r > 127 {
-			return fmt.Errorf("must contain only ASCII characters")
+			return NewConstraintError(CodeMustBeASCII, "must contain only ASCII characters")
 		}
 	}
 
@@ -191,7 +191,7 @@ func (c alphaConstraint) Validate(value any) error {
 
 	// Check if string matches alphabetic pattern
 	if !alphaRegex.MatchString(str) {
-		return fmt.Errorf("must contain only alphabetic characters")
+		return NewConstraintError(CodeMustBeAlpha, "must contain only alphabetic characters")
 	}
 
 	return nil
@@ -213,7 +213,7 @@ func (c alphanumConstraint) Validate(value any) error {
 
 	// Check if string matches alphanumeric pattern
 	if !alphanumRegex.MatchString(str) {
-		return fmt.Errorf("must contain only alphanumeric characters")
+		return NewConstraintError(CodeMustBeAlphanum, "must contain only alphanumeric characters")
 	}
 
 	return nil
@@ -231,12 +231,12 @@ func (c containsConstraint) Validate(value any) error {
 
 	// Skip empty strings only if substring is non-empty
 	if str == "" && c.substring != "" {
-		return fmt.Errorf("must contain '%s'", c.substring)
+		return NewConstraintErrorf(CodeMustContain, "must contain '%s'", c.substring)
 	}
 
 	// Check if string contains substring
 	if !strings.Contains(str, c.substring) {
-		return fmt.Errorf("must contain '%s'", c.substring)
+		return NewConstraintErrorf(CodeMustContain, "must contain '%s'", c.substring)
 	}
 
 	return nil
@@ -258,7 +258,7 @@ func (c excludesConstraint) Validate(value any) error {
 
 	// Check if string does NOT contain substring
 	if strings.Contains(str, c.substring) {
-		return fmt.Errorf("must not contain '%s'", c.substring)
+		return NewConstraintErrorf(CodeMustNotContain, "must not contain '%s'", c.substring)
 	}
 
 	return nil
@@ -280,7 +280,7 @@ func (c startswithConstraint) Validate(value any) error {
 
 	// Check if string starts with prefix
 	if !strings.HasPrefix(str, c.prefix) {
-		return fmt.Errorf("must start with '%s'", c.prefix)
+		return NewConstraintErrorf(CodeMustStartWith, "must start with '%s'", c.prefix)
 	}
 
 	return nil
@@ -302,7 +302,7 @@ func (c endswithConstraint) Validate(value any) error {
 
 	// Check if string ends with suffix
 	if !strings.HasSuffix(str, c.suffix) {
-		return fmt.Errorf("must end with '%s'", c.suffix)
+		return NewConstraintErrorf(CodeMustEndWith, "must end with '%s'", c.suffix)
 	}
 
 	return nil
@@ -324,7 +324,7 @@ func (c lowercaseConstraint) Validate(value any) error {
 
 	// Check if string is all lowercase
 	if str != strings.ToLower(str) {
-		return fmt.Errorf("must be all lowercase")
+		return NewConstraintError(CodeMustBeLowercase, "must be all lowercase")
 	}
 
 	return nil
@@ -346,7 +346,7 @@ func (c uppercaseConstraint) Validate(value any) error {
 
 	// Check if string is all uppercase
 	if str != strings.ToUpper(str) {
-		return fmt.Errorf("must be all uppercase")
+		return NewConstraintError(CodeMustBeUppercase, "must be all uppercase")
 	}
 
 	return nil

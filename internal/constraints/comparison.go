@@ -1,7 +1,6 @@
 package constraints
 
 import (
-	"fmt"
 	"reflect"
 )
 
@@ -15,7 +14,7 @@ func (c eqFieldConstraint) ValidateCrossField(fieldValue any, structValue reflec
 	}
 
 	if Compare(fieldValue, targetValue) != 0 {
-		return fmt.Errorf("must equal field %s", c.targetFieldName)
+		return NewConstraintErrorf(CodeMustEqualField, "must equal field %s", c.targetFieldName)
 	}
 	return nil
 }
@@ -30,7 +29,7 @@ func (c neFieldConstraint) ValidateCrossField(fieldValue any, structValue reflec
 	}
 
 	if Compare(fieldValue, targetValue) == 0 {
-		return fmt.Errorf("must not equal field %s", c.targetFieldName)
+		return NewConstraintErrorf(CodeMustNotEqualField, "must not equal field %s", c.targetFieldName)
 	}
 	return nil
 }
@@ -45,7 +44,7 @@ func (c gtFieldConstraint) ValidateCrossField(fieldValue any, structValue reflec
 	}
 
 	if Compare(fieldValue, targetValue) <= 0 {
-		return fmt.Errorf("must be greater than field %s", c.targetFieldName)
+		return NewConstraintErrorf(CodeMustBeGTField, "must be greater than field %s", c.targetFieldName)
 	}
 	return nil
 }
@@ -60,7 +59,7 @@ func (c gteFieldConstraint) ValidateCrossField(fieldValue any, structValue refle
 	}
 
 	if Compare(fieldValue, targetValue) < 0 {
-		return fmt.Errorf("must be at least field %s", c.targetFieldName)
+		return NewConstraintErrorf(CodeMustBeGTEField, "must be at least field %s", c.targetFieldName)
 	}
 	return nil
 }
@@ -75,7 +74,7 @@ func (c ltFieldConstraint) ValidateCrossField(fieldValue any, structValue reflec
 	}
 
 	if Compare(fieldValue, targetValue) >= 0 {
-		return fmt.Errorf("must be less than field %s", c.targetFieldName)
+		return NewConstraintErrorf(CodeMustBeLTField, "must be less than field %s", c.targetFieldName)
 	}
 	return nil
 }
@@ -90,7 +89,7 @@ func (c lteFieldConstraint) ValidateCrossField(fieldValue any, structValue refle
 	}
 
 	if Compare(fieldValue, targetValue) > 0 {
-		return fmt.Errorf("must be at most field %s", c.targetFieldName)
+		return NewConstraintErrorf(CodeMustBeLTEField, "must be at most field %s", c.targetFieldName)
 	}
 	return nil
 }

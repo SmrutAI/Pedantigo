@@ -20,6 +20,7 @@ const (
 // FieldError represents a single field validation error.
 type FieldError struct {
 	Field   string // Field path (e.g., "user.email")
+	Code    string // Machine-readable error code (e.g., "INVALID_EMAIL")
 	Message string // Human-readable error message
 	Value   any    // The value that failed validation
 }

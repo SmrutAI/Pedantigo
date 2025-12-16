@@ -1433,3 +1433,412 @@ func TestExtraFields_Forbid_WithStrictMissingFieldsFalse(t *testing.T) {
 	assert.Equal(t, "root", ve.Errors[0].Field)
 	assert.Equal(t, "JSON decode error: "+ErrMsgUnknownField, ve.Errors[0].Message)
 }
+
+// ==================== MarshalWithOptions Tests ====================
+
+// Test types for marshal options.
+type UserWithSensitiveData struct {
+	ID       int    `json:"id" pedantigo:"min=1"`
+	Name     string `json:"name" pedantigo:"min=2"`
+	Email    string `json:"email" pedantigo:"email"`
+	Password string `json:"password" pedantigo:"exclude:response,log,min=8"`
+	Token    string `json:"token" pedantigo:"exclude:log"`
+	Port     int    `json:"port" pedantigo:"omitzero"`
+	Debug    bool   `json:"debug" pedantigo:"omitzero"`
+}
+
+func TestValidator_MarshalWithOptions_ExcludeContext(t *testing.T) {
+	type User struct {
+		ID       int    `json:"id"`
+		Name     string `json:"name"`
+		Password string `json:"password" pedantigo:"exclude:response"`
+		Token    string `json:"token" pedantigo:"exclude:log"`
+	}
+
+	validator := New[User]()
+	user := &User{
+		ID:       1,
+		Name:     "Alice",
+		Password: "secret123",
+		Token:    "token456",
+	}
+
+	// Test 1: Marshal with "response" context - should exclude password
+	optsResponse := ForContext("response")
+	dataResponse, err := validator.MarshalWithOptions(user, optsResponse)
+	require.NoError(t, err)
+
+	var resultResponse map[string]interface{}
+	require.NoError(t, json.Unmarshal(dataResponse, &resultResponse))
+
+	assert.InDelta(t, float64(1), resultResponse["id"], 0.001)
+	assert.Equal(t, "Alice", resultResponse["name"])
+	assert.NotContains(t, resultResponse, "password", "password should be excluded in 'response' context")
+	assert.Equal(t, "token456", resultResponse["token"], "token should be included in 'response' context")
+
+	// Test 2: Marshal with "log" context - should exclude token
+	optsLog := ForContext("log")
+	dataLog, err := validator.MarshalWithOptions(user, optsLog)
+	require.NoError(t, err)
+
+	var resultLog map[string]interface{}
+	require.NoError(t, json.Unmarshal(dataLog, &resultLog))
+
+	assert.InDelta(t, float64(1), resultLog["id"], 0.001)
+	assert.Equal(t, "Alice", resultLog["name"])
+	assert.Equal(t, "secret123", resultLog["password"], "password should be included in 'log' context")
+	assert.NotContains(t, resultLog, "token", "token should be excluded in 'log' context")
+
+	// Test 3: Marshal with no context - should include all fields
+	optsNone := DefaultMarshalOptions()
+	dataNone, err := validator.MarshalWithOptions(user, optsNone)
+	require.NoError(t, err)
+
+	var resultNone map[string]interface{}
+	require.NoError(t, json.Unmarshal(dataNone, &resultNone))
+
+	assert.InDelta(t, float64(1), resultNone["id"], 0.001)
+	assert.Equal(t, "Alice", resultNone["name"])
+	assert.Equal(t, "secret123", resultNone["password"], "password should be included with no context")
+	assert.Equal(t, "token456", resultNone["token"], "token should be included with no context")
+}
+
+func TestValidator_MarshalWithOptions_OmitZero(t *testing.T) {
+	type Config struct {
+		Name    string `json:"name" pedantigo:"min=2"`
+		Port    int    `json:"port" pedantigo:"omitzero"`
+		Timeout int    `json:"timeout" pedantigo:"omitzero"`
+		Retries int    `json:"retries"`
+	}
+
+	validator := New[Config]()
+
+	tests := []struct {
+		name          string
+		config        *Config
+		opts          MarshalOptions
+		shouldHave    []string
+		shouldNotHave []string
+	}{
+		{
+			name: "omitzero enabled - omits zero values with tag",
+			config: &Config{
+				Name:    "myapp",
+				Port:    0, // Zero with omitzero tag
+				Timeout: 0, // Zero with omitzero tag
+				Retries: 0, // Zero without omitzero tag
+			},
+			opts: MarshalOptions{
+				Context:  "",
+				OmitZero: true,
+			},
+			shouldHave:    []string{"name", "retries"},
+			shouldNotHave: []string{"port", "timeout"},
+		},
+		{
+			name: "omitzero enabled - includes non-zero values",
+			config: &Config{
+				Name:    "myapp",
+				Port:    8080, // Non-zero with omitzero tag
+				Timeout: 30,   // Non-zero with omitzero tag
+				Retries: 3,
+			},
+			opts: MarshalOptions{
+				Context:  "",
+				OmitZero: true,
+			},
+			shouldHave:    []string{"name", "port", "timeout", "retries"},
+			shouldNotHave: []string{},
+		},
+		{
+			name: "omitzero disabled - includes all fields",
+			config: &Config{
+				Name:    "myapp",
+				Port:    0, // Zero with omitzero tag
+				Timeout: 0, // Zero with omitzero tag
+				Retries: 0,
+			},
+			opts: MarshalOptions{
+				Context:  "",
+				OmitZero: false, // Disabled
+			},
+			shouldHave:    []string{"name", "port", "timeout", "retries"},
+			shouldNotHave: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := validator.MarshalWithOptions(tt.config, tt.opts)
+			require.NoError(t, err)
+
+			var result map[string]interface{}
+			require.NoError(t, json.Unmarshal(data, &result))
+
+			for _, field := range tt.shouldHave {
+				assert.Contains(t, result, field, "field %s should be present", field)
+			}
+
+			for _, field := range tt.shouldNotHave {
+				assert.NotContains(t, result, field, "field %s should be omitted", field)
+			}
+		})
+	}
+}
+
+func TestValidator_MarshalWithOptions_CombinedExcludeAndOmitZero(t *testing.T) {
+	user := &UserWithSensitiveData{
+		ID:       1,
+		Name:     "Alice",
+		Email:    "alice@example.com",
+		Password: "secret123",
+		Token:    "token456",
+		Port:     0,     // Zero with omitzero tag
+		Debug:    false, // Zero with omitzero tag
+	}
+
+	validator := New[UserWithSensitiveData]()
+
+	// Marshal with "response" context and OmitZero enabled
+	opts := MarshalOptions{
+		Context:  "response",
+		OmitZero: true,
+	}
+
+	data, err := validator.MarshalWithOptions(user, opts)
+	require.NoError(t, err)
+
+	var result map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &result))
+
+	// Should include: id, name, email, token
+	assert.InDelta(t, float64(1), result["id"], 0.001)
+	assert.Equal(t, "Alice", result["name"])
+	assert.Equal(t, "alice@example.com", result["email"])
+	assert.Equal(t, "token456", result["token"])
+
+	// Should exclude password (excluded by context)
+	assert.NotContains(t, result, "password")
+
+	// Should exclude port and debug (omitted by omitzero)
+	assert.NotContains(t, result, "port")
+	assert.NotContains(t, result, "debug")
+}
+
+func TestValidator_MarshalWithOptions_ValidationErrors(t *testing.T) {
+	type User struct {
+		Name  string `json:"name" pedantigo:"min=2"`
+		Email string `json:"email" pedantigo:"email"`
+		Age   int    `json:"age" pedantigo:"min=18"`
+	}
+
+	validator := New[User]()
+	user := &User{
+		Name:  "A",          // Too short (min=2)
+		Email: "notanemail", // Invalid email
+		Age:   15,           // Too young (min=18)
+	}
+
+	// MarshalWithOptions should still validate and return errors
+	opts := DefaultMarshalOptions()
+	data, err := validator.MarshalWithOptions(user, opts)
+
+	// Should return validation error
+	require.Error(t, err)
+	assert.Nil(t, data)
+
+	// Verify it's a ValidationError with multiple field errors
+	var ve *ValidationError
+	require.ErrorAs(t, err, &ve, "expected *ValidationError, got %T", err)
+	assert.Len(t, ve.Errors, 3)
+}
+
+func TestValidator_MarshalWithOptions_PointerFields(t *testing.T) {
+	type Config struct {
+		Name    string `json:"name"`
+		Port    *int   `json:"port" pedantigo:"omitzero"`
+		Enabled *bool  `json:"enabled" pedantigo:"omitzero"`
+	}
+
+	validator := New[Config]()
+
+	// Test with nil pointers
+	config1 := &Config{
+		Name:    "app",
+		Port:    nil,
+		Enabled: nil,
+	}
+
+	opts := MarshalOptions{
+		Context:  "",
+		OmitZero: true,
+	}
+
+	data1, err := validator.MarshalWithOptions(config1, opts)
+	require.NoError(t, err)
+
+	var result1 map[string]interface{}
+	require.NoError(t, json.Unmarshal(data1, &result1))
+
+	assert.Equal(t, "app", result1["name"])
+	assert.NotContains(t, result1, "port", "nil pointer with omitzero should be omitted")
+	assert.NotContains(t, result1, "enabled", "nil pointer with omitzero should be omitted")
+
+	// Test with non-nil pointers
+	port := 8080
+	enabled := true
+	config2 := &Config{
+		Name:    "app",
+		Port:    &port,
+		Enabled: &enabled,
+	}
+
+	data2, err := validator.MarshalWithOptions(config2, opts)
+	require.NoError(t, err)
+
+	var result2 map[string]interface{}
+	require.NoError(t, json.Unmarshal(data2, &result2))
+
+	assert.Equal(t, "app", result2["name"])
+	assert.InDelta(t, float64(8080), result2["port"], 0.001)
+	assert.Equal(t, true, result2["enabled"])
+}
+
+func TestValidator_MarshalWithOptions_NestedStructs(t *testing.T) {
+	type Address struct {
+		Street     string `json:"street"`
+		City       string `json:"city"`
+		PostalCode string `json:"postal_code" pedantigo:"exclude:summary"`
+	}
+
+	type User struct {
+		Name     string  `json:"name"`
+		Password string  `json:"password" pedantigo:"exclude:response"`
+		Address  Address `json:"address"`
+	}
+
+	validator := New[User]()
+	user := &User{
+		Name:     "Alice",
+		Password: "secret123",
+		Address: Address{
+			Street:     "123 Main St",
+			City:       "NYC",
+			PostalCode: "10001",
+		},
+	}
+
+	// Marshal with "response" context
+	opts := ForContext("response")
+	data, err := validator.MarshalWithOptions(user, opts)
+	require.NoError(t, err)
+
+	var result map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &result))
+
+	// Should include name
+	assert.Equal(t, "Alice", result["name"])
+
+	// Should exclude password
+	assert.NotContains(t, result, "password")
+
+	// Should include nested address with all fields (postal_code not excluded in "response" context)
+	address, ok := result["address"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "123 Main St", address["street"])
+	assert.Equal(t, "NYC", address["city"])
+	assert.Equal(t, "10001", address["postal_code"])
+
+	// Marshal with "summary" context
+	optsSummary := ForContext("summary")
+	dataSummary, err := validator.MarshalWithOptions(user, optsSummary)
+	require.NoError(t, err)
+
+	var resultSummary map[string]interface{}
+	require.NoError(t, json.Unmarshal(dataSummary, &resultSummary))
+
+	// Nested address should exclude postal_code in "summary" context
+	addressSummary, ok := resultSummary["address"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "123 Main St", addressSummary["street"])
+	assert.Equal(t, "NYC", addressSummary["city"])
+	assert.NotContains(t, addressSummary, "postal_code")
+}
+
+func TestValidator_Marshal_BackwardCompatible(t *testing.T) {
+	type User struct {
+		ID       int    `json:"id" pedantigo:"min=1"`
+		Name     string `json:"name" pedantigo:"min=2"`
+		Password string `json:"password" pedantigo:"exclude:response"`
+	}
+
+	validator := New[User]()
+	user := &User{
+		ID:       1,
+		Name:     "Alice",
+		Password: "secret123",
+	}
+
+	// Marshal() without options should still work and include all fields
+	data, err := validator.Marshal(user)
+	require.NoError(t, err)
+
+	var result map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &result))
+
+	assert.InDelta(t, float64(1), result["id"], 0.001)
+	assert.Equal(t, "Alice", result["name"])
+	assert.Equal(t, "secret123", result["password"], "Marshal() without options should include password")
+}
+
+func TestValidator_MarshalWithOptions_NilPointer(t *testing.T) {
+	type User struct {
+		Name string `json:"name"`
+	}
+
+	validator := New[User]()
+
+	// Pass nil pointer
+	opts := DefaultMarshalOptions()
+	data, err := validator.MarshalWithOptions(nil, opts)
+
+	// Should handle nil appropriately (either error or marshal "null")
+	if err != nil {
+		// Validation error is acceptable for nil
+		t.Logf("MarshalWithOptions(nil) returned error: %v", err)
+	} else {
+		assert.Equal(t, "null", string(data))
+	}
+}
+
+func TestValidator_MarshalWithOptions_MultipleExclusionContexts(t *testing.T) {
+	type User struct {
+		ID       int    `json:"id"`
+		Name     string `json:"name"`
+		Password string `json:"password" pedantigo:"exclude:response|log|audit"`
+	}
+
+	validator := New[User]()
+	user := &User{
+		ID:       1,
+		Name:     "Alice",
+		Password: "secret123",
+	}
+
+	contexts := []string{"response", "log", "audit"}
+
+	for _, ctx := range contexts {
+		t.Run("context_"+ctx, func(t *testing.T) {
+			opts := ForContext(ctx)
+			data, err := validator.MarshalWithOptions(user, opts)
+			require.NoError(t, err)
+
+			var result map[string]interface{}
+			require.NoError(t, json.Unmarshal(data, &result))
+
+			assert.InDelta(t, float64(1), result["id"], 0.001)
+			assert.Equal(t, "Alice", result["name"])
+			assert.NotContains(t, result, "password", "password should be excluded in '%s' context", ctx)
+		})
+	}
+}

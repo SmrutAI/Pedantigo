@@ -273,23 +273,23 @@ func (c creditCardConstraint) Validate(value any) error {
 	// Credit cards must be only digits (no spaces, dashes, or other chars)
 	for _, r := range str {
 		if r < '0' || r > '9' {
-			return fmt.Errorf("must be a valid credit card number")
+			return NewConstraintError(CodeInvalidCreditCard, "must be a valid credit card number")
 		}
 	}
 
 	// Check length (13-19 digits for standard credit cards)
 	if len(str) < 13 || len(str) > 19 {
-		return fmt.Errorf("must be a valid credit card number")
+		return NewConstraintError(CodeInvalidCreditCard, "must be a valid credit card number")
 	}
 
 	// Card numbers cannot be all zeros
 	if isAllZeros(str) {
-		return fmt.Errorf("must be a valid credit card number")
+		return NewConstraintError(CodeInvalidCreditCard, "must be a valid credit card number")
 	}
 
 	// Check Luhn algorithm
 	if !luhnValid(str) {
-		return fmt.Errorf("must be a valid credit card number")
+		return NewConstraintError(CodeInvalidCreditCard, "must be a valid credit card number")
 	}
 
 	return nil
@@ -311,12 +311,12 @@ func (c btcAddrConstraint) Validate(value any) error {
 
 	// First check format with regex
 	if !btcBase58Regex.MatchString(str) {
-		return fmt.Errorf("must be a valid Bitcoin address")
+		return NewConstraintError(CodeInvalidBitcoinAddress, "must be a valid Bitcoin address")
 	}
 
 	// Then validate Base58Check checksum
 	if !validateBase58Check(str) {
-		return fmt.Errorf("must be a valid Bitcoin address")
+		return NewConstraintError(CodeInvalidBitcoinAddress, "must be a valid Bitcoin address")
 	}
 
 	return nil
@@ -338,7 +338,7 @@ func (c btcAddrBech32Constraint) Validate(value any) error {
 
 	// Validate Bech32 format and checksum
 	if !validateBech32(str) {
-		return fmt.Errorf("must be a valid Bitcoin Bech32 address")
+		return NewConstraintError(CodeInvalidBitcoinBech32, "must be a valid Bitcoin Bech32 address")
 	}
 
 	return nil
@@ -360,7 +360,7 @@ func (c ethAddrConstraint) Validate(value any) error {
 
 	// Validate against Ethereum address regex (0x + 40 hex chars)
 	if !ethAddrRegex.MatchString(str) {
-		return fmt.Errorf("must be a valid Ethereum address")
+		return NewConstraintError(CodeInvalidEthereumAddress, "must be a valid Ethereum address")
 	}
 
 	return nil
@@ -382,7 +382,7 @@ func (c luhnChecksumConstraint) Validate(value any) error {
 
 	// Validate using Luhn algorithm (no spaces or dashes allowed)
 	if !luhnValid(str) {
-		return fmt.Errorf("must pass Luhn checksum validation")
+		return NewConstraintError(CodeInvalidLuhn, "must pass Luhn checksum validation")
 	}
 
 	return nil

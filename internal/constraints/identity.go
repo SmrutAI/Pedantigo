@@ -116,7 +116,7 @@ func (c isbnConstraint) Validate(value any) error {
 	if isbn10Valid(str) || isbn13Valid(str) {
 		return nil
 	}
-	return fmt.Errorf("must be a valid ISBN (10 or 13 digits)")
+	return NewConstraintError(CodeInvalidISBN, "must be a valid ISBN (10 or 13 digits)")
 }
 
 // isbn10Constraint validates that a string is a valid 10-digit ISBN.
@@ -134,7 +134,7 @@ func (c isbn10Constraint) Validate(value any) error {
 	}
 
 	if !isbn10Valid(str) {
-		return fmt.Errorf("must be a valid ISBN-10")
+		return NewConstraintError(CodeInvalidISBN10, "must be a valid ISBN-10")
 	}
 	return nil
 }
@@ -154,7 +154,7 @@ func (c isbn13Constraint) Validate(value any) error {
 	}
 
 	if !isbn13Valid(str) {
-		return fmt.Errorf("must be a valid ISBN-13")
+		return NewConstraintError(CodeInvalidISBN13, "must be a valid ISBN-13")
 	}
 	return nil
 }
@@ -175,12 +175,12 @@ func (c issnConstraint) Validate(value any) error {
 
 	// First check format with regex
 	if !issnRegex.MatchString(str) {
-		return fmt.Errorf("must be a valid ISSN")
+		return NewConstraintError(CodeInvalidISSN, "must be a valid ISSN")
 	}
 
 	// Then validate checksum
 	if !issnValid(str) {
-		return fmt.Errorf("must be a valid ISSN")
+		return NewConstraintError(CodeInvalidISSN, "must be a valid ISSN")
 	}
 	return nil
 }
@@ -200,7 +200,7 @@ func (c ssnConstraint) Validate(value any) error {
 	}
 
 	if !ssnRegex.MatchString(str) {
-		return fmt.Errorf("must be a valid SSN (XXX-XX-XXXX)")
+		return NewConstraintError(CodeInvalidSSN, "must be a valid SSN (XXX-XX-XXXX)")
 	}
 	return nil
 }
@@ -220,7 +220,7 @@ func (c einConstraint) Validate(value any) error {
 	}
 
 	if !einRegex.MatchString(str) {
-		return fmt.Errorf("must be a valid EIN (XX-XXXXXXX)")
+		return NewConstraintError(CodeInvalidEIN, "must be a valid EIN (XX-XXXXXXX)")
 	}
 	return nil
 }
@@ -240,7 +240,7 @@ func (c e164Constraint) Validate(value any) error {
 	}
 
 	if !e164Regex.MatchString(str) {
-		return fmt.Errorf("must be a valid E.164 phone number")
+		return NewConstraintError(CodeInvalidE164, "must be a valid E.164 phone number")
 	}
 	return nil
 }

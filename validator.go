@@ -12,6 +12,7 @@ import (
 
 	"github.com/SmrutAI/Pedantigo/internal/constraints"
 	"github.com/SmrutAI/Pedantigo/internal/deserialize"
+	"github.com/SmrutAI/Pedantigo/internal/serialize"
 	"github.com/SmrutAI/Pedantigo/internal/tags"
 	"github.com/SmrutAI/Pedantigo/internal/validation"
 )
@@ -252,6 +253,7 @@ func (v *Validator[T]) validateValue(val reflect.Value, path string) []FieldErro
 		for i, e := range pedantigoErrors {
 			validationErrors[i] = validation.FieldError{
 				Field:   e.Field,
+				Code:    e.Code,
 				Message: e.Message,
 				Value:   e.Value,
 			}
@@ -292,6 +294,7 @@ func (v *Validator[T]) validateValueInternal(
 	for i, e := range validationErrors {
 		fieldErrors[i] = FieldError{
 			Field:   e.Field,
+			Code:    e.Code,
 			Message: e.Message,
 			Value:   e.Value,
 		}
@@ -411,6 +414,38 @@ func (v *Validator[T]) Marshal(obj *T) ([]byte, error) {
 
 	// Marshal to JSON
 	return json.Marshal(obj)
+}
+
+// MarshalWithOptions validates and marshals struct to JSON with options.
+// Options allow context-based field exclusion and omitzero behavior.
+func (v *Validator[T]) MarshalWithOptions(obj *T, opts MarshalOptions) ([]byte, error) {
+	// Validate before marshaling
+	if err := v.Validate(obj); err != nil {
+		return nil, err
+	}
+
+	// Build field metadata for filtering
+	val := reflect.ValueOf(obj)
+	if val.Kind() == reflect.Ptr {
+		if val.IsNil() {
+			return []byte("null"), nil
+		}
+		val = val.Elem()
+	}
+
+	metadata := serialize.BuildFieldMetadata(val.Type())
+
+	// Convert options
+	serializeOpts := serialize.SerializeOptions{
+		Context:  opts.Context,
+		OmitZero: opts.OmitZero,
+	}
+
+	// Convert to filtered map
+	filtered := serialize.ToFilteredMap(val, metadata, serializeOpts)
+
+	// Marshal the filtered map
+	return json.Marshal(filtered)
 }
 
 // Dict converts the object into a dict.

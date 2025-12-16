@@ -54,6 +54,13 @@ func SetFieldValue(
 		return nil
 	}
 
+	// Handle nil/null for other types - set to zero value
+	// This handles cases like JSON null for non-pointer string/int fields
+	if inValue == nil {
+		fieldValue.Set(reflect.Zero(fieldType))
+		return nil
+	}
+
 	// Convert inValue to the correct type
 	inVal := reflect.ValueOf(inValue)
 

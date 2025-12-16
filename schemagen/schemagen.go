@@ -83,6 +83,13 @@ const (
 	fmtULID   = "ulid"
 )
 
+// Schema metadata constraints (Phase 12).
+const (
+	metaTitle       = "title"
+	metaDescription = "description"
+	metaExamples    = "examples"
+)
+
 // GenerateBaseSchema creates base JSON schema for a type (all nested structs inlined).
 func GenerateBaseSchema[T any]() *jsonschema.Schema {
 	var zero T
@@ -353,6 +360,20 @@ func ApplyConstraints(schema *jsonschema.Schema, constraintsMap map[string]strin
 		case "multiple_of":
 			// multiple_of → multipleOf (JSON Schema keyword)
 			schema.MultipleOf = json.Number(value)
+
+		case metaTitle:
+			schema.Title = value
+
+		case metaDescription:
+			schema.Description = value
+
+		case metaExamples:
+			// Split by pipe delimiter for multiple examples
+			examples := strings.Split(value, "|")
+			schema.Examples = make([]any, len(examples))
+			for i, ex := range examples {
+				schema.Examples[i] = strings.TrimSpace(ex)
+			}
 
 		case "default":
 			// default → default value

@@ -38,19 +38,19 @@ func (c jwtConstraint) Validate(value any) error {
 	// JWT must have exactly 3 parts separated by dots
 	parts := strings.Split(str, ".")
 	if len(parts) != 3 {
-		return fmt.Errorf("must be a valid JWT (3 base64url parts)")
+		return NewConstraintError(CodeInvalidJWT, "must be a valid JWT (3 base64url parts)")
 	}
 
 	// Each part must be non-empty and match base64url pattern
 	for _, part := range parts {
 		if part == "" {
-			return fmt.Errorf("must be a valid JWT (3 base64url parts)")
+			return NewConstraintError(CodeInvalidJWT, "must be a valid JWT (3 base64url parts)")
 		}
 	}
 
 	// Validate overall format using regex
 	if !jwtRegex.MatchString(str) {
-		return fmt.Errorf("must be a valid JWT (3 base64url parts)")
+		return NewConstraintError(CodeInvalidJWT, "must be a valid JWT (3 base64url parts)")
 	}
 
 	return nil
@@ -71,7 +71,7 @@ func (c jsonConstraint) Validate(value any) error {
 	}
 
 	if !json.Valid([]byte(str)) {
-		return fmt.Errorf("must be valid JSON")
+		return NewConstraintError(CodeInvalidJSON, "must be valid JSON")
 	}
 
 	return nil
@@ -93,7 +93,7 @@ func (c base64Constraint) Validate(value any) error {
 
 	_, decodeErr := base64.StdEncoding.DecodeString(str)
 	if decodeErr != nil {
-		return fmt.Errorf("must be valid base64 encoding")
+		return NewConstraintError(CodeInvalidBase64, "must be valid base64 encoding")
 	}
 
 	return nil
@@ -115,7 +115,7 @@ func (c base64urlConstraint) Validate(value any) error {
 
 	// Check for + or / which are standard base64, not base64url
 	if strings.ContainsAny(str, "+/") {
-		return fmt.Errorf("must be valid base64url encoding")
+		return NewConstraintError(CodeInvalidBase64URL, "must be valid base64url encoding")
 	}
 
 	// Try decoding with URL encoding (which allows padding)
@@ -124,7 +124,7 @@ func (c base64urlConstraint) Validate(value any) error {
 		// Also try without padding
 		_, decodeErr = base64.RawURLEncoding.DecodeString(str)
 		if decodeErr != nil {
-			return fmt.Errorf("must be valid base64url encoding")
+			return NewConstraintError(CodeInvalidBase64URL, "must be valid base64url encoding")
 		}
 	}
 
@@ -147,18 +147,18 @@ func (c base64rawurlConstraint) Validate(value any) error {
 
 	// Raw URL encoding must not have padding
 	if strings.Contains(str, "=") {
-		return fmt.Errorf("must be valid base64 raw URL encoding (no padding)")
+		return NewConstraintError(CodeInvalidBase64RawURL, "must be valid base64 raw URL encoding (no padding)")
 	}
 
 	// Check for + or / which are standard base64, not base64url
 	if strings.ContainsAny(str, "+/") {
-		return fmt.Errorf("must be valid base64 raw URL encoding (no padding)")
+		return NewConstraintError(CodeInvalidBase64RawURL, "must be valid base64 raw URL encoding (no padding)")
 	}
 
 	// Try decoding with RawURLEncoding (no padding)
 	_, decodeErr := base64.RawURLEncoding.DecodeString(str)
 	if decodeErr != nil {
-		return fmt.Errorf("must be valid base64 raw URL encoding (no padding)")
+		return NewConstraintError(CodeInvalidBase64RawURL, "must be valid base64 raw URL encoding (no padding)")
 	}
 
 	return nil

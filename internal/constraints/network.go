@@ -69,13 +69,13 @@ func (c ipv4Constraint) Validate(value any) error {
 	// Parse IP address
 	ip := net.ParseIP(str)
 	if ip == nil {
-		return fmt.Errorf("must be a valid IPv4 address")
+		return NewConstraintError(CodeInvalidIPv4, "must be a valid IPv4 address")
 	}
 
 	// Check if it's IPv4 (not IPv6)
 	// IPv4 addresses return non-nil from To4()
 	if ip.To4() == nil {
-		return fmt.Errorf("must be a valid IPv4 address")
+		return NewConstraintError(CodeInvalidIPv4, "must be a valid IPv4 address")
 	}
 
 	return nil
@@ -98,13 +98,13 @@ func (c ipv6Constraint) Validate(value any) error {
 	// Parse IP address
 	ip := net.ParseIP(str)
 	if ip == nil {
-		return fmt.Errorf("must be a valid IPv6 address")
+		return NewConstraintError(CodeInvalidIPv6, "must be a valid IPv6 address")
 	}
 
 	// Check if it's IPv6 (not IPv4)
 	// IPv6 addresses return nil from To4()
 	if ip.To4() != nil {
-		return fmt.Errorf("must be a valid IPv6 address")
+		return NewConstraintError(CodeInvalidIPv6, "must be a valid IPv6 address")
 	}
 
 	return nil
@@ -127,7 +127,7 @@ func (c ipConstraint) Validate(value any) error {
 	// Parse IP address
 	ip := net.ParseIP(str)
 	if ip == nil {
-		return fmt.Errorf("must be a valid IP address")
+		return NewConstraintError(CodeInvalidIP, "must be a valid IP address")
 	}
 
 	return nil
@@ -150,7 +150,7 @@ func (c cidrConstraint) Validate(value any) error {
 	// Parse CIDR notation
 	_, _, err = net.ParseCIDR(str)
 	if err != nil {
-		return fmt.Errorf("must be a valid CIDR notation")
+		return NewConstraintError(CodeInvalidCIDR, "must be a valid CIDR notation")
 	}
 
 	return nil
@@ -173,12 +173,12 @@ func (c cidrv4Constraint) Validate(value any) error {
 	// Parse CIDR notation
 	ip, _, err := net.ParseCIDR(str)
 	if err != nil {
-		return fmt.Errorf("must be a valid IPv4 CIDR notation")
+		return NewConstraintError(CodeInvalidCIDR, "must be a valid IPv4 CIDR notation")
 	}
 
 	// Check if it's IPv4 (not IPv6)
 	if ip.To4() == nil {
-		return fmt.Errorf("must be a valid IPv4 CIDR notation")
+		return NewConstraintError(CodeInvalidCIDR, "must be a valid IPv4 CIDR notation")
 	}
 
 	return nil
@@ -201,12 +201,12 @@ func (c cidrv6Constraint) Validate(value any) error {
 	// Parse CIDR notation
 	ip, _, err := net.ParseCIDR(str)
 	if err != nil {
-		return fmt.Errorf("must be a valid IPv6 CIDR notation")
+		return NewConstraintError(CodeInvalidCIDR, "must be a valid IPv6 CIDR notation")
 	}
 
 	// Check if it's IPv6 (not IPv4)
 	if ip.To4() != nil {
-		return fmt.Errorf("must be a valid IPv6 CIDR notation")
+		return NewConstraintError(CodeInvalidCIDR, "must be a valid IPv6 CIDR notation")
 	}
 
 	return nil
@@ -229,7 +229,7 @@ func (c macConstraint) Validate(value any) error {
 	// Parse MAC address
 	_, err = net.ParseMAC(str)
 	if err != nil {
-		return fmt.Errorf("must be a valid MAC address")
+		return NewConstraintError(CodeInvalidMAC, "must be a valid MAC address")
 	}
 
 	return nil
@@ -254,15 +254,15 @@ func (c hostnameConstraint) Validate(value any) error {
 	// A hostname is a single label (no dots allowed)
 	// Max 63 chars, must start with letter, contain only alphanumeric and hyphens
 	if strings.Contains(str, ".") {
-		return fmt.Errorf("must be a valid RFC 952 hostname")
+		return NewConstraintError(CodeInvalidHostname, "must be a valid RFC 952 hostname")
 	}
 
 	if len(str) > 63 {
-		return fmt.Errorf("must be a valid RFC 952 hostname")
+		return NewConstraintError(CodeInvalidHostname, "must be a valid RFC 952 hostname")
 	}
 
 	if !hostnameRFC952LabelRegex.MatchString(str) {
-		return fmt.Errorf("must be a valid RFC 952 hostname")
+		return NewConstraintError(CodeInvalidHostname, "must be a valid RFC 952 hostname")
 	}
 
 	return nil
@@ -288,15 +288,15 @@ func (c hostnameRFC1123Constraint) Validate(value any) error {
 	// Same as RFC 952 but can start with digit
 	// Max 63 chars
 	if strings.Contains(str, ".") {
-		return fmt.Errorf("must be a valid RFC 1123 hostname")
+		return NewConstraintError(CodeInvalidHostname, "must be a valid RFC 1123 hostname")
 	}
 
 	if len(str) > 63 {
-		return fmt.Errorf("must be a valid RFC 1123 hostname")
+		return NewConstraintError(CodeInvalidHostname, "must be a valid RFC 1123 hostname")
 	}
 
 	if !hostnameRFC1123LabelRegex.MatchString(str) {
-		return fmt.Errorf("must be a valid RFC 1123 hostname")
+		return NewConstraintError(CodeInvalidHostname, "must be a valid RFC 1123 hostname")
 	}
 
 	return nil
@@ -318,29 +318,29 @@ func (c fqdnConstraint) Validate(value any) error {
 
 	// Reject IP addresses - FQDNs must be domain names, not IPs
 	if net.ParseIP(str) != nil {
-		return fmt.Errorf("must be a valid FQDN")
+		return NewConstraintError(CodeInvalidFQDN, "must be a valid FQDN")
 	}
 
 	// FQDN must contain at least one dot (to distinguish from hostname)
 	// Remove trailing dot if present (valid FQDN notation)
 	fqdn := strings.TrimSuffix(str, ".")
 	if !strings.Contains(fqdn, ".") {
-		return fmt.Errorf("must be a valid FQDN")
+		return NewConstraintError(CodeInvalidFQDN, "must be a valid FQDN")
 	}
 
 	// Max 253 chars total
 	if len(fqdn) > 253 {
-		return fmt.Errorf("must be a valid FQDN")
+		return NewConstraintError(CodeInvalidFQDN, "must be a valid FQDN")
 	}
 
 	// Each label follows hostname rules (RFC 1123 for broader compatibility)
 	labels := strings.Split(fqdn, ".")
 	for _, label := range labels {
 		if label == "" || len(label) > 63 {
-			return fmt.Errorf("must be a valid FQDN")
+			return NewConstraintError(CodeInvalidFQDN, "must be a valid FQDN")
 		}
 		if !hostnameRFC1123LabelRegex.MatchString(label) {
-			return fmt.Errorf("must be a valid FQDN")
+			return NewConstraintError(CodeInvalidFQDN, "must be a valid FQDN")
 		}
 	}
 
@@ -360,17 +360,17 @@ func (c portConstraint) Validate(value any) error {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		num := v.Int()
 		if num < 0 || num > 65535 {
-			return fmt.Errorf("must be a valid port number (0-65535)")
+			return NewConstraintError(CodeInvalidPort, "must be a valid port number (0-65535)")
 		}
 		return nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		num := v.Uint()
 		if num > 65535 {
-			return fmt.Errorf("must be a valid port number (0-65535)")
+			return NewConstraintError(CodeInvalidPort, "must be a valid port number (0-65535)")
 		}
 		return nil
 	default:
-		return fmt.Errorf("port constraint requires integer value")
+		return NewConstraintError(CodeInvalidPort, "port constraint requires integer value")
 	}
 }
 
@@ -392,15 +392,15 @@ func (c tcpAddrConstraint) Validate(value any) error {
 	// Check host:port format and ensure both host and port are not empty
 	host, portStr, splitErr := net.SplitHostPort(str)
 	if splitErr != nil {
-		return fmt.Errorf("must be a valid TCP address")
+		return NewConstraintError(CodeInvalidTCPAddr, "must be a valid TCP address")
 	}
 	if host == "" || portStr == "" {
-		return fmt.Errorf("must be a valid TCP address")
+		return NewConstraintError(CodeInvalidTCPAddr, "must be a valid TCP address")
 	}
 
 	// Validate the port is a valid number in range
 	if !isValidPort(portStr) {
-		return fmt.Errorf("must be a valid TCP address")
+		return NewConstraintError(CodeInvalidTCPAddr, "must be a valid TCP address")
 	}
 
 	return nil
@@ -424,15 +424,15 @@ func (c udpAddrConstraint) Validate(value any) error {
 	// Check host:port format and ensure both host and port are not empty
 	host, portStr, splitErr := net.SplitHostPort(str)
 	if splitErr != nil {
-		return fmt.Errorf("must be a valid UDP address")
+		return NewConstraintError(CodeInvalidUDPAddr, "must be a valid UDP address")
 	}
 	if host == "" || portStr == "" {
-		return fmt.Errorf("must be a valid UDP address")
+		return NewConstraintError(CodeInvalidUDPAddr, "must be a valid UDP address")
 	}
 
 	// Validate the port is a valid number in range
 	if !isValidPort(portStr) {
-		return fmt.Errorf("must be a valid UDP address")
+		return NewConstraintError(CodeInvalidUDPAddr, "must be a valid UDP address")
 	}
 
 	return nil
@@ -456,23 +456,23 @@ func (c tcp4AddrConstraint) Validate(value any) error {
 	// Parse host:port
 	host, portStr, err := net.SplitHostPort(str)
 	if err != nil {
-		return fmt.Errorf("must be a valid IPv4 TCP address")
+		return NewConstraintError(CodeInvalidTCPAddr, "must be a valid IPv4 TCP address")
 	}
 
 	// Port must not be empty and must be valid
 	if portStr == "" || !isValidPort(portStr) {
-		return fmt.Errorf("must be a valid IPv4 TCP address")
+		return NewConstraintError(CodeInvalidTCPAddr, "must be a valid IPv4 TCP address")
 	}
 
 	// Host must be a valid IPv4 address (not hostname)
 	ip := net.ParseIP(host)
 	if ip == nil {
-		return fmt.Errorf("must be a valid IPv4 TCP address")
+		return NewConstraintError(CodeInvalidTCPAddr, "must be a valid IPv4 TCP address")
 	}
 
 	// Must be IPv4, not IPv6
 	if ip.To4() == nil {
-		return fmt.Errorf("must be a valid IPv4 TCP address")
+		return NewConstraintError(CodeInvalidTCPAddr, "must be a valid IPv4 TCP address")
 	}
 
 	return nil

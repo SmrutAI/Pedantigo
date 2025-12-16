@@ -41,7 +41,7 @@ func (c md4Constraint) Validate(value any) error {
 	}
 
 	if !md4Regex.MatchString(str) {
-		return fmt.Errorf("must be a valid MD4 hash (32 hex characters)")
+		return NewConstraintError(CodeInvalidMD4, "must be a valid MD4 hash (32 hex characters)")
 	}
 
 	return nil
@@ -62,7 +62,7 @@ func (c md5Constraint) Validate(value any) error {
 	}
 
 	if !md5Regex.MatchString(str) {
-		return fmt.Errorf("must be a valid MD5 hash (32 hex characters)")
+		return NewConstraintError(CodeInvalidMD5, "must be a valid MD5 hash (32 hex characters)")
 	}
 
 	return nil
@@ -83,7 +83,7 @@ func (c sha256Constraint) Validate(value any) error {
 	}
 
 	if !sha256Regex.MatchString(str) {
-		return fmt.Errorf("must be a valid SHA256 hash (64 hex characters)")
+		return NewConstraintError(CodeInvalidSHA256, "must be a valid SHA256 hash (64 hex characters)")
 	}
 
 	return nil
@@ -104,7 +104,7 @@ func (c sha384Constraint) Validate(value any) error {
 	}
 
 	if !sha384Regex.MatchString(str) {
-		return fmt.Errorf("must be a valid SHA384 hash (96 hex characters)")
+		return NewConstraintError(CodeInvalidSHA384, "must be a valid SHA384 hash (96 hex characters)")
 	}
 
 	return nil
@@ -125,7 +125,7 @@ func (c sha512Constraint) Validate(value any) error {
 	}
 
 	if !sha512Regex.MatchString(str) {
-		return fmt.Errorf("must be a valid SHA512 hash (128 hex characters)")
+		return NewConstraintError(CodeInvalidSHA512, "must be a valid SHA512 hash (128 hex characters)")
 	}
 
 	return nil
@@ -146,7 +146,7 @@ func (c mongodbConstraint) Validate(value any) error {
 	}
 
 	if !mongodbRegex.MatchString(str) {
-		return fmt.Errorf("must be a valid MongoDB ObjectId (24 hex characters)")
+		return NewConstraintError(CodeInvalidMongoDB, "must be a valid MongoDB ObjectId (24 hex characters)")
 	}
 
 	return nil

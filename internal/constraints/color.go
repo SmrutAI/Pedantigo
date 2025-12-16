@@ -40,7 +40,7 @@ func (c hexcolorConstraint) Validate(value any) error {
 	}
 
 	if !hexcolorRegex.MatchString(str) {
-		return fmt.Errorf("must be a valid hex color (#RGB or #RRGGBB)")
+		return NewConstraintError(CodeInvalidHexColor, "must be a valid hex color (#RGB or #RRGGBB)")
 	}
 
 	return nil
@@ -62,14 +62,14 @@ func (c rgbConstraint) Validate(value any) error {
 
 	matches := rgbRegex.FindStringSubmatch(str)
 	if matches == nil {
-		return fmt.Errorf("must be a valid rgb(R,G,B) color")
+		return NewConstraintError(CodeInvalidRGBColor, "must be a valid rgb(R,G,B) color")
 	}
 
 	// Validate R, G, B values are 0-255
 	for i := 1; i <= 3; i++ {
 		val, _ := strconv.Atoi(matches[i])
 		if val > 255 {
-			return fmt.Errorf("must be a valid rgb(R,G,B) color")
+			return NewConstraintError(CodeInvalidRGBColor, "must be a valid rgb(R,G,B) color")
 		}
 	}
 
@@ -92,21 +92,21 @@ func (c rgbaConstraint) Validate(value any) error {
 
 	matches := rgbaRegex.FindStringSubmatch(str)
 	if matches == nil {
-		return fmt.Errorf("must be a valid rgba(R,G,B,A) color")
+		return NewConstraintError(CodeInvalidRGBA, "must be a valid rgba(R,G,B,A) color")
 	}
 
 	// Validate R, G, B values are 0-255
 	for i := 1; i <= 3; i++ {
 		val, _ := strconv.Atoi(matches[i])
 		if val > 255 {
-			return fmt.Errorf("must be a valid rgba(R,G,B,A) color")
+			return NewConstraintError(CodeInvalidRGBA, "must be a valid rgba(R,G,B,A) color")
 		}
 	}
 
 	// Validate alpha is 0-1 (already constrained by regex pattern)
 	alpha, _ := strconv.ParseFloat(matches[4], 64)
 	if alpha < 0 || alpha > 1 {
-		return fmt.Errorf("must be a valid rgba(R,G,B,A) color")
+		return NewConstraintError(CodeInvalidRGBA, "must be a valid rgba(R,G,B,A) color")
 	}
 
 	return nil
@@ -128,25 +128,25 @@ func (c hslConstraint) Validate(value any) error {
 
 	matches := hslRegex.FindStringSubmatch(str)
 	if matches == nil {
-		return fmt.Errorf("must be a valid hsl(H,S%%,L%%) color")
+		return NewConstraintError(CodeInvalidHSL, "must be a valid hsl(H,S%%,L%%) color")
 	}
 
 	// Validate H is 0-360
 	hue, _ := strconv.ParseFloat(matches[1], 64)
 	if hue < 0 || hue > 360 {
-		return fmt.Errorf("must be a valid hsl(H,S%%,L%%) color")
+		return NewConstraintError(CodeInvalidHSL, "must be a valid hsl(H,S%%,L%%) color")
 	}
 
 	// Validate S is 0-100
 	saturation, _ := strconv.Atoi(matches[2])
 	if saturation > 100 {
-		return fmt.Errorf("must be a valid hsl(H,S%%,L%%) color")
+		return NewConstraintError(CodeInvalidHSL, "must be a valid hsl(H,S%%,L%%) color")
 	}
 
 	// Validate L is 0-100
 	lightness, _ := strconv.Atoi(matches[3])
 	if lightness > 100 {
-		return fmt.Errorf("must be a valid hsl(H,S%%,L%%) color")
+		return NewConstraintError(CodeInvalidHSL, "must be a valid hsl(H,S%%,L%%) color")
 	}
 
 	return nil
@@ -168,31 +168,31 @@ func (c hslaConstraint) Validate(value any) error {
 
 	matches := hslaRegex.FindStringSubmatch(str)
 	if matches == nil {
-		return fmt.Errorf("must be a valid hsla(H,S%%,L%%,A) color")
+		return NewConstraintError(CodeInvalidHSLA, "must be a valid hsla(H,S%%,L%%,A) color")
 	}
 
 	// Validate H is 0-360
 	hue, _ := strconv.ParseFloat(matches[1], 64)
 	if hue < 0 || hue > 360 {
-		return fmt.Errorf("must be a valid hsla(H,S%%,L%%,A) color")
+		return NewConstraintError(CodeInvalidHSLA, "must be a valid hsla(H,S%%,L%%,A) color")
 	}
 
 	// Validate S is 0-100
 	saturation, _ := strconv.Atoi(matches[2])
 	if saturation > 100 {
-		return fmt.Errorf("must be a valid hsla(H,S%%,L%%,A) color")
+		return NewConstraintError(CodeInvalidHSLA, "must be a valid hsla(H,S%%,L%%,A) color")
 	}
 
 	// Validate L is 0-100
 	lightness, _ := strconv.Atoi(matches[3])
 	if lightness > 100 {
-		return fmt.Errorf("must be a valid hsla(H,S%%,L%%,A) color")
+		return NewConstraintError(CodeInvalidHSLA, "must be a valid hsla(H,S%%,L%%,A) color")
 	}
 
 	// Validate alpha is 0-1 (already constrained by regex pattern)
 	alpha, _ := strconv.ParseFloat(matches[4], 64)
 	if alpha < 0 || alpha > 1 {
-		return fmt.Errorf("must be a valid hsla(H,S%%,L%%,A) color")
+		return NewConstraintError(CodeInvalidHSLA, "must be a valid hsla(H,S%%,L%%,A) color")
 	}
 
 	return nil

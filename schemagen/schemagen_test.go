@@ -508,6 +508,159 @@ func TestApplyConstraints(t *testing.T) {
 				assert.Nil(t, schema.Default)
 			},
 		},
+		{
+			name:      "title constraint",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"title": "User Name",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "User Name", schema.Title)
+			},
+		},
+		{
+			name:      "description constraint",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"description": "Full name of the user",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "Full name of the user", schema.Description)
+			},
+		},
+		{
+			name:      "examples single value",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"examples": "John Doe",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				require.NotNil(t, schema.Examples)
+				require.Len(t, schema.Examples, 1)
+				assert.Equal(t, "John Doe", schema.Examples[0])
+			},
+		},
+		{
+			name:      "examples multiple values pipe-separated",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"examples": "John|Jane|Bob",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				require.NotNil(t, schema.Examples)
+				require.Len(t, schema.Examples, 3)
+				assert.Equal(t, "John", schema.Examples[0])
+				assert.Equal(t, "Jane", schema.Examples[1])
+				assert.Equal(t, "Bob", schema.Examples[2])
+			},
+		},
+		{
+			name:      "examples trims whitespace",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"examples": "John | Jane | Bob ",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				require.NotNil(t, schema.Examples)
+				require.Len(t, schema.Examples, 3)
+				assert.Equal(t, "John", schema.Examples[0])
+				assert.Equal(t, "Jane", schema.Examples[1])
+				assert.Equal(t, "Bob", schema.Examples[2])
+			},
+		},
+		{
+			name:      "all metadata combined",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"title":       "User Full Name",
+				"description": "The complete name of the user",
+				"examples":    "John Doe|Jane Smith|Bob Johnson",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "User Full Name", schema.Title)
+				assert.Equal(t, "The complete name of the user", schema.Description)
+				require.NotNil(t, schema.Examples)
+				require.Len(t, schema.Examples, 3)
+				assert.Equal(t, "John Doe", schema.Examples[0])
+				assert.Equal(t, "Jane Smith", schema.Examples[1])
+				assert.Equal(t, "Bob Johnson", schema.Examples[2])
+			},
+		},
+		{
+			name:      "title with int field",
+			fieldType: reflect.TypeOf(0),
+			constraints: map[string]string{
+				"title": "User Age",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "User Age", schema.Title)
+			},
+		},
+		{
+			name:      "description with int field",
+			fieldType: reflect.TypeOf(0),
+			constraints: map[string]string{
+				"description": "Age in years",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "Age in years", schema.Description)
+			},
+		},
+		{
+			name:      "examples with numeric values",
+			fieldType: reflect.TypeOf(0),
+			constraints: map[string]string{
+				"examples": "18|25|30",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				require.NotNil(t, schema.Examples)
+				require.Len(t, schema.Examples, 3)
+				// Examples are stored as strings after trimming
+				assert.Equal(t, "18", schema.Examples[0])
+				assert.Equal(t, "25", schema.Examples[1])
+				assert.Equal(t, "30", schema.Examples[2])
+			},
+		},
+		{
+			name:      "metadata with validation constraints",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"required":    "",
+				"min":         "3",
+				"max":         "50",
+				"title":       "Username",
+				"description": "Unique username for the account",
+				"examples":    "alice|bob|charlie",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				// Check validation constraints
+				require.NotNil(t, schema.MinLength)
+				assert.Equal(t, uint64(3), *schema.MinLength)
+				require.NotNil(t, schema.MaxLength)
+				assert.Equal(t, uint64(50), *schema.MaxLength)
+
+				// Check metadata
+				assert.Equal(t, "Username", schema.Title)
+				assert.Equal(t, "Unique username for the account", schema.Description)
+				require.NotNil(t, schema.Examples)
+				require.Len(t, schema.Examples, 3)
+				assert.Equal(t, "alice", schema.Examples[0])
+				assert.Equal(t, "bob", schema.Examples[1])
+				assert.Equal(t, "charlie", schema.Examples[2])
+			},
+		},
+		{
+			name:      "empty examples value",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"examples": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				require.NotNil(t, schema.Examples)
+				require.Len(t, schema.Examples, 1)
+				assert.Empty(t, schema.Examples[0])
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1636,4 +1789,129 @@ func TestApplyConstraints_MapWithConstraints(t *testing.T) {
 
 	// url format should be applied to additionalProperties
 	assert.Equal(t, "uri", schema.AdditionalProperties.Format)
+}
+
+// MetadataStruct is a test struct with schema metadata.
+type MetadataStruct struct {
+	Name  string `json:"name" pedantigo:"required,title=User Name,description=Full name of user,examples=John|Jane"`
+	Age   int    `json:"age" pedantigo:"min=0,description=Age in years,examples=18|25|30"`
+	Email string `json:"email" pedantigo:"email,title=Email Address,description=Contact email,examples=john@example.com|jane@example.com"`
+}
+
+// TestEnhanceSchema_WithMetadata tests metadata propagation through EnhanceSchema.
+func TestEnhanceSchema_WithMetadata(t *testing.T) {
+	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
+		pedantigoTag := tag.Get("pedantigo")
+		if pedantigoTag == "" {
+			return nil
+		}
+
+		constraints := make(map[string]string)
+		parts := splitConstraints(pedantigoTag)
+		for _, part := range parts {
+			if key, value, found := splitKeyValue(part); found {
+				constraints[key] = value
+			} else {
+				constraints[part] = ""
+			}
+		}
+		return constraints
+	}
+
+	schema := GenerateBaseSchema[MetadataStruct]()
+	EnhanceSchema(schema, reflect.TypeOf(MetadataStruct{}), mockParseTagFunc)
+
+	// Check name field metadata and constraints
+	nameProp, ok := schema.Properties.Get("name")
+	require.True(t, ok, "name property should exist")
+	assert.Equal(t, "User Name", nameProp.Title)
+	assert.Equal(t, "Full name of user", nameProp.Description)
+	require.NotNil(t, nameProp.Examples)
+	require.Len(t, nameProp.Examples, 2)
+	assert.Equal(t, "John", nameProp.Examples[0])
+	assert.Equal(t, "Jane", nameProp.Examples[1])
+	assert.Contains(t, schema.Required, "name")
+
+	// Check age field metadata and constraints
+	ageProp, ok := schema.Properties.Get("age")
+	require.True(t, ok, "age property should exist")
+	assert.Equal(t, "Age in years", ageProp.Description)
+	require.NotNil(t, ageProp.Examples)
+	require.Len(t, ageProp.Examples, 3)
+	assert.Equal(t, "18", ageProp.Examples[0])
+	assert.Equal(t, "25", ageProp.Examples[1])
+	assert.Equal(t, "30", ageProp.Examples[2])
+	assert.Equal(t, json.Number("0"), ageProp.Minimum)
+
+	// Check email field metadata and constraints
+	emailProp, ok := schema.Properties.Get("email")
+	require.True(t, ok, "email property should exist")
+	assert.Equal(t, "Email Address", emailProp.Title)
+	assert.Equal(t, "Contact email", emailProp.Description)
+	require.NotNil(t, emailProp.Examples)
+	require.Len(t, emailProp.Examples, 2)
+	assert.Equal(t, "john@example.com", emailProp.Examples[0])
+	assert.Equal(t, "jane@example.com", emailProp.Examples[1])
+	assert.Equal(t, "email", emailProp.Format)
+}
+
+// ComplexMetadataStruct tests metadata with special characters and edge cases.
+type ComplexMetadataStruct struct {
+	Description string `json:"description" pedantigo:"title=Item Description,examples=This is a test|Another example here"`
+	Count       int    `json:"count" pedantigo:"title=Item Count,description=Number of items available"`
+	Status      string `json:"status" pedantigo:"oneof=active inactive,title=Status,description=Current status,examples=active|inactive"`
+}
+
+// TestEnhanceSchema_WithComplexMetadata tests metadata with special characters.
+func TestEnhanceSchema_WithComplexMetadata(t *testing.T) {
+	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
+		pedantigoTag := tag.Get("pedantigo")
+		if pedantigoTag == "" {
+			return nil
+		}
+
+		constraints := make(map[string]string)
+		parts := splitConstraints(pedantigoTag)
+		for _, part := range parts {
+			if key, value, found := splitKeyValue(part); found {
+				constraints[key] = value
+			} else {
+				constraints[part] = ""
+			}
+		}
+		return constraints
+	}
+
+	schema := GenerateBaseSchema[ComplexMetadataStruct]()
+	EnhanceSchema(schema, reflect.TypeOf(ComplexMetadataStruct{}), mockParseTagFunc)
+
+	// Check description field with examples containing commas
+	descProp, ok := schema.Properties.Get("description")
+	require.True(t, ok, "description property should exist")
+	assert.Equal(t, "Item Description", descProp.Title)
+	require.NotNil(t, descProp.Examples)
+	require.Len(t, descProp.Examples, 2)
+	assert.Equal(t, "This is a test", descProp.Examples[0])
+	assert.Equal(t, "Another example here", descProp.Examples[1])
+
+	// Check count field with title and description only
+	countProp, ok := schema.Properties.Get("count")
+	require.True(t, ok, "count property should exist")
+	assert.Equal(t, "Item Count", countProp.Title)
+	assert.Equal(t, "Number of items available", countProp.Description)
+	// No examples for this field
+	assert.Nil(t, countProp.Examples)
+
+	// Check status field with enum and metadata
+	statusProp, ok := schema.Properties.Get("status")
+	require.True(t, ok, "status property should exist")
+	assert.Equal(t, "Status", statusProp.Title)
+	assert.Equal(t, "Current status", statusProp.Description)
+	require.NotNil(t, statusProp.Examples)
+	require.Len(t, statusProp.Examples, 2)
+	assert.Equal(t, "active", statusProp.Examples[0])
+	assert.Equal(t, "inactive", statusProp.Examples[1])
+	// Check enum constraint is also applied
+	require.NotNil(t, statusProp.Enum)
+	assert.Len(t, statusProp.Enum, 2)
 }

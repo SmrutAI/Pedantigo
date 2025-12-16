@@ -29,6 +29,11 @@ func ParseTag(tag reflect.StructTag) map[string]string {
 			key := strings.TrimSpace(part[:idx])
 			value := strings.TrimSpace(part[idx+1:])
 			constraints[key] = value
+		} else if idx := strings.IndexByte(part, ':'); idx != -1 {
+			// Handle key:value syntax (e.g., exclude:response,log)
+			key := strings.TrimSpace(part[:idx])
+			value := strings.TrimSpace(part[idx+1:])
+			constraints[key] = value
 		} else {
 			// Simple constraint like "required" or "email"
 			constraints[part] = ""

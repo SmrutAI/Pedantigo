@@ -43,7 +43,7 @@ func (c htmlConstraint) Validate(value any) error {
 	}
 
 	if !htmlRegex.MatchString(str) {
-		return fmt.Errorf("must contain HTML tags")
+		return NewConstraintError(CodeInvalidHTML, "must contain HTML tags")
 	}
 
 	return nil
@@ -66,7 +66,7 @@ func (c cronConstraint) Validate(value any) error {
 	// Trim and split by whitespace
 	fields := strings.Fields(str)
 	if len(fields) != 5 {
-		return fmt.Errorf("must be a valid cron expression (5 fields)")
+		return NewConstraintError(CodeInvalidCron, "must be a valid cron expression (5 fields)")
 	}
 
 	// Validate each field
@@ -84,7 +84,7 @@ func (c cronConstraint) Validate(value any) error {
 
 	for i, field := range fields {
 		if !isValidCronField(field, fieldLimits[i].min, fieldLimits[i].max) {
-			return fmt.Errorf("must be a valid cron expression (5 fields)")
+			return NewConstraintError(CodeInvalidCron, "must be a valid cron expression (5 fields)")
 		}
 	}
 
@@ -194,7 +194,7 @@ func (c semverConstraint) Validate(value any) error {
 	}
 
 	if !semverRegex.MatchString(str) {
-		return fmt.Errorf("must be a valid semantic version (X.Y.Z)")
+		return NewConstraintError(CodeInvalidSemver, "must be a valid semantic version (X.Y.Z)")
 	}
 
 	return nil
@@ -215,7 +215,7 @@ func (c ulidConstraint) Validate(value any) error {
 	}
 
 	if !ulidRegex.MatchString(str) {
-		return fmt.Errorf("must be a valid ULID (26 char Crockford base32)")
+		return NewConstraintError(CodeInvalidULID, "must be a valid ULID (26 char Crockford base32)")
 	}
 
 	return nil

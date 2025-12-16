@@ -2,7 +2,6 @@
 package constraints
 
 import (
-	"fmt"
 	"math"
 	"reflect"
 	"strconv"
@@ -91,18 +90,20 @@ func checkMaxViolation(v reflect.Value, bound int) bool {
 
 func formatBoundError(kind reflect.Kind, bound int, mode boundMode, constraintName string) error {
 	msgWord := "at least"
+	code := CodeMinValue
 	if mode == boundMax {
 		msgWord = "at most"
+		code = CodeMaxValue
 	}
 	switch kind {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 		reflect.Float32, reflect.Float64:
-		return fmt.Errorf("must be %s %d", msgWord, bound)
+		return NewConstraintErrorf(code, "must be %s %d", msgWord, bound)
 	case reflect.String:
-		return fmt.Errorf("must be %s %d characters", msgWord, bound)
+		return NewConstraintErrorf(code, "must be %s %d characters", msgWord, bound)
 	default:
-		return fmt.Errorf("%s constraint not supported for type %s", constraintName, kind)
+		return NewConstraintErrorf(CodeUnsupportedType, "%s constraint not supported for type %s", constraintName, kind)
 	}
 }
 
@@ -133,11 +134,11 @@ func (c minLengthConstraint) Validate(value any) error {
 		length = v.Len()
 		unitName = "entries"
 	default:
-		return fmt.Errorf("min constraint not supported for type %s", v.Kind())
+		return NewConstraintErrorf(CodeUnsupportedType, "min constraint not supported for type %s", v.Kind())
 	}
 
 	if length < c.minLength {
-		return fmt.Errorf("must be at least %d %s", c.minLength, unitName)
+		return NewConstraintErrorf(CodeMinLength, "must be at least %d %s", c.minLength, unitName)
 	}
 
 	return nil
@@ -164,11 +165,11 @@ func (c maxLengthConstraint) Validate(value any) error {
 		length = v.Len()
 		unitName = "entries"
 	default:
-		return fmt.Errorf("max constraint not supported for type %s", v.Kind())
+		return NewConstraintErrorf(CodeUnsupportedType, "max constraint not supported for type %s", v.Kind())
 	}
 
 	if length > c.maxLength {
-		return fmt.Errorf("must be at most %d %s", c.maxLength, unitName)
+		return NewConstraintErrorf(CodeMaxLength, "must be at most %d %s", c.maxLength, unitName)
 	}
 
 	return nil
@@ -183,11 +184,11 @@ func (c gtConstraint) Validate(value any) error {
 
 	numValue, err := extractNumericValue(v)
 	if err != nil {
-		return fmt.Errorf("gt constraint requires numeric value")
+		return NewConstraintError(CodeInvalidType, "gt constraint requires numeric value")
 	}
 
 	if numValue <= c.threshold {
-		return fmt.Errorf("must be greater than %v", c.threshold)
+		return NewConstraintErrorf(CodeExclusiveMin, "must be greater than %v", c.threshold)
 	}
 
 	return nil
@@ -202,11 +203,11 @@ func (c geConstraint) Validate(value any) error {
 
 	numValue, err := extractNumericValue(v)
 	if err != nil {
-		return fmt.Errorf("ge constraint requires numeric value")
+		return NewConstraintError(CodeInvalidType, "ge constraint requires numeric value")
 	}
 
 	if numValue < c.threshold {
-		return fmt.Errorf("must be at least %v", c.threshold)
+		return NewConstraintErrorf(CodeMinValue, "must be at least %v", c.threshold)
 	}
 
 	return nil
@@ -221,11 +222,11 @@ func (c ltConstraint) Validate(value any) error {
 
 	numValue, err := extractNumericValue(v)
 	if err != nil {
-		return fmt.Errorf("lt constraint requires numeric value")
+		return NewConstraintError(CodeInvalidType, "lt constraint requires numeric value")
 	}
 
 	if numValue >= c.threshold {
-		return fmt.Errorf("must be less than %v", c.threshold)
+		return NewConstraintErrorf(CodeExclusiveMax, "must be less than %v", c.threshold)
 	}
 
 	return nil
@@ -240,11 +241,11 @@ func (c leConstraint) Validate(value any) error {
 
 	numValue, err := extractNumericValue(v)
 	if err != nil {
-		return fmt.Errorf("le constraint requires numeric value")
+		return NewConstraintError(CodeInvalidType, "le constraint requires numeric value")
 	}
 
 	if numValue > c.threshold {
-		return fmt.Errorf("must be at most %v", c.threshold)
+		return NewConstraintErrorf(CodeMaxValue, "must be at most %v", c.threshold)
 	}
 
 	return nil
@@ -259,11 +260,11 @@ func (c positiveConstraint) Validate(value any) error {
 
 	numValue, err := extractNumericValue(v)
 	if err != nil {
-		return fmt.Errorf("positive constraint requires numeric value")
+		return NewConstraintError(CodeInvalidType, "positive constraint requires numeric value")
 	}
 
 	if numValue <= 0 {
-		return fmt.Errorf("must be positive (greater than 0)")
+		return NewConstraintError(CodeMustBePositive, "must be positive (greater than 0)")
 	}
 
 	return nil
@@ -278,11 +279,11 @@ func (c negativeConstraint) Validate(value any) error {
 
 	numValue, err := extractNumericValue(v)
 	if err != nil {
-		return fmt.Errorf("negative constraint requires numeric value")
+		return NewConstraintError(CodeInvalidType, "negative constraint requires numeric value")
 	}
 
 	if numValue >= 0 {
-		return fmt.Errorf("must be negative (less than 0)")
+		return NewConstraintError(CodeMustBeNegative, "must be negative (less than 0)")
 	}
 
 	return nil
@@ -297,14 +298,14 @@ func (c multipleOfConstraint) Validate(value any) error {
 
 	numValue, err := extractNumericValue(v)
 	if err != nil {
-		return fmt.Errorf("multiple_of constraint requires numeric value")
+		return NewConstraintError(CodeInvalidType, "multiple_of constraint requires numeric value")
 	}
 
 	// Check if value is divisible by factor
 	remainder := math.Mod(numValue, c.factor)
 	// Use small epsilon for floating point comparison
 	if math.Abs(remainder) > 1e-9 && math.Abs(remainder-c.factor) > 1e-9 {
-		return fmt.Errorf("must be a multiple of %v", c.factor)
+		return NewConstraintErrorf(CodeMultipleOf, "must be a multiple of %v", c.factor)
 	}
 
 	return nil
@@ -327,7 +328,7 @@ func (c maxDigitsConstraint) Validate(value any) error {
 	case reflect.Float32, reflect.Float64:
 		str = strconv.FormatFloat(v.Float(), 'f', -1, 64)
 	default:
-		return fmt.Errorf("max_digits constraint requires numeric value")
+		return NewConstraintError(CodeInvalidType, "max_digits constraint requires numeric value")
 	}
 
 	// Count digits (exclude minus sign and decimal point)
@@ -339,7 +340,7 @@ func (c maxDigitsConstraint) Validate(value any) error {
 	}
 
 	if digitCount > c.maxDigits {
-		return fmt.Errorf("must have at most %d digits", c.maxDigits)
+		return NewConstraintErrorf(CodeMaxDigits, "must have at most %d digits", c.maxDigits)
 	}
 
 	return nil
@@ -364,7 +365,7 @@ func (c decimalPlacesConstraint) Validate(value any) error {
 	case reflect.Float32, reflect.Float64:
 		str = strconv.FormatFloat(v.Float(), 'f', -1, 64)
 	default:
-		return fmt.Errorf("decimal_places constraint requires numeric value")
+		return NewConstraintError(CodeInvalidType, "decimal_places constraint requires numeric value")
 	}
 
 	// Find decimal point and count places
@@ -374,7 +375,7 @@ func (c decimalPlacesConstraint) Validate(value any) error {
 	}
 
 	if decimalPlaces > c.maxPlaces {
-		return fmt.Errorf("must have at most %d decimal places", c.maxPlaces)
+		return NewConstraintErrorf(CodeDecimalPlaces, "must have at most %d decimal places", c.maxPlaces)
 	}
 
 	return nil
@@ -394,10 +395,10 @@ func (c disallowInfNanConstraint) Validate(value any) error {
 	case reflect.Float32, reflect.Float64:
 		f := v.Float()
 		if math.IsInf(f, 0) {
-			return fmt.Errorf("infinity is not allowed")
+			return NewConstraintError(CodeInfNanNotAllowed, "infinity is not allowed")
 		}
 		if math.IsNaN(f) {
-			return fmt.Errorf("NaN is not allowed")
+			return NewConstraintError(CodeInfNanNotAllowed, "NaN is not allowed")
 		}
 	}
 	// Non-float types pass (integers can't be Inf/NaN)
