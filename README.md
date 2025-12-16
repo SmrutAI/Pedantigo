@@ -296,6 +296,37 @@ func (r *Registration) Validate() error {
 }
 ```
 
+## Error Codes
+
+Every validation error includes a machine-readable error code for programmatic handling:
+
+```go
+user, err := validator.Unmarshal(jsonData)
+if err != nil {
+    ve := err.(*pedantigo.ValidationError)
+    for _, fe := range ve.Errors {
+        switch fe.Code {
+        case "REQUIRED":
+            // Handle missing required field
+        case "INVALID_EMAIL":
+            // Handle invalid email format
+        case "MIN_VALUE":
+            // Handle value below minimum
+        default:
+            // Handle other errors
+        }
+        fmt.Printf("Field: %s, Code: %s, Message: %s\n", fe.Field, fe.Code, fe.Message)
+    }
+}
+```
+
+Common error codes include:
+- `REQUIRED`, `REQUIRED_IF`, `REQUIRED_WITH` - Missing field errors
+- `INVALID_EMAIL`, `INVALID_URL`, `INVALID_UUID` - Format errors
+- `MIN_VALUE`, `MAX_VALUE`, `MIN_LENGTH`, `MAX_LENGTH` - Range errors
+- `PATTERN_MISMATCH` - Regex validation failed
+- `INVALID_ENUM` - Value not in allowed set
+
 ## Schema Generation
 
 Generate JSON Schema for LLM function calling and structured outputs.
@@ -439,6 +470,121 @@ jsonBytes, _ := validator.SchemaJSONOpenAPI()
 ```
 
 Constraints are applied to all definitions, including referenced types.
+
+### Schema Metadata
+
+Add titles, descriptions, and examples to improve schema quality for LLM prompt engineering:
+
+```go
+type UserInput struct {
+    Name  string `json:"name" pedantigo:"required,title=User Name,description=Full name of the user,example=John Doe"`
+    Email string `json:"email" pedantigo:"required,email,title=Email Address,description=Primary contact email"`
+    Tags  []string `json:"tags" pedantigo:"examples=work|personal|urgent"` // Multiple examples with pipe separator
+}
+
+validator := pedantigo.New[UserInput]()
+schema := validator.Schema()
+```
+
+Generated schema includes metadata:
+```json
+{
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "User Name",
+      "description": "Full name of the user",
+      "examples": ["John Doe"]
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "title": "Email Address",
+      "description": "Primary contact email"
+    },
+    "tags": {
+      "type": "array",
+      "items": {"type": "string"},
+      "examples": ["work", "personal", "urgent"]
+    }
+  }
+}
+```
+
+## Advanced: Marshal with Options (Optional)
+
+Control JSON output with field exclusion and empty value handling:
+
+```go
+type User struct {
+    ID       int    `json:"id"`
+    Name     string `json:"name"`
+    Password string `json:"password"`
+    Nickname string `json:"nickname"`
+    Bio      string `json:"bio"`
+}
+
+user := &User{
+    ID:       1,
+    Name:     "John",
+    Password: "secret123",
+    Nickname: "",  // empty
+    Bio:      "",  // empty
+}
+
+validator := pedantigo.New[User]()
+
+// Exclude sensitive fields, omit empty optional fields
+data, err := validator.MarshalWithOptions(user, pedantigo.MarshalOptions{
+    Exclude:   []string{"password"},        // Never include password
+    OmitEmpty: []string{"nickname", "bio"}, // Omit if empty
+})
+// Result: {"id":1,"name":"John"}
+```
+
+Options:
+- `Exclude` - Fields to never include in output
+- `OmitEmpty` - Fields to omit when they have zero values
+
+## Advanced: Streaming JSON (Optional)
+
+Parse incomplete/chunked JSON from LLM streaming responses:
+
+```go
+type ToolCall struct {
+    Name string         `json:"name" pedantigo:"required"`
+    Args map[string]any `json:"args"`
+}
+
+parser := pedantigo.NewStreamParser[ToolCall]()
+
+// Simulate LLM streaming chunks
+chunks := []string{
+    `{"name": "get_`,
+    `weather", "args": {"city": "NYC`,
+    `"}}`,
+}
+
+for _, chunk := range chunks {
+    result, state, err := parser.Feed(chunk)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    if state.IsComplete {
+        fmt.Printf("Complete: %+v\n", result)
+        // Complete: {Name:get_weather Args:map[city:NYC]}
+    } else {
+        fmt.Printf("Partial (confidence: %.0f%%)\n", state.Confidence*100)
+    }
+}
+```
+
+StreamParser features:
+- Accumulates JSON chunks until complete
+- Reports parsing confidence (0.0 to 1.0)
+- Validates completed JSON against struct constraints
+- Handles nested objects and arrays
 
 ## Advanced: Performance Mode (Optional)
 

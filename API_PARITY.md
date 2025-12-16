@@ -145,12 +145,12 @@ JSON Schema standard support.
 |------------------------------|-----------|-------------|--------------|------------------------------------|
 | Unmarshal + validate         | √         | √           | ×            | ×                                  |
 | Marshal to JSON              | √         | √           | ×            | ×                                  |
-| Marshal with field exclusion | ×         | √           | ×            | ×                                  |
+| Marshal with field exclusion | √         | √           | ×            | ×                                  |
 | Marshal with field selection | ×         | √           | ×            | ×                                  |
-| Marshal omitting zero values | ×         | √           | Partial      | ×                                  |
+| Marshal omitting zero values | √         | √           | Partial      | ×                                  |
 | Marshal using JSON tags      | Partial   | √           | √            | ×                                  |
 | Custom MarshalJSON methods   | ×         | √           | √            | ×                                  |
-| Streaming JSON               | ×         | ×           | ×            | ×                                  |
+| Streaming JSON               | √         | ×           | ×            | ×                                  |
 | Partial JSON repair          | ×         | ×           | ×            | ×                                  |
 
 **SCHEMA GENERATION**
@@ -160,9 +160,9 @@ JSON Schema standard support.
 | JSON Schema                  | √         | √           | ×            | √                                  |
 | OpenAPI ($ref)               | √         | √           | ×            | √                                  |
 | Schema caching               | √         | √           | ×            | ×                                  |
-| Schema examples              | ×         | √           | ×            | √                                  |
-| Schema title                 | ×         | √           | ×            | √                                  |
-| Field descriptions           | ×         | √           | ×            | √                                  |
+| Schema examples              | √         | √           | ×            | √                                  |
+| Schema title                 | √         | √           | ×            | √                                  |
+| Field descriptions           | √         | √           | ×            | √                                  |
 | Deprecated fields            | ×         | √           | ×            | √                                  |
 
 **FIELD CONFIGURATION**
@@ -198,7 +198,7 @@ JSON Schema standard support.
 | Multiple errors              | √         | √           | √            | ×                                  |
 | Field paths                  | √         | √           | √            | ×                                  |
 | Custom messages              | Partial   | √           | √            | ×                                  |
-| Error codes                  | ×         | √           | ×            | ×                                  |
+| Error codes                  | √         | √           | ×            | ×                                  |
 | i18n/l10n                    | ×         | Partial     | √            | ×                                  |
 | Custom error types           | ×         | √           | ×            | ×                                  |
 
@@ -226,7 +226,7 @@ JSON Schema standard support.
 | Struct field reflection      | ×         | √           | ×            | ×                                  |
 | Recursive structs            | √         | √           | √            | √                                  |
 
-**Summary**: 119/141 features implemented (84%)
+**Summary**: 126/141 features implemented (89%)
 
 **Legend**: √ = Supported, × = Not supported, Partial = Limited support
 
