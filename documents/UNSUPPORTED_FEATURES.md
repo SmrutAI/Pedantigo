@@ -20,8 +20,6 @@ Features from Pydantic v2 and go-playground/validator that Pedantigo does not su
 | RootModel                       | Pydantic  | Python-specific pattern                | Use wrapper struct                               |
 | Cross-struct validation         | validator | Adds complexity, rarely needed         | Validate at service layer                        |
 | Validator context               | validator | Adds complexity                        | Use struct fields for context                    |
-| Country/Currency/Language codes | validator | Database dependency                    | Use `oneof` with code list                       |
-| Postal codes                    | validator | Country-specific complexity            | Use `regexp`                                     |
 
 ---
 
@@ -421,53 +419,6 @@ func (r *Request) Validate() error {
 
 ---
 
-### 12. Country/Currency/Language Codes
-
-**Source:** go-playground/validator `iso3166_1_alpha2`, `iso4217`, `bcp47_language_tag`
-
-**Why not in Pedantigo:**
-- Requires maintaining ISO code databases
-- Codes change over time (countries added/removed)
-- Significant maintenance burden
-
-**Workaround:**
-```go
-// Use oneof with explicit codes
-type Address struct {
-    Country string `pedantigo:"oneof=US CA GB DE FR"`
-}
-
-// Or use regexp for format validation
-type Currency struct {
-    Code string `pedantigo:"regexp=^[A-Z]{3}$"`  // 3 uppercase letters
-}
-```
-
----
-
-### 13. Postal Codes
-
-**Source:** go-playground/validator `postcode_iso3166_alpha2`
-
-**Why not in Pedantigo:**
-- Every country has different format
-- Would need 200+ regex patterns
-- Maintenance nightmare
-
-**Workaround:**
-```go
-// Validate format for specific country
-type USAddress struct {
-    ZIP string `pedantigo:"regexp=^[0-9]{5}(-[0-9]{4})?$"`
-}
-
-type UKAddress struct {
-    Postcode string `pedantigo:"regexp=^[A-Z]{1,2}[0-9][A-Z0-9]? ?[0-9][A-Z]{2}$"`
-}
-```
-
----
-
 ## Features That May Be Added Later
 
 These are not currently supported but could be added if demand exists:
@@ -475,12 +426,15 @@ These are not currently supported but could be added if demand exists:
 | Feature | Complexity | Notes |
 |---------|------------|-------|
 | Strict types (StrictInt, etc.) | Medium | Planned for Phase 12 |
-| Secret types (SecretStr) | Medium | Planned for Phase 12 |
-| Path validation (FilePath) | Low | Planned for Phase 12 |
-| time.Duration | Low | Parse from string like "5m30s" |
 | Set/Tuple types | Low | Not idiomatic in Go |
 | Alias generators | Medium | Could use go:generate |
 | i18n/l10n | High | Community contribution welcome |
+
+**Recently Implemented** (removed from this list):
+- ✅ Secret types (`SecretStr`, `SecretBytes`) - Masks sensitive data in String/JSON
+- ✅ Path validation (`filepath`, `dirpath`, `file`, `dir`) - Syntax and existence checks
+- ✅ `time.Duration` - Parses duration strings like "1h30m", "500ms"
+- ✅ ISO codes (`iso3166_alpha2`, `iso4217`, `bcp47`, `postcode`) - Country, currency, language, postal codes
 
 ---
 

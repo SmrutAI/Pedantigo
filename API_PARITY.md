@@ -89,10 +89,10 @@ JSON Schema standard support.
 | Semver           | √         | Partial     | √            | ×                 | Semver 2.0.0                 |
 | ULID             | √         | ×           | √            | ×                 | ULID spec (Crockford base32) |
 | Luhn checksum    | √         | ×           | √            | ×                 | ISO/IEC 7812                 |
-| Country codes    | ×         | Partial     | √            | ×                 | ISO 3166-1                   |
-| Currency codes   | ×         | Partial     | √            | ×                 | ISO 4217                     |
-| Language codes   | ×         | Partial     | √            | ×                 | BCP 47                       |
-| Postal codes     | ×         | ×           | √            | ×                 | ISO 3166 per-country         |
+| Country codes    | √         | Partial     | √            | ×                 | ISO 3166-1                   |
+| Currency codes   | √         | Partial     | √            | ×                 | ISO 4217                     |
+| Language codes   | √         | Partial     | √            | ×                 | BCP 47                       |
+| Postal codes     | √         | ×           | √            | ×                 | ISO 3166 per-country         |
 
 **COLLECTION VALIDATION**
 
@@ -129,9 +129,9 @@ JSON Schema standard support.
 | Slices/Lists                 | √         | √           | √            | √                                  |
 | Maps/Dicts                   | √         | √           | √            | √                                  |
 | time.Time/datetime           | √         | √           | Partial      | √                                  |
-| time.Duration                | ×         | √           | ×            | √                                  |
-| Secret types                 | ×         | √           | ×            | ×                                  |
-| Path types                   | ×         | √           | Partial      | ×                                  |
+| time.Duration                | √         | √           | ×            | √                                  |
+| Secret types                 | √         | √           | ×            | ×                                  |
+| Path types                   | √         | √           | Partial      | ×                                  |
 | Literal types                | ×         | √           | ×            | √                                  |
 | Union types                  | √         | √           | ×            | √                                  |
 | Discriminated unions         | √         | √           | ×            | √                                  |
@@ -226,7 +226,7 @@ JSON Schema standard support.
 | Struct field reflection      | ×         | √           | ×            | ×                                  |
 | Recursive structs            | √         | √           | √            | √                                  |
 
-**Summary**: 130/141 features implemented (92%)
+**Summary**: 137/141 features implemented (97%)
 
 **Legend**: √ = Supported, × = Not supported, Partial = Limited support
 
