@@ -205,28 +205,65 @@ orderValidator := pedantigo.New[OrderResponse]()
 
 **Pydantic:**
 ```python
-class UserOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    name: str
+# In Python: SQLAlchemy model and Pydantic model are SEPARATE
+class UserORM(Base):  # SQLAlchemy
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    email = Column(String)
 
-# Convert SQLAlchemy model to Pydantic
-user_out = UserOut.model_validate(sqlalchemy_user)
+class UserOut(BaseModel):  # Pydantic - separate class!
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    email: str
+
+# Need conversion layer
+db_user = session.query(UserORM).first()
+user_out = UserOut.model_validate(db_user)  # from_attributes reads object attrs
 ```
 
-**Why not in Go:**
-- Python-specific pattern for SQLAlchemy integration
-- Go ORMs (GORM, sqlx) use struct tags directly
-- No need for conversion layer
+**Why Go doesn't need this:**
 
-**Workaround:**
+In Python, SQLAlchemy models and Pydantic models are fundamentally different class hierarchies - you MUST define separate classes and convert between them.
+
+In Go, struct tags allow ONE type to serve multiple purposes:
+
 ```go
-// GORM and JSON use same struct
+// GORM, JSON, and Pedantigo use the SAME struct
 type User struct {
-    ID   uint   `gorm:"primaryKey" json:"id"`
-    Name string `gorm:"column:name" json:"name"`
+    ID    uint   `gorm:"primaryKey" json:"id" pedantigo:"required"`
+    Name  string `gorm:"column:name" json:"name" pedantigo:"min=1,max=100"`
+    Email string `gorm:"uniqueIndex" json:"email" pedantigo:"required,email"`
 }
 
-// Already works - no conversion needed
+// Query from database
+var user User
+db.First(&user, 1)
+
+// Validate directly - no conversion!
+err := validator.Validate(&user)
+
+// Marshal directly - no conversion!
+data, _ := validator.Marshal(user)
+
+// Unmarshal from API, validate, save to DB - same struct throughout
+var newUser User
+validator.Unmarshal(jsonData)  // Validates during unmarshal
+db.Create(&newUser)
+```
+
+**Go's advantage:** Struct tags eliminate the "two model" problem. GORM, sqlx, ent, and other Go ORMs all use struct tags, making them directly compatible with Pedantigo.
+
+**If you truly need conversion** (rare - usually means design issue):
+```go
+// Manual field copy
+func ToUserOut(orm *UserORM) UserOut {
+    return UserOut{ID: orm.ID, Name: orm.Name}
+}
+
+// Or use a struct copying library like copier
+copier.Copy(&userOut, &userORM)
 ```
 
 ---
