@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/SmrutAI/Pedantigo"
+	. "github.com/SmrutAI/pedantigo"
 )
 
 // runPanicTest runs a test function and checks for expected panic.

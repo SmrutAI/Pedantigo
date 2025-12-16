@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/SmrutAI/Pedantigo/internal/isocodes"
+	"github.com/SmrutAI/pedantigo/internal/isocodes"
 )
 
 // ISO code constraint name constants.

@@ -83,7 +83,7 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/SmrutAI/Pedantigo
+        - github.com/SmrutAI/pedantigo
   exclusions:
     paths:
       - vendor

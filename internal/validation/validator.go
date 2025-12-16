@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/SmrutAI/Pedantigo/internal/constraints"
-	"github.com/SmrutAI/Pedantigo/internal/tags"
+	"github.com/SmrutAI/pedantigo/internal/constraints"
+	"github.com/SmrutAI/pedantigo/internal/tags"
 )
 
 // FieldError represents a validation error for a specific field

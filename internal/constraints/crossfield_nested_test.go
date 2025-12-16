@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	. "github.com/SmrutAI/Pedantigo"
+	. "github.com/SmrutAI/pedantigo"
 )
 
 // ============================================================================

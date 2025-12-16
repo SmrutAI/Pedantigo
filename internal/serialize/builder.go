@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/SmrutAI/Pedantigo/internal/tags"
+	"github.com/SmrutAI/pedantigo/internal/tags"
 )
 
 // FieldMetadata holds pre-parsed serialization metadata for a field.

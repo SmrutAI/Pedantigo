@@ -6,8 +6,8 @@ import (
 
 	"github.com/invopop/jsonschema"
 
-	"github.com/SmrutAI/Pedantigo/internal/tags"
-	"github.com/SmrutAI/Pedantigo/schemagen"
+	"github.com/SmrutAI/pedantigo/internal/tags"
+	"github.com/SmrutAI/pedantigo/schemagen"
 )
 
 // Schema generates a JSON Schema from the validator's type T

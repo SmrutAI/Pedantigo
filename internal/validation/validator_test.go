@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/SmrutAI/Pedantigo/internal/constraints"
-	"github.com/SmrutAI/Pedantigo/internal/tags"
+	"github.com/SmrutAI/pedantigo/internal/constraints"
+	"github.com/SmrutAI/pedantigo/internal/tags"
 )
 
 // parseTestTag wraps tags.ParseTagWithDive for test use.

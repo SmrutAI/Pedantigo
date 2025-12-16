@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	pedantigo "github.com/SmrutAI/Pedantigo"
+	pedantigo "github.com/SmrutAI/pedantigo"
 )
 
 // checkValidationError verifies that a validation error contains the expected field error.

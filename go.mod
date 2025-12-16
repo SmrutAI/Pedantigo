@@ -1,4 +1,4 @@
-module github.com/SmrutAI/Pedantigo
+module github.com/SmrutAI/pedantigo
 
 go 1.25.4
 

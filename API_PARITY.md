@@ -112,7 +112,7 @@ JSON Schema standard support.
 |------------------------------|-----------|-------------|--------------|------------------------------------|
 | Struct-level validators      | √         | √           | √            | ×                                  |
 | Field comparisons            | √         | √           | √            | ×                                  |
-| Cross-struct validation      | ×         | √           | √            | ×                                  |
+| Cross-struct validation      | √         | √           | √            | ×                                  |
 | Conditional required         | √         | √           | √            | √                                  |
 | Conditional exclusion        | √         | √           | √            | √                                  |
 | Before validators            | ×         | √           | ×            | ×                                  |
@@ -207,7 +207,7 @@ JSON Schema standard support.
 | Feature                      | Pedantigo | Pydantic v2 | Go Validator | Supported by JSON Schema standard? |
 |------------------------------|-----------|-------------|--------------|------------------------------------|
 | Custom validators            | √         | √           | √            | ×                                  |
-| Validator registration       | ×         | √           | √            | ×                                  |
+| Validator registration       | √         | √           | √            | ×                                  |
 | Alias tags                   | ×         | Partial     | √            | ×                                  |
 | Validator context            | ×         | √           | √            | ×                                  |
 | Struct-level                 | √         | √           | √            | ×                                  |
@@ -226,7 +226,7 @@ JSON Schema standard support.
 | Struct field reflection      | ×         | √           | ×            | ×                                  |
 | Recursive structs            | √         | √           | √            | √                                  |
 
-**Summary**: 137/141 features implemented (97%)
+**Summary**: 139/141 features implemented (99%)
 
 **Legend**: √ = Supported, × = Not supported, Partial = Limited support
 

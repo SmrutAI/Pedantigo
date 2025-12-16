@@ -9,8 +9,8 @@ import (
 
 	"github.com/invopop/jsonschema"
 
-	"github.com/SmrutAI/Pedantigo/internal/constraints"
-	"github.com/SmrutAI/Pedantigo/schemagen"
+	"github.com/SmrutAI/pedantigo/internal/constraints"
+	"github.com/SmrutAI/pedantigo/schemagen"
 )
 
 // UnionVariant represents a variant type in a discriminated union.

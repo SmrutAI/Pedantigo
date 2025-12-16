@@ -5,7 +5,7 @@ Type-safe JSON validation and schema generation for Go.
 ## Installation
 
 ```bash
-go get github.com/SmrutAI/Pedantigo
+go get github.com/SmrutAI/pedantigo
 ```
 
 Requires Go 1.25.4+

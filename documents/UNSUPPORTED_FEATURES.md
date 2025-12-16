@@ -18,7 +18,7 @@ Features from Pydantic v2 and go-playground/validator that Pedantigo does not su
 | BaseSettings                    | Pydantic  | Python-specific (dotenv, env vars)     | Use `envconfig` or `viper`                       |
 | TypeAdapter                     | Pydantic  | Python's dynamic typing                | Use `Validator[T]` directly                      |
 | RootModel                       | Pydantic  | Python-specific pattern                | Use wrapper struct                               |
-| Cross-struct validation         | validator | Adds complexity, rarely needed         | Validate at service layer                        |
+| ~~Cross-struct validation~~     | validator | ✅ **NOW SUPPORTED** (v1.x)            | Use `eqfield=Inner.Field` dotted notation        |
 | Validator context               | validator | Adds complexity                        | Use struct fields for context                    |
 
 ---
@@ -359,32 +359,24 @@ validator := pedantigo.New[[]User]()
 
 ---
 
-### 10. Cross-Struct Validation (eqcsfield, etc.)
+### 10. Cross-Struct Validation ✅ NOW SUPPORTED
 
 **Source:** go-playground/validator `eqcsfield`, `necsfield`, etc.
 
-**validator:**
+**Pedantigo now supports nested field references via dotted notation:**
 ```go
 type Outer struct {
     Inner Inner
-    Max   int `validate:"gtcsfield=Inner.Value"`  // Compare across structs
+    Max   int `pedantigo:"gtfield=Inner.Value"`  // Compare across nested structs
+    Check int `pedantigo:"eqfield=Inner.MinValue"` // Works with deep nesting too
 }
 ```
 
-**Why not in Pedantigo:**
-- Adds significant complexity to field resolution
-- Rarely needed in practice
-- Can always use `Validate()` method for complex cases
-
-**Workaround:**
-```go
-func (o *Outer) Validate() error {
-    if o.Max <= o.Inner.Value {
-        return errors.New("Max must be greater than Inner.Value")
-    }
-    return nil
-}
-```
+**Features:**
+- Supports any nesting depth: `eqfield=A.B.C.Field`
+- All cross-field operators: `eqfield`, `nefield`, `gtfield`, `gtefield`, `ltfield`, `ltefield`
+- Handles pointers automatically
+- Validates field paths at `New()` time (fail-fast)
 
 ---
 

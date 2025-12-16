@@ -57,7 +57,7 @@ vet:
 fix_fmt:
 	@echo "Formatting code..."
 	@which goimports > /dev/null || (echo "goimports not installed. Install with: go install golang.org/x/tools/cmd/goimports@latest" && exit 1)
-	goimports -w -local github.com/SmrutAI/Pedantigo .
+	goimports -w -local github.com/SmrutAI/pedantigo .
 	gofmt -s -w .
 
 # Format code (alias for compatibility)

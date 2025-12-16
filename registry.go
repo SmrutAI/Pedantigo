@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/SmrutAI/Pedantigo/internal/constraints"
+	"github.com/SmrutAI/pedantigo/internal/constraints"
 )
 
 // ValidationFunc is the signature for custom field-level validation functions.
