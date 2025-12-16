@@ -1043,6 +1043,61 @@ func recursiveSetDefault(fieldValue reflect.Value, defaultValue string) {
 
 // ==================== isValidConversion Tests ====================
 
+// ==================== Duration Type ====================
+
+// TestSetFieldValue_Duration tests time.Duration handling in SetFieldValue.
+func TestSetFieldValue_Duration(t *testing.T) {
+	type DurationStruct struct {
+		Timeout time.Duration
+	}
+
+	tests := []struct {
+		name    string
+		input   any
+		want    time.Duration
+		wantErr bool
+	}{
+		// String format - Go duration strings
+		{"string 1h30m", "1h30m", 90 * time.Minute, false},
+		{"string 500ms", "500ms", 500 * time.Millisecond, false},
+		{"string 2h45m30s", "2h45m30s", 2*time.Hour + 45*time.Minute + 30*time.Second, false},
+		{"string 1s", "1s", time.Second, false},
+		{"string 100ns", "100ns", 100 * time.Nanosecond, false},
+		{"string 1m30s", "1m30s", 90 * time.Second, false},
+		{"string 0s", "0s", 0, false},
+		{"string negative -1h", "-1h", -1 * time.Hour, false},
+		// Invalid strings
+		{"invalid string hello", "hello", 0, true},
+		{"invalid string 1x", "1x", 0, true},
+		{"invalid string empty", "", 0, true}, // Empty string is invalid duration
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var result DurationStruct
+			resultVal := reflect.ValueOf(&result).Elem()
+			fieldVal := resultVal.Field(0)
+
+			var recursiveSetFunc func(fv reflect.Value, iv any, ft reflect.Type) error
+			recursiveSetFunc = func(fv reflect.Value, iv any, ft reflect.Type) error {
+				return SetFieldValue(fv, iv, ft, recursiveSetFunc)
+			}
+
+			err := SetFieldValue(fieldVal, tt.input, reflect.TypeOf(time.Duration(0)), recursiveSetFunc)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SetFieldValue() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && result.Timeout != tt.want {
+				t.Errorf("SetFieldValue() got = %v, want %v", result.Timeout, tt.want)
+			}
+		})
+	}
+}
+
+// ==================== isValidConversion Tests ====================
+
 // Test_isValidConversion tests  isvalidconversion.
 func Test_isValidConversion(t *testing.T) {
 	tests := []struct {

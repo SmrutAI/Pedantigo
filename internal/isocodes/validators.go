@@ -3,6 +3,8 @@ package isocodes
 import (
 	"regexp"
 	"sync"
+
+	"golang.org/x/text/language"
 )
 
 // Postal code regex caching with lazy initialization.
@@ -121,4 +123,12 @@ func IsPostcode(postcode, countryCode string) bool {
 func HasPostcodePattern(countryCode string) bool {
 	_, ok := postCodePatternDict[countryCode]
 	return ok
+}
+
+// IsBCP47LanguageTag validates a BCP 47 language tag using Go's x/text/language parser.
+// The parser supports the full IANA language tag registry.
+// Examples of valid tags: "en", "en-US", "zh-Hans-CN", "sr-Latn-RS".
+func IsBCP47LanguageTag(tag string) bool {
+	_, err := language.Parse(tag)
+	return err == nil
 }

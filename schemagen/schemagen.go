@@ -81,6 +81,24 @@ const (
 	fmtCron   = "cron"
 	fmtSemver = "semver"
 	fmtULID   = "ulid"
+
+	// ISO code formats.
+	fmtISO3166Alpha2   = "iso3166_alpha2"
+	fmtISO3166Alpha2EU = "iso3166_alpha2_eu"
+	fmtISO3166Alpha3   = "iso3166_alpha3"
+	fmtISO3166Alpha3EU = "iso3166_alpha3_eu"
+	fmtISO3166Numeric  = "iso3166_numeric"
+	fmtISO31662        = "iso3166_2"
+	fmtISO4217         = "iso4217"
+	fmtISO4217Numeric  = "iso4217_numeric"
+	fmtPostcode        = "postcode"
+	fmtBCP47           = "bcp47"
+
+	// Filesystem formats.
+	fmtFilepath = "filepath"
+	fmtDirpath  = "dirpath"
+	fmtFile     = "file"
+	fmtDir      = "dir"
 )
 
 // Schema metadata constraints (Phase 9 and 12).
@@ -286,7 +304,12 @@ func ApplyConstraints(schema *jsonschema.Schema, constraintsMap map[string]strin
 			// Hash formats (Phase 10).
 			fmtMD4, fmtMD5, fmtSHA256, fmtSHA384, fmtSHA512, fmtMongoDB,
 			// Misc formats (Phase 10).
-			fmtHTML, fmtCron, fmtSemver, fmtULID:
+			fmtHTML, fmtCron, fmtSemver, fmtULID,
+			// ISO code formats.
+			fmtISO3166Alpha2, fmtISO3166Alpha2EU, fmtISO3166Alpha3, fmtISO3166Alpha3EU,
+			fmtISO3166Numeric, fmtISO31662, fmtISO4217, fmtISO4217Numeric, fmtPostcode, fmtBCP47,
+			// Filesystem formats.
+			fmtFilepath, fmtDirpath, fmtFile, fmtDir:
 			applyFormatConstraint(schema, name)
 
 		case "regexp":
@@ -653,6 +676,38 @@ func applyFormatConstraint(schema *jsonschema.Schema, constraintName string) {
 		schema.Format = fmtSemver
 	case fmtULID:
 		schema.Format = fmtULID
+
+	// ISO code formats.
+	case fmtISO3166Alpha2:
+		schema.Format = fmtISO3166Alpha2
+	case fmtISO3166Alpha2EU:
+		schema.Format = fmtISO3166Alpha2EU
+	case fmtISO3166Alpha3:
+		schema.Format = fmtISO3166Alpha3
+	case fmtISO3166Alpha3EU:
+		schema.Format = fmtISO3166Alpha3EU
+	case fmtISO3166Numeric:
+		schema.Format = fmtISO3166Numeric
+	case fmtISO31662:
+		schema.Format = fmtISO31662
+	case fmtISO4217:
+		schema.Format = fmtISO4217
+	case fmtISO4217Numeric:
+		schema.Format = fmtISO4217Numeric
+	case fmtPostcode:
+		schema.Format = fmtPostcode
+	case fmtBCP47:
+		schema.Format = fmtBCP47
+
+	// Filesystem formats.
+	case fmtFilepath:
+		schema.Format = fmtFilepath
+	case fmtDirpath:
+		schema.Format = fmtDirpath
+	case fmtFile:
+		schema.Format = fmtFile
+	case fmtDir:
+		schema.Format = fmtDir
 	}
 }
 

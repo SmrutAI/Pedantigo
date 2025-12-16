@@ -238,6 +238,14 @@ func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []C
 		// Misc constraints.
 		case CHtml, CCron, CSemver, CUlid:
 			result = appendMiscConstraint(result, name)
+
+		// ISO code constraints.
+		case CISO3166Alpha2, CISO3166Alpha2EU, CISO3166Alpha3, CISO3166Alpha3EU, CISO3166Numeric, CISO31662, CISO4217, CISO4217Numeric, CPostcode, CBCP47:
+			result = appendISOConstraint(result, name, value)
+
+		// Filesystem constraints.
+		case CFilepath, CDirpath, CFile, CDir:
+			result = appendFilesystemConstraint(result, name)
 		}
 	}
 

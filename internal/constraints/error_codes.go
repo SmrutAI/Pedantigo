@@ -64,6 +64,16 @@ const (
 	CodeInvalidPostalCode  = "INVALID_POSTAL_CODE"
 	CodeInvalidTimezone    = "INVALID_TIMEZONE"
 
+	// ISO code constraints.
+	CodeInvalidCurrencyCode = "INVALID_CURRENCY_CODE"
+	CodeInvalidLanguageTag  = "INVALID_LANGUAGE_TAG"
+	CodeInvalidSubdivision  = "INVALID_SUBDIVISION_CODE"
+
+	// File system constraints.
+	CodeInvalidPath  = "INVALID_PATH"
+	CodeFileNotFound = "FILE_NOT_FOUND"
+	CodeDirNotFound  = "DIRECTORY_NOT_FOUND"
+
 	// Color constraints.
 	CodeInvalidHexColor = "INVALID_HEX_COLOR"
 	CodeInvalidRGBColor = "INVALID_RGB_COLOR"

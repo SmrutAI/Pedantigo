@@ -79,6 +79,34 @@ func SetFieldValue(
 		}
 	}
 
+	// Handle time.Duration special case
+	// Duration can come as:
+	// - String: "1h30m", "500ms", "2h45m30s" (Go duration format)
+	// - int64: nanoseconds (Go's internal representation)
+	// - float64: seconds (common JSON convention)
+	if fieldType == reflect.TypeOf(time.Duration(0)) {
+		switch inVal.Kind() {
+		case reflect.String:
+			// Parse Go duration string: "1h30m", "500ms", "2h45m30s"
+			d, err := time.ParseDuration(inVal.String())
+			if err != nil {
+				return fmt.Errorf("failed to parse duration: %w", err)
+			}
+			fieldValue.Set(reflect.ValueOf(d))
+			return nil
+		case reflect.Int, reflect.Int64:
+			// Interpret as nanoseconds (Go's internal representation)
+			fieldValue.Set(reflect.ValueOf(time.Duration(inVal.Int())))
+			return nil
+		case reflect.Float64:
+			// Interpret as seconds (common JSON convention)
+			fieldValue.Set(reflect.ValueOf(time.Duration(inVal.Float() * float64(time.Second))))
+			return nil
+		default:
+			return fmt.Errorf("cannot convert %v to time.Duration", inVal.Kind())
+		}
+	}
+
 	// Handle nested structs: if inValue is map[string]any and target is struct
 	if inVal.Kind() == reflect.Map && fieldType.Kind() == reflect.Struct {
 		// Re-marshal the map and unmarshal into the struct
