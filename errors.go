@@ -35,7 +35,7 @@ type ValidationError struct {
 // Error implements the error interface.
 func (e *ValidationError) Error() string {
 	if len(e.Errors) == 0 {
-		return "validation failed"
+		return "no errors found"
 	}
 	if len(e.Errors) == 1 {
 		return fmt.Sprintf("%s: %s", e.Errors[0].Field, e.Errors[0].Message)

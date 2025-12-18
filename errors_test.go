@@ -136,7 +136,7 @@ func TestValidationError(t *testing.T) {
 		{
 			name:           "empty_errors_list",
 			errors:         []FieldError{},
-			wantErrorMsg:   "validation failed",
+			wantErrorMsg:   "no errors found",
 			wantErrorCount: 0,
 			validateErrors: nil,
 		},

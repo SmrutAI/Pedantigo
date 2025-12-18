@@ -24,7 +24,6 @@ func (e *ValidationError) Error() string
 ```
 
 The `Error()` method returns a human-readable summary:
-- If no errors: `"validation failed"`
 - If one error: `"field: message"`
 - If multiple errors: `"field: message (and N more errors)"`
 
