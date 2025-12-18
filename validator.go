@@ -237,10 +237,15 @@ func (v *Validator[T]) Validate(obj *T) error {
 		}
 	}
 
-	var fieldErrors []FieldError
+	// Get context from pool
+	ctx := validateContextPool.Get().(*validateContext)
+
+	// Reset buffers (keep capacity)
+	ctx.pathBuf = ctx.pathBuf[:0]
+	ctx.errs = ctx.errs[:0]
 
 	// Validate all fields using struct tags (required is skipped via buildConstraints)
-	fieldErrors = append(fieldErrors, v.validateValue(reflect.ValueOf(obj).Elem(), "")...)
+	v.validateWithCache(reflect.ValueOf(obj).Elem(), nil, ctx, v.fieldCache)
 
 	// Check if struct implements Validatable for cross-field validation
 	if validatable, ok := any(obj).(Validatable); ok {
@@ -248,10 +253,10 @@ func (v *Validator[T]) Validate(obj *T) error {
 			// Check if it's a ValidationError with multiple errors
 			var ve *ValidationError
 			if errors.As(err, &ve) {
-				fieldErrors = append(fieldErrors, ve.Errors...)
+				ctx.errs = append(ctx.errs, ve.Errors...)
 			} else {
 				// Single error or custom error type
-				fieldErrors = append(fieldErrors, FieldError{
+				ctx.errs = append(ctx.errs, FieldError{
 					Field:   "root",
 					Message: err.Error(),
 				})
@@ -259,53 +264,50 @@ func (v *Validator[T]) Validate(obj *T) error {
 		}
 	}
 
-	if len(fieldErrors) == 0 {
-		return nil
+	// Extract errors before returning to pool
+	var result error
+	if len(ctx.errs) > 0 {
+		result = &ValidationError{Errors: ctx.errs}
+		ctx.errs = nil // Clear reference so pool doesn't hold onto errors
 	}
 
-	return &ValidationError{Errors: fieldErrors}
-}
+	// Return to pool
+	validateContextPool.Put(ctx)
 
-// validateValue validates a struct value using cached constraints.
-func (v *Validator[T]) validateValue(val reflect.Value, path string) []FieldError {
-	return v.validateWithCache(val, path, v.fieldCache)
+	return result
 }
 
 // validateWithCache validates using pre-built cached constraints.
-func (v *Validator[T]) validateWithCache(val reflect.Value, path string, cache *constraints.FieldCache) []FieldError {
+// Uses byte slice paths and appends errors to ctx.errs to minimize allocations.
+func (v *Validator[T]) validateWithCache(val reflect.Value, path []byte, ctx *validateContext, cache *constraints.FieldCache) {
 	if cache == nil {
-		return nil
+		return
 	}
 
 	// Handle pointer indirection
 	for val.Kind() == reflect.Ptr {
 		if val.IsNil() {
-			return nil
+			return
 		}
 		val = val.Elem()
 	}
 
 	if val.Kind() != reflect.Struct {
-		return nil
+		return
 	}
-
-	var fieldErrors []FieldError
 
 	for i := range cache.Fields {
 		cached := &cache.Fields[i]
 		fieldVal := val.Field(cached.FieldIndex)
 
-		// Build field path
-		fieldPath := cached.Name
-		if path != "" {
-			fieldPath = path + "." + cached.Name
-		}
+		// Build field path using buffer
+		fieldPath := appendPath(ctx.pathBuf[:0], path, cached.Name)
 
-		// Check required for nested struct fields (path != "")
-		if path != "" && v.options.StrictMissingFields && cached.IsRequired {
+		// Check required for nested struct fields (path != nil)
+		if len(path) > 0 && v.options.StrictMissingFields && cached.IsRequired {
 			if fieldVal.IsZero() {
-				fieldErrors = append(fieldErrors, FieldError{
-					Field:   fieldPath,
+				ctx.errs = append(ctx.errs, FieldError{
+					Field:   string(fieldPath),
 					Code:    constraints.CodeRequired,
 					Message: "is required",
 					Value:   fieldVal.Interface(),
@@ -317,19 +319,19 @@ func (v *Validator[T]) validateWithCache(val reflect.Value, path string, cache *
 		// Apply field constraints
 		for _, c := range cached.Constraints {
 			if err := c.Validate(fieldVal.Interface()); err != nil {
-				fieldErrors = append(fieldErrors, v.newFieldError(fieldPath, err, fieldVal.Interface()))
+				ctx.errs = append(ctx.errs, v.newFieldError(string(fieldPath), err, fieldVal.Interface()))
 			}
 		}
 
 		// Apply cross-field constraints
 		for _, c := range cached.CrossFieldConstraints {
-			if err := c.ValidateCrossField(fieldVal.Interface(), val, fieldPath); err != nil {
+			if err := c.ValidateCrossField(fieldVal.Interface(), val, string(fieldPath)); err != nil {
 				var valErr *ValidationError
 				if errors.As(err, &valErr) {
-					fieldErrors = append(fieldErrors, valErr.Errors...)
+					ctx.errs = append(ctx.errs, valErr.Errors...)
 				} else {
-					fieldErrors = append(fieldErrors, FieldError{
-						Field:   fieldPath,
+					ctx.errs = append(ctx.errs, FieldError{
+						Field:   string(fieldPath),
 						Message: err.Error(),
 					})
 				}
@@ -339,74 +341,68 @@ func (v *Validator[T]) validateWithCache(val reflect.Value, path string, cache *
 		// Handle collections with dive (requires dive to recurse into elements, like playground)
 		if cached.IsCollection && cached.HasDive {
 			if cached.IsMap {
-				fieldErrors = append(fieldErrors, v.validateMapWithCache(fieldVal, fieldPath, cached)...)
+				v.validateMapWithCache(fieldVal, fieldPath, ctx, cached)
 			} else {
-				fieldErrors = append(fieldErrors, v.validateSliceWithCache(fieldVal, fieldPath, cached)...)
+				v.validateSliceWithCache(fieldVal, fieldPath, ctx, cached)
 			}
 		} else if cached.NestedCache != nil && !cached.IsCollection {
 			// Recurse for nested structs (but NOT collection elements without dive)
-			fieldErrors = append(fieldErrors, v.validateWithCache(fieldVal, fieldPath, cached.NestedCache)...)
+			v.validateWithCache(fieldVal, fieldPath, ctx, cached.NestedCache)
 		}
 	}
-
-	return fieldErrors
 }
 
 // validateSliceWithCache validates slice elements using cached constraints.
-func (v *Validator[T]) validateSliceWithCache(val reflect.Value, path string, cached *constraints.CachedField) []FieldError {
-	var fieldErrors []FieldError
-
+// Uses appendIndex for zero-allocation index formatting.
+func (v *Validator[T]) validateSliceWithCache(val reflect.Value, path []byte, ctx *validateContext, cached *constraints.CachedField) {
 	for i := 0; i < val.Len(); i++ {
 		elemVal := val.Index(i)
-		elemPath := fmt.Sprintf("%s[%d]", path, i)
+		// Build element path: "path[i]" using strconv.AppendInt (no allocation)
+		elemPath := appendIndex(ctx.pathBuf[:0], path, i)
 
 		// Apply element constraints
 		for _, c := range cached.ElementConstraints {
 			if err := c.Validate(elemVal.Interface()); err != nil {
-				fieldErrors = append(fieldErrors, v.newFieldError(elemPath, err, elemVal.Interface()))
+				ctx.errs = append(ctx.errs, v.newFieldError(string(elemPath), err, elemVal.Interface()))
 			}
 		}
 
 		// Recurse for nested structs
 		if cached.NestedCache != nil {
-			fieldErrors = append(fieldErrors, v.validateWithCache(elemVal, elemPath, cached.NestedCache)...)
+			v.validateWithCache(elemVal, elemPath, ctx, cached.NestedCache)
 		}
 	}
-
-	return fieldErrors
 }
 
 // validateMapWithCache validates map entries using cached constraints.
-func (v *Validator[T]) validateMapWithCache(val reflect.Value, path string, cached *constraints.CachedField) []FieldError {
-	var fieldErrors []FieldError
-
+// Uses appendMapKey for optimized key formatting.
+func (v *Validator[T]) validateMapWithCache(val reflect.Value, path []byte, ctx *validateContext, cached *constraints.CachedField) {
 	iter := val.MapRange()
 	for iter.Next() {
 		mapKey := iter.Key()
 		mapVal := iter.Value()
-		elemPath := fmt.Sprintf("%s[%v]", path, mapKey.Interface())
+		// Build element path: "path[key]" using type-optimized appending
+		elemPath := appendMapKey(ctx.pathBuf[:0], path, mapKey.Interface())
 
 		// Apply key constraints
 		for _, c := range cached.KeyConstraints {
 			if err := c.Validate(mapKey.Interface()); err != nil {
-				fieldErrors = append(fieldErrors, v.newFieldError(elemPath, err, mapKey.Interface()))
+				ctx.errs = append(ctx.errs, v.newFieldError(string(elemPath), err, mapKey.Interface()))
 			}
 		}
 
 		// Apply value constraints
 		for _, c := range cached.ElementConstraints {
 			if err := c.Validate(mapVal.Interface()); err != nil {
-				fieldErrors = append(fieldErrors, v.newFieldError(elemPath, err, mapVal.Interface()))
+				ctx.errs = append(ctx.errs, v.newFieldError(string(elemPath), err, mapVal.Interface()))
 			}
 		}
 
 		// Recurse for nested structs
 		if cached.NestedCache != nil {
-			fieldErrors = append(fieldErrors, v.validateWithCache(mapVal, elemPath, cached.NestedCache)...)
+			v.validateWithCache(mapVal, elemPath, ctx, cached.NestedCache)
 		}
 	}
-
-	return fieldErrors
 }
 
 // newFieldError creates a FieldError, extracting Code from ConstraintError if available.
