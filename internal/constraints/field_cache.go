@@ -7,7 +7,8 @@ type CachedField struct {
 	FieldIndex int    // index in parent struct for O(1) access
 
 	// Pre-built constraints (from tags before dive)
-	Constraints []Constraint
+	Constraints           []Constraint
+	CrossFieldConstraints []CrossFieldConstraint // eqfield, gtfield, etc.
 
 	// For collections with dive
 	HasDive            bool

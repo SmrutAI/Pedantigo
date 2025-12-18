@@ -22,9 +22,8 @@ type Validator[T any] struct {
 	options            ValidatorOptions
 	fieldDeserializers map[string]deserialize.FieldDeserializer
 
-	// Cross-field validation constraints
-	fieldCache            *constraints.FieldCache
-	fieldCrossConstraints map[string][]constraints.CrossFieldConstraint
+	// Cached field constraints (built at creation time)
+	fieldCache *constraints.FieldCache
 
 	// Schema caching (lazy initialization with double-checked locking)
 	schemaMu          sync.RWMutex
@@ -45,11 +44,9 @@ func New[T any](opts ...ValidatorOptions) *Validator[T] {
 	}
 
 	validator := &Validator[T]{
-		typ:                   typ,
-		options:               options,
-		fieldDeserializers:    make(map[string]deserialize.FieldDeserializer),
-		fieldCrossConstraints: make(map[string][]constraints.CrossFieldConstraint),
-		fieldCache:            constraints.NewFieldCache(),
+		typ:                typ,
+		options:            options,
+		fieldDeserializers: make(map[string]deserialize.FieldDeserializer),
 	}
 
 	// Build field deserializers at creation time (fail-fast)
@@ -66,43 +63,7 @@ func New[T any](opts ...ValidatorOptions) *Validator[T] {
 	// Build field constraints at creation time (the key optimization)
 	validator.fieldCache = validator.buildFieldConstraints(typ)
 
-	// Build cross-field constraints at creation time (fail-fast)
-	validator.buildCrossFieldConstraints(typ)
-
 	return validator
-}
-
-// buildCrossFieldConstraints builds cross-field constraints for all struct fields.
-func (v *Validator[T]) buildCrossFieldConstraints(typ reflect.Type) {
-	// Handle pointer types
-	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
-
-	if typ.Kind() != reflect.Struct {
-		return
-	}
-
-	for i := 0; i < typ.NumField(); i++ {
-		field := typ.Field(i)
-
-		// Skip unexported fields
-		if !field.IsExported() {
-			continue
-		}
-
-		// Parse pedantigo validation constraints
-		constraintsMap := tags.ParseTag(field.Tag)
-		if constraintsMap == nil {
-			continue
-		}
-
-		// Build cross-field constraints for this field (use struct field name, not JSON name)
-		crossConstraints := constraints.BuildCrossFieldConstraintsForField(constraintsMap, typ, i)
-		if len(crossConstraints) > 0 {
-			v.fieldCrossConstraints[field.Name] = crossConstraints
-		}
-	}
 }
 
 // buildFieldConstraints builds and caches all field constraints at creation time.
@@ -166,6 +127,10 @@ func (v *Validator[T]) buildFieldConstraints(typ reflect.Type) *constraints.Fiel
 			if isMap && len(parsedTag.KeyConstraints) > 0 {
 				cached.KeyConstraints = constraints.BuildConstraints(parsedTag.KeyConstraints, field.Type.Key())
 			}
+
+			// Cross-field constraints (eqfield, gtfield, etc.)
+			cached.CrossFieldConstraints = constraints.BuildCrossFieldConstraintsForField(
+				parsedTag.CollectionConstraints, typ, i)
 		}
 
 		// Recurse for nested structs
@@ -277,33 +242,7 @@ func (v *Validator[T]) Validate(obj *T) error {
 	// Validate all fields using struct tags (required is skipped via buildConstraints)
 	fieldErrors = append(fieldErrors, v.validateValue(reflect.ValueOf(obj).Elem(), "")...)
 
-	// Run cross-field validation
-	structValue := reflect.ValueOf(obj).Elem()
-	for fieldName, crossConstraints := range v.fieldCrossConstraints {
-		// Get field value by struct field name
-		field := structValue.FieldByName(fieldName)
-		if !field.IsValid() {
-			continue
-		}
-		fieldValue := field.Interface()
-
-		// Run each cross-field constraint
-		for _, constraint := range crossConstraints {
-			if err := constraint.ValidateCrossField(fieldValue, structValue, fieldName); err != nil {
-				var valErr *ValidationError
-				if errors.As(err, &valErr) {
-					fieldErrors = append(fieldErrors, valErr.Errors...)
-				} else {
-					fieldErrors = append(fieldErrors, FieldError{
-						Field:   fieldName,
-						Message: err.Error(),
-					})
-				}
-			}
-		}
-	}
-
-	// Then, check if struct implements Validatable for cross-field validation
+	// Check if struct implements Validatable for cross-field validation
 	if validatable, ok := any(obj).(Validatable); ok {
 		if err := validatable.Validate(); err != nil {
 			// Check if it's a ValidationError with multiple errors
@@ -379,6 +318,21 @@ func (v *Validator[T]) validateWithCache(val reflect.Value, path string, cache *
 		for _, c := range cached.Constraints {
 			if err := c.Validate(fieldVal.Interface()); err != nil {
 				fieldErrors = append(fieldErrors, v.newFieldError(fieldPath, err, fieldVal.Interface()))
+			}
+		}
+
+		// Apply cross-field constraints
+		for _, c := range cached.CrossFieldConstraints {
+			if err := c.ValidateCrossField(fieldVal.Interface(), val, fieldPath); err != nil {
+				var valErr *ValidationError
+				if errors.As(err, &valErr) {
+					fieldErrors = append(fieldErrors, valErr.Errors...)
+				} else {
+					fieldErrors = append(fieldErrors, FieldError{
+						Field:   fieldPath,
+						Message: err.Error(),
+					})
+				}
 			}
 		}
 
