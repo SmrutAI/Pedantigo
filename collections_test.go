@@ -144,7 +144,7 @@ func TestSlice_NestedStructValidation(t *testing.T) {
 	}
 
 	type User struct {
-		Addresses []Address `json:"addresses"`
+		Addresses []Address `json:"addresses" pedantigo:"dive"` // dive required to recurse into elements (like playground)
 	}
 
 	validator := New[User]()
@@ -360,7 +360,7 @@ func TestMap_NestedStructValidation(t *testing.T) {
 	}
 
 	type Company struct {
-		Offices map[string]Address `json:"offices"`
+		Offices map[string]Address `json:"offices" pedantigo:"dive"` // dive required to recurse into elements (like playground)
 	}
 
 	validator := New[Company]()

@@ -382,20 +382,16 @@ func (v *Validator[T]) validateWithCache(val reflect.Value, path string, cache *
 			}
 		}
 
-		// Handle collections with dive
+		// Handle collections with dive (requires dive to recurse into elements, like playground)
 		if cached.IsCollection && cached.HasDive {
 			if cached.IsMap {
 				fieldErrors = append(fieldErrors, v.validateMapWithCache(fieldVal, fieldPath, cached)...)
 			} else {
 				fieldErrors = append(fieldErrors, v.validateSliceWithCache(fieldVal, fieldPath, cached)...)
 			}
-		} else if cached.NestedCache != nil {
-			// Recurse for nested structs
-			if cached.IsCollection {
-				fieldErrors = append(fieldErrors, v.validateCollectionElements(fieldVal, fieldPath, cached)...)
-			} else {
-				fieldErrors = append(fieldErrors, v.validateWithCache(fieldVal, fieldPath, cached.NestedCache)...)
-			}
+		} else if cached.NestedCache != nil && !cached.IsCollection {
+			// Recurse for nested structs (but NOT collection elements without dive)
+			fieldErrors = append(fieldErrors, v.validateWithCache(fieldVal, fieldPath, cached.NestedCache)...)
 		}
 	}
 
@@ -453,28 +449,6 @@ func (v *Validator[T]) validateMapWithCache(val reflect.Value, path string, cach
 		// Recurse for nested structs
 		if cached.NestedCache != nil {
 			fieldErrors = append(fieldErrors, v.validateWithCache(mapVal, elemPath, cached.NestedCache)...)
-		}
-	}
-
-	return fieldErrors
-}
-
-// validateCollectionElements validates collection elements without dive (just nested structs).
-func (v *Validator[T]) validateCollectionElements(val reflect.Value, path string, cached *constraints.CachedField) []FieldError {
-	var fieldErrors []FieldError
-
-	if cached.IsMap {
-		iter := val.MapRange()
-		for iter.Next() {
-			mapVal := iter.Value()
-			elemPath := fmt.Sprintf("%s[%v]", path, iter.Key().Interface())
-			fieldErrors = append(fieldErrors, v.validateWithCache(mapVal, elemPath, cached.NestedCache)...)
-		}
-	} else {
-		for i := 0; i < val.Len(); i++ {
-			elemVal := val.Index(i)
-			elemPath := fmt.Sprintf("%s[%d]", path, i)
-			fieldErrors = append(fieldErrors, v.validateWithCache(elemVal, elemPath, cached.NestedCache)...)
 		}
 	}
 
