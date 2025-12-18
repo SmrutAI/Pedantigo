@@ -30,12 +30,12 @@ import (
 )
 
 type ToolCall struct {
-    Name   string         `json:"name" validate:"required"`
-    Args   map[string]any `json:"args" validate:"required"`
+    Name   string         `json:"name" pedantigo:"required"`
+    Args   map[string]any `json:"args" pedantigo:"required"`
 }
 
 type FunctionResponse struct {
-    ToolCalls []ToolCall `json:"tool_calls" validate:"min_items=1,max_items=5"`
+    ToolCalls []ToolCall `json:"tool_calls" pedantigo:"min_items=1,max_items=5"`
 }
 
 func main() {
@@ -75,9 +75,9 @@ Anthropic's API streams text and structured outputs. Validate multi-field respon
 
 ```go
 type AgentResponse struct {
-    Thought string `json:"thought" validate:"required,min=10"`
-    Action  string `json:"action" validate:"required,oneof=search calculate respond think"`
-    Query   string `json:"query" validate:"min=1,max=500"`
+    Thought string `json:"thought" pedantigo:"required,min=10"`
+    Action  string `json:"action" pedantigo:"required,oneof=search calculate respond think"`
+    Query   string `json:"query" pedantigo:"min=1,max=500"`
     Result  string `json:"result"`
 }
 
@@ -118,10 +118,10 @@ Include the JSON schema in your LLM prompt so it knows the expected format:
 
 ```go
 type ExtractedData struct {
-    Title       string   `json:"title" validate:"required,max=200"`
-    Description string   `json:"description" validate:"max=2000"`
-    Tags        []string `json:"tags" validate:"max_items=10"`
-    Confidence  float64  `json:"confidence" validate:"ge=0,le=1"`
+    Title       string   `json:"title" pedantigo:"required,max=200"`
+    Description string   `json:"description" pedantigo:"max=2000"`
+    Tags        []string `json:"tags" pedantigo:"max_items=10"`
+    Confidence  float64  `json:"confidence" pedantigo:"ge=0,le=1"`
 }
 
 func getSystemPrompt() string {
@@ -150,8 +150,8 @@ LLMs occasionally generate invalid JSON. Implement graceful error handling:
 
 ```go
 type ExtractionResult struct {
-    Content string `json:"content" validate:"required"`
-    Score   float64 `json:"score" validate:"ge=0,le=1"`
+    Content string `json:"content" pedantigo:"required"`
+    Score   float64 `json:"score" pedantigo:"ge=0,le=1"`
 }
 
 func extractWithRetry(llm *LLMClient, text string, maxRetries int) (*ExtractionResult, error) {
@@ -192,19 +192,19 @@ For agents that return different response types based on an action field, use di
 
 ```go
 type SearchAction struct {
-    Action string   `json:"action" validate:"required,const=search"`
-    Query  string   `json:"query" validate:"required,min=1"`
-    Limit  int      `json:"limit" validate:"min=1,max=100"`
+    Action string   `json:"action" pedantigo:"required,const=search"`
+    Query  string   `json:"query" pedantigo:"required,min=1"`
+    Limit  int      `json:"limit" pedantigo:"min=1,max=100"`
 }
 
 type CalculateAction struct {
-    Action     string `json:"action" validate:"required,const=calculate"`
-    Expression string `json:"expression" validate:"required"`
+    Action     string `json:"action" pedantigo:"required,const=calculate"`
+    Expression string `json:"expression" pedantigo:"required"`
 }
 
 type RespondAction struct {
-    Action   string `json:"action" validate:"required,const=respond"`
-    Response string `json:"response" validate:"required,min=1"`
+    Action   string `json:"action" pedantigo:"required,const=respond"`
+    Response string `json:"response" pedantigo:"required,min=1"`
 }
 
 func processAgentAction(jsonData []byte) {
@@ -285,9 +285,9 @@ A full example showing an agent that streams responses and validates them:
 
 ```go
 type AgentStep struct {
-    Reasoning string `json:"reasoning" validate:"required,min=5"`
-    Action    string `json:"action" validate:"required,oneof=think search call respond complete"`
-    Details   string `json:"details" validate:"max=1000"`
+    Reasoning string `json:"reasoning" pedantigo:"required,min=5"`
+    Action    string `json:"action" pedantigo:"required,oneof=think search call respond complete"`
+    Details   string `json:"details" pedantigo:"max=1000"`
 }
 
 type AgentLoop struct {
