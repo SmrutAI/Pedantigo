@@ -48,3 +48,6 @@ CLAUDE.md
 
 # Documentation site (separate repo)
 pedantigo-docs/
+
+# Benchmark project (separate, not part of main module)
+pedantigo-benchmarks/

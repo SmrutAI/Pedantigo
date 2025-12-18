@@ -159,6 +159,7 @@ func TestCrossField_NestedStruct_SingleLevel(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			// Skip until nested struct cross-field validation is implemented
 			// Feature implemented - test active
@@ -358,6 +359,7 @@ func TestCrossField_DeepNested(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			// Skip until nested struct cross-field validation is implemented
 			// Feature implemented - test active
@@ -455,6 +457,7 @@ func TestCrossField_MultipleNestedReferences(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			// Skip until nested struct cross-field validation is implemented
 			// Feature implemented - test active
@@ -530,6 +533,7 @@ func TestCrossField_NestedString(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			// Skip until nested struct cross-field validation is implemented
 			// Feature implemented - test active
@@ -612,6 +616,7 @@ func TestCrossField_NestedFloat(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			// Skip until nested struct cross-field validation is implemented
 			// Feature implemented - test active

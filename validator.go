@@ -14,7 +14,6 @@ import (
 	"github.com/SmrutAI/pedantigo/internal/deserialize"
 	"github.com/SmrutAI/pedantigo/internal/serialize"
 	"github.com/SmrutAI/pedantigo/internal/tags"
-	"github.com/SmrutAI/pedantigo/internal/validation"
 )
 
 // Validator validates structs of type T.
@@ -24,6 +23,7 @@ type Validator[T any] struct {
 	fieldDeserializers map[string]deserialize.FieldDeserializer
 
 	// Cross-field validation constraints
+	fieldCache            *constraints.FieldCache
 	fieldCrossConstraints map[string][]constraints.CrossFieldConstraint
 
 	// Schema caching (lazy initialization with double-checked locking)
@@ -49,6 +49,7 @@ func New[T any](opts ...ValidatorOptions) *Validator[T] {
 		options:               options,
 		fieldDeserializers:    make(map[string]deserialize.FieldDeserializer),
 		fieldCrossConstraints: make(map[string][]constraints.CrossFieldConstraint),
+		fieldCache:            constraints.NewFieldCache(),
 	}
 
 	// Build field deserializers at creation time (fail-fast)
@@ -59,11 +60,14 @@ func New[T any](opts ...ValidatorOptions) *Validator[T] {
 		validator.setDefaultValue,
 	)
 
-	// Build cross-field constraints at creation time (fail-fast)
-	validator.buildCrossFieldConstraints(typ)
-
 	// Validate dive/keys/endkeys tag usage at creation time (fail-fast)
 	validator.validateDiveTags(typ)
+
+	// Build field constraints at creation time (the key optimization)
+	validator.fieldCache = validator.buildFieldConstraints(typ)
+
+	// Build cross-field constraints at creation time (fail-fast)
+	validator.buildCrossFieldConstraints(typ)
 
 	return validator
 }
@@ -99,6 +103,89 @@ func (v *Validator[T]) buildCrossFieldConstraints(typ reflect.Type) {
 			v.fieldCrossConstraints[field.Name] = crossConstraints
 		}
 	}
+}
+
+// buildFieldConstraints builds and caches all field constraints at creation time.
+func (v *Validator[T]) buildFieldConstraints(typ reflect.Type) *constraints.FieldCache {
+	// Handle pointer types
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+
+	if typ.Kind() != reflect.Struct {
+		return nil
+	}
+
+	cache := constraints.NewFieldCache()
+
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+
+		// Skip unexported fields
+		if !field.IsExported() {
+			continue
+		}
+
+		// Parse tags once
+		parsedTag := tags.ParseTagWithDive(field.Tag)
+
+		// Field type info
+		fieldType := field.Type
+		if fieldType.Kind() == reflect.Ptr {
+			fieldType = fieldType.Elem()
+		}
+		isCollection := fieldType.Kind() == reflect.Slice || fieldType.Kind() == reflect.Map
+		isMap := fieldType.Kind() == reflect.Map
+
+		cached := constraints.CachedField{
+			Name:         field.Name,
+			FieldIndex:   i,
+			IsCollection: isCollection,
+			IsMap:        isMap,
+		}
+
+		if parsedTag != nil {
+			cached.HasDive = parsedTag.DivePresent
+
+			// Check for required tag
+			if _, hasRequired := parsedTag.CollectionConstraints["required"]; hasRequired {
+				cached.IsRequired = true
+			}
+
+			// Constraints before dive (or regular field constraints)
+			if len(parsedTag.CollectionConstraints) > 0 {
+				cached.Constraints = constraints.BuildConstraints(parsedTag.CollectionConstraints, field.Type)
+			}
+
+			// Element constraints after dive
+			if parsedTag.DivePresent && len(parsedTag.ElementConstraints) > 0 {
+				cached.ElementConstraints = constraints.BuildConstraints(parsedTag.ElementConstraints, field.Type.Elem())
+			}
+
+			// Map key constraints
+			if isMap && len(parsedTag.KeyConstraints) > 0 {
+				cached.KeyConstraints = constraints.BuildConstraints(parsedTag.KeyConstraints, field.Type.Key())
+			}
+		}
+
+		// Recurse for nested structs
+		switch fieldType.Kind() {
+		case reflect.Struct:
+			cached.NestedCache = v.buildFieldConstraints(fieldType)
+		case reflect.Slice, reflect.Map:
+			elemType := fieldType.Elem()
+			if elemType.Kind() == reflect.Ptr {
+				elemType = elemType.Elem()
+			}
+			if elemType.Kind() == reflect.Struct {
+				cached.NestedCache = v.buildFieldConstraints(elemType)
+			}
+		}
+
+		cache.Fields = append(cache.Fields, cached)
+	}
+
+	return cache
 }
 
 // validateDiveTags validates that dive/keys/endkeys tags are used correctly.
@@ -240,66 +327,174 @@ func (v *Validator[T]) Validate(obj *T) error {
 	return &ValidationError{Errors: fieldErrors}
 }
 
-// validateValue wraps the validation package ValidateValue for use in validator.
+// validateValue validates a struct value using cached constraints.
 func (v *Validator[T]) validateValue(val reflect.Value, path string) []FieldError {
-	// Create a recursive wrapper that converts return types
-	var recursiveValidate func(reflect.Value, string) []validation.FieldError
-	recursiveValidate = func(val reflect.Value, path string) []validation.FieldError {
-		// Call the actual validation logic
-		pedantigoErrors := v.validateValueInternal(val, path, recursiveValidate)
-
-		// Convert pedantigo.FieldError to validation.FieldError
-		validationErrors := make([]validation.FieldError, len(pedantigoErrors))
-		for i, e := range pedantigoErrors {
-			validationErrors[i] = validation.FieldError{
-				Field:   e.Field,
-				Code:    e.Code,
-				Message: e.Message,
-				Value:   e.Value,
-			}
-		}
-		return validationErrors
-	}
-
-	// Call the recursive validate with the wrapper
-	return v.validateValueInternal(val, path, recursiveValidate)
+	return v.validateWithCache(val, path, v.fieldCache)
 }
 
-// validateValueInternal is the actual implementation that uses validation.ValidateValue.
-func (v *Validator[T]) validateValueInternal(
-	val reflect.Value,
-	path string,
-	recursiveValidateFunc func(reflect.Value, string) []validation.FieldError,
-) []FieldError {
-	// Call validation.ValidateValue with all required parameters
-	validationErrors := validation.ValidateValue(
-		val,
-		path,
-		v.options.StrictMissingFields,
-		tags.ParseTagWithDive,
-		func(constraintsMap map[string]string, fieldType reflect.Type) []validation.ConstraintValidator {
-			// Wrap constraints.Constraint to validation.ConstraintValidator
-			constraintList := constraints.BuildConstraints(constraintsMap, fieldType)
-			result := make([]validation.ConstraintValidator, len(constraintList))
-			for i, c := range constraintList {
-				result[i] = c
-			}
-			return result
-		},
-		recursiveValidateFunc,
-	)
+// validateWithCache validates using pre-built cached constraints.
+func (v *Validator[T]) validateWithCache(val reflect.Value, path string, cache *constraints.FieldCache) []FieldError {
+	if cache == nil {
+		return nil
+	}
 
-	// Convert validation.FieldError to pedantigo.FieldError
-	fieldErrors := make([]FieldError, len(validationErrors))
-	for i, e := range validationErrors {
-		fieldErrors[i] = FieldError{
-			Field:   e.Field,
-			Code:    e.Code,
-			Message: e.Message,
-			Value:   e.Value,
+	// Handle pointer indirection
+	for val.Kind() == reflect.Ptr {
+		if val.IsNil() {
+			return nil
+		}
+		val = val.Elem()
+	}
+
+	if val.Kind() != reflect.Struct {
+		return nil
+	}
+
+	var fieldErrors []FieldError
+
+	for i := range cache.Fields {
+		cached := &cache.Fields[i]
+		fieldVal := val.Field(cached.FieldIndex)
+
+		// Build field path
+		fieldPath := cached.Name
+		if path != "" {
+			fieldPath = path + "." + cached.Name
+		}
+
+		// Check required for nested struct fields (path != "")
+		if path != "" && v.options.StrictMissingFields && cached.IsRequired {
+			if fieldVal.IsZero() {
+				fieldErrors = append(fieldErrors, FieldError{
+					Field:   fieldPath,
+					Code:    constraints.CodeRequired,
+					Message: "is required",
+					Value:   fieldVal.Interface(),
+				})
+				continue // Skip further validation for this field
+			}
+		}
+
+		// Apply field constraints
+		for _, c := range cached.Constraints {
+			if err := c.Validate(fieldVal.Interface()); err != nil {
+				fieldErrors = append(fieldErrors, v.newFieldError(fieldPath, err, fieldVal.Interface()))
+			}
+		}
+
+		// Handle collections with dive
+		if cached.IsCollection && cached.HasDive {
+			if cached.IsMap {
+				fieldErrors = append(fieldErrors, v.validateMapWithCache(fieldVal, fieldPath, cached)...)
+			} else {
+				fieldErrors = append(fieldErrors, v.validateSliceWithCache(fieldVal, fieldPath, cached)...)
+			}
+		} else if cached.NestedCache != nil {
+			// Recurse for nested structs
+			if cached.IsCollection {
+				fieldErrors = append(fieldErrors, v.validateCollectionElements(fieldVal, fieldPath, cached)...)
+			} else {
+				fieldErrors = append(fieldErrors, v.validateWithCache(fieldVal, fieldPath, cached.NestedCache)...)
+			}
 		}
 	}
+
 	return fieldErrors
+}
+
+// validateSliceWithCache validates slice elements using cached constraints.
+func (v *Validator[T]) validateSliceWithCache(val reflect.Value, path string, cached *constraints.CachedField) []FieldError {
+	var fieldErrors []FieldError
+
+	for i := 0; i < val.Len(); i++ {
+		elemVal := val.Index(i)
+		elemPath := fmt.Sprintf("%s[%d]", path, i)
+
+		// Apply element constraints
+		for _, c := range cached.ElementConstraints {
+			if err := c.Validate(elemVal.Interface()); err != nil {
+				fieldErrors = append(fieldErrors, v.newFieldError(elemPath, err, elemVal.Interface()))
+			}
+		}
+
+		// Recurse for nested structs
+		if cached.NestedCache != nil {
+			fieldErrors = append(fieldErrors, v.validateWithCache(elemVal, elemPath, cached.NestedCache)...)
+		}
+	}
+
+	return fieldErrors
+}
+
+// validateMapWithCache validates map entries using cached constraints.
+func (v *Validator[T]) validateMapWithCache(val reflect.Value, path string, cached *constraints.CachedField) []FieldError {
+	var fieldErrors []FieldError
+
+	iter := val.MapRange()
+	for iter.Next() {
+		mapKey := iter.Key()
+		mapVal := iter.Value()
+		elemPath := fmt.Sprintf("%s[%v]", path, mapKey.Interface())
+
+		// Apply key constraints
+		for _, c := range cached.KeyConstraints {
+			if err := c.Validate(mapKey.Interface()); err != nil {
+				fieldErrors = append(fieldErrors, v.newFieldError(elemPath, err, mapKey.Interface()))
+			}
+		}
+
+		// Apply value constraints
+		for _, c := range cached.ElementConstraints {
+			if err := c.Validate(mapVal.Interface()); err != nil {
+				fieldErrors = append(fieldErrors, v.newFieldError(elemPath, err, mapVal.Interface()))
+			}
+		}
+
+		// Recurse for nested structs
+		if cached.NestedCache != nil {
+			fieldErrors = append(fieldErrors, v.validateWithCache(mapVal, elemPath, cached.NestedCache)...)
+		}
+	}
+
+	return fieldErrors
+}
+
+// validateCollectionElements validates collection elements without dive (just nested structs).
+func (v *Validator[T]) validateCollectionElements(val reflect.Value, path string, cached *constraints.CachedField) []FieldError {
+	var fieldErrors []FieldError
+
+	if cached.IsMap {
+		iter := val.MapRange()
+		for iter.Next() {
+			mapVal := iter.Value()
+			elemPath := fmt.Sprintf("%s[%v]", path, iter.Key().Interface())
+			fieldErrors = append(fieldErrors, v.validateWithCache(mapVal, elemPath, cached.NestedCache)...)
+		}
+	} else {
+		for i := 0; i < val.Len(); i++ {
+			elemVal := val.Index(i)
+			elemPath := fmt.Sprintf("%s[%d]", path, i)
+			fieldErrors = append(fieldErrors, v.validateWithCache(elemVal, elemPath, cached.NestedCache)...)
+		}
+	}
+
+	return fieldErrors
+}
+
+// newFieldError creates a FieldError, extracting Code from ConstraintError if available.
+func (v *Validator[T]) newFieldError(field string, err error, value any) FieldError {
+	fe := FieldError{
+		Field:   field,
+		Message: err.Error(),
+		Value:   value,
+	}
+
+	var ce *constraints.ConstraintError
+	if errors.As(err, &ce) {
+		fe.Code = ce.Code
+	}
+
+	return fe
 }
 
 // Unmarshal unmarshals JSON data, applies defaults, and validates.
