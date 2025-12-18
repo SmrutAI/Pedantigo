@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for gitleaks
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -23,13 +25,10 @@ jobs:
           go install github.com/jstemmer/go-junit-report/v2@latest
           go install golang.org/x/tools/cmd/goimports@latest
 
-          # golangci-lint
+          # golangci-lint (for make lint)
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.62.2
 
-          # gitleaks
-          go install github.com/gitleaks/gitleaks/v8@latest
-
-          # pre-commit
+          # pre-commit (gitleaks installed automatically by pre-commit)
           pip install pre-commit
 
       - name: Run pre-commit checks
