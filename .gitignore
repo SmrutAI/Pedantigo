@@ -47,7 +47,7 @@ CLAUDE.md
 /etc/
 
 # Documentation site (separate repo)
-pedantigo-docs/
+/pedantigo-docs/
 
 # Benchmark project (separate, not part of main module)
-pedantigo-benchmarks/
+/pedantigo-benchmarks/

@@ -20,6 +20,7 @@ import (
 type Validator[T any] struct {
 	typ                reflect.Type
 	options            ValidatorOptions
+	tagName            string // Resolved tag name (instance override or global)
 	fieldDeserializers map[string]deserialize.FieldDeserializer
 
 	// Cached field constraints (built at creation time)
@@ -35,6 +36,9 @@ type Validator[T any] struct {
 
 // New creates a new Validator for type T with optional configuration.
 func New[T any](opts ...ValidatorOptions) *Validator[T] {
+	// Mark that a validator has been created (prevents late SetTagName calls)
+	markValidatorCreated()
+
 	var zero T
 	typ := reflect.TypeOf(zero)
 
@@ -43,31 +47,38 @@ func New[T any](opts ...ValidatorOptions) *Validator[T] {
 		options = opts[0]
 	}
 
+	// Resolve tag name (instance override or global)
+	tagName := resolveTagName(options)
+
 	validator := &Validator[T]{
 		typ:                typ,
 		options:            options,
+		tagName:            tagName,
 		fieldDeserializers: make(map[string]deserialize.FieldDeserializer),
 	}
 
 	// Build field deserializers at creation time (fail-fast)
 	validator.fieldDeserializers = deserialize.BuildFieldDeserializers(
 		typ,
-		deserialize.BuilderOptions{StrictMissingFields: options.StrictMissingFields},
+		deserialize.BuilderOptions{
+			StrictMissingFields: options.StrictMissingFields,
+			TagName:             tagName,
+		},
 		validator.setFieldValue,
 		validator.setDefaultValue,
 	)
 
 	// Validate dive/keys/endkeys tag usage at creation time (fail-fast)
-	validator.validateDiveTags(typ)
+	validator.validateDiveTags(typ, tagName)
 
 	// Build field constraints at creation time (the key optimization)
-	validator.fieldCache = validator.buildFieldConstraints(typ)
+	validator.fieldCache = validator.buildFieldConstraints(typ, tagName)
 
 	return validator
 }
 
 // buildFieldConstraints builds and caches all field constraints at creation time.
-func (v *Validator[T]) buildFieldConstraints(typ reflect.Type) *constraints.FieldCache {
+func (v *Validator[T]) buildFieldConstraints(typ reflect.Type, tagName string) *constraints.FieldCache {
 	// Handle pointer types
 	if typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
@@ -87,8 +98,8 @@ func (v *Validator[T]) buildFieldConstraints(typ reflect.Type) *constraints.Fiel
 			continue
 		}
 
-		// Parse tags once
-		parsedTag := tags.ParseTagWithDive(field.Tag)
+		// Parse tags once using the configured tag name
+		parsedTag := tags.ParseTagWithDiveAndName(field.Tag, tagName)
 
 		// Field type info
 		fieldType := field.Type
@@ -136,14 +147,14 @@ func (v *Validator[T]) buildFieldConstraints(typ reflect.Type) *constraints.Fiel
 		// Recurse for nested structs
 		switch fieldType.Kind() {
 		case reflect.Struct:
-			cached.NestedCache = v.buildFieldConstraints(fieldType)
+			cached.NestedCache = v.buildFieldConstraints(fieldType, tagName)
 		case reflect.Slice, reflect.Map:
 			elemType := fieldType.Elem()
 			if elemType.Kind() == reflect.Ptr {
 				elemType = elemType.Elem()
 			}
 			if elemType.Kind() == reflect.Struct {
-				cached.NestedCache = v.buildFieldConstraints(elemType)
+				cached.NestedCache = v.buildFieldConstraints(elemType, tagName)
 			}
 		}
 
@@ -155,7 +166,7 @@ func (v *Validator[T]) buildFieldConstraints(typ reflect.Type) *constraints.Fiel
 
 // validateDiveTags validates that dive/keys/endkeys tags are used correctly.
 // This is called at creation time to fail fast on invalid tag combinations.
-func (v *Validator[T]) validateDiveTags(typ reflect.Type) {
+func (v *Validator[T]) validateDiveTags(typ reflect.Type, tagName string) {
 	// Handle pointer types
 	if typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
@@ -173,8 +184,8 @@ func (v *Validator[T]) validateDiveTags(typ reflect.Type) {
 			continue
 		}
 
-		// Parse the tag with dive support
-		parsedTag := tags.ParseTagWithDive(field.Tag)
+		// Parse the tag with dive support using the configured tag name
+		parsedTag := tags.ParseTagWithDiveAndName(field.Tag, tagName)
 		if parsedTag == nil {
 			continue
 		}
@@ -209,14 +220,14 @@ func (v *Validator[T]) validateDiveTags(typ reflect.Type) {
 		// Recursively validate nested structs
 		switch fieldType.Kind() {
 		case reflect.Struct:
-			v.validateDiveTags(fieldType)
+			v.validateDiveTags(fieldType, tagName)
 		case reflect.Slice:
 			if fieldType.Elem().Kind() == reflect.Struct {
-				v.validateDiveTags(fieldType.Elem())
+				v.validateDiveTags(fieldType.Elem(), tagName)
 			}
 		case reflect.Map:
 			if fieldType.Elem().Kind() == reflect.Struct {
-				v.validateDiveTags(fieldType.Elem())
+				v.validateDiveTags(fieldType.Elem(), tagName)
 			}
 		}
 	}
@@ -552,12 +563,13 @@ func (v *Validator[T]) MarshalWithOptions(obj *T, opts MarshalOptions) ([]byte, 
 		val = val.Elem()
 	}
 
-	metadata := serialize.BuildFieldMetadata(val.Type())
+	metadata := serialize.BuildFieldMetadata(val.Type(), v.tagName)
 
 	// Convert options
 	serializeOpts := serialize.SerializeOptions{
 		Context:  opts.Context,
 		OmitZero: opts.OmitZero,
+		TagName:  v.tagName,
 	}
 
 	// Convert to filtered map

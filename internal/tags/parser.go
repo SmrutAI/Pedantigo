@@ -5,12 +5,21 @@ import (
 	"strings"
 )
 
-// ParseTag parses a struct tag and returns constraints
+// DefaultTagName is the default struct tag name used by Pedantigo.
+const DefaultTagName = "pedantigo"
+
+// ParseTag parses a struct tag using the default "pedantigo" tag name.
 // Example: pedantigo:"required,email,min=18" -> map{"required": "", "email": "", "min": "18"}
-// Special handling for oneof which has space-separated values: oneof=admin user guest
-// ParseTag implements the functionality.
+// Special handling for oneof which has space-separated values: oneof=admin user guest.
 func ParseTag(tag reflect.StructTag) map[string]string {
-	validateTag := tag.Get("pedantigo")
+	return ParseTagWithName(tag, DefaultTagName)
+}
+
+// ParseTagWithName parses a struct tag using a custom tag name.
+// This allows compatibility with other validation libraries like go-playground/validator.
+// Example with tagName="validate": validate:"required,email" -> map{"required": "", "email": ""}.
+func ParseTagWithName(tag reflect.StructTag, tagName string) map[string]string {
+	validateTag := tag.Get(tagName)
 	if validateTag == "" {
 		return nil
 	}
@@ -43,8 +52,9 @@ func ParseTag(tag reflect.StructTag) map[string]string {
 	return constraints
 }
 
-// ParseTagWithDive parses a struct tag and returns a structured ParsedTag
-// that separates collection-level, key-level, and element-level constraints.
+// ParseTagWithDive parses a struct tag using the default "pedantigo" tag name
+// and returns a structured ParsedTag that separates collection-level, key-level,
+// and element-level constraints.
 //
 // Syntax:
 //   - pedantigo:"min=3"                    -> CollectionConstraints only
@@ -52,7 +62,17 @@ func ParseTag(tag reflect.StructTag) map[string]string {
 //   - pedantigo:"min=3,dive,min=5"         -> Both collection and element
 //   - pedantigo:"dive,keys,min=2,endkeys,email" -> Map: key + value constraints
 func ParseTagWithDive(tag reflect.StructTag) *ParsedTag {
-	validateTag := tag.Get("pedantigo")
+	return ParseTagWithDiveAndName(tag, DefaultTagName)
+}
+
+// ParseTagWithDiveAndName parses a struct tag using a custom tag name
+// and returns a structured ParsedTag that separates collection-level, key-level,
+// and element-level constraints.
+//
+// This allows compatibility with other validation libraries like go-playground/validator.
+// Example with tagName="validate": validate:"min=3,dive,email".
+func ParseTagWithDiveAndName(tag reflect.StructTag, tagName string) *ParsedTag {
+	validateTag := tag.Get(tagName)
 	if validateTag == "" {
 		return nil
 	}

@@ -38,7 +38,7 @@ test-coverage:
 	@echo "Coverage report: coverage.html"
 	@echo "Checking coverage threshold..."
 	@COVERAGE=$$(go tool cover -func=coverage.out | grep total | awk '{print $$3}' | sed 's/%//'); \
-	THRESHOLD=80.0; \
+	THRESHOLD=85.0; \
 	echo "Current coverage: $${COVERAGE}%"; \
 	echo "Target coverage: $${THRESHOLD}%"; \
 	if awk -v cov="$$COVERAGE" -v thresh="$$THRESHOLD" 'BEGIN {exit !(cov >= thresh)}'; then \

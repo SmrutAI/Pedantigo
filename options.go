@@ -22,6 +22,24 @@ type ValidatorOptions struct {
 	// ExtraFields controls how unknown JSON fields are handled during Unmarshal.
 	// Default is ExtraIgnore (unknown fields are silently ignored).
 	ExtraFields ExtraFieldsMode
+
+	// TagName overrides the global struct tag name for this validator instance.
+	// If empty, the global tag name (set via SetTagName or defaulting to "pedantigo") is used.
+	// This allows different validators to use different struct tag names.
+	//
+	// Example:
+	//   v := pedantigo.New[User](pedantigo.ValidatorOptions{TagName: "binding"})
+	//   // This validator uses `binding:"required,email"` tags
+	TagName string
+}
+
+// resolveTagName determines the effective tag name for a validator.
+// Returns the instance TagName if set, otherwise falls back to the global tag name.
+func resolveTagName(opts ValidatorOptions) string {
+	if opts.TagName != "" {
+		return opts.TagName
+	}
+	return GetTagName()
 }
 
 // DefaultValidatorOptions returns the default validator options.

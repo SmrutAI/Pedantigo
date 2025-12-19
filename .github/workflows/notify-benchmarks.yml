@@ -16,3 +16,4 @@ jobs:
           token: ${{ secrets.BENCHMARK_TRIGGER_TOKEN }}
           repository: SmrutAI/pedantigo-benchmarks
           event-type: pedantigo-updated
+          client-payload: '{"version": "${{ github.event.release.tag_name }}"}'

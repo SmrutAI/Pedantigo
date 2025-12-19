@@ -24,9 +24,10 @@ jobs:
           # Go tools
           go install github.com/jstemmer/go-junit-report/v2@latest
           go install golang.org/x/tools/cmd/goimports@latest
+          go install github.com/boumenot/gocover-cobertura@latest
 
-          # golangci-lint (for make lint)
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.62.2
+          # golangci-lint v2.x (for make lint - matches local version)
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.7.2
 
           # pre-commit (gitleaks installed automatically by pre-commit)
           pip install pre-commit
@@ -36,6 +37,9 @@ jobs:
 
       - name: Run tests with coverage
         run: make test-ci-cov
+
+      - name: Convert coverage to Cobertura XML
+        run: gocover-cobertura < coverage.out > coverage.xml
 
       - name: Upload test results
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -48,7 +52,7 @@ jobs:
       - name: Generate coverage report
         uses: irongut/CodeCoverageSummary@v1.3.0
         with:
-          filename: coverage.out
+          filename: coverage.xml
           format: markdown
           output: both
           badge: true

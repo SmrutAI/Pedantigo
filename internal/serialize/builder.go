@@ -18,7 +18,8 @@ type FieldMetadata struct {
 }
 
 // BuildFieldMetadata creates serialization metadata for each struct field.
-func BuildFieldMetadata(typ reflect.Type) map[string]FieldMetadata {
+// It uses the provided tagName to parse validation constraints (e.g., "pedantigo", "validate", "binding").
+func BuildFieldMetadata(typ reflect.Type, tagName string) map[string]FieldMetadata {
 	metadata := make(map[string]FieldMetadata)
 
 	if typ.Kind() == reflect.Ptr {
@@ -43,7 +44,7 @@ func BuildFieldMetadata(typ reflect.Type) map[string]FieldMetadata {
 
 		jsonName, omitEmpty := parseJSONTag(jsonTag, field.Name)
 
-		constraintsMap := tags.ParseTag(field.Tag)
+		constraintsMap := tags.ParseTagWithName(field.Tag, tagName)
 		excludeContexts := make(map[string]bool)
 		includeContexts := make(map[string]bool)
 		var omitZero bool

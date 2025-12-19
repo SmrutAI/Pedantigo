@@ -289,6 +289,201 @@ func TestParseTagWithDive_WhitespaceHandling(t *testing.T) {
 	assert.Contains(t, parsed.ElementConstraints, "email")
 }
 
+// ============================================================================
+// Tests for ParseTagWithName - Custom tag name support
+// ============================================================================
+
+// TestParseTagWithName_CustomTag tests parsing with a custom tag name.
+func TestParseTagWithName_CustomTag(t *testing.T) {
+	tests := []struct {
+		name       string
+		tag        reflect.StructTag
+		tagName    string
+		wantKeys   map[string]string
+		wantLength int
+	}{
+		{
+			name:       "validate_tag_required",
+			tag:        reflect.StructTag(`validate:"required"`),
+			tagName:    "validate",
+			wantKeys:   map[string]string{"required": ""},
+			wantLength: 1,
+		},
+		{
+			name:       "binding_tag_multiple_constraints",
+			tag:        reflect.StructTag(`binding:"required,email,min=5"`),
+			tagName:    "binding",
+			wantKeys:   map[string]string{"required": "", "email": "", "min": "5"},
+			wantLength: 3,
+		},
+		{
+			name:       "custom_tag_with_json",
+			tag:        reflect.StructTag(`json:"email" custom:"required,email"`),
+			tagName:    "custom",
+			wantKeys:   map[string]string{"required": "", "email": ""},
+			wantLength: 2,
+		},
+		{
+			name:       "pedantigo_tag_still_works",
+			tag:        reflect.StructTag(`pedantigo:"required,min=3"`),
+			tagName:    "pedantigo",
+			wantKeys:   map[string]string{"required": "", "min": "3"},
+			wantLength: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			constraints := ParseTagWithName(tt.tag, tt.tagName)
+
+			require.NotNil(t, constraints, "expected constraints map, got nil")
+			assert.Len(t, constraints, tt.wantLength)
+
+			for key, expectedVal := range tt.wantKeys {
+				val, ok := constraints[key]
+				require.True(t, ok, "expected constraint key %q", key)
+				assert.Equal(t, expectedVal, val)
+			}
+		})
+	}
+}
+
+// TestParseTagWithName_WrongTag_ReturnsNil tests that wrong tag name returns nil.
+func TestParseTagWithName_WrongTag_ReturnsNil(t *testing.T) {
+	tests := []struct {
+		name    string
+		tag     reflect.StructTag
+		tagName string
+	}{
+		{
+			name:    "looking_for_validate_but_has_pedantigo",
+			tag:     reflect.StructTag(`pedantigo:"required"`),
+			tagName: "validate",
+		},
+		{
+			name:    "looking_for_binding_but_has_validate",
+			tag:     reflect.StructTag(`validate:"required"`),
+			tagName: "binding",
+		},
+		{
+			name:    "no_matching_tag_at_all",
+			tag:     reflect.StructTag(`json:"email"`),
+			tagName: "validate",
+		},
+		{
+			name:    "empty_tag_value",
+			tag:     reflect.StructTag(`validate:""`),
+			tagName: "validate",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			constraints := ParseTagWithName(tt.tag, tt.tagName)
+			assert.Nil(t, constraints, "expected nil for non-matching tag")
+		})
+	}
+}
+
+// TestParseTagWithDiveAndName_CustomTag tests ParseTagWithDive with custom tag names.
+func TestParseTagWithDiveAndName_CustomTag(t *testing.T) {
+	tests := []struct {
+		name                  string
+		tag                   reflect.StructTag
+		tagName               string
+		wantDivePresent       bool
+		collectionConstraints map[string]string
+		elementConstraints    map[string]string
+	}{
+		{
+			name:                  "validate_tag_with_dive",
+			tag:                   reflect.StructTag(`validate:"min=3,dive,email"`),
+			tagName:               "validate",
+			wantDivePresent:       true,
+			collectionConstraints: map[string]string{"min": "3"},
+			elementConstraints:    map[string]string{"email": ""},
+		},
+		{
+			name:                  "binding_tag_collection_only",
+			tag:                   reflect.StructTag(`binding:"min=5,max=10"`),
+			tagName:               "binding",
+			wantDivePresent:       false,
+			collectionConstraints: map[string]string{"min": "5", "max": "10"},
+			elementConstraints:    map[string]string{},
+		},
+		{
+			name:                  "custom_tag_with_multiple_element_constraints",
+			tag:                   reflect.StructTag(`custom:"dive,required,email,min=5"`),
+			tagName:               "custom",
+			wantDivePresent:       true,
+			collectionConstraints: map[string]string{},
+			elementConstraints:    map[string]string{"required": "", "email": "", "min": "5"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parsed := ParseTagWithDiveAndName(tt.tag, tt.tagName)
+
+			require.NotNil(t, parsed)
+			assert.Equal(t, tt.wantDivePresent, parsed.DivePresent)
+			assert.Equal(t, tt.collectionConstraints, parsed.CollectionConstraints)
+			assert.Equal(t, tt.elementConstraints, parsed.ElementConstraints)
+		})
+	}
+}
+
+// TestParseTagWithDiveAndName_WrongTag_ReturnsNil tests that wrong tag returns nil.
+func TestParseTagWithDiveAndName_WrongTag_ReturnsNil(t *testing.T) {
+	tests := []struct {
+		name    string
+		tag     reflect.StructTag
+		tagName string
+	}{
+		{
+			name:    "looking_for_validate_but_has_pedantigo",
+			tag:     reflect.StructTag(`pedantigo:"dive,email"`),
+			tagName: "validate",
+		},
+		{
+			name:    "empty_tag_value",
+			tag:     reflect.StructTag(`validate:""`),
+			tagName: "validate",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parsed := ParseTagWithDiveAndName(tt.tag, tt.tagName)
+			assert.Nil(t, parsed, "expected nil for non-matching tag")
+		})
+	}
+}
+
+// TestParseTag_DelegatestoParseTagWithName verifies ParseTag uses default "pedantigo" tag.
+func TestParseTag_DelegatesToParseTagWithName(t *testing.T) {
+	tag := reflect.StructTag(`pedantigo:"required,email"`)
+
+	// Both should return identical results
+	fromParseTag := ParseTag(tag)
+	fromParseTagWithName := ParseTagWithName(tag, "pedantigo")
+
+	assert.Equal(t, fromParseTag, fromParseTagWithName)
+}
+
+// TestParseTagWithDive_DelegatesToParseTagWithDiveAndName verifies delegation.
+func TestParseTagWithDive_DelegatesToParseTagWithDiveAndName(t *testing.T) {
+	tag := reflect.StructTag(`pedantigo:"min=3,dive,email"`)
+
+	// Both should return identical results
+	fromParseTagWithDive := ParseTagWithDive(tag)
+	fromParseTagWithDiveAndName := ParseTagWithDiveAndName(tag, "pedantigo")
+
+	assert.Equal(t, fromParseTagWithDive.DivePresent, fromParseTagWithDiveAndName.DivePresent)
+	assert.Equal(t, fromParseTagWithDive.CollectionConstraints, fromParseTagWithDiveAndName.CollectionConstraints)
+	assert.Equal(t, fromParseTagWithDive.ElementConstraints, fromParseTagWithDiveAndName.ElementConstraints)
+}
+
 // TestParseTag_InvalidInputs tests edge cases and missing/invalid tags.
 func TestParseTag_InvalidInputs(t *testing.T) {
 	tests := []struct {

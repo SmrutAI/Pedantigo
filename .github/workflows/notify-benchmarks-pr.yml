@@ -1,0 +1,22 @@
+name: Benchmark PR
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  trigger-benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger benchmark for PR
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.BENCHMARK_TRIGGER_TOKEN }}
+          repository: SmrutAI/pedantigo-benchmarks
+          event-type: pedantigo-pr
+          client-payload: |
+            {
+              "pr_number": "${{ github.event.pull_request.number }}",
+              "branch": "${{ github.head_ref }}",
+              "sha": "${{ github.event.pull_request.head.sha }}"
+            }
