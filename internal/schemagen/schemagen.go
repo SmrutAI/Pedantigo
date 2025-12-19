@@ -259,10 +259,19 @@ func EnhanceNestedTypes(schema *jsonschema.Schema, typ reflect.Type, parseTagFun
 
 // ApplyConstraints applies validation constraints to a JSON Schema.
 func ApplyConstraints(schema *jsonschema.Schema, constraintsMap map[string]string, fieldType reflect.Type) {
+	// Process description first (before deprecated can append to it)
+	if desc, ok := constraintsMap[metaDescription]; ok {
+		schema.Description = desc
+	}
+
 	for name, value := range constraintsMap {
 		switch name {
 		case "required":
 			// Already handled in EnhanceSchema
+			continue
+
+		case metaDescription:
+			// Already processed above to ensure order
 			continue
 
 		case "min":
@@ -387,9 +396,6 @@ func ApplyConstraints(schema *jsonschema.Schema, constraintsMap map[string]strin
 
 		case metaTitle:
 			schema.Title = value
-
-		case metaDescription:
-			schema.Description = value
 
 		case metaExamples:
 			// Split by pipe delimiter for multiple examples
