@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/invopop/jsonschema v0.13.0
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/text v0.32.0
+	golang.org/x/text v0.14.0
 )
 
 require (
