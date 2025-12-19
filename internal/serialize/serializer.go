@@ -8,6 +8,7 @@ import (
 type SerializeOptions struct {
 	Context  string
 	OmitZero bool
+	TagName  string // The struct tag name to use (e.g., "pedantigo", "validate", "binding")
 }
 
 // ShouldIncludeField determines if a field should be included in output.
@@ -106,12 +107,12 @@ func ToFilteredMap(
 		// Handle nested structs recursively
 		switch {
 		case fieldValue.Kind() == reflect.Struct:
-			nestedMeta := BuildFieldMetadata(fieldValue.Type())
+			nestedMeta := BuildFieldMetadata(fieldValue.Type(), opts.TagName)
 			result[jsonName] = ToFilteredMap(fieldValue, nestedMeta, opts)
 		case fieldValue.Kind() == reflect.Ptr && !fieldValue.IsNil():
 			elem := fieldValue.Elem()
 			if elem.Kind() == reflect.Struct {
-				nestedMeta := BuildFieldMetadata(elem.Type())
+				nestedMeta := BuildFieldMetadata(elem.Type(), opts.TagName)
 				result[jsonName] = ToFilteredMap(fieldValue, nestedMeta, opts)
 			} else {
 				// Dereference pointer to simple type

@@ -10,7 +10,7 @@ import (
 	"github.com/invopop/jsonschema"
 
 	"github.com/SmrutAI/pedantigo/internal/constraints"
-	"github.com/SmrutAI/pedantigo/schemagen"
+	"github.com/SmrutAI/pedantigo/internal/schemagen"
 )
 
 // UnionVariant represents a variant type in a discriminated union.
@@ -38,6 +38,7 @@ type UnionOptions struct {
 // Stub: not yet implemented.
 type UnionValidator[T any] struct {
 	options  UnionOptions
+	tagName  string                  // Resolved tag name (global or "pedantigo")
 	variants map[string]reflect.Type // discriminator value -> variant type
 }
 
@@ -65,8 +66,12 @@ func NewUnion[T any](opts UnionOptions) (*UnionValidator[T], error) {
 		variants[v.DiscriminatorValue] = v.Type
 	}
 
+	// Mark that a validator has been created (prevents late SetTagName calls)
+	markValidatorCreated()
+
 	return &UnionValidator[T]{
 		options:  opts,
+		tagName:  GetTagName(), // Use global tag name
 		variants: variants,
 	}, nil
 }
@@ -197,7 +202,7 @@ func (v *UnionValidator[T]) validateVariant(variantValue reflect.Value, variantT
 
 		// Parse validation tags
 		constraintsMap := make(map[string]string)
-		if validateTag := field.Tag.Get("pedantigo"); validateTag != "" {
+		if validateTag := field.Tag.Get(v.tagName); validateTag != "" {
 			// Simple tag parsing: split by comma
 			parts := splitTags(validateTag)
 			for _, part := range parts {
@@ -296,10 +301,10 @@ func splitKeyValue(pair string) []string {
 // each with a const constraint on the discriminator field.
 // Implementation.
 func (v *UnionValidator[T]) Schema() *jsonschema.Schema {
-	// Create a parseTagFunc that parses "pedantigo" struct tags from variant structs
+	// Create a parseTagFunc that parses struct tags from variant structs using the configured tag name
 	// This function will be used by GenerateVariantSchema to apply validation constraints
 	parseTagFunc := func(tag reflect.StructTag) map[string]string {
-		validateTag := tag.Get("pedantigo")
+		validateTag := tag.Get(v.tagName)
 		if validateTag == "" {
 			return nil
 		}

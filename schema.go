@@ -6,9 +6,17 @@ import (
 
 	"github.com/invopop/jsonschema"
 
+	"github.com/SmrutAI/pedantigo/internal/schemagen"
 	"github.com/SmrutAI/pedantigo/internal/tags"
-	"github.com/SmrutAI/pedantigo/schemagen"
 )
+
+// parseTagFunc creates a closure that parses tags using the validator's configured tag name.
+// This enables custom tag name support (e.g., "validate" or "binding" instead of "pedantigo").
+func (v *Validator[T]) parseTagFunc() func(reflect.StructTag) map[string]string {
+	return func(tag reflect.StructTag) map[string]string {
+		return tags.ParseTagWithName(tag, v.tagName)
+	}
+}
 
 // Schema generates a JSON Schema from the validator's type T
 // The schema includes all validation constraints mapped to JSON Schema properties
@@ -35,8 +43,8 @@ func (v *Validator[T]) Schema() *jsonschema.Schema {
 	// Generate base schema using schema package
 	actualSchema := schemagen.GenerateBaseSchema[T]()
 
-	// Enhance schema with our custom constraints
-	schemagen.EnhanceSchema(actualSchema, v.typ, tags.ParseTag)
+	// Enhance schema with our custom constraints using the configured tag name
+	schemagen.EnhanceSchema(actualSchema, v.typ, v.parseTagFunc())
 
 	// Cache result
 	v.cachedSchema = actualSchema
@@ -103,7 +111,7 @@ func (v *Validator[T]) SchemaJSON() ([]byte, error) {
 	}
 
 	actualSchema.Required = nil
-	schemagen.EnhanceSchema(actualSchema, v.typ, tags.ParseTag)
+	schemagen.EnhanceSchema(actualSchema, v.typ, v.parseTagFunc())
 
 	// Cache schema
 	v.cachedSchema = actualSchema
@@ -225,18 +233,21 @@ func (v *Validator[T]) SchemaJSONOpenAPI() ([]byte, error) {
 // enhanceSchemaWithDefs enhances both root schema and all definitions.
 func (v *Validator[T]) enhanceSchemaWithDefs(schema *jsonschema.Schema, typ reflect.Type) {
 	// Clear the required fields set by jsonschema library
-	// We'll add our own based on pedantigo:"required" tags
+	// We'll add our own based on pedantigo:"required" tags (or custom tag name)
 	schema.Required = nil
 
+	// Get parse function once and reuse for all schemas
+	parseFunc := v.parseTagFunc()
+
 	// Enhance root schema
-	schemagen.EnhanceSchema(schema, typ, tags.ParseTag)
+	schemagen.EnhanceSchema(schema, typ, parseFunc)
 
 	// Enhance all definitions
 	for name, def := range schema.Definitions {
 		def.Required = nil
 		// Find the type for this definition
 		if defTyp := v.findTypeForDefinition(typ, name); defTyp != nil {
-			schemagen.EnhanceSchema(def, defTyp, tags.ParseTag)
+			schemagen.EnhanceSchema(def, defTyp, parseFunc)
 		}
 	}
 }

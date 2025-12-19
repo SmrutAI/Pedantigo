@@ -30,6 +30,7 @@ type FieldDeserializer func(outPtr *reflect.Value, inValue any) error
 // BuilderOptions configures the deserializer builder.
 type BuilderOptions struct {
 	StrictMissingFields bool
+	TagName             string // Custom struct tag name (default: "pedantigo")
 }
 
 // BuildFieldDeserializers creates field deserializer closures for each struct field.
@@ -76,8 +77,12 @@ func BuildFieldDeserializers(
 			}
 		}
 
-		// Parse validation constraints
-		constraints := tags.ParseTag(field.Tag)
+		// Parse validation constraints using the configured tag name
+		tagName := opts.TagName
+		if tagName == "" {
+			tagName = tags.DefaultTagName
+		}
+		constraints := tags.ParseTagWithName(field.Tag, tagName)
 
 		// Safety check: panic if default tags are used when StrictMissingFields is disabled
 		if constraints != nil && !opts.StrictMissingFields {
