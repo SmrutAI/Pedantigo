@@ -1,7 +1,7 @@
 # Pedantigo
 
 [![CI](https://github.com/SmrutAI/pedantigo/actions/workflows/ci.yml/badge.svg)](https://github.com/SmrutAI/pedantigo/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tushar2708/GIST_ID/raw/pedantigo-coverage.json)](https://github.com/SmrutAI/pedantigo)
+[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tushar2708/67408111d1830ed523e2661d9ee2a442/raw/pedantigo-coverage.json)](https://github.com/SmrutAI/pedantigo)
 [![Go Report Card](https://goreportcard.com/badge/github.com/SmrutAI/pedantigo)](https://goreportcard.com/report/github.com/SmrutAI/pedantigo)
 
 Type-safe JSON validation and schema generation for Go.

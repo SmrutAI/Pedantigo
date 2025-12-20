@@ -897,6 +897,94 @@ func TestValidateDefaultMethod_ComprehensiveCases(t *testing.T) {
 	}
 }
 
+// TestApplyStringTransformations tests string transformation logic.
+func TestApplyStringTransformations(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      string
+		transforms StringTransformations
+		want       string
+	}{
+		{
+			name:       "strip_whitespace",
+			input:      "  hello  ",
+			transforms: StringTransformations{StripWhitespace: true},
+			want:       "hello",
+		},
+		{
+			name:       "to_upper",
+			input:      "hello",
+			transforms: StringTransformations{ToUpper: true},
+			want:       "HELLO",
+		},
+		{
+			name:       "to_lower",
+			input:      "HELLO",
+			transforms: StringTransformations{ToLower: true},
+			want:       "hello",
+		},
+		{
+			name:       "strip_whitespace and to_lower",
+			input:      "  HELLO WORLD  ",
+			transforms: StringTransformations{StripWhitespace: true, ToLower: true},
+			want:       "hello world",
+		},
+		{
+			name:       "strip_whitespace and to_upper",
+			input:      "  hello world  ",
+			transforms: StringTransformations{StripWhitespace: true, ToUpper: true},
+			want:       "HELLO WORLD",
+		},
+		{
+			name:       "to_lower takes precedence over to_upper",
+			input:      "Hello",
+			transforms: StringTransformations{ToLower: true, ToUpper: true},
+			want:       "hello",
+		},
+		{
+			name:       "no transformations",
+			input:      "  Hello  ",
+			transforms: StringTransformations{},
+			want:       "  Hello  ",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt // avoid G601
+		t.Run(tt.name, func(t *testing.T) {
+			value := reflect.ValueOf(&tt.input).Elem()
+			applyStringTransformations(value, tt.transforms)
+			assert.Equal(t, tt.want, tt.input)
+		})
+	}
+
+	// Test nil pointer case (should not panic)
+	t.Run("nil pointer does not panic", func(t *testing.T) {
+		var nilPtr *string
+		value := reflect.ValueOf(&nilPtr).Elem()
+		assert.NotPanics(t, func() {
+			applyStringTransformations(value, StringTransformations{StripWhitespace: true})
+		})
+	})
+
+	// Test pointer to string
+	t.Run("pointer to string with strip_whitespace", func(t *testing.T) {
+		str := "  hello  "
+		ptr := &str
+		value := reflect.ValueOf(&ptr).Elem()
+		applyStringTransformations(value, StringTransformations{StripWhitespace: true})
+		assert.Equal(t, "hello", *ptr)
+	})
+
+	// Test non-string field (should be no-op)
+	t.Run("non-string field is no-op", func(t *testing.T) {
+		num := 42
+		value := reflect.ValueOf(&num).Elem()
+		applyStringTransformations(value, StringTransformations{StripWhitespace: true, ToUpper: true})
+		assert.Equal(t, 42, num) // Should remain unchanged
+	})
+}
+
 // Helper functions
 
 func getMapKeys(m map[string]FieldDeserializer) []string {

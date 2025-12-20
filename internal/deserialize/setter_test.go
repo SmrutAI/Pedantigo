@@ -1070,6 +1070,17 @@ func TestSetFieldValue_Duration(t *testing.T) {
 		{"invalid string hello", "hello", 0, true},
 		{"invalid string 1x", "1x", 0, true},
 		{"invalid string empty", "", 0, true}, // Empty string is invalid duration
+		// float64 format - seconds (common JSON convention)
+		{"float64 1.5 seconds", float64(1.5), 1500 * time.Millisecond, false},
+		{"float64 negative -2.5 seconds", float64(-2.5), -2500 * time.Millisecond, false},
+		{"float64 zero", float64(0), 0, false},
+		{"float64 fractional ms", float64(0.001), time.Millisecond, false},
+		// int64 format - nanoseconds (Go's internal representation)
+		{"int64 nanoseconds", int64(5000000000), 5 * time.Second, false},
+		{"int64 negative", int64(-1000000000), -1 * time.Second, false},
+		// Invalid types
+		{"invalid type []int", []int{1, 2, 3}, 0, true},
+		{"invalid type map", map[string]int{"a": 1}, 0, true},
 	}
 
 	for _, tt := range tests {
