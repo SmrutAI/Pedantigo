@@ -212,6 +212,93 @@ Use this mode when you want to:
 - Detect API misuse
 - Enforce strict schema compliance
 
+### ExtraAllow
+
+Unknown JSON fields are captured and stored in a designated `map[string]any` field:
+
+```go
+type User struct {
+    Name   string         `json:"name"`
+    Email  string         `json:"email"`
+    Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+}
+
+jsonData := []byte(`{
+    "name": "Alice",
+    "email": "alice@example.com",
+    "age": 30,
+    "phone": "555-1234"
+}`)
+
+validator := pedantigo.New[User](pedantigo.ValidatorOptions{
+    ExtraFields: pedantigo.ExtraAllow,
+})
+
+user, err := validator.Unmarshal(jsonData)
+// Success: unknown fields are captured
+fmt.Println(user.Extras["age"])   // Output: 30
+fmt.Println(user.Extras["phone"]) // Output: 555-1234
+```
+
+**Requirements:**
+
+1. **Struct must have an extra_fields tagged field:**
+   ```go
+   Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+   ```
+
+2. **The field type must be `map[string]any`** (or `map[string]interface{}`)
+
+3. **Fail-fast validation:** If `ExtraAllow` is set but no `extra_fields` field exists, `New[T]()` panics at startup
+
+**Nested Struct Handling:**
+
+Each struct level independently handles its own extras. If a nested struct has an `extra_fields` field, it captures extras at that level:
+
+```go
+type Address struct {
+    City   string         `json:"city"`
+    Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+}
+
+type User struct {
+    Name    string         `json:"name"`
+    Address Address        `json:"address"`
+    Extras  map[string]any `json:"-" pedantigo:"extra_fields"`
+}
+
+jsonData := []byte(`{
+    "name": "Alice",
+    "extra_top": "top-level extra",
+    "address": {
+        "city": "NYC",
+        "extra_nested": "nested extra"
+    }
+}`)
+
+// Top-level extras go to User.Extras
+// Nested address extras go to Address.Extras
+```
+
+If a nested struct doesn't have an `extra_fields` field, extras at that level are silently ignored (but the top-level still requires the field when `ExtraAllow` is set).
+
+**Round-Trip Support:**
+
+Extra fields are preserved during marshaling:
+
+```go
+user, _ := validator.Unmarshal(jsonData)
+// user.Extras contains captured extras
+
+roundTripJSON, _ := validator.Marshal(user)
+// roundTripJSON includes both struct fields AND extras
+```
+
+Use this mode when you want to:
+- Preserve unknown fields for pass-through scenarios
+- Build flexible APIs that can forward additional data
+- Support schema-less extensions in strongly-typed code
+
 ## Complete Examples
 
 ### API Server with Strict Validation
