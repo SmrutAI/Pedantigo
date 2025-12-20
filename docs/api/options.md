@@ -103,6 +103,47 @@ Use this mode when you want to:
 - Make most fields optional
 - Support backwards-compatible API evolution
 
+## How `required` and `omitempty` Interact
+
+Understanding how Go's `json:",omitempty"` interacts with Pedantigo's `required` tag:
+
+| Struct Tags | In JSON Schema `required` | Unmarshal Behavior |
+|-------------|---------------------------|-------------------|
+| `pedantigo:"required"` | Yes | Error if field missing from JSON |
+| `json:",omitempty"` only | No | Zero value if missing (valid) |
+| Both `required` + `omitempty` | Yes | Error if missing (required wins) |
+| Pointer `*T` + `required` | Yes | Error if missing or null |
+| Pointer `*T` without `required` | No | nil if missing (valid) |
+| Non-pointer without `required` | No | Zero value if missing |
+
+### Key Points
+
+1. **`omitempty` is for output** - It controls JSON marshaling, not schema generation
+2. **`required` controls both** - Affects schema `required` array AND validation
+3. **Pointers enable true optionality** - Use `*T` when you need to distinguish "missing" from "zero"
+
+### Example
+
+```go
+type Config struct {
+    // Required: must be in JSON, appears in schema required array
+    Host string `json:"host" pedantigo:"required"`
+
+    // Optional with omitempty: omitted from output if zero, NOT in required array
+    Port int `json:"port,omitempty"`
+
+    // Optional pointer: nil if missing, distinguishes missing from zero
+    Timeout *int `json:"timeout,omitempty"`
+
+    // Required + omitempty: must be in JSON input, omitted from output if zero
+    Name string `json:"name,omitempty" pedantigo:"required"`
+}
+```
+
+:::tip
+See [Schema Generation](/docs/concepts/schema) to understand how these tags affect the generated JSON Schema.
+:::
+
 ## ExtraFields Option
 
 Controls how unknown (extra) JSON fields are handled during unmarshaling.

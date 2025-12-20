@@ -40,6 +40,104 @@ type FieldError struct {
 }
 ```
 
+## Error Codes Reference
+
+Every `FieldError` includes a machine-readable `Code` for programmatic handling:
+
+| Code | Triggered By | Description |
+|------|--------------|-------------|
+| `REQUIRED` | `required` | Field missing from JSON |
+| `REQUIRED_IF` | `required_if=Field:Value` | Conditional required not met |
+| `REQUIRED_WITH` | `required_with=OtherField` | Co-required field missing |
+| `INVALID_EMAIL` | `email` | Invalid email format |
+| `INVALID_URL` | `url` | Invalid URL format |
+| `INVALID_UUID` | `uuid` | Invalid UUID format |
+| `MIN_VALUE` | `min=N` (numeric) | Number below minimum |
+| `MAX_VALUE` | `max=N` (numeric) | Number above maximum |
+| `MIN_LENGTH` | `min=N` (string) | String shorter than minimum |
+| `MAX_LENGTH` | `max=N` (string) | String longer than maximum |
+| `PATTERN_MISMATCH` | `regexp=`, `pattern=` | Regex pattern not matched |
+| `INVALID_ENUM` | `oneof=` | Value not in allowed set |
+| `EXTRA_FIELD` | `ExtraForbid` mode | Unknown field in JSON |
+| `GT_FIELD` | `gtfield=OtherField` | Not greater than other field |
+| `LT_FIELD` | `ltfield=OtherField` | Not less than other field |
+
+## What Errors Look Like
+
+Here's exactly what you'll see when validation fails:
+
+### Single Error
+
+```go
+type User struct {
+    Email string `json:"email" pedantigo:"required,email"`
+}
+
+_, err := pedantigo.Unmarshal[User]([]byte(`{"email": "not-valid"}`))
+fmt.Println(err)
+// Output: email: must be a valid email address
+```
+
+### Multiple Errors
+
+```go
+type User struct {
+    Email string `json:"email" pedantigo:"required,email"`
+    Age   int    `json:"age" pedantigo:"min=18"`
+}
+
+_, err := pedantigo.Unmarshal[User]([]byte(`{"email": "bad", "age": 5}`))
+fmt.Println(err)
+// Output: email: must be a valid email address (and 1 more errors)
+```
+
+### Accessing All Errors
+
+```go
+if ve, ok := err.(*pedantigo.ValidationError); ok {
+    for _, fe := range ve.Errors {
+        fmt.Printf("Field: %s\n", fe.Field)   // "email" or "age"
+        fmt.Printf("Code: %s\n", fe.Code)     // "INVALID_EMAIL" or "MIN_VALUE"
+        fmt.Printf("Message: %s\n", fe.Message) // Human-readable message
+        fmt.Printf("Value: %v\n", fe.Value)   // The actual invalid value
+    }
+}
+```
+
+### JSON API Response Pattern
+
+```go
+func handleRequest(w http.ResponseWriter, r *http.Request) {
+    user, err := pedantigo.Unmarshal[User](body)
+    if err != nil {
+        var ve *pedantigo.ValidationError
+        if errors.As(err, &ve) {
+            w.WriteHeader(http.StatusBadRequest)
+            json.NewEncoder(w).Encode(map[string]any{
+                "error": "validation_failed",
+                "details": ve.Errors, // Serializes to JSON cleanly
+            })
+            return
+        }
+    }
+}
+```
+
+**Response body:**
+```json
+{
+  "error": "validation_failed",
+  "details": [
+    {"field": "email", "code": "INVALID_EMAIL", "message": "must be a valid email address", "value": "bad"},
+    {"field": "age", "code": "MIN_VALUE", "message": "must be at least 18", "value": 5}
+  ]
+}
+```
+
+:::tip
+For validation concepts, see [Validation Basics](/docs/concepts/validation). For constraint options, see [Constraints Reference](/docs/concepts/constraints).
+:::
+
 ### Field Path Format
 
 The `Field` string describes the location of the error:

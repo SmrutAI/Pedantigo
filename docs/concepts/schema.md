@@ -60,6 +60,58 @@ Output:
 }
 ```
 
+## LLM Tool Calling Compatibility
+
+Pedantigo's default `Schema()` and `SchemaJSON()` produce **flattened schemas** optimized for LLM tool calling APIs.
+
+### Schema Output Comparison
+
+| Function | `$ref/$defs` | Best For |
+|----------|--------------|----------|
+| `Schema()` / `SchemaJSON()` | **No** - all types expanded inline | LLM tool calling (OpenAI, Anthropic, Gemini) |
+| `SchemaOpenAPI()` / `SchemaJSONOpenAPI()` | **Yes** - uses references | OpenAPI specs, Swagger docs |
+
+### Example: Flattened Schema Output
+
+```go
+type Address struct {
+    Street string `json:"street" pedantigo:"required"`
+    City   string `json:"city" pedantigo:"required"`
+}
+
+type User struct {
+    Name    string  `json:"name" pedantigo:"required"`
+    Address Address `json:"address"`
+}
+
+schemaBytes, _ := pedantigo.SchemaJSON[User]()
+```
+
+**Output (flattened - ready for LLM tools):**
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {"type": "string"},
+    "address": {
+      "type": "object",
+      "properties": {
+        "street": {"type": "string"},
+        "city": {"type": "string"}
+      },
+      "required": ["street", "city"]
+    }
+  },
+  "required": ["name"]
+}
+```
+
+No `$ref` or `$defs` - the schema works directly with OpenAI, Anthropic, and Gemini function calling APIs.
+
+:::tip
+For LLM integrations, see [Streaming Validation](/docs/concepts/streaming) for handling streaming responses, and [LLM Streaming Examples](/docs/examples/llm-streaming) for complete integration patterns.
+:::
+
 ## Simple API Functions
 
 ### Schema()

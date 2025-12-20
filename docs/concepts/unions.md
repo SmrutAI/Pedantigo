@@ -6,6 +6,10 @@ sidebar_position: 4
 
 Type-safe handling of JSON with multiple possible shapes using a discriminator field.
 
+:::tip
+For JSON Schema generation of unions, see [Schema Generation](/docs/concepts/schema). For streaming union responses from LLMs, see [Streaming Validation](/docs/concepts/streaming) and [LLM Examples](/docs/examples/llm-streaming).
+:::
+
 ## What Are Discriminated Unions?
 
 Discriminated unions allow you to validate JSON payloads that can be one of several different types, where a specific field (the discriminator) determines which variant is present. This is common in APIs that send polymorphic data.
@@ -420,6 +424,22 @@ result, err := parser.Complete()
 4. **Test all variants** - Ensure each variant path is validated properly
 5. **Document variants in API docs** - Include the discriminator values and variant schemas
 6. **Use type assertions carefully** - Always check the type after unmarshaling, or use switch statements
+
+## Common Pitfalls
+
+:::warning Watch Out For These
+
+1. **Missing discriminator field** - If JSON lacks the discriminator field, you get a clear error: `discriminator field "type" is missing`
+
+2. **Unknown discriminator value** - If the value doesn't match any variant: `unknown discriminator value "fish" for field "type"`
+
+3. **Forgetting type assertions** - `Unmarshal()` returns `any`. You must cast: `card := result.(CreditCard)`
+
+4. **Variant validation still applies** - After type resolution, all constraints on that variant are checked. Invalid fields = validation error.
+
+5. **Discriminator position in streaming** - For streaming JSON, ensure the discriminator field appears early in the JSON structure.
+
+:::
 
 ## Key Differences from the Simple API
 

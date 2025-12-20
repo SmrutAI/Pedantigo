@@ -17,6 +17,10 @@ Large Language Models like OpenAI and Anthropic stream responses token-by-token.
 
 Pedantigo's `StreamParser` solves this by buffering chunks and validating only when the JSON is structurally complete.
 
+:::tip
+For complete LLM integration examples, see [LLM Streaming Examples](/docs/examples/llm-streaming). For generating schemas to send to LLMs, see [JSON Schema Generation](/docs/concepts/schema).
+:::
+
 ## Creating a StreamParser
 
 ### Basic Usage
@@ -452,6 +456,26 @@ go func() {
     parser2.Feed(stream2Chunk)
 }()
 ```
+
+## Common Pitfalls
+
+:::warning Watch Out For These
+
+1. **Trusting `result` before `IsComplete`** - Feed() returns partial results. Only use `result` when `state.IsComplete == true`.
+
+2. **Assuming `err == nil` means complete** - No error just means no parse failure yet. Always check `state.IsComplete`.
+
+3. **Forgetting to Reset()** - Parsers accumulate data. Call `parser.Reset()` before processing a new stream.
+
+4. **Unbounded memory growth** - Check `state.BytesReceived` and set limits in production.
+
+5. **Processing the same completion twice** - Once `IsComplete` is true, break the loop. Don't keep feeding chunks.
+
+:::
+
+:::tip
+For streaming with discriminated unions (polymorphic responses), see [Discriminated Unions - Streaming](/docs/concepts/unions#streaming-discriminated-unions).
+:::
 
 ## Next Steps
 
