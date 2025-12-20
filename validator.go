@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 
 	"github.com/invopop/jsonschema"
@@ -32,6 +33,9 @@ type Validator[T any] struct {
 	cachedSchemaJSON  []byte             // SchemaJSON() result
 	cachedOpenAPI     *jsonschema.Schema // SchemaOpenAPI() result
 	cachedOpenAPIJSON []byte             // SchemaJSONOpenAPI() result
+
+	// Extra fields support (nil when ExtraAllow disabled)
+	extraFieldInfo *deserialize.ExtraFieldInfo
 }
 
 // New creates a new Validator for type T with optional configuration.
@@ -73,6 +77,14 @@ func New[T any](opts ...ValidatorOptions) *Validator[T] {
 
 	// Build field constraints at creation time (the key optimization)
 	validator.fieldCache = validator.buildFieldConstraints(typ, tagName)
+
+	// Detect extra_fields for ExtraAllow mode
+	if options.ExtraFields == ExtraAllow {
+		validator.extraFieldInfo = deserialize.DetectExtraField(typ, tagName)
+		if validator.extraFieldInfo == nil {
+			panic(ErrMsgExtraFieldRequired)
+		}
+	}
 
 	return validator
 }
@@ -435,7 +447,8 @@ func (v *Validator[T]) newFieldError(field string, err error, value any) FieldEr
 // Unmarshal unmarshals JSON data, applies defaults, and validates.
 func (v *Validator[T]) Unmarshal(data []byte) (*T, error) {
 	// Fast path: skip 2-step flow if StrictMissingFields is disabled
-	if !v.options.StrictMissingFields {
+	// UNLESS ExtraAllow is set, in which case we need the 2-step flow
+	if !v.options.StrictMissingFields && v.options.ExtraFields != ExtraAllow {
 		var obj T
 
 		// Use json.Decoder with DisallowUnknownFields for ExtraForbid
@@ -521,6 +534,11 @@ func (v *Validator[T]) Unmarshal(data []byte) (*T, error) {
 		return &obj, &ValidationError{Errors: fieldErrors}
 	}
 
+	// Step 3.5: Capture extra fields recursively (for this struct and all nested structs)
+	if v.options.ExtraFields == ExtraAllow {
+		v.captureExtrasRecursive(objValue, jsonMap, v.tagName)
+	}
+
 	// Step 4: Run validation constraints (min, max, email, etc.)
 	// NOTE: 'required' is already skipped in Validate() via buildConstraints
 	if err := v.Validate(&obj); err != nil {
@@ -528,6 +546,139 @@ func (v *Validator[T]) Unmarshal(data []byte) (*T, error) {
 	}
 
 	return &obj, nil
+}
+
+// getJSONFieldName returns the JSON field name for a struct field, or empty string if ignored.
+func getJSONFieldName(field *reflect.StructField, tagName string) string {
+	// Skip unexported fields
+	if !field.IsExported() {
+		return ""
+	}
+
+	// Skip the extras field itself
+	if field.Tag.Get(tagName) == tags.ExtraFieldsTag {
+		return ""
+	}
+
+	// Skip fields with json:"-"
+	jsonTag := field.Tag.Get("json")
+	if jsonTag == "-" {
+		return ""
+	}
+
+	// Return JSON name or field name
+	if jsonTag != "" {
+		if name, _, found := strings.Cut(jsonTag, ","); found {
+			return name
+		}
+		return jsonTag
+	}
+	return field.Name
+}
+
+// captureExtrasRecursive recursively captures extra fields for structs with extras field.
+func (v *Validator[T]) captureExtrasRecursive(structVal reflect.Value, jsonMap map[string]any, tagName string) {
+	structType := structVal.Type()
+
+	// Capture extras at this level if extra_fields field exists
+	v.captureExtrasAtLevel(structType, structVal, jsonMap, tagName)
+
+	// Recursively handle nested structs
+	v.captureExtrasInNestedFields(structType, structVal, jsonMap, tagName)
+}
+
+// captureExtrasAtLevel captures extra fields for a single struct level.
+func (v *Validator[T]) captureExtrasAtLevel(structType reflect.Type, structVal reflect.Value, jsonMap map[string]any, tagName string) {
+	extraInfo := deserialize.DetectExtraField(structType, tagName)
+	if extraInfo == nil {
+		return
+	}
+
+	// Build set of known field names
+	knownFields := make(map[string]bool)
+	for i := 0; i < structType.NumField(); i++ {
+		f := structType.Field(i)
+		if name := getJSONFieldName(&f, tagName); name != "" {
+			knownFields[name] = true
+		}
+	}
+
+	// Capture extra fields
+	extras := make(map[string]any)
+	for key, value := range jsonMap {
+		if !knownFields[key] {
+			extras[key] = value
+		}
+	}
+
+	// Set extras on struct (always set, even if empty)
+	structVal.Field(extraInfo.FieldIndex).Set(reflect.ValueOf(extras))
+}
+
+// captureExtrasInNestedFields recursively captures extras in nested struct fields.
+func (v *Validator[T]) captureExtrasInNestedFields(structType reflect.Type, structVal reflect.Value, jsonMap map[string]any, tagName string) {
+	for i := 0; i < structType.NumField(); i++ {
+		field := structType.Field(i)
+		fieldName := getJSONFieldName(&field, tagName)
+		if fieldName == "" {
+			continue
+		}
+
+		nestedJSON, exists := jsonMap[fieldName]
+		if !exists {
+			continue
+		}
+
+		fieldVal := structVal.Field(i)
+		v.captureExtrasInField(fieldVal, field.Type, nestedJSON, tagName)
+	}
+}
+
+// captureExtrasInField captures extras for a single field based on its type.
+func (v *Validator[T]) captureExtrasInField(fieldVal reflect.Value, fieldType reflect.Type, nestedJSON any, tagName string) {
+	switch fieldType.Kind() {
+	case reflect.Struct:
+		if nestedMap, ok := nestedJSON.(map[string]any); ok {
+			v.captureExtrasRecursive(fieldVal, nestedMap, tagName)
+		}
+	case reflect.Ptr:
+		if fieldType.Elem().Kind() == reflect.Struct && !fieldVal.IsNil() {
+			if nestedMap, ok := nestedJSON.(map[string]any); ok {
+				v.captureExtrasRecursive(fieldVal.Elem(), nestedMap, tagName)
+			}
+		}
+	case reflect.Slice:
+		v.captureExtrasInSlice(fieldVal, fieldType, nestedJSON, tagName)
+	}
+}
+
+// captureExtrasInSlice captures extras in slice elements.
+func (v *Validator[T]) captureExtrasInSlice(fieldVal reflect.Value, fieldType reflect.Type, nestedJSON any, tagName string) {
+	elemType := fieldType.Elem()
+	isStructSlice := elemType.Kind() == reflect.Struct
+	isPtrStructSlice := elemType.Kind() == reflect.Ptr && elemType.Elem().Kind() == reflect.Struct
+
+	if !isStructSlice && !isPtrStructSlice {
+		return
+	}
+
+	sliceJSON, ok := nestedJSON.([]any)
+	if !ok {
+		return
+	}
+
+	for idx := 0; idx < fieldVal.Len() && idx < len(sliceJSON); idx++ {
+		elemVal := fieldVal.Index(idx)
+		if elemType.Kind() == reflect.Ptr {
+			if elemVal.IsNil() {
+				continue
+			}
+			elemVal = elemVal.Elem()
+		}
+		if nestedMap, ok := sliceJSON[idx].(map[string]any); ok {
+			v.captureExtrasRecursive(elemVal, nestedMap, tagName)
+		}
+	}
 }
 
 // setDefaultValue wraps the deserialize package SetDefaultValue for use in validator.
@@ -542,8 +693,133 @@ func (v *Validator[T]) Marshal(obj *T) ([]byte, error) {
 		return nil, err
 	}
 
-	// Marshal to JSON
+	// If extras field exists, marshal with extras merged
+	if v.extraFieldInfo != nil {
+		return v.marshalWithExtras(obj)
+	}
+
+	// Standard marshal
 	return json.Marshal(obj)
+}
+
+// marshalWithExtras marshals struct with extras merged into the output.
+func (v *Validator[T]) marshalWithExtras(obj *T) ([]byte, error) {
+	// Marshal to JSON first (normal struct fields)
+	data, err := json.Marshal(obj)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal to map for merging
+	var result map[string]any
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+
+	// Get the struct value
+	objVal := reflect.ValueOf(obj)
+	if objVal.Kind() == reflect.Ptr {
+		objVal = objVal.Elem()
+	}
+
+	// Recursively merge extras from this struct and all nested structs
+	v.mergeExtrasRecursive(objVal, result, v.tagName)
+
+	// Marshal the merged result
+	return json.Marshal(result)
+}
+
+// mergeExtrasRecursive recursively merges extras fields from nested structs into the result map.
+func (v *Validator[T]) mergeExtrasRecursive(structVal reflect.Value, resultMap map[string]any, tagName string) {
+	structType := structVal.Type()
+
+	// Merge extras at this level
+	v.mergeExtrasAtLevel(structType, structVal, resultMap)
+
+	// Recursively handle nested structs
+	v.mergeExtrasInNestedFields(structType, structVal, resultMap, tagName)
+}
+
+// mergeExtrasAtLevel merges extras field values into the result map at one level.
+func (v *Validator[T]) mergeExtrasAtLevel(structType reflect.Type, structVal reflect.Value, resultMap map[string]any) {
+	extraInfo := deserialize.DetectExtraField(structType, v.tagName)
+	if extraInfo == nil {
+		return
+	}
+
+	extrasField := structVal.Field(extraInfo.FieldIndex)
+	if extrasField.IsNil() {
+		return
+	}
+
+	extras := extrasField.Interface().(map[string]any)
+	for k, val := range extras {
+		// Don't override existing struct fields
+		if _, exists := resultMap[k]; !exists {
+			resultMap[k] = val
+		}
+	}
+}
+
+// mergeExtrasInNestedFields recursively merges extras in nested fields.
+func (v *Validator[T]) mergeExtrasInNestedFields(structType reflect.Type, structVal reflect.Value, resultMap map[string]any, tagName string) {
+	for i := 0; i < structType.NumField(); i++ {
+		field := structType.Field(i)
+		fieldName := getJSONFieldName(&field, tagName)
+		if fieldName == "" {
+			continue
+		}
+
+		fieldVal := structVal.Field(i)
+		v.mergeExtrasInField(fieldVal, field.Type, resultMap, fieldName, tagName)
+	}
+}
+
+// mergeExtrasInField merges extras for a single field based on its type.
+func (v *Validator[T]) mergeExtrasInField(fieldVal reflect.Value, fieldType reflect.Type, resultMap map[string]any, fieldName, tagName string) {
+	switch fieldType.Kind() {
+	case reflect.Struct:
+		if nestedMap, ok := resultMap[fieldName].(map[string]any); ok {
+			v.mergeExtrasRecursive(fieldVal, nestedMap, tagName)
+		}
+	case reflect.Ptr:
+		if fieldType.Elem().Kind() == reflect.Struct && !fieldVal.IsNil() {
+			if nestedMap, ok := resultMap[fieldName].(map[string]any); ok {
+				v.mergeExtrasRecursive(fieldVal.Elem(), nestedMap, tagName)
+			}
+		}
+	case reflect.Slice:
+		v.mergeExtrasInSlice(fieldVal, fieldType, resultMap, fieldName, tagName)
+	}
+}
+
+// mergeExtrasInSlice merges extras in slice elements.
+func (v *Validator[T]) mergeExtrasInSlice(fieldVal reflect.Value, fieldType reflect.Type, resultMap map[string]any, fieldName, tagName string) {
+	elemType := fieldType.Elem()
+	isStructSlice := elemType.Kind() == reflect.Struct
+	isPtrStructSlice := elemType.Kind() == reflect.Ptr && elemType.Elem().Kind() == reflect.Struct
+
+	if !isStructSlice && !isPtrStructSlice {
+		return
+	}
+
+	sliceAny, ok := resultMap[fieldName].([]any)
+	if !ok {
+		return
+	}
+
+	for idx := 0; idx < fieldVal.Len() && idx < len(sliceAny); idx++ {
+		elemVal := fieldVal.Index(idx)
+		if elemType.Kind() == reflect.Ptr {
+			if elemVal.IsNil() {
+				continue
+			}
+			elemVal = elemVal.Elem()
+		}
+		if nestedMap, ok := sliceAny[idx].(map[string]any); ok {
+			v.mergeExtrasRecursive(elemVal, nestedMap, tagName)
+		}
+	}
 }
 
 // MarshalWithOptions validates and marshals struct to JSON with options.
@@ -581,6 +857,21 @@ func (v *Validator[T]) MarshalWithOptions(obj *T, opts MarshalOptions) ([]byte, 
 
 // Dict converts the object into a dict.
 func (v *Validator[T]) Dict(obj *T) (map[string]interface{}, error) {
+	// If extras field exists, merge extras into the dict
+	if v.extraFieldInfo != nil {
+		// Marshal to JSON (which includes extras via marshalWithExtras)
+		data, err := v.Marshal(obj)
+		if err != nil {
+			return nil, err
+		}
+		var dict map[string]interface{}
+		if err := json.Unmarshal(data, &dict); err != nil {
+			return nil, err
+		}
+		return dict, nil
+	}
+
+	// Standard dict conversion
 	data, _ := json.Marshal(obj)
 	var dict map[string]interface{}
 	if err := json.Unmarshal(data, &dict); err != nil {
@@ -651,6 +942,11 @@ func (v *Validator[T]) unmarshalFromMap(jsonMap map[string]any) (*T, error) {
 
 	if len(fieldErrors) > 0 {
 		return &obj, &ValidationError{Errors: fieldErrors}
+	}
+
+	// Capture extra fields recursively if ExtraAllow mode is enabled
+	if v.options.ExtraFields == ExtraAllow {
+		v.captureExtrasRecursive(objValue, jsonMap, v.tagName)
 	}
 
 	// Run validation constraints
