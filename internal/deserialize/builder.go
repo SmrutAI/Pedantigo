@@ -67,6 +67,17 @@ func BuildFieldDeserializers(
 			continue
 		}
 
+		// Skip extra_fields field (handled separately for ExtraAllow mode)
+		// Parse validation constraints using the configured tag name
+		tagName := opts.TagName
+		if tagName == "" {
+			tagName = tags.DefaultTagName
+		}
+		pedantigoTag := field.Tag.Get(tagName)
+		if pedantigoTag == tags.ExtraFieldsTag {
+			continue
+		}
+
 		fieldName := field.Name
 		if jsonTag != "" {
 			// Extract field name from json tag (before comma)
@@ -77,11 +88,7 @@ func BuildFieldDeserializers(
 			}
 		}
 
-		// Parse validation constraints using the configured tag name
-		tagName := opts.TagName
-		if tagName == "" {
-			tagName = tags.DefaultTagName
-		}
+		// Parse validation constraints
 		constraints := tags.ParseTagWithName(field.Tag, tagName)
 
 		// Safety check: panic if default tags are used when StrictMissingFields is disabled

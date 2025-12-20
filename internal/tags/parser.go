@@ -8,6 +8,9 @@ import (
 // DefaultTagName is the default struct tag name used by Pedantigo.
 const DefaultTagName = "pedantigo"
 
+// ExtraFieldsTag is the tag value for fields that store extra/unknown JSON fields.
+const ExtraFieldsTag = "extra_fields"
+
 // ParseTag parses a struct tag using the default "pedantigo" tag name.
 // Example: pedantigo:"required,email,min=18" -> map{"required": "", "email": "", "min": "18"}
 // Special handling for oneof which has space-separated values: oneof=admin user guest.

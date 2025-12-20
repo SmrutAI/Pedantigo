@@ -15,6 +15,9 @@ const (
 
 	// ErrMsgUnknownDiscriminator is returned when discriminator value doesn't match any variant.
 	ErrMsgUnknownDiscriminator = "unknown discriminator value %q for field %q"
+
+	// ErrMsgExtraFieldRequired is returned when ExtraAllow mode is enabled but no extra_fields field exists.
+	ErrMsgExtraFieldRequired = "ExtraAllow mode requires a field with `pedantigo:\"extra_fields\"` tag of type map[string]any"
 )
 
 // FieldError represents a single field validation error.
