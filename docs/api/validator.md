@@ -490,6 +490,6 @@ func main() {
 ## See Also
 
 - [Simple API](./simple-api) - Recommended for most use cases
-- [Options](./options) - Detailed configuration reference
+- [Initialization & Configuration](./initialization) - All initialization methods and options
 - [Errors](./errors) - Error handling and types
 - [Constraints Reference](../concepts/constraints) - Tag syntax and constraints
