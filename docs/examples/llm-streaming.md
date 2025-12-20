@@ -355,6 +355,48 @@ func (al *AgentLoop) Run(input string) error {
 }
 ```
 
+## Capturing Unexpected LLM Fields
+
+LLMs may include fields you didn't request. Use [ExtraAllow](/docs/api/initialization#extra-allow) to capture these fields for debugging prompts and evaluating model accuracy:
+
+```go
+type LLMResponse struct {
+    Answer     string         `json:"answer" pedantigo:"required"`
+    Confidence float64        `json:"confidence"`
+    Extras     map[string]any `json:"-" pedantigo:"extra_fields"` // Captures unexpected fields
+}
+
+func processLLMOutput(output []byte) {
+    validator := pedantigo.New[LLMResponse](pedantigo.ValidatorOptions{
+        ExtraFields: pedantigo.ExtraAllow,  // Capture, don't reject
+    })
+
+    response, err := validator.Unmarshal(output)
+    if err != nil {
+        log.Printf("Validation failed: %v", err)
+        return
+    }
+
+    // Log extra fields for prompt improvement
+    if len(response.Extras) > 0 {
+        log.Printf("LLM included unexpected fields: %v", response.Extras)
+        // Track metrics to evaluate model accuracy
+        metrics.RecordExtraFields(modelName, promptID, response.Extras)
+        // Example captured: {"reasoning": "...", "sources": [...]}
+    }
+
+    // Use validated response
+    fmt.Printf("Answer: %s (%.2f confidence)\n", response.Answer, response.Confidence)
+}
+```
+
+**Use cases:**
+- **Prompt debugging**: Identify when models add unrequested fields
+- **Model accuracy evaluation**: Track field adherence across prompts
+- **Prompt iteration**: Use captured extras to refine instructions
+
+See [ExtraAllow Use Cases](/docs/api/initialization#extra-allow-use-cases) for more patterns.
+
 ## Performance Tips
 
 1. **Reuse Parsers**: Create the parser once and call `Reset()` between streams

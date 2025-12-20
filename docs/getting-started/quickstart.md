@@ -142,6 +142,8 @@ Use the explicit Validator when you need:
 - Streaming validation for large JSON
 - Discriminated unions (type-based routing)
 - Custom validator registration
+
+See [Initialization & Configuration](/docs/api/initialization) for all initialization methods and options.
 :::
 
 ## Error Handling

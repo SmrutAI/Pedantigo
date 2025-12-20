@@ -22,6 +22,8 @@ All functions use `sync.Map` to cache validators per type:
 - **Subsequent calls**: Returns from cache (under 100ns, 240x faster)
 - **Thread-safe**: Concurrent goroutines safely share the cache
 
+See [Initialization & Configuration](./initialization) for comparison with other APIs and custom options.
+
 ## Functions
 
 ### Unmarshal
