@@ -362,7 +362,11 @@ type Validatable interface {
 }
 ```
 
-When a struct implements `Validate()`, Pedantigo automatically calls it after all built-in validations pass. This allows you to express arbitrary business logic as validation rules.
+When a struct implements `Validate()`, Pedantigo automatically calls it after all tag-based validations pass. This allows you to express arbitrary business logic as validation rules.
+
+:::warning Don't call pedantigo inside Validate()
+Since Pedantigo calls your `Validate()` method automatically, calling `pedantigo.Validate()` or `pedantigo.Unmarshal()` on `self` inside `Validate()` causes infinite recursion. Your `Validate()` method should only contain custom business logic.
+:::
 
 **Complex Business Rules Example:**
 
