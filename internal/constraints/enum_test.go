@@ -97,6 +97,84 @@ func TestDefaultConstraint(t *testing.T) {
 	}
 }
 
+// TestEnumCIConstraint tests enumCIConstraint.Validate() for case-insensitive matching.
+func TestEnumCIConstraint(t *testing.T) {
+	tests := []struct {
+		name    string
+		value   any
+		values  []string
+		wantErr bool
+	}{
+		// String values - case insensitive
+		{name: "string exact match", value: "active", values: []string{"pending", "active", "completed"}, wantErr: false},
+		{name: "string uppercase match", value: "ACTIVE", values: []string{"pending", "active", "completed"}, wantErr: false},
+		{name: "string mixed case match", value: "Active", values: []string{"pending", "active", "completed"}, wantErr: false},
+		{name: "string mixed case match 2", value: "aCtIvE", values: []string{"pending", "active", "completed"}, wantErr: false},
+		{name: "string not in enum", value: "invalid", values: []string{"pending", "active", "completed"}, wantErr: true},
+
+		// Int values (case doesn't apply)
+		{name: "int in enum", value: 1, values: []string{"0", "1", "2"}, wantErr: false},
+		{name: "int not in enum", value: 5, values: []string{"0", "1", "2"}, wantErr: true},
+
+		// Bool values
+		{name: "bool TRUE in enum", value: true, values: []string{"true", "false"}, wantErr: false},
+		{name: "bool FALSE in enum", value: false, values: []string{"TRUE", "FALSE"}, wantErr: false},
+
+		// Empty enum
+		{name: "value not in empty enum", value: "test", values: []string{}, wantErr: true},
+
+		// Nil pointer - should skip validation
+		{name: "nil pointer", value: (*string)(nil), values: []string{"a", "b"}, wantErr: false},
+
+		// Invalid types
+		{name: "invalid type - slice", value: []string{"a"}, values: []string{"a", "b"}, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			constraint := enumCIConstraint{values: tt.values}
+			err := constraint.Validate(tt.value)
+			checkConstraintError(t, err, tt.wantErr)
+		})
+	}
+}
+
+// TestBuildEnumCIConstraint tests buildEnumCIConstraint builder function.
+func TestBuildEnumCIConstraint(t *testing.T) {
+	tests := []struct {
+		name      string
+		value     string
+		testValue any
+		wantErr   bool
+	}{
+		// Case insensitive matches
+		{name: "exact match", value: "red green blue", testValue: "red", wantErr: false},
+		{name: "uppercase match", value: "red green blue", testValue: "RED", wantErr: false},
+		{name: "mixed case match", value: "red green blue", testValue: "GrEeN", wantErr: false},
+		{name: "enum values uppercase", value: "RED GREEN BLUE", testValue: "red", wantErr: false},
+
+		// Non-matches
+		{name: "value not in enum", value: "red green blue", testValue: "yellow", wantErr: true},
+
+		// Whitespace handling
+		{name: "multiple spaces", value: "red   green   blue", testValue: "GREEN", wantErr: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			constraint := buildEnumCIConstraint(tt.value)
+			require.NotNil(t, constraint, "expected non-nil constraint")
+
+			err := constraint.Validate(tt.testValue)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 // TestBuildEnumConstraint tests buildEnumConstraint builder function.
 func TestBuildEnumConstraint(t *testing.T) {
 	tests := []struct {

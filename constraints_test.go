@@ -1621,3 +1621,170 @@ func TestNeWithCombinedConstraints(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+// ==================== Oneofci Constraint ====================
+
+// TestOneofci tests case-insensitive enum validation.
+func TestOneofci(t *testing.T) {
+	tests := []struct {
+		name       string
+		testType   string
+		json       string
+		expectErr  bool
+		errorField string
+		errorMsg   string
+	}{
+		// Case-insensitive matching
+		{
+			name:      "exact case match",
+			testType:  "string_valid",
+			json:      `{"role":"admin"}`,
+			expectErr: false,
+		},
+		{
+			name:      "uppercase match",
+			testType:  "string_valid",
+			json:      `{"role":"ADMIN"}`,
+			expectErr: false,
+		},
+		{
+			name:      "mixed case match",
+			testType:  "string_valid",
+			json:      `{"role":"Admin"}`,
+			expectErr: false,
+		},
+		{
+			name:      "random case match",
+			testType:  "string_valid",
+			json:      `{"role":"aDmIn"}`,
+			expectErr: false,
+		},
+		{
+			name:       "invalid value",
+			testType:   "string_invalid",
+			json:       `{"role":"superadmin"}`,
+			expectErr:  true,
+			errorField: "Role",
+			errorMsg:   "must be one of (case-insensitive): admin, user, guest",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			type User struct {
+				Role string `json:"role" pedantigo:"oneofci=admin user guest"`
+			}
+			validator := New[User]()
+			user, err := validator.Unmarshal([]byte(tt.json))
+
+			if tt.expectErr {
+				require.Error(t, err)
+				var ve *ValidationError
+				require.ErrorAs(t, err, &ve)
+				foundError := false
+				for _, fieldErr := range ve.Errors {
+					if fieldErr.Field == tt.errorField && fieldErr.Message == tt.errorMsg {
+						foundError = true
+					}
+				}
+				assert.True(t, foundError, "expected error field=%s msg=%s, got %v", tt.errorField, tt.errorMsg, ve.Errors)
+			} else {
+				require.NoError(t, err)
+				assert.NotEmpty(t, user.Role)
+			}
+		})
+	}
+}
+
+// ==================== Iscolor Alias ====================
+
+// TestIscolorAlias tests the built-in iscolor alias that expands to color format validators.
+func TestIscolorAlias(t *testing.T) {
+	type Config struct {
+		Color string `json:"color" pedantigo:"iscolor"`
+	}
+	validator := New[Config]()
+
+	tests := []struct {
+		name      string
+		json      string
+		expectErr bool
+	}{
+		// Valid hexcolor
+		{"valid hexcolor 3 digit", `{"color":"#fff"}`, false},
+		{"valid hexcolor 6 digit", `{"color":"#ffffff"}`, false},
+		{"valid hexcolor uppercase", `{"color":"#AABBCC"}`, false},
+		// Valid rgb
+		{"valid rgb", `{"color":"rgb(255,255,255)"}`, false},
+		{"valid rgb with spaces", `{"color":"rgb(0, 128, 255)"}`, false},
+		// Valid rgba
+		{"valid rgba", `{"color":"rgba(255,255,255,1)"}`, false},
+		{"valid rgba decimal alpha", `{"color":"rgba(0,0,0,0.5)"}`, false},
+		// Valid hsl
+		{"valid hsl", `{"color":"hsl(360,100%,50%)"}`, false},
+		// Valid hsla
+		{"valid hsla", `{"color":"hsla(180,50%,50%,0.8)"}`, false},
+		// Empty string - should be skipped
+		{"empty string", `{"color":""}`, false},
+		// Invalid colors
+		{"invalid - plain text", `{"color":"red"}`, true},
+		{"invalid - missing hash", `{"color":"ffffff"}`, true},
+		{"invalid - wrong format", `{"color":"color(255,0,0)"}`, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := validator.Unmarshal([]byte(tt.json))
+			if tt.expectErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+// ==================== URI Constraint ====================
+
+// TestUriConstraint tests the uri constraint for database and other URI formats.
+func TestUriConstraintIntegration(t *testing.T) {
+	type Config struct {
+		DatabaseURL string `json:"database_url" pedantigo:"uri"`
+	}
+	validator := New[Config]()
+
+	tests := []struct {
+		name      string
+		json      string
+		expectErr bool
+	}{
+		// Valid database URIs
+		{"postgres URI", `{"database_url":"postgres://user:pass@localhost:5432/smrut"}`, false},
+		{"postgresql URI", `{"database_url":"postgresql://user@localhost/db"}`, false},
+		{"mysql URI", `{"database_url":"mysql://root:password@127.0.0.1:3306/mydb"}`, false},
+		{"redis URI", `{"database_url":"redis://localhost:6379/0"}`, false},
+		{"mongodb URI", `{"database_url":"mongodb://localhost:27017/testdb"}`, false},
+		// Valid web URIs
+		{"http URI", `{"database_url":"http://example.com"}`, false},
+		{"https URI", `{"database_url":"https://example.com"}`, false},
+		// Other valid schemes
+		{"s3 URI", `{"database_url":"s3://bucket-name/key"}`, false},
+		{"file URI", `{"database_url":"file:///etc/passwd"}`, false},
+		// Empty string - should be skipped
+		{"empty string", `{"database_url":""}`, false},
+		// Invalid URIs
+		{"no scheme", `{"database_url":"example.com"}`, true},
+		{"relative path", `{"database_url":"/path/to/resource"}`, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := validator.Unmarshal([]byte(tt.json))
+			if tt.expectErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}

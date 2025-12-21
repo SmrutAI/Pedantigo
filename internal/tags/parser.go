@@ -21,6 +21,7 @@ func ParseTag(tag reflect.StructTag) map[string]string {
 // ParseTagWithName parses a struct tag using a custom tag name.
 // This allows compatibility with other validation libraries like go-playground/validator.
 // Example with tagName="validate": validate:"required,email" -> map{"required": "", "email": ""}.
+// Aliases are expanded before processing, e.g., "iscolor" -> "hexcolor|rgb|rgba|hsl|hsla".
 func ParseTagWithName(tag reflect.StructTag, tagName string) map[string]string {
 	validateTag := tag.Get(tagName)
 	if validateTag == "" {
@@ -51,8 +52,29 @@ func ParseTagWithName(tag reflect.StructTag, tagName string) map[string]string {
 			// OR operator (e.g., "hexcolor|rgb|rgba") - only when no = or :
 			constraints["__or__"+part] = ""
 		} else {
-			// Simple constraint like "required" or "email"
-			constraints[part] = ""
+			// Check if it's an alias that needs expansion
+			if expansion, ok := ExpandAlias(part); ok {
+				// Recursively parse the expansion
+				expandedParts := strings.Split(expansion, ",")
+				for _, ep := range expandedParts {
+					ep = strings.TrimSpace(ep)
+					if ep == "" {
+						continue
+					}
+					if idx := strings.IndexByte(ep, '='); idx != -1 {
+						key := strings.TrimSpace(ep[:idx])
+						value := strings.TrimSpace(ep[idx+1:])
+						constraints[key] = value
+					} else if strings.Contains(ep, "|") {
+						constraints["__or__"+ep] = ""
+					} else {
+						constraints[ep] = ""
+					}
+				}
+			} else {
+				// Simple constraint like "required" or "email"
+				constraints[part] = ""
+			}
 		}
 	}
 
@@ -139,37 +161,58 @@ func ParseTagWithDiveAndName(tag reflect.StructTag, tagName string) *ParsedTag {
 		}
 
 		// Parse constraint (key=value, key:value, OR expression, or bare keyword)
-		var constraintName, constraintValue string
+		// addConstraint is a helper to add a constraint to the appropriate map
+		addConstraint := func(name, value string) {
+			switch state {
+			case stateCollection:
+				parsed.CollectionConstraints[name] = value
+			case stateDive:
+				parsed.ElementConstraints[name] = value
+			case stateKeysSection:
+				parsed.KeyConstraints[name] = value
+			case stateElementAfterKeys, stateElement:
+				parsed.ElementConstraints[name] = value
+				state = stateElement
+			}
+		}
 
 		if idx := strings.IndexByte(part, '='); idx != -1 {
 			// key=value constraint
-			constraintName = strings.TrimSpace(part[:idx])
-			constraintValue = strings.TrimSpace(part[idx+1:])
+			constraintName := strings.TrimSpace(part[:idx])
+			constraintValue := strings.TrimSpace(part[idx+1:])
+			addConstraint(constraintName, constraintValue)
 		} else if idx := strings.IndexByte(part, ':'); idx != -1 {
 			// key:value syntax (e.g., exclude:response|log)
 			// Note: value may contain | for multiple contexts
-			constraintName = strings.TrimSpace(part[:idx])
-			constraintValue = strings.TrimSpace(part[idx+1:])
+			constraintName := strings.TrimSpace(part[:idx])
+			constraintValue := strings.TrimSpace(part[idx+1:])
+			addConstraint(constraintName, constraintValue)
 		} else if strings.Contains(part, "|") {
 			// OR expression (e.g., "hexcolor|rgb|rgba") - only when no = or :
-			constraintName = "__or__" + part
-			constraintValue = ""
+			addConstraint("__or__"+part, "")
 		} else {
-			constraintName = part
-			constraintValue = ""
-		}
-
-		// Add to appropriate map based on current state
-		switch state {
-		case stateCollection:
-			parsed.CollectionConstraints[constraintName] = constraintValue
-		case stateDive:
-			parsed.ElementConstraints[constraintName] = constraintValue
-		case stateKeysSection:
-			parsed.KeyConstraints[constraintName] = constraintValue
-		case stateElementAfterKeys, stateElement:
-			parsed.ElementConstraints[constraintName] = constraintValue
-			state = stateElement
+			// Check if it's an alias that needs expansion
+			if expansion, ok := ExpandAlias(part); ok {
+				// Recursively parse the expansion
+				expandedParts := strings.Split(expansion, ",")
+				for _, ep := range expandedParts {
+					ep = strings.TrimSpace(ep)
+					if ep == "" {
+						continue
+					}
+					if idx := strings.IndexByte(ep, '='); idx != -1 {
+						key := strings.TrimSpace(ep[:idx])
+						value := strings.TrimSpace(ep[idx+1:])
+						addConstraint(key, value)
+					} else if strings.Contains(ep, "|") {
+						addConstraint("__or__"+ep, "")
+					} else {
+						addConstraint(ep, "")
+					}
+				}
+			} else {
+				addConstraint(part, "")
+			}
 		}
 	}
 

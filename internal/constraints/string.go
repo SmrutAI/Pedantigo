@@ -14,6 +14,7 @@ import (
 type (
 	emailConstraint struct{}
 	urlConstraint   struct{}
+	uriConstraint   struct{}
 	uuidConstraint  struct{}
 	regexConstraint struct {
 		pattern string
@@ -79,6 +80,35 @@ func (c urlConstraint) Validate(value any) error {
 	// Check host is non-empty
 	if parsedURL.Host == "" {
 		return NewConstraintError(CodeInvalidURL, "must be a valid URL (http or https)")
+	}
+
+	return nil
+}
+
+// uriConstraint validates that a string is a valid URI (any scheme allowed).
+// This accepts database URIs like postgres://, mysql://, redis://, etc.
+func (c uriConstraint) Validate(value any) error {
+	str, isValid, err := extractString(value)
+	if !isValid {
+		return nil // skip validation for nil/invalid values
+	}
+	if err != nil {
+		return fmt.Errorf("uri constraint %w", err)
+	}
+
+	if str == "" {
+		return nil // Empty strings are handled by required constraint
+	}
+
+	// Parse the URI
+	parsedURI, err := url.Parse(str)
+	if err != nil {
+		return NewConstraintError(CodeInvalidURI, "must be a valid URI")
+	}
+
+	// Check scheme is non-empty
+	if parsedURI.Scheme == "" {
+		return NewConstraintError(CodeInvalidURI, "must be a valid URI")
 	}
 
 	return nil

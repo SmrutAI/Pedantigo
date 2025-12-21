@@ -37,8 +37,29 @@ type SocialProfile struct {
 }
 ```
 
-**Valid examples:** "https://example.com", "http://sub.example.com:8080/path", "ftp://files.example.org"
+**Valid examples:** "https://example.com", "http://sub.example.com:8080/path"
 **Invalid examples:** "example.com" (missing scheme), "ht!tp://example.com", "https://"
+
+### `uri`
+
+Validates that a string is a **valid URI** (Uniform Resource Identifier) with any scheme. Unlike `url`, this accepts database URIs, file URIs, and other non-HTTP schemes.
+
+```go
+type DatabaseConfig struct {
+    // Database connection URI (any scheme allowed)
+    ConnectionString string `json:"connection_string" pedantigo:"required,uri"`
+}
+```
+
+**Valid examples:**
+- `"postgres://user:pass@localhost:5432/mydb"` - PostgreSQL
+- `"mysql://root@127.0.0.1:3306/app"` - MySQL
+- `"redis://localhost:6379/0"` - Redis
+- `"mongodb://localhost:27017/testdb"` - MongoDB
+- `"s3://bucket-name/key"` - S3
+- `"file:///etc/config.json"` - File URI
+
+**Invalid examples:** "example.com" (missing scheme), "/path/to/file" (relative path)
 
 ## Identifier Formats
 
@@ -682,6 +703,28 @@ type ThemeConfig struct {
 
 **Invalid examples:** "#GGGGGG" (invalid hex), "rgb(256, 0, 0)" (out of range), "rgb(255, 87)" (incomplete)
 
+### `iscolor`
+
+Validates that a string is a **valid color in any CSS format**. This is a convenience alias that accepts hexcolor, rgb, rgba, hsl, or hsla formats.
+
+```go
+type ThemeConfig struct {
+    // Accept any valid CSS color format
+    PrimaryColor string `json:"primary" pedantigo:"required,iscolor"`
+    AccentColor  string `json:"accent" pedantigo:"iscolor"`
+}
+```
+
+**Valid examples:**
+- `"#FF5733"` - Hex color
+- `"#fff"` - Short hex
+- `"rgb(255, 87, 51)"` - RGB
+- `"rgba(255, 87, 51, 0.8)"` - RGBA with alpha
+- `"hsl(14, 100%, 60%)"` - HSL
+- `"hsla(14, 100%, 60%, 0.8)"` - HSLA with alpha
+
+**Invalid examples:** "red" (named colors not supported), "#GGGGGG" (invalid hex)
+
 ## Miscellaneous Formats
 
 ### `html`
@@ -725,6 +768,35 @@ type PackageInfo struct {
 
 **Valid examples:** "1.0.0", "2.1.3", "0.0.1", "1.2.3-beta", "1.2.3+build.123"
 **Invalid examples:** "1.0" (missing patch), "v1.0.0" (v prefix), "1.0.0.0" (too many parts)
+
+### `datetime`
+
+Validates that a string matches a **Go time layout format**.
+
+```go
+type Event struct {
+    // ISO 8601 date format
+    Date string `json:"date" pedantigo:"required,datetime=2006-01-02"`
+
+    // Full datetime with seconds
+    Timestamp string `json:"timestamp" pedantigo:"required,datetime=2006-01-02 15:04:05"`
+
+    // RFC 3339 format
+    CreatedAt string `json:"created_at" pedantigo:"datetime=2006-01-02T15:04:05Z07:00"`
+}
+```
+
+Uses Go's [time package layouts](https://pkg.go.dev/time#pkg-constants). The reference time is `Mon Jan 2 15:04:05 MST 2006`.
+
+**Common layouts:**
+- `2006-01-02` — Date only (YYYY-MM-DD)
+- `2006-01-02 15:04:05` — Datetime with space
+- `2006-01-02T15:04:05Z07:00` — RFC 3339
+- `15:04:05` — Time only
+- `01/02/2006` — US date format
+
+**Valid examples:** "2024-12-21" (for `2006-01-02`), "2024-12-21 14:30:00" (for `2006-01-02 15:04:05`)
+**Invalid examples:** "21-12-2024" (wrong order), "2024/12/21" (wrong separator for layout)
 
 ## Filesystem Formats
 
@@ -954,6 +1026,7 @@ func main() {
 | `html` | `html` | Contains HTML markup |
 | `cron` | `cron` | Cron expression |
 | `semver` | `semver` | Semantic version |
+| `datetime=LAYOUT` | `datetime=2006-01-02` | Go time layout format |
 | `filepath` | `filepath` | Valid file path |
 | `dirpath` | `dirpath` | Valid directory path |
 | `file` | `file` | File exists on filesystem |
