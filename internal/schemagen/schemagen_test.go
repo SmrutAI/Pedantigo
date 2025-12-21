@@ -657,6 +657,274 @@ func TestApplyConstraints(t *testing.T) {
 				assert.Equal(t, "dirpath", schema.Format)
 			},
 		},
+		{
+			name:      "dir format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"dir": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "dir", schema.Format)
+			},
+		},
+		// Additional network formats
+		{
+			name:      "cidrv6 format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"cidrv6": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "cidrv6", schema.Format)
+			},
+		},
+		{
+			name:      "hostname_rfc format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"hostname_rfc1123": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "hostname_rfc1123", schema.Format)
+			},
+		},
+		{
+			name:      "udp_addr format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"udp_addr": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "udp_addr", schema.Format)
+			},
+		},
+		{
+			name:      "tcp4_addr format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"tcp4_addr": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "tcp4_addr", schema.Format)
+			},
+		},
+		// Additional finance formats
+		{
+			name:      "btc_addr format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"btc_addr": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "btc_addr", schema.Format)
+			},
+		},
+		{
+			name:      "btc_addr_bech32 format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"btc_addr_bech32": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "btc_addr_bech32", schema.Format)
+			},
+		},
+		{
+			name:      "luhn format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"luhn_checksum": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "luhn_checksum", schema.Format)
+			},
+		},
+		// Additional identity formats
+		{
+			name:      "isbn10 format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"isbn10": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "isbn10", schema.Format)
+			},
+		},
+		{
+			name:      "isbn13 format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"isbn13": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "isbn13", schema.Format)
+			},
+		},
+		{
+			name:      "issn format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"issn": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "issn", schema.Format)
+			},
+		},
+		{
+			name:      "ein format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"ein": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "ein", schema.Format)
+			},
+		},
+		// Additional color format
+		{
+			name:      "hsla format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"hsla": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "hsla", schema.Format)
+			},
+		},
+		// Additional encoding formats
+		{
+			name:      "base64url format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"base64url": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "base64url", schema.Format)
+			},
+		},
+		{
+			name:      "base64rawurl format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"base64rawurl": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "base64rawurl", schema.Format)
+			},
+		},
+		// Additional hash formats
+		{
+			name:      "md4 format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"md4": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "md4", schema.Format)
+			},
+		},
+		{
+			name:      "sha384 format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"sha384": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "sha384", schema.Format)
+			},
+		},
+		{
+			name:      "mongodb format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"mongodb": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "mongodb", schema.Format)
+			},
+		},
+		// HTML format
+		{
+			name:      "html format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"html": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "html", schema.Format)
+			},
+		},
+		// Additional ISO formats
+		{
+			name:      "iso3166_alpha2_eu format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"iso3166_alpha2_eu": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "iso3166_alpha2_eu", schema.Format)
+			},
+		},
+		{
+			name:      "iso3166_1_alpha3 format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"iso3166_1_alpha3": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "iso3166_1_alpha3", schema.Format)
+			},
+		},
+		{
+			name:      "iso3166_alpha3_eu format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"iso3166_alpha3_eu": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "iso3166_alpha3_eu", schema.Format)
+			},
+		},
+		{
+			name:      "iso3166_1_alpha_numeric format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"iso3166_1_alpha_numeric": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "iso3166_1_alpha_numeric", schema.Format)
+			},
+		},
+		{
+			name:      "iso3166_2 format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"iso3166_2": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "iso3166_2", schema.Format)
+			},
+		},
+		{
+			name:      "iso4217_numeric format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"iso4217_numeric": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "iso4217_numeric", schema.Format)
+			},
+		},
+		{
+			name:      "postcode format",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"postcode": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "postcode", schema.Format)
+			},
+		},
 		// Pointer type tests
 		{
 			name:      "min constraint pointer string",
