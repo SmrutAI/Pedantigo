@@ -11,6 +11,7 @@ import (
 // Enum constraint types.
 type (
 	enumConstraint    struct{ values []string }
+	enumCIConstraint  struct{ values []string } // Case-insensitive enum
 	eqConstraint      struct{ value string }
 	neConstraint      struct{ value string }
 	defaultConstraint struct{ value string }
@@ -96,6 +97,46 @@ func (c defaultConstraint) Validate(value any) error {
 func buildEnumConstraint(value string) Constraint {
 	values := strings.Fields(value)
 	return enumConstraint{values: values}
+}
+
+// enumCIConstraint validates that value is one of the allowed values (case-insensitive).
+func (c enumCIConstraint) Validate(value any) error {
+	v, ok := derefValue(value)
+	if !ok {
+		return nil // Skip validation for invalid/nil values
+	}
+
+	// Convert value to string for comparison
+	var str string
+	switch v.Kind() {
+	case reflect.String:
+		str = v.String()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		str = strconv.FormatInt(v.Int(), 10)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		str = strconv.FormatUint(v.Uint(), 10)
+	case reflect.Float32, reflect.Float64:
+		str = strconv.FormatFloat(v.Float(), 'f', -1, 64)
+	case reflect.Bool:
+		str = strconv.FormatBool(v.Bool())
+	default:
+		return fmt.Errorf("oneofci constraint not supported for type %s", v.Kind())
+	}
+
+	// Check if value is in allowed list (case-insensitive)
+	for _, allowed := range c.values {
+		if strings.EqualFold(str, allowed) {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("must be one of (case-insensitive): %s", strings.Join(c.values, ", "))
+}
+
+// buildEnumCIConstraint parses space-separated enum values for case-insensitive matching.
+func buildEnumCIConstraint(value string) Constraint {
+	values := strings.Fields(value)
+	return enumCIConstraint{values: values}
 }
 
 // buildEqConstraint creates an eq constraint for a specific value.

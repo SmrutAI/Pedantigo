@@ -16,22 +16,24 @@ type Constraint interface {
 // Constraint name constants.
 const (
 	// Core constraints.
-	CMin    = "min"
-	CMax    = "max"
-	CGt     = "gt"
-	CGte    = "gte"
-	CLt     = "lt"
-	CLte    = "lte"
-	CEmail  = "email"
-	CUrl    = "url"
-	CUuid   = "uuid"
-	CRegexp = "regexp"
-	CIpv4   = "ipv4"
-	CIpv6   = "ipv6"
-	COneof  = "oneof"
-	CEq     = "eq"
-	CNe     = "ne"
-	CLen    = "len"
+	CMin     = "min"
+	CMax     = "max"
+	CGt      = "gt"
+	CGte     = "gte"
+	CLt      = "lt"
+	CLte     = "lte"
+	CEmail   = "email"
+	CUrl     = "url"
+	CUri     = "uri"
+	CUuid    = "uuid"
+	CRegexp  = "regexp"
+	CIpv4    = "ipv4"
+	CIpv6    = "ipv6"
+	COneof   = "oneof"
+	COneofci = "oneofci"
+	CEq      = "eq"
+	CNe      = "ne"
+	CLen     = "len"
 
 	// String constraints.
 	CAscii           = "ascii"
@@ -205,7 +207,7 @@ func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []C
 			continue
 
 		// Core constraints.
-		case CMin, CMax, CGt, CGte, CLt, CLte, CEmail, CUrl, CUuid, CRegexp, CIpv4, CIpv6, COneof, CEq, CNe, CLen:
+		case CMin, CMax, CGt, CGte, CLt, CLte, CEmail, CUrl, CUri, CUuid, CRegexp, CIpv4, CIpv6, COneof, COneofci, CEq, CNe, CLen:
 			result = appendCoreConstraint(result, name, value, fieldType)
 
 		// String constraints.
@@ -303,6 +305,8 @@ func appendCoreConstraint(result []Constraint, name, value string, fieldType ref
 		return append(result, emailConstraint{})
 	case "url":
 		return append(result, urlConstraint{})
+	case "uri":
+		return append(result, uriConstraint{})
 	case "uuid":
 		return append(result, uuidConstraint{})
 	case "regexp":
@@ -313,6 +317,8 @@ func appendCoreConstraint(result []Constraint, name, value string, fieldType ref
 		return append(result, ipv6Constraint{})
 	case "oneof":
 		return append(result, buildEnumConstraint(value))
+	case "oneofci":
+		return append(result, buildEnumCIConstraint(value))
 	case "eq":
 		if c, ok := buildEqConstraint(value); ok {
 			return append(result, c)

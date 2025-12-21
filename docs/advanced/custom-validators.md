@@ -212,6 +212,71 @@ type Product struct {
 }
 ```
 
+## Tag Aliases
+
+Tag aliases allow you to create shorthand names for common constraint combinations. This is useful for reducing repetition and creating domain-specific tags.
+
+### RegisterAlias
+
+Register an alias that expands to one or more constraints:
+
+```go
+func RegisterAlias(alias, tags string) error
+```
+
+**Simple Alias Example:**
+
+```go
+// Create a "username" alias for common username validation
+err := pedantigo.RegisterAlias("username", "required,alphanum,min=3,max=20")
+if err != nil {
+    log.Fatal(err)
+}
+
+type User struct {
+    // Instead of: `pedantigo:"required,alphanum,min=3,max=20"`
+    Username string `json:"username" pedantigo:"username"`
+}
+```
+
+**OR Constraint Alias:**
+
+```go
+// Create an alias for multiple allowed formats (OR constraint)
+err := pedantigo.RegisterAlias("color", "hexcolor|rgb|rgba")
+if err != nil {
+    log.Fatal(err)
+}
+
+type Theme struct {
+    Primary string `json:"primary" pedantigo:"required,color"`
+}
+```
+
+### Built-in Aliases
+
+Pedantigo includes built-in aliases for common patterns:
+
+| Alias | Expands To | Description |
+|-------|-----------|-------------|
+| `iscolor` | `hexcolor\|rgb\|rgba\|hsl\|hsla` | Any CSS color format |
+
+**Using Built-in Aliases:**
+
+```go
+type Design struct {
+    // Accepts any valid CSS color format
+    BackgroundColor string `json:"background" pedantigo:"iscolor"`
+}
+```
+
+### Alias Constraints
+
+- Alias names cannot override built-in validators
+- Aliases can contain other aliases (but avoid circular references)
+- Registration clears the validator cache
+- Thread-safe for concurrent use
+
 ## Struct-Level Validators
 
 For validation that involves the entire struct or multiple fields, use two approaches: the `Validatable` interface (recommended for simplicity) or `RegisterStructValidation` (for global registration).

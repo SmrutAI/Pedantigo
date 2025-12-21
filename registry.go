@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/SmrutAI/pedantigo/internal/constraints"
+	"github.com/SmrutAI/pedantigo/internal/tags"
 )
 
 // ValidationFunc is the signature for custom field-level validation functions.
@@ -23,6 +24,9 @@ func init() {
 		}
 		return nil, false
 	})
+
+	// Wire up alias lookup to tags package
+	tags.SetAliasLookup(GetAlias)
 }
 
 // StructLevelFunc is the signature for struct-level validation functions.
@@ -37,7 +41,17 @@ var (
 	// structValidators stores registered struct-level validators.
 	// Stores map[reflect.Type]any.
 	structValidators sync.Map
+
+	// aliases stores registered tag aliases.
+	// Stores map[string]string where key is alias name, value is expansion.
+	aliases sync.Map
 )
+
+// Built-in aliases for validator compatibility.
+func init() {
+	// iscolor is an alias for all color formats (validator compatibility)
+	aliases.Store("iscolor", "hexcolor|rgb|rgba|hsl|hsla")
+}
 
 // RegisterValidation registers a custom field-level validator with the given name.
 // The validator function will be called during validation for fields tagged with this name.
@@ -83,6 +97,43 @@ func GetCustomValidator(name string) (ValidationFunc, bool) {
 	return nil, false
 }
 
+// RegisterAlias registers a tag alias that expands to other tags.
+// This allows creating shorthand names for common tag combinations.
+//
+// Example:
+//
+//	pedantigo.RegisterAlias("iscolor", "hexcolor|rgb|rgba|hsl|hsla")
+//	// Now `iscolor` expands to an OR constraint for all color formats
+//
+//	pedantigo.RegisterAlias("username", "required,alphanum,min=3,max=20")
+//	// Now `username` expands to multiple constraints
+//
+// Returns an error if the alias name conflicts with a built-in validator.
+func RegisterAlias(alias, expandsTo string) error {
+	if alias == "" {
+		return errors.New("alias name cannot be empty")
+	}
+	if expandsTo == "" {
+		return errors.New("alias tags cannot be empty")
+	}
+	if isBuiltInValidator(alias) {
+		return fmt.Errorf("cannot override built-in validator: %s", alias)
+	}
+
+	aliases.Store(alias, expandsTo)
+	clearValidatorCache()
+	return nil
+}
+
+// GetAlias retrieves a registered alias expansion.
+// Returns the expansion and true if found, empty string and false otherwise.
+func GetAlias(name string) (string, bool) {
+	if v, ok := aliases.Load(name); ok {
+		return v.(string), true
+	}
+	return "", false
+}
+
 // clearValidatorCache clears all cached validators to pick up new registrations.
 // This ensures that newly registered validators are used by existing validator instances.
 func clearValidatorCache() {
@@ -97,14 +148,18 @@ func clearValidatorCache() {
 func isBuiltInValidator(name string) bool {
 	builtInValidators := map[string]bool{
 		// Core
-		"required": true, "omitempty": true, "const": true,
+		"required": true, "const": true,
+		// Reserved for future use (not implemented, but prevents custom validator conflicts)
+		"omitempty": true,
 		// String
 		"min": true, "max": true, "len": true, "regex": true, "regexp": true, "pattern": true,
 		"email": true, "url": true, "uri": true, "uuid": true,
 		"alpha": true, "alphanum": true, "alphanumunicode": true,
 		"ascii": true, "contains": true, "excludes": true,
 		"startswith": true, "endswith": true, "lowercase": true, "uppercase": true,
-		"oneof": true, "enum": true,
+		"oneof": true, "oneofci": true, "enum": true,
+		// Built-in aliases
+		"iscolor": true,
 		// Numeric
 		"gt": true, "gte": true, "lt": true, "lte": true,
 		"multipleOf": true, "positive": true, "negative": true,

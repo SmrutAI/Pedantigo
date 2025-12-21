@@ -42,6 +42,7 @@ The fundamental constraints applicable across multiple types:
 | `eq` | Value | Must equal exact value | `pedantigo:"eq=active"` |
 | `ne` | Value | Must NOT equal value | `pedantigo:"ne=banned"` |
 | `oneof` | Space-separated values | Must be one of specified values | `pedantigo:"oneof=red green blue"` |
+| `oneofci` | Space-separated values | Case-insensitive oneof | `pedantigo:"oneofci=admin user guest"` |
 | `len` | Numeric | Exact length (strings/arrays) | `pedantigo:"len=32"` |
 
 See the [Numeric Constraints](/docs/constraints/numeric) page for detailed numeric range examples.
@@ -112,6 +113,7 @@ Constraints for common data formats:
 | `jwt` | Valid JSON Web Token | `pedantigo:"jwt"` |
 | `semver` | Valid semantic version | `pedantigo:"semver"` |
 | `cron` | Valid cron expression | `pedantigo:"cron"` |
+| `datetime` | Matches Go time layout | `pedantigo:"datetime=2006-01-02"` |
 | `ulid` | Valid ULID format | `pedantigo:"ulid"` |
 
 See the [Format Constraints](/docs/constraints/format) page for detailed format validation examples.

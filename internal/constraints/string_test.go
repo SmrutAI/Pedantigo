@@ -43,6 +43,44 @@ func TestUrlConstraint(t *testing.T) {
 	})
 }
 
+// TestUriConstraint tests uriConstraint.Validate() for valid URIs (any scheme).
+func TestUriConstraint(t *testing.T) {
+	runSimpleConstraintTests(t, uriConstraint{}, []simpleTestCase{
+		// Valid HTTP/HTTPS URIs
+		{"http URI simple", "http://example.com", false},
+		{"https URI simple", "https://example.com", false},
+		{"https URI with path", "https://example.com/path", false},
+		// Valid database URIs
+		{"postgres URI", "postgres://user:pass@localhost:5432/smrut", false},
+		{"postgresql URI", "postgresql://user@localhost/db", false},
+		{"mysql URI", "mysql://root:password@127.0.0.1:3306/mydb", false},
+		{"redis URI", "redis://localhost:6379/0", false},
+		{"mongodb URI", "mongodb://localhost:27017/testdb", false},
+		{"mongodb+srv URI", "mongodb+srv://cluster0.example.mongodb.net/mydb", false},
+		// Other valid URI schemes
+		{"ftp URI", "ftp://ftp.example.com/file.txt", false},
+		{"sftp URI", "sftp://user@host/path", false},
+		{"file URI", "file:///etc/passwd", false},
+		{"data URI", "data:text/plain,hello", false},
+		{"mailto URI", "mailto:user@example.com", false},
+		{"tel URI", "tel:+1234567890", false},
+		{"ssh URI", "ssh://git@github.com/user/repo.git", false},
+		{"s3 URI", "s3://bucket-name/key", false},
+		{"amqp URI", "amqp://guest:guest@localhost:5672/", false},
+		// Empty string - should be skipped
+		{"empty string", "", false},
+		// Invalid URIs - missing scheme
+		{"no scheme", "example.com", true},
+		{"only path", "/path/to/resource", true},
+		{"relative path", "path/to/resource", true},
+		// Nil pointer - should skip validation
+		{"nil pointer", (*string)(nil), false},
+		// Invalid types
+		{"invalid type - int", 123, true},
+		{"invalid type - bool", true, true},
+	})
+}
+
 // TestUuidConstraint tests uuidConstraint.Validate() for valid UUIDs.
 func TestUuidConstraint(t *testing.T) {
 	tests := []struct {

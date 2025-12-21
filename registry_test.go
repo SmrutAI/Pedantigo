@@ -446,6 +446,138 @@ func TestStructLevelFunc_CrossFieldValidation(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// ==================== RegisterAlias Tests ====================
+
+// TestRegisterAlias_Success tests successful registration of an alias.
+func TestRegisterAlias_Success(t *testing.T) {
+	err := RegisterAlias("test_username", "required,alphanum,min=3,max=20")
+	require.NoError(t, err)
+
+	// Verify it was registered
+	expansion, ok := GetAlias("test_username")
+	assert.True(t, ok, "alias should be registered")
+	assert.Equal(t, "required,alphanum,min=3,max=20", expansion)
+}
+
+// TestRegisterAlias_EmptyName tests that empty alias name returns error.
+func TestRegisterAlias_EmptyName(t *testing.T) {
+	err := RegisterAlias("", "required,email")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "empty")
+}
+
+// TestRegisterAlias_EmptyTags tests that empty tags returns error.
+func TestRegisterAlias_EmptyTags(t *testing.T) {
+	err := RegisterAlias("empty_alias", "")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "empty")
+}
+
+// TestRegisterAlias_BuiltInConflict tests that overriding built-in validators fails.
+func TestRegisterAlias_BuiltInConflict(t *testing.T) {
+	builtInNames := []string{
+		"email", "required", "min", "max", "url", "uuid", "oneof", "oneofci",
+	}
+
+	for _, name := range builtInNames {
+		t.Run(name, func(t *testing.T) {
+			err := RegisterAlias(name, "some=tags")
+			require.Error(t, err, "should not allow overriding built-in validator: %s", name)
+			assert.Contains(t, err.Error(), "built-in")
+		})
+	}
+}
+
+// TestGetAlias_Exists tests retrieval of registered alias.
+func TestGetAlias_Exists(t *testing.T) {
+	err := RegisterAlias("test_exists_alias", "required,email")
+	require.NoError(t, err)
+
+	expansion, ok := GetAlias("test_exists_alias")
+	assert.True(t, ok, "alias should exist")
+	assert.Equal(t, "required,email", expansion)
+}
+
+// TestGetAlias_NotExists tests retrieval of non-existent alias.
+func TestGetAlias_NotExists(t *testing.T) {
+	expansion, ok := GetAlias("nonexistent_alias_12345")
+	assert.False(t, ok, "alias should not exist")
+	assert.Empty(t, expansion)
+}
+
+// TestGetAlias_BuiltInIscolor tests the built-in iscolor alias.
+func TestGetAlias_BuiltInIscolor(t *testing.T) {
+	expansion, ok := GetAlias("iscolor")
+	assert.True(t, ok, "iscolor alias should exist")
+	assert.Equal(t, "hexcolor|rgb|rgba|hsl|hsla", expansion)
+}
+
+// TestConcurrentAliasRegistration tests concurrent alias registration without races.
+func TestConcurrentAliasRegistration(t *testing.T) {
+	var wg sync.WaitGroup
+
+	// Concurrent registrations should not race
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			name := fmt.Sprintf("concurrent_alias_%d", idx)
+			_ = RegisterAlias(name, fmt.Sprintf("min=%d", idx))
+		}(i)
+	}
+
+	wg.Wait()
+
+	// Verify all aliases were registered
+	for i := 0; i < 100; i++ {
+		name := fmt.Sprintf("concurrent_alias_%d", i)
+		expansion, ok := GetAlias(name)
+		assert.True(t, ok, "alias %s should exist", name)
+		assert.Equal(t, fmt.Sprintf("min=%d", i), expansion)
+	}
+}
+
+// TestRegisterAlias_ConcurrentWithValidation tests concurrent alias registration and validation.
+func TestRegisterAlias_ConcurrentWithValidation(t *testing.T) {
+	// Register an alias first
+	err := RegisterAlias("concurrent_val_alias", "min=5,max=50")
+	require.NoError(t, err)
+
+	type TestStruct struct {
+		Value string `json:"value" pedantigo:"concurrent_val_alias"`
+	}
+
+	var wg sync.WaitGroup
+
+	// Validate concurrently
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			ts := &TestStruct{Value: "testing"}
+			_ = Validate[TestStruct](ts)
+		}()
+	}
+
+	wg.Wait()
+}
+
+// TestRegisterAlias_OverwriteExisting tests overwriting an existing alias.
+func TestRegisterAlias_OverwriteExisting(t *testing.T) {
+	// Register first alias
+	err := RegisterAlias("overwrite_alias_test", "min=5")
+	require.NoError(t, err)
+
+	// Overwrite with new value (should be allowed for aliases)
+	err = RegisterAlias("overwrite_alias_test", "min=10,max=100")
+	require.NoError(t, err)
+
+	// Verify the new value is active
+	expansion, ok := GetAlias("overwrite_alias_test")
+	assert.True(t, ok)
+	assert.Equal(t, "min=10,max=100", expansion)
+}
+
 // TestRegisterValidation_ComplexValidator tests a complex custom validator.
 func TestRegisterValidation_ComplexValidator(t *testing.T) {
 	// Password validator: must have uppercase, lowercase, digit, and special char
