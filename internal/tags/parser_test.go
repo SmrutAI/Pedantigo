@@ -84,6 +84,44 @@ func TestParseTag_ValidConstraints(t *testing.T) {
 			wantKeys:   map[string]string{"required": "", "email": "", "min": "3", "max": "100", "default": "user@example.com"},
 			wantLength: 5,
 		},
+		// Colon syntax tests (key:value)
+		{
+			name:       "colon_syntax_single",
+			tag:        reflect.StructTag(`pedantigo:"exclude:response"`),
+			wantKeys:   map[string]string{"exclude": "response"},
+			wantLength: 1,
+		},
+		{
+			name:       "colon_syntax_with_pipe_value",
+			tag:        reflect.StructTag(`pedantigo:"exclude:response|log"`),
+			wantKeys:   map[string]string{"exclude": "response|log"},
+			wantLength: 1,
+		},
+		{
+			name:       "colon_syntax_mixed_with_equals",
+			tag:        reflect.StructTag(`pedantigo:"min=5,exclude:internal,max=100"`),
+			wantKeys:   map[string]string{"min": "5", "exclude": "internal", "max": "100"},
+			wantLength: 3,
+		},
+		// OR operator tests
+		{
+			name:       "or_operator_simple",
+			tag:        reflect.StructTag(`pedantigo:"hexcolor|rgb"`),
+			wantKeys:   map[string]string{"__or__hexcolor|rgb": ""},
+			wantLength: 1,
+		},
+		{
+			name:       "or_operator_multiple_options",
+			tag:        reflect.StructTag(`pedantigo:"hexcolor|rgb|rgba|hsl|hsla"`),
+			wantKeys:   map[string]string{"__or__hexcolor|rgb|rgba|hsl|hsla": ""},
+			wantLength: 1,
+		},
+		{
+			name:       "or_operator_with_other_constraints",
+			tag:        reflect.StructTag(`pedantigo:"required,hexcolor|rgb,min=3"`),
+			wantKeys:   map[string]string{"required": "", "__or__hexcolor|rgb": "", "min": "3"},
+			wantLength: 3,
+		},
 	}
 
 	for _, tt := range tests {
@@ -482,6 +520,182 @@ func TestParseTagWithDive_DelegatesToParseTagWithDiveAndName(t *testing.T) {
 	assert.Equal(t, fromParseTagWithDive.DivePresent, fromParseTagWithDiveAndName.DivePresent)
 	assert.Equal(t, fromParseTagWithDive.CollectionConstraints, fromParseTagWithDiveAndName.CollectionConstraints)
 	assert.Equal(t, fromParseTagWithDive.ElementConstraints, fromParseTagWithDiveAndName.ElementConstraints)
+}
+
+// TestParseTag_AliasExpansion tests alias expansion in ParseTag.
+func TestParseTag_AliasExpansion(t *testing.T) {
+	// Set up alias lookup for tests
+	SetAliasLookup(func(name string) (string, bool) {
+		aliases := map[string]string{
+			"iscolor":                 "hexcolor|rgb|rgba|hsl|hsla",
+			"isuri":                   "uri",
+			"postcode_iso3166_alpha2": "postcode",
+			"shortstring":             "min=1,max=50",                // Alias with key=value
+			"complexalias":            "required, ,min=5,email",      // Alias with empty part
+			"mixedalias":              "min=10,hexcolor|rgb,max=100", // Alias with mixed types
+		}
+		if expansion, ok := aliases[name]; ok {
+			return expansion, true
+		}
+		return name, false
+	})
+	defer SetAliasLookup(nil) // Clean up
+
+	tests := []struct {
+		name       string
+		tag        reflect.StructTag
+		wantKeys   map[string]string
+		wantLength int
+	}{
+		{
+			name:       "alias_expands_to_or_expression",
+			tag:        reflect.StructTag(`pedantigo:"iscolor"`),
+			wantKeys:   map[string]string{"__or__hexcolor|rgb|rgba|hsl|hsla": ""},
+			wantLength: 1,
+		},
+		{
+			name:       "alias_expands_to_simple_constraint",
+			tag:        reflect.StructTag(`pedantigo:"isuri"`),
+			wantKeys:   map[string]string{"uri": ""},
+			wantLength: 1,
+		},
+		{
+			name:       "alias_with_other_constraints",
+			tag:        reflect.StructTag(`pedantigo:"required,iscolor,min=3"`),
+			wantKeys:   map[string]string{"required": "", "__or__hexcolor|rgb|rgba|hsl|hsla": "", "min": "3"},
+			wantLength: 3,
+		},
+		{
+			name:       "unknown_alias_not_expanded",
+			tag:        reflect.StructTag(`pedantigo:"unknown_alias"`),
+			wantKeys:   map[string]string{"unknown_alias": ""},
+			wantLength: 1,
+		},
+		{
+			name:       "postcode_alias",
+			tag:        reflect.StructTag(`pedantigo:"postcode_iso3166_alpha2"`),
+			wantKeys:   map[string]string{"postcode": ""},
+			wantLength: 1,
+		},
+		{
+			name:       "alias_expands_to_key_value",
+			tag:        reflect.StructTag(`pedantigo:"shortstring"`),
+			wantKeys:   map[string]string{"min": "1", "max": "50"},
+			wantLength: 2,
+		},
+		{
+			name:       "alias_with_empty_part_skipped",
+			tag:        reflect.StructTag(`pedantigo:"complexalias"`),
+			wantKeys:   map[string]string{"required": "", "min": "5", "email": ""},
+			wantLength: 3,
+		},
+		{
+			name:       "alias_with_mixed_types",
+			tag:        reflect.StructTag(`pedantigo:"mixedalias"`),
+			wantKeys:   map[string]string{"min": "10", "__or__hexcolor|rgb": "", "max": "100"},
+			wantLength: 3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			constraints := ParseTag(tt.tag)
+
+			require.NotNil(t, constraints)
+			assert.Len(t, constraints, tt.wantLength)
+
+			for key, expectedVal := range tt.wantKeys {
+				val, ok := constraints[key]
+				require.True(t, ok, "expected constraint key %q, not found in %v", key, constraints)
+				assert.Equal(t, expectedVal, val)
+			}
+		})
+	}
+}
+
+// TestParseTagWithDive_OrOperatorAndAlias tests OR operator and alias in dive context.
+func TestParseTagWithDive_OrOperatorAndAlias(t *testing.T) {
+	// Set up alias lookup
+	SetAliasLookup(func(name string) (string, bool) {
+		aliases := map[string]string{
+			"iscolor":      "hexcolor|rgb|rgba|hsl|hsla",
+			"shortstring":  "min=1,max=50",                // Alias with key=value
+			"complexalias": "required, ,min=5,email",      // Alias with empty part
+			"mixedalias":   "min=10,hexcolor|rgb,max=100", // Alias with mixed types
+		}
+		if expansion, ok := aliases[name]; ok {
+			return expansion, true
+		}
+		return name, false
+	})
+	defer SetAliasLookup(nil)
+
+	tests := []struct {
+		name                  string
+		tag                   reflect.StructTag
+		collectionConstraints map[string]string
+		elementConstraints    map[string]string
+	}{
+		{
+			name:                  "or_in_collection",
+			tag:                   reflect.StructTag(`pedantigo:"hexcolor|rgb,dive,email"`),
+			collectionConstraints: map[string]string{"__or__hexcolor|rgb": ""},
+			elementConstraints:    map[string]string{"email": ""},
+		},
+		{
+			name:                  "or_in_element",
+			tag:                   reflect.StructTag(`pedantigo:"min=3,dive,hexcolor|rgb"`),
+			collectionConstraints: map[string]string{"min": "3"},
+			elementConstraints:    map[string]string{"__or__hexcolor|rgb": ""},
+		},
+		{
+			name:                  "alias_in_element",
+			tag:                   reflect.StructTag(`pedantigo:"dive,iscolor"`),
+			collectionConstraints: map[string]string{},
+			elementConstraints:    map[string]string{"__or__hexcolor|rgb|rgba|hsl|hsla": ""},
+		},
+		{
+			name:                  "colon_syntax_in_collection",
+			tag:                   reflect.StructTag(`pedantigo:"exclude:response,dive,email"`),
+			collectionConstraints: map[string]string{"exclude": "response"},
+			elementConstraints:    map[string]string{"email": ""},
+		},
+		{
+			name:                  "colon_syntax_in_element",
+			tag:                   reflect.StructTag(`pedantigo:"dive,exclude:internal"`),
+			collectionConstraints: map[string]string{},
+			elementConstraints:    map[string]string{"exclude": "internal"},
+		},
+		{
+			name:                  "alias_with_key_value_in_element",
+			tag:                   reflect.StructTag(`pedantigo:"dive,shortstring"`),
+			collectionConstraints: map[string]string{},
+			elementConstraints:    map[string]string{"min": "1", "max": "50"},
+		},
+		{
+			name:                  "alias_with_empty_part_in_element",
+			tag:                   reflect.StructTag(`pedantigo:"dive,complexalias"`),
+			collectionConstraints: map[string]string{},
+			elementConstraints:    map[string]string{"required": "", "min": "5", "email": ""},
+		},
+		{
+			name:                  "alias_with_mixed_types_in_element",
+			tag:                   reflect.StructTag(`pedantigo:"dive,mixedalias"`),
+			collectionConstraints: map[string]string{},
+			elementConstraints:    map[string]string{"min": "10", "__or__hexcolor|rgb": "", "max": "100"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parsed := ParseTagWithDive(tt.tag)
+
+			require.NotNil(t, parsed)
+			assert.True(t, parsed.DivePresent)
+			assert.Equal(t, tt.collectionConstraints, parsed.CollectionConstraints)
+			assert.Equal(t, tt.elementConstraints, parsed.ElementConstraints)
+		})
+	}
 }
 
 // TestParseTag_InvalidInputs tests edge cases and missing/invalid tags.
