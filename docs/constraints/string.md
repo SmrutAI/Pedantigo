@@ -102,6 +102,27 @@ type DocumentTag struct {
 **Valid examples:** "archive-2024", "old-archive", "archive"
 **Invalid examples:** "archived", "archiv", "archive-" is valid but "ark-chive" is not
 
+### `containsrune`
+
+Validates that a string **contains a specific Unicode character (rune)**.
+
+```go
+type Email struct {
+    // Email must contain @ symbol
+    Address string `json:"address" pedantigo:"required,containsrune=@"`
+}
+
+type Cafe struct {
+    // Name must contain é
+    Name string `json:"name" pedantigo:"containsrune=é"`
+}
+```
+
+**Valid examples:** "user@example.com" (for `@`), "café" (for `é`)
+**Invalid examples:** "user.example.com" (missing `@`), "cafe" (missing `é`)
+
+**Note:** For multi-character substrings, use `contains` instead.
+
 ### `excludes`
 
 Validates that a string **does NOT contain a specific substring**.
@@ -375,6 +396,7 @@ type SlugURL struct {
 | `alphanum` | `alphanum` | Letters and numbers only |
 | `ascii` | `ascii` | ASCII characters only (0-127) |
 | `contains=str` | `contains=@` | Must contain substring |
+| `containsrune=r` | `containsrune=@` | Must contain specific rune |
 | `excludes=str` | `excludes=admin` | Must NOT contain substring |
 | `startswith=str` | `startswith=https://` | Must start with prefix |
 | `endswith=str` | `endswith=.com` | Must end with suffix |

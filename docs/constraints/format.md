@@ -835,6 +835,24 @@ type ExistingFileConfig struct {
 **Valid examples:** "/etc/passwd" (if exists), "/home/user" (if exists)
 **Invalid examples:** "/nonexistent/path", "/etc/passwd" (when validating as dir)
 
+### `image`
+
+Validates that a file path points to a **valid image file** by checking magic bytes.
+
+```go
+type UserProfile struct {
+    // Avatar must be a valid image file
+    Avatar string `json:"avatar" pedantigo:"required,image"`
+}
+```
+
+**Supported formats:** JPEG, PNG, GIF, WebP, BMP, and other formats detected by `http.DetectContentType`
+
+**Valid examples:** "/path/to/photo.jpg" (if valid JPEG), "/uploads/logo.png" (if valid PNG)
+**Invalid examples:** "/path/to/file.txt" (not an image), "/nonexistent/image.jpg" (file doesn't exist)
+
+**Note:** This constraint checks the actual file content, not just the file extension. A file named "image.jpg" containing text will fail validation.
+
 ## Complete Format Example
 
 Here's a comprehensive example using multiple format constraints:

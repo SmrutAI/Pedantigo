@@ -276,6 +276,58 @@ _, err := pedantigo.Unmarshal[TwoFactorSettings](badData)
 // ValidationError: backup_code is required when TwoFactorEnabled is absent
 ```
 
+## Skip Unless Condition
+
+Skip validation entirely unless another field has a specific value.
+
+### skip_unless
+
+Use `skip_unless` to conditionally apply validation only when a condition is met:
+
+```go
+type Order struct {
+    Type     string `json:"type" pedantigo:"required,oneof=standard express"`
+    Priority int    `json:"priority" pedantigo:"skip_unless=Type express,required,min=1,max=10"`
+}
+
+// Priority is only validated when Type is "express"
+// For standard orders, Priority can be any value or missing
+```
+
+**Express Order (Priority validated):**
+
+```go
+data := []byte(`{
+    "type": "express",
+    "priority": 5
+}`)
+order, _ := pedantigo.Unmarshal[Order](data) // ✓ Valid
+
+badData := []byte(`{
+    "type": "express",
+    "priority": 15
+}`)
+_, err := pedantigo.Unmarshal[Order](badData)
+// ValidationError: priority must be at most 10
+```
+
+**Standard Order (Priority skipped):**
+
+```go
+data := []byte(`{
+    "type": "standard",
+    "priority": 999
+}`)
+order, _ := pedantigo.Unmarshal[Order](data) // ✓ Valid - priority validation skipped
+```
+
+**Use Cases:**
+- Optional premium features that need validation when enabled
+- Shipping options that vary by order type
+- Payment fields that depend on payment method
+
+---
+
 ## Conditional Excluded
 
 Make fields conditionally forbidden based on the value of another field.
@@ -566,6 +618,7 @@ Cross-field constraints provide powerful validation capabilities for complex dat
 | `required_unless=Field Value` | Required unless condition is true |
 | `required_with=Field` | Required when another field is present |
 | `required_without=Field` | Required when another field is absent |
+| `skip_unless=Field Value` | Skip validation unless condition is true |
 | `excluded_if=Field Value` | Forbidden if condition is true |
 | `excluded_unless=Field Value` | Forbidden unless condition is true |
 | `excluded_with=Field` | Forbidden if another field is present |

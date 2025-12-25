@@ -212,6 +212,87 @@ type Product struct {
 }
 ```
 
+## Context-Aware Validators
+
+For validators that need access to external resources like databases, caches, or tenant information, use context-aware validators.
+
+### Defining a Context-Aware Validator
+
+A context-aware validator receives a `context.Context` as its first parameter:
+
+```go
+type ValidationFuncCtx func(ctx context.Context, value any, param string) error
+```
+
+### Registering with RegisterValidationCtx
+
+```go
+// Define a typed context key (recommended Go pattern)
+type ctxKey string
+const ctxKeyDB ctxKey = "db"
+
+pedantigo.RegisterValidationCtx("db_unique", func(ctx context.Context, value any, param string) error {
+    db, ok := ctx.Value(ctxKeyDB).(*sql.DB)
+    if !ok || db == nil {
+        return errors.New("database connection required")
+    }
+
+    str, ok := value.(string)
+    if !ok {
+        return errors.New("must be a string")
+    }
+
+    // Check uniqueness in database
+    var count int
+    err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM users WHERE email = ?", str).Scan(&count)
+    if err != nil {
+        return fmt.Errorf("database error: %w", err)
+    }
+
+    if count > 0 {
+        return errors.New("value already exists")
+    }
+
+    return nil
+})
+```
+
+### Using Context-Aware Validators
+
+Use `ValidateCtx` instead of `Validate` to pass the context:
+
+```go
+type User struct {
+    Email string `json:"email" pedantigo:"required,email,db_unique"`
+}
+
+func CreateUser(ctx context.Context, data []byte) (*User, error) {
+    user, err := pedantigo.Unmarshal[User](data)
+    if err != nil {
+        return nil, err
+    }
+
+    // Validate with context (for db_unique check)
+    if err := pedantigo.ValidateCtx(ctx, user); err != nil {
+        return nil, err
+    }
+
+    return user, nil
+}
+```
+
+### Common Use Cases
+
+Context-aware validators are ideal for:
+
+- **Database uniqueness checks** - Verify email/username doesn't exist
+- **Tenant-scoped validation** - Validate against tenant-specific rules
+- **Permission checks** - Verify user has required permissions
+- **External API validation** - Call external services for validation
+- **Rate limiting** - Check validation rate limits
+
+---
+
 ## Tag Aliases
 
 Tag aliases allow you to create shorthand names for common constraint combinations. This is useful for reducing repetition and creating domain-specific tags.

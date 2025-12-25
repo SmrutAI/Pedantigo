@@ -44,7 +44,7 @@ These validator tags work identically in Pedantigo:
 `required`, `min`, `max`, `len`, `eq`, `ne`, `gt`, `gte`, `lt`, `lte`
 
 ### String Constraints
-`email`, `url`, `uri`, `uuid`, `uuid3`, `uuid4`, `uuid5`, `alpha`, `alphanum`, `alphaunicode`, `alphanumunicode`, `numeric`, `number`, `hexadecimal`, `ascii`, `printascii`, `multibyte`, `lowercase`, `uppercase`, `contains`, `excludes`, `startswith`, `endswith`, `startsnotwith`, `endsnotwith`, `containsany`, `excludesall`, `excludesrune`
+`email`, `url`, `uri`, `uuid`, `uuid3`, `uuid4`, `uuid5`, `alpha`, `alphanum`, `alphaunicode`, `alphanumunicode`, `numeric`, `number`, `hexadecimal`, `ascii`, `printascii`, `multibyte`, `lowercase`, `uppercase`, `contains`, `excludes`, `startswith`, `endswith`, `startsnotwith`, `endsnotwith`, `containsany`, `containsrune`, `excludesall`, `excludesrune`, `eq_ignore_case`, `ne_ignore_case`
 
 ### Enum/Choice
 `oneof`, `oneofci`
@@ -53,13 +53,13 @@ These validator tags work identically in Pedantigo:
 `eqfield`, `nefield`, `gtfield`, `gtefield`, `ltfield`, `ltefield`, `eqcsfield`, `necsfield`, `gtcsfield`, `gtecsfield`, `ltcsfield`, `ltecsfield`
 
 ### Conditional Validation
-`required_if`, `required_unless`, `required_with`, `required_without`, `required_with_all`, `required_without_all`, `excluded_if`, `excluded_unless`, `excluded_with`, `excluded_without`, `excluded_with_all`, `excluded_without_all`
+`required_if`, `required_unless`, `required_with`, `required_without`, `required_with_all`, `required_without_all`, `excluded_if`, `excluded_unless`, `excluded_with`, `excluded_without`, `excluded_with_all`, `excluded_without_all`, `skip_unless`
 
 ### Network
 `ip`, `ipv4`, `ipv6`, `cidr`, `cidrv4`, `cidrv6`, `mac`, `hostname`, `hostname_rfc1123`, `fqdn`, `tcp_addr`, `udp_addr`, `hostname_port`, `http_url`, `https_url`
 
 ### Format Validators
-`datetime`, `timezone`, `credit_card`, `isbn`, `isbn10`, `isbn13`, `issn`, `ssn`, `ein`, `e164`, `base64`, `base64url`, `base64rawurl`, `base32`, `datauri`, `urn_rfc2141`, `json`, `jwt`, `html`, `hexcolor`, `rgb`, `rgba`, `hsl`, `hsla`, `latitude`, `longitude`, `md4`, `md5`, `sha256`, `sha384`, `sha512`, `mongodb`, `cron`, `semver`, `ulid`, `luhn_checksum`, `bitcoin_addr`, `bitcoin_addr_bech32`, `ethereum_addr`
+`datetime`, `timezone`, `credit_card`, `isbn`, `isbn10`, `isbn13`, `issn`, `ssn`, `ein`, `e164`, `base64`, `base64url`, `base64rawurl`, `base32`, `datauri`, `urn_rfc2141`, `json`, `jwt`, `html`, `hexcolor`, `rgb`, `rgba`, `hsl`, `hsla`, `latitude`, `longitude`, `md4`, `md5`, `sha256`, `sha384`, `sha512`, `mongodb`, `cron`, `semver`, `ulid`, `luhn_checksum`, `bitcoin_addr`, `bitcoin_addr_bech32`, `ethereum_addr`, `image`
 
 ### ISO Codes
 `iso3166_1_alpha2`, `iso3166_1_alpha3`, `iso3166_1_alpha_numeric`, `iso4217`, `bcp47_language_tag`, `postcode_iso3166_alpha2`
@@ -127,27 +127,63 @@ pedantigo.RegisterConstraint("custom", func(value string) (constraints.Constrain
 
 ---
 
-## Features NOT Supported
+## API Differences
 
-The following validator features are **not available** in Pedantigo:
+These validator APIs have slightly different signatures in Pedantigo:
 
-| Feature                 | validator Syntax               | Workaround                                  |
-|-------------------------|--------------------------------|---------------------------------------------|
-| `Var()`                 | `v.Var(email, "email")`        | Use struct with single field                |
-| `StructPartial`         | Validate subset of fields      | Not supported                               |
-| `StructExcept`          | Exclude fields from validation | Not supported                               |
-| `RegisterValidationCtx` | Context-aware validation       | Pass context as struct field                |
-| `RegisterTagNameFunc`   | Custom field name function     | Uses JSON tag by default                    |
-| `skip_unless`           | Skip unless condition          | Implement in struct-level validator         |
-| `eq_ignore_case`        | Case-insensitive equality      | Use `to_lower,eq=value`                     |
-| `ne_ignore_case`        | Case-insensitive not-equal     | Use `to_lower,ne=value`                     |
-| `containsrune`          | Contains specific rune         | Use `containsany=X` with single char        |
-| `image`                 | File is image                  | Filesystem check in code                    |
+### Var() - Single Value Validation
 
-For a complete feature comparison, see [API Parity](./api-parity.md).
+```go
+// validator
+err := validate.Var(email, "required,email")
 
-These features might be added in the future.
-If you need any of these features, please [open a GitHub issue](https://github.com/SmrutAI/pedantigo/issues/new) with your use case.
+// pedantigo
+err := pedantigo.Var(email, "required,email")
+```
+
+### StructPartial / StructExcept
+
+```go
+// validator
+err := validate.StructPartial(user, "Username", "Email")
+err := validate.StructExcept(user, "Password")
+
+// pedantigo
+err := pedantigo.StructPartial(&user, "Username", "Email")
+err := pedantigo.StructExcept(&user, "Password")
+```
+
+### RegisterValidationCtx - Context-Aware Validators
+
+```go
+// validator
+validate.RegisterValidationCtx("db_unique", func(ctx context.Context, fl validator.FieldLevel) bool {
+    // ...
+})
+
+// pedantigo
+pedantigo.RegisterValidationCtx("db_unique", func(ctx context.Context, value any, param string) error {
+    // Return error instead of bool
+    return nil
+})
+
+// Usage
+err := pedantigo.ValidateCtx(ctx, &user)
+```
+
+### RegisterTagNameFunc
+
+```go
+// validator
+validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
+    return fld.Tag.Get("json")
+})
+
+// pedantigo
+pedantigo.RegisterTagNameFunc(func(field reflect.StructField) string {
+    return field.Tag.Get("json")
+})
+```
 
 ---
 
@@ -207,23 +243,8 @@ Pedantigo provides features not available in validator:
 
 ### "unknown constraint" error
 
-Check if the constraint is in the [unsupported list](#features-not-supported). Use the suggested workaround or implement a custom validator.
+Check if the constraint is supported in the [API Parity](./api-parity.md) comparison. If not, implement a custom validator.
 
 ### Different validation behavior
 
 Pedantigo may have stricter or different validation for some formats. Test edge cases and adjust if needed.
-
-### Missing `Var()` function
-
-Wrap the value in a struct:
-
-```go
-// validator
-err := validate.Var(email, "required,email")
-
-// pedantigo
-type EmailWrapper struct {
-    Email string `validate:"required,email"`
-}
-_, err := pedantigo.Unmarshal[EmailWrapper]([]byte(`{"Email":"` + email + `"}`))
-```
