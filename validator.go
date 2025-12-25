@@ -2,6 +2,7 @@ package pedantigo
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -121,8 +122,12 @@ func (v *Validator[T]) buildFieldConstraints(typ reflect.Type, tagName string) *
 		isCollection := fieldType.Kind() == reflect.Slice || fieldType.Kind() == reflect.Map
 		isMap := fieldType.Kind() == reflect.Map
 
+		// Resolve field name using custom function or default (json tag or field name)
+		jsonName := resolveFieldName(&field)
+
 		cached := constraints.CachedField{
 			Name:         field.Name,
+			JSONName:     jsonName,
 			FieldIndex:   i,
 			IsCollection: isCollection,
 			IsMap:        isMap,
@@ -139,6 +144,8 @@ func (v *Validator[T]) buildFieldConstraints(typ reflect.Type, tagName string) *
 			// Constraints before dive (or regular field constraints)
 			if len(parsedTag.CollectionConstraints) > 0 {
 				cached.Constraints = constraints.BuildConstraints(parsedTag.CollectionConstraints, field.Type)
+				// Extract context-aware validators (called during ValidateCtx)
+				cached.ContextConstraints = constraints.ExtractContextValidators(parsedTag.CollectionConstraints)
 			}
 
 			// Element constraints after dive
@@ -955,4 +962,263 @@ func (v *Validator[T]) unmarshalFromMap(jsonMap map[string]any) (*T, error) {
 	}
 
 	return &obj, nil
+}
+
+// StructPartial validates only the specified fields of a struct.
+// Fields not in the list are skipped entirely.
+// Field names should match JSON field names (from json tags).
+func (v *Validator[T]) StructPartial(obj *T, fields ...string) error {
+	if obj == nil {
+		return &ValidationError{
+			Errors: []FieldError{{
+				Field:   "",
+				Code:    "NIL_POINTER",
+				Message: "cannot validate nil pointer",
+			}},
+		}
+	}
+
+	// Create field inclusion set
+	includeSet := make(map[string]bool)
+	for _, f := range fields {
+		includeSet[f] = true
+	}
+
+	// If no fields specified, nothing to validate
+	if len(includeSet) == 0 {
+		return nil
+	}
+
+	// Validate using field cache but filter by inclusion set
+	structValue := reflect.ValueOf(obj).Elem()
+	var errs []FieldError
+
+	for i := range v.fieldCache.Fields {
+		cached := &v.fieldCache.Fields[i]
+
+		// Check if this field should be validated (by JSON name)
+		if !includeSet[cached.JSONName] {
+			continue
+		}
+
+		fieldValue := structValue.Field(cached.FieldIndex)
+
+		// Check required constraint (which is normally only handled during Unmarshal)
+		if cached.IsRequired && isZeroValue(fieldValue) {
+			errs = append(errs, FieldError{
+				Field:   cached.JSONName,
+				Code:    constraints.CodeRequired,
+				Message: "is required",
+				Value:   fieldValue.Interface(),
+			})
+			continue // Skip further validation for this field
+		}
+
+		// Run constraints for this field
+		for _, c := range cached.Constraints {
+			err := c.Validate(fieldValue.Interface())
+			if err == nil {
+				continue
+			}
+			code := codeValidationFailed
+			message := err.Error()
+
+			var constraintErr *constraints.ConstraintError
+			if errors.As(err, &constraintErr) {
+				code = constraintErr.Code
+				message = constraintErr.Message
+			}
+
+			errs = append(errs, FieldError{
+				Field:   cached.JSONName,
+				Code:    code,
+				Message: message,
+				Value:   fieldValue.Interface(),
+			})
+		}
+
+		// Apply cross-field constraints
+		for _, c := range cached.CrossFieldConstraints {
+			err := c.ValidateCrossField(fieldValue.Interface(), structValue, cached.JSONName)
+			if err == nil {
+				continue
+			}
+			var valErr *ValidationError
+			if errors.As(err, &valErr) {
+				errs = append(errs, valErr.Errors...)
+			} else {
+				errs = append(errs, FieldError{
+					Field:   cached.JSONName,
+					Message: err.Error(),
+					Value:   fieldValue.Interface(),
+				})
+			}
+		}
+	}
+
+	if len(errs) > 0 {
+		return &ValidationError{Errors: errs}
+	}
+	return nil
+}
+
+// StructExcept validates all fields except the specified ones.
+// Excluded fields are skipped entirely.
+// Field names should match JSON field names (from json tags).
+func (v *Validator[T]) StructExcept(obj *T, excludeFields ...string) error {
+	if obj == nil {
+		return &ValidationError{
+			Errors: []FieldError{{
+				Field:   "",
+				Code:    "NIL_POINTER",
+				Message: "cannot validate nil pointer",
+			}},
+		}
+	}
+
+	// Create field exclusion set
+	excludeSet := make(map[string]bool)
+	for _, f := range excludeFields {
+		excludeSet[f] = true
+	}
+
+	// Validate using field cache but filter by exclusion set
+	structValue := reflect.ValueOf(obj).Elem()
+	var errs []FieldError
+
+	for i := range v.fieldCache.Fields {
+		cached := &v.fieldCache.Fields[i]
+
+		// Skip excluded fields (by JSON name)
+		if excludeSet[cached.JSONName] {
+			continue
+		}
+
+		fieldValue := structValue.Field(cached.FieldIndex)
+
+		// Check required constraint (which is normally only handled during Unmarshal)
+		if cached.IsRequired && isZeroValue(fieldValue) {
+			errs = append(errs, FieldError{
+				Field:   cached.JSONName,
+				Code:    constraints.CodeRequired,
+				Message: "is required",
+				Value:   fieldValue.Interface(),
+			})
+			continue // Skip further validation for this field
+		}
+
+		// Run constraints for this field
+		for _, c := range cached.Constraints {
+			err := c.Validate(fieldValue.Interface())
+			if err == nil {
+				continue
+			}
+			code := codeValidationFailed
+			message := err.Error()
+
+			var constraintErr *constraints.ConstraintError
+			if errors.As(err, &constraintErr) {
+				code = constraintErr.Code
+				message = constraintErr.Message
+			}
+
+			errs = append(errs, FieldError{
+				Field:   cached.JSONName,
+				Code:    code,
+				Message: message,
+				Value:   fieldValue.Interface(),
+			})
+		}
+
+		// Apply cross-field constraints
+		for _, c := range cached.CrossFieldConstraints {
+			err := c.ValidateCrossField(fieldValue.Interface(), structValue, cached.JSONName)
+			if err == nil {
+				continue
+			}
+			var valErr *ValidationError
+			if errors.As(err, &valErr) {
+				errs = append(errs, valErr.Errors...)
+			} else {
+				errs = append(errs, FieldError{
+					Field:   cached.JSONName,
+					Message: err.Error(),
+					Value:   fieldValue.Interface(),
+				})
+			}
+		}
+	}
+
+	if len(errs) > 0 {
+		return &ValidationError{Errors: errs}
+	}
+	return nil
+}
+
+// ValidateCtx validates with context support for context-aware validators.
+// Context-aware validators registered with RegisterValidationCtx will receive
+// the provided context, allowing them to access request-scoped values like
+// database connections, authentication info, etc.
+func (v *Validator[T]) ValidateCtx(ctx context.Context, obj *T) error {
+	// First, run regular validation
+	if err := v.Validate(obj); err != nil {
+		return err
+	}
+
+	// Then run context-aware validators
+	return v.validateContextOnly(ctx, obj)
+}
+
+// UnmarshalCtx unmarshals and validates with context.
+// This allows context-aware validators to access the context during unmarshal.
+func (v *Validator[T]) UnmarshalCtx(ctx context.Context, data []byte) (*T, error) {
+	// First unmarshal with regular validation
+	obj, err := v.Unmarshal(data)
+	if err != nil {
+		return nil, err
+	}
+	// Then run context-aware validators (regular validation already passed)
+	if err := v.validateContextOnly(ctx, obj); err != nil {
+		return nil, err
+	}
+	return obj, nil
+}
+
+// validateContextOnly runs only context-aware validators (assumes regular validation passed).
+func (v *Validator[T]) validateContextOnly(ctx context.Context, obj *T) error {
+	structValue := reflect.ValueOf(obj).Elem()
+	var errs []FieldError
+
+	for i := range v.fieldCache.Fields {
+		cached := &v.fieldCache.Fields[i]
+
+		// Skip if no context validators
+		if len(cached.ContextConstraints) == 0 {
+			continue
+		}
+
+		fieldValue := structValue.Field(cached.FieldIndex)
+
+		// Call each context-aware validator
+		for _, cc := range cached.ContextConstraints {
+			fn, ok := GetContextValidator(cc.Name)
+			if !ok {
+				continue
+			}
+
+			if err := fn(ctx, fieldValue.Interface(), cc.Param); err != nil {
+				errs = append(errs, FieldError{
+					Field:   cached.JSONName,
+					Code:    constraints.CodeCustomValidation,
+					Message: cc.Name + ": " + err.Error(),
+					Value:   fieldValue.Interface(),
+				})
+			}
+		}
+	}
+
+	if len(errs) > 0 {
+		return &ValidationError{Errors: errs}
+	}
+	return nil
 }

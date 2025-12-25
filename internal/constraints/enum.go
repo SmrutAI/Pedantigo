@@ -172,3 +172,75 @@ func buildNeConstraint(value string) (Constraint, bool) {
 	}
 	return neConstraint{value: value}, true
 }
+
+// eqIgnoreCaseConstraint validates case-insensitive equality.
+type eqIgnoreCaseConstraint struct {
+	value string
+}
+
+// Validate checks if value equals the constraint value case-insensitively.
+func (c eqIgnoreCaseConstraint) Validate(value any) error {
+	v, ok := derefValue(value)
+	if !ok {
+		return nil // Skip validation for nil/invalid values
+	}
+
+	str, err := valueToString(v, "eq_ignore_case")
+	if err != nil {
+		return err
+	}
+
+	if str == "" {
+		return nil // Empty strings are handled by required constraint
+	}
+
+	if !strings.EqualFold(str, c.value) {
+		return NewConstraintError(CodeEqIgnoreCase, fmt.Sprintf("must equal %q (case-insensitive)", c.value))
+	}
+
+	return nil
+}
+
+// buildEqIgnoreCaseConstraint creates an eq_ignore_case constraint.
+func buildEqIgnoreCaseConstraint(value string) (Constraint, bool) {
+	if value == "" {
+		return nil, false
+	}
+	return eqIgnoreCaseConstraint{value: value}, true
+}
+
+// neIgnoreCaseConstraint validates case-insensitive not-equal.
+type neIgnoreCaseConstraint struct {
+	value string
+}
+
+// Validate checks if value does NOT equal the constraint value case-insensitively.
+func (c neIgnoreCaseConstraint) Validate(value any) error {
+	v, ok := derefValue(value)
+	if !ok {
+		return nil // Skip validation for nil/invalid values
+	}
+
+	str, err := valueToString(v, "ne_ignore_case")
+	if err != nil {
+		return err
+	}
+
+	if str == "" {
+		return nil // Empty strings are handled by required constraint
+	}
+
+	if strings.EqualFold(str, c.value) {
+		return NewConstraintError(CodeNeIgnoreCase, fmt.Sprintf("must not equal %q (case-insensitive)", c.value))
+	}
+
+	return nil
+}
+
+// buildNeIgnoreCaseConstraint creates a ne_ignore_case constraint.
+func buildNeIgnoreCaseConstraint(value string) (Constraint, bool) {
+	if value == "" {
+		return nil, false
+	}
+	return neIgnoreCaseConstraint{value: value}, true
+}

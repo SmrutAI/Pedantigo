@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 // String constraint types.
@@ -43,6 +44,7 @@ type (
 	containsanyConstraint     struct{ chars string }
 	excludesallConstraint     struct{ chars string }
 	excludesruneConstraint    struct{ r rune }
+	containsRuneConstraint    struct{ r rune }
 	lowercaseConstraint       struct{}
 	uppercaseConstraint       struct{}
 	stripWhitespaceConstraint struct{}
@@ -870,6 +872,41 @@ func buildExcludesruneConstraint(value string) (Constraint, bool) {
 	}
 	runes := []rune(value)
 	return excludesruneConstraint{r: runes[0]}, true
+}
+
+// containsRuneConstraint validates that a string contains a specific rune.
+func (c containsRuneConstraint) Validate(value any) error {
+	str, isValid, err := extractString(value)
+	if !isValid {
+		return nil // skip validation for nil/invalid values
+	}
+	if err != nil {
+		return fmt.Errorf("containsrune constraint %w", err)
+	}
+
+	if str == "" {
+		return nil // Empty strings are handled by required constraint
+	}
+
+	if !strings.ContainsRune(str, c.r) {
+		return NewConstraintError(CodeContainsRune, fmt.Sprintf("must contain rune %q", string(c.r)))
+	}
+
+	return nil
+}
+
+// buildContainsRuneConstraint creates a containsrune constraint.
+// The value parameter should be a single character string or Unicode code point.
+func buildContainsRuneConstraint(value string) (Constraint, bool) {
+	if value == "" {
+		return nil, false
+	}
+	// Get the first rune from the string
+	r, _ := utf8.DecodeRuneInString(value)
+	if r == utf8.RuneError {
+		return nil, false
+	}
+	return containsRuneConstraint{r: r}, true
 }
 
 // uuid3Constraint validates that a string is a valid UUID version 3.

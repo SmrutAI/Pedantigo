@@ -75,6 +75,11 @@ type (
 		targetFieldName string     // Keep for error messages
 		targetFieldPath *FieldPath // Replace targetFieldIndex
 	}
+	skipUnlessConstraint struct {
+		targetFieldName string     // Keep for error messages
+		targetFieldPath *FieldPath // Replace targetFieldIndex
+		compareValue    string
+	}
 
 	// requiredWithAllConstraint: field is required if ALL listed fields are present (non-zero).
 	requiredWithAllConstraint struct {
@@ -177,6 +182,11 @@ func BuildCrossFieldConstraintsForField(constraints map[string]string, structTyp
 		case "excluded_without":
 			fp := ParseFieldPath(structType, value)
 			result = append(result, excludedWithoutConstraint{targetFieldName: value, targetFieldPath: fp})
+		case "skip_unless":
+			if fieldName, compareValue, ok := parseConditionalConstraint(value, " "); ok {
+				fp := ParseFieldPath(structType, fieldName)
+				result = append(result, skipUnlessConstraint{targetFieldName: fieldName, targetFieldPath: fp, compareValue: compareValue})
+			}
 		case "required_with_all":
 			names, paths := parseMultiFieldConstraint(structType, value)
 			if len(paths) > 0 {
@@ -498,6 +508,28 @@ func (c excludedWithoutAllConstraint) ValidateCrossField(fieldValue any, structV
 				strings.Join(c.targetFieldNames, ", "))
 		}
 	}
+	return nil
+}
+
+// skipUnlessConstraint: field validation is skipped unless another field matches a value.
+func (c skipUnlessConstraint) ValidateCrossField(fieldValue any, structValue reflect.Value, fieldName string) error {
+	// Get the target field value
+	targetValue, err := c.targetFieldPath.ResolveValue(structValue)
+	if err != nil {
+		// Target field doesn't exist - skip validation
+		return nil
+	}
+
+	// Compare target field value to expected value
+	targetStr := CompareToString(targetValue)
+
+	// If condition is NOT met (target != expected), skip validation
+	if targetStr != c.compareValue {
+		return nil // Skip - condition not met
+	}
+
+	// Condition IS met - validation proceeds (return nil means constraint itself passes)
+	// The actual field validation will be done by other constraints
 	return nil
 }
 

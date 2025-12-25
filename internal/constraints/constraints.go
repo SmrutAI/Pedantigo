@@ -16,27 +16,29 @@ type Constraint interface {
 // Constraint name constants.
 const (
 	// Core constraints.
-	CMin     = "min"
-	CMax     = "max"
-	CGt      = "gt"
-	CGte     = "gte"
-	CLt      = "lt"
-	CLte     = "lte"
-	CEmail   = "email"
-	CUrl     = "url"
-	CUri     = "uri"
-	CUuid    = "uuid"
-	CUuid3   = "uuid3"
-	CUuid4   = "uuid4"
-	CUuid5   = "uuid5"
-	CRegexp  = "regexp"
-	CIpv4    = "ipv4"
-	CIpv6    = "ipv6"
-	COneof   = "oneof"
-	COneofci = "oneofci"
-	CEq      = "eq"
-	CNe      = "ne"
-	CLen     = "len"
+	CMin          = "min"
+	CMax          = "max"
+	CGt           = "gt"
+	CGte          = "gte"
+	CLt           = "lt"
+	CLte          = "lte"
+	CEmail        = "email"
+	CUrl          = "url"
+	CUri          = "uri"
+	CUuid         = "uuid"
+	CUuid3        = "uuid3"
+	CUuid4        = "uuid4"
+	CUuid5        = "uuid5"
+	CRegexp       = "regexp"
+	CIpv4         = "ipv4"
+	CIpv6         = "ipv6"
+	COneof        = "oneof"
+	COneofci      = "oneofci"
+	CEq           = "eq"
+	CNe           = "ne"
+	CEqIgnoreCase = "eq_ignore_case"
+	CNeIgnoreCase = "ne_ignore_case"
+	CLen          = "len"
 
 	// String constraints.
 	CAscii           = "ascii"
@@ -59,6 +61,7 @@ const (
 	CContainsany     = "containsany"
 	CExcludesall     = "excludesall"
 	CExcludesrune    = "excludesrune"
+	CContainsRune    = "containsrune"
 	CLowercase       = "lowercase"
 	CUppercase       = "uppercase"
 	CMultibyte       = "multibyte"
@@ -149,7 +152,9 @@ const (
 	CTimezone = "timezone"
 
 	// Special.
-	CRequired = "required"
+	CRequired   = "required"
+	CSkipUnless = "skip_unless"
+	CImage      = "image"
 )
 
 // Shared regex patterns used by string constraints.
@@ -360,6 +365,14 @@ func appendCoreConstraint(result []Constraint, name, value string, fieldType ref
 		if c, ok := buildNeConstraint(value); ok {
 			return append(result, c)
 		}
+	case "eq_ignore_case":
+		if c, ok := buildEqIgnoreCaseConstraint(value); ok {
+			return append(result, c)
+		}
+	case "ne_ignore_case":
+		if c, ok := buildNeIgnoreCaseConstraint(value); ok {
+			return append(result, c)
+		}
 	case "len":
 		if c, ok := buildLenConstraint(value); ok {
 			return append(result, c)
@@ -429,6 +442,10 @@ func appendStringConstraint(result []Constraint, name, value string) []Constrain
 		}
 	case "excludesrune":
 		if c, ok := buildExcludesruneConstraint(value); ok {
+			return append(result, c)
+		}
+	case "containsrune":
+		if c, ok := buildContainsRuneConstraint(value); ok {
 			return append(result, c)
 		}
 	case "lowercase":

@@ -1,10 +1,13 @@
 package pedantigo
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/SmrutAI/pedantigo/internal/constraints"
 	"github.com/SmrutAI/pedantigo/internal/tags"
@@ -13,6 +16,12 @@ import (
 // ValidationFunc is the signature for custom field-level validation functions.
 // It receives the field value and param string, returns an error if validation fails.
 type ValidationFunc func(value any, param string) error
+
+// ValidationFuncCtx is the signature for context-aware custom validators.
+type ValidationFuncCtx func(ctx context.Context, value any, param string) error
+
+// TagNameFunc is the signature for custom field name resolution.
+type TagNameFunc func(field reflect.StructField) string
 
 func init() {
 	// Wire up custom validator lookup to constraints package
@@ -23,6 +32,12 @@ func init() {
 			return constraints.CustomValidationFunc(fn), true
 		}
 		return nil, false
+	})
+
+	// Wire up context validator lookup to constraints package
+	constraints.SetCtxValidatorLookup(func(name string) bool {
+		_, ok := ctxValidators.Load(name)
+		return ok
 	})
 
 	// Wire up alias lookup to tags package
@@ -38,6 +53,9 @@ var (
 	// Stores map[string]ValidationFunc.
 	customValidators sync.Map
 
+	// ctxValidators stores context-aware custom validators.
+	ctxValidators sync.Map
+
 	// structValidators stores registered struct-level validators.
 	// Stores map[reflect.Type]any.
 	structValidators sync.Map
@@ -45,6 +63,9 @@ var (
 	// aliases stores registered tag aliases.
 	// Stores map[string]string where key is alias name, value is expansion.
 	aliases sync.Map
+
+	// tagNameFunc stores the custom tag name resolution function.
+	tagNameFunc atomic.Pointer[TagNameFunc]
 )
 
 // Built-in aliases for validator compatibility.
@@ -95,6 +116,59 @@ func GetCustomValidator(name string) (ValidationFunc, bool) {
 		return v.(ValidationFunc), true
 	}
 	return nil, false
+}
+
+// RegisterValidationCtx registers a context-aware custom validator.
+// The validator will receive the context passed to ValidateCtx.
+//
+// Example:
+//
+//	pedantigo.RegisterValidationCtx("db_unique", func(ctx context.Context, value any, param string) error {
+//	    db := ctx.Value("db").(*sql.DB)
+//	    // Check uniqueness in database
+//	    return nil
+//	})
+func RegisterValidationCtx(name string, fn ValidationFuncCtx) error {
+	if name == "" {
+		return errors.New("validator name cannot be empty")
+	}
+	if fn == nil {
+		return errors.New("validator function cannot be nil")
+	}
+
+	ctxValidators.Store(name, fn)
+	clearValidatorCache()
+	return nil
+}
+
+// GetContextValidator returns a registered context-aware validator by name.
+// Returns (validator, true) if found, (nil, false) if not registered.
+func GetContextValidator(name string) (ValidationFuncCtx, bool) {
+	if v, ok := ctxValidators.Load(name); ok {
+		return v.(ValidationFuncCtx), true
+	}
+	return nil, false
+}
+
+// RegisterTagNameFunc sets a custom function for resolving field names.
+// This affects how field names appear in validation error messages.
+//
+// Example:
+//
+//	pedantigo.RegisterTagNameFunc(func(field reflect.StructField) string {
+//	    if name := field.Tag.Get("form"); name != "" {
+//	        return name
+//	    }
+//	    return field.Name
+//	})
+func RegisterTagNameFunc(fn TagNameFunc) {
+	if fn == nil {
+		tagNameFunc.Store(nil)
+		clearValidatorCache()
+		return
+	}
+	tagNameFunc.Store(&fn)
+	clearValidatorCache()
 }
 
 // RegisterAlias registers a tag alias that expands to other tags.
@@ -177,4 +251,33 @@ func isBuiltInValidator(name string) bool {
 		"required_if": true, "excluded_if": true,
 	}
 	return builtInValidators[name]
+}
+
+// getTagNameFunc returns the current tag name function or nil if not set.
+func getTagNameFunc() TagNameFunc {
+	ptr := tagNameFunc.Load()
+	if ptr == nil {
+		return nil
+	}
+	return *ptr
+}
+
+// resolveFieldName returns the field name using the custom function or defaults.
+// Default behavior: use JSON tag if present, otherwise use field name.
+func resolveFieldName(field *reflect.StructField) string {
+	if fn := getTagNameFunc(); fn != nil {
+		if name := fn(*field); name != "" {
+			return name
+		}
+	}
+	// Default: use JSON tag if present
+	if jsonTag := field.Tag.Get("json"); jsonTag != "" {
+		if comma := strings.Index(jsonTag, ","); comma != -1 {
+			jsonTag = jsonTag[:comma]
+		}
+		if jsonTag != "" && jsonTag != "-" {
+			return jsonTag
+		}
+	}
+	return field.Name
 }

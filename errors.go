@@ -2,6 +2,12 @@ package pedantigo
 
 import "fmt"
 
+// Error code constants for validation errors.
+const (
+	// codeValidationFailed is the default error code when no specific code is available.
+	codeValidationFailed = "VALIDATION_FAILED"
+)
+
 // Error message constants for validation errors.
 const (
 	// ErrMsgUnknownField is returned when ExtraForbid encounters unknown JSON fields.

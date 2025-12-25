@@ -13,10 +13,48 @@ type CustomValidationFunc func(value any, param string) error
 // to look up custom validators. This avoids import cycles.
 var customValidatorLookup func(name string) (CustomValidationFunc, bool)
 
+// ctxValidatorLookup is set by the registry package to check if a validator name
+// is a context-aware validator. Returns true if the name is registered as a context validator.
+var ctxValidatorLookup func(name string) bool
+
 // SetCustomValidatorLookup sets the function used to look up custom validators.
 // This should be called once by the registry package during initialization.
 func SetCustomValidatorLookup(fn func(name string) (CustomValidationFunc, bool)) {
 	customValidatorLookup = fn
+}
+
+// SetCtxValidatorLookup sets the function used to check if a validator is context-aware.
+// This should be called once by the registry package during initialization.
+func SetCtxValidatorLookup(fn func(name string) bool) {
+	ctxValidatorLookup = fn
+}
+
+// IsContextValidator checks if the given name is a registered context-aware validator.
+func IsContextValidator(name string) bool {
+	if ctxValidatorLookup == nil {
+		return false
+	}
+	return ctxValidatorLookup(name)
+}
+
+// ExtractContextValidators extracts context validator names and params from a constraints map.
+// Returns a slice of ContextConstraint for validators that should be called with context.
+func ExtractContextValidators(constraintsMap map[string]string) []ContextConstraint {
+	var result []ContextConstraint
+	for name, value := range constraintsMap {
+		// Skip special prefixes
+		if len(name) > 6 && name[:6] == "__or__" {
+			continue
+		}
+		// Check if this is a context-aware validator
+		if IsContextValidator(name) {
+			result = append(result, ContextConstraint{
+				Name:  name,
+				Param: value,
+			})
+		}
+	}
+	return result
 }
 
 // customConstraint wraps a custom validator function as a Constraint.

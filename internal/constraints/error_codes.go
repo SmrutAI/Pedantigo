@@ -76,6 +76,7 @@ const (
 	CodeInvalidPath  = "INVALID_PATH"
 	CodeFileNotFound = "FILE_NOT_FOUND"
 	CodeDirNotFound  = "DIRECTORY_NOT_FOUND"
+	CodeInvalidImage = "INVALID_IMAGE"
 
 	// Color constraints.
 	CodeInvalidHexColor = "INVALID_HEX_COLOR"
@@ -137,6 +138,7 @@ const (
 	CodeMustContainAny        = "MUST_CONTAIN_ANY"
 	CodeMustExcludeAll        = "MUST_EXCLUDE_ALL"
 	CodeMustExcludeRune       = "MUST_EXCLUDE_RUNE"
+	CodeContainsRune          = "CONTAINS_RUNE"
 	CodeMustBeLowercase       = "MUST_BE_LOWERCASE"
 	CodeMustBeUppercase       = "MUST_BE_UPPERCASE"
 	CodeMustBeStripped        = "MUST_BE_STRIPPED"
@@ -144,6 +146,8 @@ const (
 	// Enum/const constraints.
 	CodeInvalidEnum   = "INVALID_ENUM"
 	CodeConstMismatch = "CONST_MISMATCH"
+	CodeEqIgnoreCase  = "EQ_IGNORE_CASE"
+	CodeNeIgnoreCase  = "NE_IGNORE_CASE"
 
 	// Collection constraints.
 	CodeNotUnique = "NOT_UNIQUE"
@@ -173,6 +177,7 @@ const (
 	CodeUnsupportedType = "UNSUPPORTED_TYPE"
 
 	// Custom validation constraints.
-	CodeFieldPathError   = "FIELD_PATH_ERROR"  // Nil pointer encountered in field path resolution
-	CodeCustomValidation = "CUSTOM_VALIDATION" // Custom validator failed
+	CodeFieldPathError    = "FIELD_PATH_ERROR"   // Nil pointer encountered in field path resolution
+	CodeCustomValidation  = "CUSTOM_VALIDATION"  // Custom validator failed
+	CodeContextValidation = "CONTEXT_VALIDATION" // Context-aware validator failed
 )

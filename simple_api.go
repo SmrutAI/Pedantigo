@@ -1,10 +1,16 @@
 package pedantigo
 
 import (
+	"context"
+	"errors"
 	"reflect"
+	"strings"
 	"sync"
 
 	"github.com/invopop/jsonschema"
+
+	"github.com/SmrutAI/pedantigo/internal/constraints"
+	"github.com/SmrutAI/pedantigo/internal/tags"
 )
 
 var (
@@ -168,4 +174,189 @@ func MarshalWithOptions[T any](obj *T, opts MarshalOptions) ([]byte, error) {
 //	// dict["age"] == 25
 func Dict[T any](obj *T) (map[string]interface{}, error) {
 	return getOrCreateValidator[T]().Dict(obj)
+}
+
+// Var validates a single value against the provided constraints.
+// This allows validating values without defining a struct.
+//
+// Example:
+//
+//	err := pedantigo.Var("test@example.com", "required,email")
+//	err := pedantigo.Var(25, "min=18,max=120")
+func Var(value any, tag string) error {
+	if tag == "" {
+		return nil // No constraints to validate
+	}
+
+	// Parse the tag using the global tag name
+	tagName := GetTagName()
+	// Escape backslashes for Go's struct tag parser
+	// Go's tag.Get() treats \x as escape sequences, so we need to double them
+	escapedTag := strings.ReplaceAll(tag, `\`, `\\`)
+	// Create a fake struct tag for parsing
+	structTag := reflect.StructTag(tagName + `:` + `"` + escapedTag + `"`)
+	constraintsMap := tags.ParseTagWithName(structTag, tagName)
+
+	if len(constraintsMap) == 0 {
+		return nil
+	}
+
+	// Check if "required" is in the constraints
+	_, isRequired := constraintsMap["required"]
+
+	// Check required first
+	if isRequired {
+		if value == nil {
+			return &ValidationError{
+				Errors: []FieldError{{
+					Field:   "value",
+					Code:    "REQUIRED",
+					Message: "value is required",
+				}},
+			}
+		}
+		// Check if value is zero
+		rv := reflect.ValueOf(value)
+		if rv.Kind() == reflect.Ptr && rv.IsNil() {
+			return &ValidationError{
+				Errors: []FieldError{{
+					Field:   "value",
+					Code:    "REQUIRED",
+					Message: "value is required",
+				}},
+			}
+		}
+		if isZeroValue(rv) {
+			return &ValidationError{
+				Errors: []FieldError{{
+					Field:   "value",
+					Code:    "REQUIRED",
+					Message: "value is required",
+				}},
+			}
+		}
+	}
+
+	// Skip validation for nil values (optional fields)
+	if value == nil {
+		return nil
+	}
+	rv := reflect.ValueOf(value)
+	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+		return nil
+	}
+
+	// Get the type for building constraints
+	var typ reflect.Type
+	if rv.Kind() == reflect.Ptr {
+		typ = rv.Elem().Type()
+	} else {
+		typ = rv.Type()
+	}
+
+	// Build constraints
+	constrs := constraints.BuildConstraints(constraintsMap, typ)
+
+	// Run validations
+	var errs []FieldError
+	for _, c := range constrs {
+		err := c.Validate(value)
+		if err == nil {
+			continue
+		}
+		code := codeValidationFailed
+		message := err.Error()
+
+		// Extract code from ConstraintError if available
+		var constraintErr *constraints.ConstraintError
+		if errors.As(err, &constraintErr) {
+			code = constraintErr.Code
+			message = constraintErr.Message
+		}
+
+		errs = append(errs, FieldError{
+			Field:   "value",
+			Code:    code,
+			Message: message,
+		})
+	}
+
+	if len(errs) > 0 {
+		return &ValidationError{Errors: errs}
+	}
+	return nil
+}
+
+// ValidatePartial validates only the specified fields using a cached validator.
+// Field names should match JSON field names (from json tags).
+// Fields not in the list are skipped entirely.
+//
+// Example:
+//
+//	user := &User{Email: "invalid", Age: 15}
+//	// Only validate email field, skip age validation
+//	err := pedantigo.ValidatePartial(user, "email")
+func ValidatePartial[T any](obj *T, fields ...string) error {
+	return getOrCreateValidator[T]().StructPartial(obj, fields...)
+}
+
+// ValidateExcept validates all fields except specified ones using cached validator.
+// Field names should match JSON field names (from json tags).
+// Excluded fields are skipped entirely.
+//
+// Example:
+//
+//	user := &User{Email: "test@example.com", Age: 15}
+//	// Validate all fields except age
+//	err := pedantigo.ValidateExcept(user, "age")
+func ValidateExcept[T any](obj *T, excludeFields ...string) error {
+	return getOrCreateValidator[T]().StructExcept(obj, excludeFields...)
+}
+
+// ValidateCtx validates with context support for context-aware validators.
+// It uses a cached validator for type T, creating one if necessary.
+// Context-aware validators registered with RegisterValidationCtx will receive
+// the provided context.
+//
+// Example:
+//
+//	ctx := context.WithValue(context.Background(), "db", dbConn)
+//	user := &User{Username: "john"}
+//	if err := pedantigo.ValidateCtx(ctx, user); err != nil {
+//	    // Handle validation errors
+//	}
+func ValidateCtx[T any](ctx context.Context, obj *T) error {
+	return getOrCreateValidator[T]().ValidateCtx(ctx, obj)
+}
+
+// UnmarshalCtx unmarshals and validates with context.
+// It uses a cached validator for type T, creating one if necessary.
+// This allows context-aware validators to access the context during unmarshal.
+//
+// Example:
+//
+//	ctx := context.WithValue(context.Background(), "db", dbConn)
+//	user, err := pedantigo.UnmarshalCtx[User](ctx, jsonData)
+//	if err != nil {
+//	    // Handle validation errors
+//	}
+func UnmarshalCtx[T any](ctx context.Context, data []byte) (*T, error) {
+	return getOrCreateValidator[T]().UnmarshalCtx(ctx, data)
+}
+
+// isZeroValue checks if a reflect.Value is the zero value for its type.
+// For the "required" constraint, only empty strings are considered zero.
+// Numeric zeros (0, 0.0) and boolean false are valid non-zero values.
+func isZeroValue(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.String:
+		return v.Len() == 0
+	case reflect.Ptr, reflect.Interface:
+		return v.IsNil()
+	case reflect.Slice, reflect.Map, reflect.Chan:
+		return v.IsNil() || v.Len() == 0
+	default:
+		// For numeric types and bools, any value (including 0 and false) is valid
+		return false
+	}
 }
