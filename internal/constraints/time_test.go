@@ -58,12 +58,10 @@ func TestTimezoneConstraint(t *testing.T) {
 		{"invalid mixed separators", "America\\New_York", true},
 		{"invalid trailing slash", "America/New_York/", true},
 		{"invalid leading slash", "/America/New_York", true},
-
-		// Note: Some edge cases are accepted by Go's time package
-		// These are kept as valid to match Go's behavior
-		{"lowercase path accepted", "america/new_york", false}, // Go accepts lowercase on some systems
-		{"double slash accepted", "America//New_York", false},  // Go normalizes paths
-
+		// Note: Case sensitivity (lowercase "america/new_york") and double slashes
+		// ("America//New_York") have OS-dependent behavior due to filesystem differences.
+		// macOS (case-insensitive fs) accepts lowercase; Linux (case-sensitive) rejects it.
+		// These cases are intentionally omitted to ensure cross-platform test consistency.
 		// Nil pointer - should skip validation
 		{"nil pointer", (*string)(nil), false},
 
