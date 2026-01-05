@@ -2,6 +2,8 @@ package pedantigo
 
 import (
 	"math"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -6567,6 +6569,89 @@ func TestDive_Semver(t *testing.T) {
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"version":"v1"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_Image tests that image constraint works correctly on fields inside
+// nested structs accessed via dive. Requires actual image files on disk.
+func TestDive_Image(t *testing.T) {
+	// Create temp directory for test files
+	tmpDir, err := os.MkdirTemp("", "test_image_dive_*")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	// Create valid PNG image file with proper magic bytes
+	pngData := []byte{
+		0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
+		0x00, 0x00, 0x00, 0x0D, 'I', 'H', 'D', 'R', // IHDR chunk
+		0x00, 0x00, 0x00, 0x01, // width: 1
+		0x00, 0x00, 0x00, 0x01, // height: 1
+		0x08, 0x02, 0x00, 0x00, 0x00, // bit depth, color type, etc.
+		0x90, 0x77, 0x53, 0xDE, // IHDR CRC
+	}
+	validImagePath := filepath.Join(tmpDir, "valid.png")
+	require.NoError(t, os.WriteFile(validImagePath, pngData, 0o600))
+
+	// Create invalid file (not an image)
+	invalidFilePath := filepath.Join(tmpDir, "invalid.txt")
+	require.NoError(t, os.WriteFile(invalidFilePath, []byte("not an image"), 0o600))
+
+	type Item struct {
+		Path string `json:"path" pedantigo:"image"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_image_path", func(t *testing.T) {
+		jsonData := []byte(`{"items":[{"path":"` + validImagePath + `"}]}`)
+		_, err := validator.Unmarshal(jsonData)
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_not_image", func(t *testing.T) {
+		jsonData := []byte(`{"items":[{"path":"` + invalidFilePath + `"}]}`)
+		_, err := validator.Unmarshal(jsonData)
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Path", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_file_not_found", func(t *testing.T) {
+		jsonData := []byte(`{"items":[{"path":"/nonexistent/path/to/image.png"}]}`)
+		_, err := validator.Unmarshal(jsonData)
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Path", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		jsonData := []byte(`{"items":{"a":{"path":"` + validImagePath + `"}}}`)
+		_, err := mapValidator.Unmarshal(jsonData)
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		jsonData := []byte(`{"items":{"a":{"path":"` + invalidFilePath + `"}}}`)
+		_, err := mapValidator.Unmarshal(jsonData)
 		require.Error(t, err)
 	})
 }
