@@ -511,7 +511,7 @@ func TestBuildFieldDeserializers_FieldDeserializerCallable(t *testing.T) {
 	typ := reflect.TypeOf(TestStruct{})
 
 	var mockSetFieldCalled bool
-	mockSetField := func(fieldValue reflect.Value, inValue any, fieldType reflect.Type) error {
+	mockSetField := func(fieldValue reflect.Value, inValue any, fieldType reflect.Type, goFieldName string) error {
 		mockSetFieldCalled = true
 		return nil
 	}
@@ -575,7 +575,7 @@ func TestBuildFieldDeserializers_RequiredFieldValidation(t *testing.T) {
 			opts := BuilderOptions{StrictMissingFields: tt.strictMissingFields}
 			typ := reflect.TypeOf(TestStruct{})
 
-			deserializers := BuildFieldDeserializers(typ, opts, func(fv reflect.Value, iv any, ft reflect.Type) error {
+			deserializers := BuildFieldDeserializers(typ, opts, func(fv reflect.Value, iv any, ft reflect.Type, goFieldName string) error {
 				return nil
 			}, nil)
 
