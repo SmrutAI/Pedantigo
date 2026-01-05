@@ -239,11 +239,11 @@ func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []C
 			continue
 
 		// Core constraints.
-		case CMin, CMax, CGt, CGte, CLt, CLte, CEmail, CUrl, CUri, CUuid, CUuid3, CUuid4, CUuid5, CRegexp, CIpv4, CIpv6, COneof, COneofci, CEq, CNe, CLen, CHttpUrl:
+		case CMin, CMax, CGt, CGte, CLt, CLte, CEmail, CUrl, CUri, CUuid, CUuid3, CUuid4, CUuid5, CRegexp, CIpv4, CIpv6, COneof, COneofci, CEq, CNe, CEqIgnoreCase, CNeIgnoreCase, CLen, CHttpUrl:
 			result = appendCoreConstraint(result, name, value, fieldType)
 
 		// String constraints.
-		case CAscii, CAlpha, CAlphanum, CAlphaspace, CAlphanumspace, CPrintascii, CNumeric, CNumber, CHexadecimal, CAlphaunicode, CAlphanumunicode, CContains, CExcludes, CStartswith, CEndswith, CStartsnotwith, CEndsnotwith, CContainsany, CExcludesall, CExcludesrune, CLowercase, CUppercase, CMultibyte, CUrnRfc2141, CStripWhitespace, CToLower, CToUpper:
+		case CAscii, CAlpha, CAlphanum, CAlphaspace, CAlphanumspace, CPrintascii, CNumeric, CNumber, CHexadecimal, CAlphaunicode, CAlphanumunicode, CContains, CExcludes, CStartswith, CEndswith, CStartsnotwith, CEndsnotwith, CContainsany, CExcludesall, CExcludesrune, CContainsRune, CLowercase, CUppercase, CMultibyte, CUrnRfc2141, CStripWhitespace, CToLower, CToUpper:
 			result = appendStringConstraint(result, name, value)
 
 		// Numeric constraints.
@@ -291,7 +291,7 @@ func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []C
 			result = appendISOConstraint(result, name, value)
 
 		// Filesystem constraints.
-		case CFilepath, CDirpath, CFile, CDir:
+		case CFilepath, CDirpath, CFile, CDir, CImage:
 			result = appendFilesystemConstraint(result, name)
 
 		default:

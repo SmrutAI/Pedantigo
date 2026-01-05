@@ -1,6 +1,7 @@
 package pedantigo
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -839,5 +840,5733 @@ func TestSlice_UniqueWithOtherConstraints(t *testing.T) {
 		config, err := validator.Unmarshal([]byte(`{"tags":["a","b"]}`))
 		require.NoError(t, err)
 		assert.Len(t, config.Tags, 2)
+	})
+}
+
+// ==================== Numeric Dive Tests ====================
+// Comprehensive dive tests for numeric constraints in nested structures.
+
+// TestDive_GT tests greater than constraint in nested structs via dive.
+func TestDive_GT(t *testing.T) {
+	type Item struct {
+		Value int `json:"value" pedantigo:"gt=10"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"value":15}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"value":5}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Value", ve.Errors[0].Field)
+	})
+
+	t.Run("boundary_value_invalid", func(t *testing.T) {
+		// gt=10 means > 10, so exactly 10 should fail
+		_, err := validator.Unmarshal([]byte(`{"items":[{"value":10}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"value":15},{"value":5}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[1].Value", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_GT_Map tests greater than constraint in map values via dive.
+func TestDive_GT_Map(t *testing.T) {
+	type Item struct {
+		Score int `json:"score" pedantigo:"gt=50"`
+	}
+	type Container struct {
+		Scores map[string]Item `json:"scores" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_map_values", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"scores":{"player1":{"score":75}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_map_value", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"scores":{"player1":{"score":25}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Contains(t, ve.Errors[0].Field, "Scores[player1].Score")
+	})
+
+	t.Run("mixed_map_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"scores":{"p1":{"score":75},"p2":{"score":25}}}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"scores":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_GTE tests greater than or equal constraint in nested structs via dive.
+func TestDive_GTE(t *testing.T) {
+	type Item struct {
+		Age int `json:"age" pedantigo:"gte=18"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"age":18},{"age":25}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"age":17}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Age", ve.Errors[0].Field)
+	})
+
+	t.Run("boundary_value_valid", func(t *testing.T) {
+		// gte=18 means >= 18, so exactly 18 should pass
+		_, err := validator.Unmarshal([]byte(`{"items":[{"age":18}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"age":20},{"age":15}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[1].Age", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_GTE_Map tests greater than or equal constraint in map values via dive.
+func TestDive_GTE_Map(t *testing.T) {
+	type Item struct {
+		Rating float64 `json:"rating" pedantigo:"gte=0.0"`
+	}
+	type Container struct {
+		Ratings map[string]Item `json:"ratings" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_map_values", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"ratings":{"book1":{"rating":4.5}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("boundary_zero_valid", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"ratings":{"book1":{"rating":0.0}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_negative", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"ratings":{"book1":{"rating":-1.5}}}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"ratings":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_LT tests less than constraint in nested structs via dive.
+func TestDive_LT(t *testing.T) {
+	type Item struct {
+		Discount int `json:"discount" pedantigo:"lt=100"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"discount":50}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"discount":150}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Discount", ve.Errors[0].Field)
+	})
+
+	t.Run("boundary_value_invalid", func(t *testing.T) {
+		// lt=100 means < 100, so exactly 100 should fail
+		_, err := validator.Unmarshal([]byte(`{"items":[{"discount":100}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"discount":50},{"discount":200}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[1].Discount", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_LT_Map tests less than constraint in map values via dive.
+func TestDive_LT_Map(t *testing.T) {
+	type Item struct {
+		Temperature float64 `json:"temp" pedantigo:"lt=100.0"`
+	}
+	type Container struct {
+		Readings map[string]Item `json:"readings" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_map_values", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"readings":{"sensor1":{"temp":75.5}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_map_value", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"readings":{"sensor1":{"temp":150.0}}}`))
+		require.Error(t, err)
+	})
+
+	t.Run("boundary_invalid", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"readings":{"sensor1":{"temp":100.0}}}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"readings":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_LTE tests less than or equal constraint in nested structs via dive.
+func TestDive_LTE(t *testing.T) {
+	type Item struct {
+		Capacity int `json:"capacity" pedantigo:"lte=1000"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"capacity":500},{"capacity":1000}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"capacity":1500}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Capacity", ve.Errors[0].Field)
+	})
+
+	t.Run("boundary_value_valid", func(t *testing.T) {
+		// lte=1000 means <= 1000, so exactly 1000 should pass
+		_, err := validator.Unmarshal([]byte(`{"items":[{"capacity":1000}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"capacity":800},{"capacity":1200}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[1].Capacity", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_LTE_Map tests less than or equal constraint in map values via dive.
+func TestDive_LTE_Map(t *testing.T) {
+	type Item struct {
+		Percentage float64 `json:"pct" pedantigo:"lte=100.0"`
+	}
+	type Container struct {
+		Stats map[string]Item `json:"stats" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_map_values", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"stats":{"cpu":{"pct":75.5}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("boundary_valid", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"stats":{"memory":{"pct":100.0}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_exceeds_max", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"stats":{"disk":{"pct":101.5}}}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"stats":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_Positive tests positive constraint in nested structs via dive.
+func TestDive_Positive(t *testing.T) {
+	type Item struct {
+		Amount int `json:"amount" pedantigo:"positive"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_positive_values", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"amount":1},{"amount":100}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_zero", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"amount":0}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Amount", ve.Errors[0].Field)
+		assert.Contains(t, ve.Errors[0].Message, "positive")
+	})
+
+	t.Run("invalid_negative", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"amount":-5}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Amount", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"amount":10},{"amount":-1}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[1].Amount", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_Positive_Map tests positive constraint in map values via dive.
+func TestDive_Positive_Map(t *testing.T) {
+	type Item struct {
+		Price float64 `json:"price" pedantigo:"positive"`
+	}
+	type Container struct {
+		Products map[string]Item `json:"products" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_positive_prices", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"products":{"item1":{"price":9.99}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_zero_price", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"products":{"item1":{"price":0.0}}}`))
+		require.Error(t, err)
+	})
+
+	t.Run("invalid_negative_price", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"products":{"item1":{"price":-5.0}}}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"products":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_Negative tests negative constraint in nested structs via dive.
+func TestDive_Negative(t *testing.T) {
+	type Item struct {
+		Delta int `json:"delta" pedantigo:"negative"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_negative_values", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"delta":-1},{"delta":-100}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_zero", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"delta":0}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Delta", ve.Errors[0].Field)
+		assert.Contains(t, ve.Errors[0].Message, "negative")
+	})
+
+	t.Run("invalid_positive", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"delta":5}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Delta", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"delta":-10},{"delta":1}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[1].Delta", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_Negative_Map tests negative constraint in map values via dive.
+func TestDive_Negative_Map(t *testing.T) {
+	type Item struct {
+		Adjustment float64 `json:"adj" pedantigo:"negative"`
+	}
+	type Container struct {
+		Adjustments map[string]Item `json:"adjustments" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_negative_adjustments", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"adjustments":{"item1":{"adj":-2.5}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_zero", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"adjustments":{"item1":{"adj":0.0}}}`))
+		require.Error(t, err)
+	})
+
+	t.Run("invalid_positive", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"adjustments":{"item1":{"adj":5.0}}}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"adjustments":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_MultipleOf tests multiple_of constraint in nested structs via dive.
+func TestDive_MultipleOf(t *testing.T) {
+	type Item struct {
+		Quantity int `json:"quantity" pedantigo:"multiple_of=5"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_multiples", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"quantity":5},{"quantity":10},{"quantity":15}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_not_multiple", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"quantity":7}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Quantity", ve.Errors[0].Field)
+		assert.Contains(t, ve.Errors[0].Message, "multiple of")
+	})
+
+	t.Run("zero_is_multiple", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"quantity":0}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"quantity":10},{"quantity":13}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[1].Quantity", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_MultipleOf_Map tests multiple_of constraint in map values via dive.
+func TestDive_MultipleOf_Map(t *testing.T) {
+	type Item struct {
+		Price float64 `json:"price" pedantigo:"multiple_of=0.25"`
+	}
+	type Container struct {
+		Products map[string]Item `json:"products" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_multiples", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"products":{"item1":{"price":1.25},"item2":{"price":2.50}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_not_multiple", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"products":{"item1":{"price":1.33}}}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"products":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_MaxDigits tests max_digits constraint in nested structs via dive.
+func TestDive_MaxDigits(t *testing.T) {
+	type Item struct {
+		Code int `json:"code" pedantigo:"max_digits=4"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_within_limit", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"code":1234},{"code":999}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_exceeds_digits", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"code":12345}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Code", ve.Errors[0].Field)
+		assert.Contains(t, ve.Errors[0].Message, "at most 4 digits")
+	})
+
+	t.Run("negative_counts_digits", func(t *testing.T) {
+		// -12345 has 5 digits, should fail
+		_, err := validator.Unmarshal([]byte(`{"items":[{"code":-12345}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"code":123},{"code":12345}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[1].Code", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_MaxDigits_Map tests max_digits constraint in map values via dive.
+func TestDive_MaxDigits_Map(t *testing.T) {
+	type Item struct {
+		PIN int `json:"pin" pedantigo:"max_digits=6"`
+	}
+	type Container struct {
+		Users map[string]Item `json:"users" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_within_limit", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"users":{"user1":{"pin":123456}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_exceeds_digits", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"users":{"user1":{"pin":1234567}}}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"users":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_DecimalPlaces tests decimal_places constraint in nested structs via dive.
+func TestDive_DecimalPlaces(t *testing.T) {
+	type Item struct {
+		Price float64 `json:"price" pedantigo:"decimal_places=2"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_within_limit", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"price":9.99},{"price":10.5}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_exceeds_places", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"price":9.999}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Price", ve.Errors[0].Field)
+		assert.Contains(t, ve.Errors[0].Message, "at most 2 decimal places")
+	})
+
+	t.Run("no_decimals_valid", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"price":10.0}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"price":10.50},{"price":10.555}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[1].Price", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_DecimalPlaces_Map tests decimal_places constraint in map values via dive.
+func TestDive_DecimalPlaces_Map(t *testing.T) {
+	type Item struct {
+		Rate float64 `json:"rate" pedantigo:"decimal_places=3"`
+	}
+	type Container struct {
+		Rates map[string]Item `json:"rates" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_within_limit", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"rates":{"usd":{"rate":1.234}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_exceeds_places", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"rates":{"eur":{"rate":1.2345}}}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"rates":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_DisallowInfNan tests disallow_inf_nan constraint in nested structs via dive.
+func TestDive_DisallowInfNan(t *testing.T) {
+	type Item struct {
+		Value float64 `json:"value" pedantigo:"disallow_inf_nan"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_normal_float", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"value":123.45}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_zero", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"value":0.0}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_negative", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"value":-999.99}]}`))
+		require.NoError(t, err)
+	})
+
+	// Note: JSON doesn't natively support Inf/NaN, but we can test with Go's Validate method
+	t.Run("invalid_infinity_via_validate", func(t *testing.T) {
+		container := &Container{
+			Items: []Item{{Value: math.Inf(1)}},
+		}
+		err := validator.Validate(container)
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Value", ve.Errors[0].Field)
+		assert.Contains(t, ve.Errors[0].Message, "infinity")
+	})
+
+	t.Run("invalid_nan_via_validate", func(t *testing.T) {
+		container := &Container{
+			Items: []Item{{Value: math.NaN()}},
+		}
+		err := validator.Validate(container)
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Value", ve.Errors[0].Field)
+		assert.Contains(t, ve.Errors[0].Message, "NaN")
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_DisallowInfNan_Map tests disallow_inf_nan constraint in map values via dive.
+func TestDive_DisallowInfNan_Map(t *testing.T) {
+	type Item struct {
+		Measurement float64 `json:"measurement" pedantigo:"disallow_inf_nan"`
+	}
+	type Container struct {
+		Readings map[string]Item `json:"readings" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_normal_floats", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"readings":{"sensor1":{"measurement":98.6}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_infinity_via_validate", func(t *testing.T) {
+		container := &Container{
+			Readings: map[string]Item{
+				"sensor1": {Measurement: math.Inf(-1)},
+			},
+		}
+		err := validator.Validate(container)
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Contains(t, ve.Errors[0].Field, "Readings[sensor1].Measurement")
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"readings":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_Oneof tests oneof constraint in nested structs via dive.
+func TestDive_Oneof(t *testing.T) {
+	type Item struct {
+		Status string `json:"status" pedantigo:"oneof=pending approved rejected"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_values", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"status":"pending"},{"status":"approved"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_value", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"status":"invalid"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Status", ve.Errors[0].Field)
+		assert.Contains(t, ve.Errors[0].Message, "one of")
+	})
+
+	t.Run("case_sensitive", func(t *testing.T) {
+		// "Pending" with capital P should fail (case-sensitive)
+		_, err := validator.Unmarshal([]byte(`{"items":[{"status":"Pending"}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"status":"approved"},{"status":"unknown"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[1].Status", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_Oneof_Map tests oneof constraint in map values via dive.
+func TestDive_Oneof_Map(t *testing.T) {
+	type Item struct {
+		Priority string `json:"priority" pedantigo:"oneof=low medium high"`
+	}
+	type Container struct {
+		Tasks map[string]Item `json:"tasks" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_values", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"tasks":{"task1":{"priority":"high"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_value", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"tasks":{"task1":{"priority":"critical"}}}`))
+		require.Error(t, err)
+	})
+
+	t.Run("case_sensitive", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"tasks":{"task1":{"priority":"HIGH"}}}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"tasks":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_Oneof_Numeric tests oneof constraint with numeric values via dive.
+func TestDive_Oneof_Numeric(t *testing.T) {
+	type Item struct {
+		Level int `json:"level" pedantigo:"oneof=1 2 3 5 8"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_numeric_values", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"level":1},{"level":5}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_numeric_value", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"level":4}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Level", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_OneofCI tests oneofci (case-insensitive) constraint in nested structs via dive.
+func TestDive_OneofCI(t *testing.T) {
+	type Item struct {
+		Role string `json:"role" pedantigo:"oneofci=admin user guest"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_lowercase", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"role":"admin"},{"role":"user"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_uppercase", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"role":"ADMIN"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_mixed_case", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"role":"Admin"},{"role":"USER"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_value", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"role":"superadmin"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Role", ve.Errors[0].Field)
+		assert.Contains(t, ve.Errors[0].Message, "case-insensitive")
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"role":"GUEST"},{"role":"invalid"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[1].Role", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_OneofCI_Map tests oneofci constraint in map values via dive.
+func TestDive_OneofCI_Map(t *testing.T) {
+	type Item struct {
+		Permission string `json:"permission" pedantigo:"oneofci=read write execute"`
+	}
+	type Container struct {
+		Files map[string]Item `json:"files" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_lowercase", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"files":{"file1":{"permission":"read"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_uppercase", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"files":{"file1":{"permission":"WRITE"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_mixed_case", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"files":{"file1":{"permission":"Execute"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_value", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"files":{"file1":{"permission":"delete"}}}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"files":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_CombinedNumericConstraints tests multiple numeric constraints on same field via dive.
+func TestDive_CombinedNumericConstraints(t *testing.T) {
+	type Item struct {
+		Price float64 `json:"price" pedantigo:"positive,lte=9999.99,decimal_places=2"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_all_constraints", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"price":99.99}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_not_positive", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"price":-10.00}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("invalid_exceeds_max", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"price":10000.00}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("invalid_too_many_decimals", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"price":99.999}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_NumericConstraintsOnIntTypes tests numeric constraints work across different int types.
+func TestDive_NumericConstraintsOnIntTypes(t *testing.T) {
+	type Item struct {
+		Int8Val  int8  `json:"int8" pedantigo:"gt=-100,lt=100"`
+		Int16Val int16 `json:"int16" pedantigo:"gte=0"`
+		Int32Val int32 `json:"int32" pedantigo:"positive"`
+		Int64Val int64 `json:"int64" pedantigo:"multiple_of=10"`
+		UintVal  uint  `json:"uint" pedantigo:"lte=1000"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_all_types", func(t *testing.T) {
+		jsonData := `{"items":[{"int8":50,"int16":100,"int32":5,"int64":100,"uint":500}]}`
+		_, err := validator.Unmarshal([]byte(jsonData))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_int8_boundary", func(t *testing.T) {
+		jsonData := `{"items":[{"int8":100,"int16":0,"int32":1,"int64":10,"uint":100}]}`
+		_, err := validator.Unmarshal([]byte(jsonData))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Int8Val", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_int32_not_positive", func(t *testing.T) {
+		jsonData := `{"items":[{"int8":0,"int16":0,"int32":0,"int64":10,"uint":100}]}`
+		_, err := validator.Unmarshal([]byte(jsonData))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Int32Val", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_NumericConstraintsOnFloatTypes tests numeric constraints work across different float types.
+func TestDive_NumericConstraintsOnFloatTypes(t *testing.T) {
+	type Item struct {
+		Float32Val float32 `json:"float32" pedantigo:"gt=0.0,lt=100.0"`
+		Float64Val float64 `json:"float64" pedantigo:"gte=0.0,lte=1.0,decimal_places=3"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_all_types", func(t *testing.T) {
+		jsonData := `{"items":[{"float32":50.5,"float64":0.999}]}`
+		_, err := validator.Unmarshal([]byte(jsonData))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_float32_out_of_range", func(t *testing.T) {
+		jsonData := `{"items":[{"float32":100.0,"float64":0.5}]}`
+		_, err := validator.Unmarshal([]byte(jsonData))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Float32Val", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_float64_too_many_decimals", func(t *testing.T) {
+		jsonData := `{"items":[{"float32":50.0,"float64":0.9999}]}`
+		_, err := validator.Unmarshal([]byte(jsonData))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Float64Val", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// ==================== Format Dive Tests ====================
+//
+// Tests for format constraints (url, uri, http_url, https_url, uuid, uuid3, uuid4, uuid5)
+// when applied to fields inside nested structs accessed via the dive tag.
+
+// TestDive_URL tests URL constraint in nested structs via dive.
+// url accepts any scheme (http, https, ftp, file, mailto, etc.)
+func TestDive_URL(t *testing.T) {
+	type Link struct {
+		URL string `json:"url" pedantigo:"url"`
+	}
+	type Container struct {
+		Links []Link `json:"links" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"links":[{"url":"https://example.com/path"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"links":[{"url":"not-a-url"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Links[0].URL", ve.Errors[0].Field)
+		assert.Contains(t, ve.Errors[0].Message, "must be a valid URL")
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"links":[{"url":"https://valid.com"},{"url":"invalid"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Links[1].URL", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"links":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("various_schemes_pass", func(t *testing.T) {
+		// url accepts http, https, ftp, file, mailto, etc.
+		_, err := validator.Unmarshal([]byte(`{"links":[
+			{"url":"http://localhost:8080"},
+			{"url":"ftp://files.example.com"},
+			{"url":"file:///path/to/file"}
+		]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("no_scheme_fails", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"links":[{"url":"example.com"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Links[0].URL", ve.Errors[0].Field)
+	})
+}
+
+// TestDive_URLMap tests URL constraint in map values via dive.
+func TestDive_URLMap(t *testing.T) {
+	type Link struct {
+		URL string `json:"url" pedantigo:"url"`
+	}
+	type Registry struct {
+		Links map[string]Link `json:"links" pedantigo:"dive"`
+	}
+
+	validator := New[Registry]()
+
+	t.Run("valid_in_map", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"links":{"homepage":{"url":"https://example.com"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_in_map", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"links":{"docs":{"url":"not-a-url"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.NotEmpty(t, ve.Errors)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"links":{}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("multiple_map_entries_mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"links":{
+			"homepage":{"url":"https://example.com"},
+			"broken":{"url":"invalid-url"}
+		}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.NotEmpty(t, ve.Errors)
+	})
+}
+
+// TestDive_URI tests URI constraint in nested structs via dive.
+// uri accepts any scheme, similar to url but slightly different validation.
+func TestDive_URI(t *testing.T) {
+	type Resource struct {
+		URI string `json:"uri" pedantigo:"uri"`
+	}
+	type Container struct {
+		Resources []Resource `json:"resources" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"resources":[{"uri":"mailto:user@example.com"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"resources":[{"uri":"not-a-uri"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Resources[0].URI", ve.Errors[0].Field)
+		assert.Contains(t, ve.Errors[0].Message, "must be a valid URI")
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"resources":[{"uri":"file:///path/to/file"},{"uri":"invalid"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Resources[1].URI", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"resources":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("various_uri_schemes_pass", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"resources":[
+			{"uri":"urn:isbn:0451450523"},
+			{"uri":"mailto:test@example.com"},
+			{"uri":"tel:+1-234-567-8900"}
+		]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_URIMap tests URI constraint in map values via dive.
+func TestDive_URIMap(t *testing.T) {
+	type Resource struct {
+		URI string `json:"uri" pedantigo:"uri"`
+	}
+	type Registry struct {
+		Resources map[string]Resource `json:"resources" pedantigo:"dive"`
+	}
+
+	validator := New[Registry]()
+
+	t.Run("valid_in_map", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"resources":{"book":{"uri":"urn:isbn:0451450523"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_in_map", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"resources":{"contact":{"uri":"not-a-uri"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.NotEmpty(t, ve.Errors)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"resources":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_HTTPURL tests HTTP/HTTPS URL constraint in nested structs via dive.
+// http_url only accepts http:// or https:// schemes.
+func TestDive_HTTPURL(t *testing.T) {
+	type Endpoint struct {
+		URL string `json:"url" pedantigo:"http_url"`
+	}
+	type Container struct {
+		Endpoints []Endpoint `json:"endpoints" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_http_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"url":"http://example.com"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_https_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"url":"https://secure.example.com"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_ftp_fails", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"url":"ftp://files.example.com"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[0].URL", ve.Errors[0].Field)
+		assert.Contains(t, ve.Errors[0].Message, "must be a valid HTTP/HTTPS URL")
+	})
+
+	t.Run("invalid_no_scheme_fails", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"url":"example.com"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[0].URL", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"url":"http://valid.com"},{"url":"ftp://invalid.com"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[1].URL", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("both_http_and_https_pass", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[
+			{"url":"http://api.example.com"},
+			{"url":"https://secure.api.example.com"}
+		]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_HTTPURLMap tests HTTP/HTTPS URL constraint in map values via dive.
+func TestDive_HTTPURLMap(t *testing.T) {
+	type Endpoint struct {
+		URL string `json:"url" pedantigo:"http_url"`
+	}
+	type Registry struct {
+		Endpoints map[string]Endpoint `json:"endpoints" pedantigo:"dive"`
+	}
+
+	validator := New[Registry]()
+
+	t.Run("valid_in_map", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":{"api":{"url":"https://api.example.com"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_scheme_in_map", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":{"files":{"url":"ftp://files.example.com"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.NotEmpty(t, ve.Errors)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_HTTPSURL tests HTTPS-only URL constraint in nested structs via dive.
+// https_url only accepts https:// scheme (rejects http://).
+func TestDive_HTTPSURL(t *testing.T) {
+	type SecureEndpoint struct {
+		URL string `json:"url" pedantigo:"https_url"`
+	}
+	type Container struct {
+		Endpoints []SecureEndpoint `json:"endpoints" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_https_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"url":"https://secure.example.com"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_http_fails", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"url":"http://example.com"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[0].URL", ve.Errors[0].Field)
+		assert.Contains(t, ve.Errors[0].Message, "must be a valid HTTPS URL")
+	})
+
+	t.Run("invalid_ftp_fails", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"url":"ftp://files.example.com"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[0].URL", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"url":"https://valid.com"},{"url":"http://invalid.com"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[1].URL", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_HTTPSURLMap tests HTTPS-only URL constraint in map values via dive.
+func TestDive_HTTPSURLMap(t *testing.T) {
+	type SecureEndpoint struct {
+		URL string `json:"url" pedantigo:"https_url"`
+	}
+	type Registry struct {
+		Endpoints map[string]SecureEndpoint `json:"endpoints" pedantigo:"dive"`
+	}
+
+	validator := New[Registry]()
+
+	t.Run("valid_in_map", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":{"api":{"url":"https://api.example.com"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_http_in_map", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":{"api":{"url":"http://api.example.com"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.NotEmpty(t, ve.Errors)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_UUID tests UUID constraint (any version) in nested structs via dive.
+func TestDive_UUID(t *testing.T) {
+	type Entity struct {
+		ID string `json:"id" pedantigo:"uuid"`
+	}
+	type Container struct {
+		Entities []Entity `json:"entities" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_uuid_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":[{"id":"550e8400-e29b-41d4-a716-446655440000"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_uuid_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":[{"id":"not-a-uuid"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Entities[0].ID", ve.Errors[0].Field)
+		assert.Contains(t, ve.Errors[0].Message, "must be a valid UUID")
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":[
+			{"id":"550e8400-e29b-41d4-a716-446655440000"},
+			{"id":"invalid-uuid"}
+		]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Entities[1].ID", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("various_uuid_versions_pass", func(t *testing.T) {
+		// uuid accepts any version (v3, v4, v5, etc.)
+		_, err := validator.Unmarshal([]byte(`{"entities":[
+			{"id":"6ba7b810-9dad-31d0-80b4-00c04fd430c8"},
+			{"id":"550e8400-e29b-41d4-a716-446655440000"},
+			{"id":"886313e1-3b8a-5372-9b90-0c9aee199e5d"}
+		]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("missing_dashes_fails", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":[{"id":"550e8400e29b41d4a716446655440000"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Entities[0].ID", ve.Errors[0].Field)
+	})
+}
+
+// TestDive_UUIDMap tests UUID constraint in map values via dive.
+func TestDive_UUIDMap(t *testing.T) {
+	type Entity struct {
+		ID string `json:"id" pedantigo:"uuid"`
+	}
+	type Registry struct {
+		Entities map[string]Entity `json:"entities" pedantigo:"dive"`
+	}
+
+	validator := New[Registry]()
+
+	t.Run("valid_in_map", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":{"user1":{"id":"550e8400-e29b-41d4-a716-446655440000"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_in_map", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":{"user2":{"id":"not-a-uuid"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.NotEmpty(t, ve.Errors)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_UUID3 tests UUID version 3 constraint in nested structs via dive.
+// uuid3 requires version byte (position 14) to be '3'.
+func TestDive_UUID3(t *testing.T) {
+	type Entity struct {
+		ID string `json:"id" pedantigo:"uuid3"`
+	}
+	type Container struct {
+		Entities []Entity `json:"entities" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_uuid3_in_slice", func(t *testing.T) {
+		// UUID v3 with version byte '3' at position 14
+		_, err := validator.Unmarshal([]byte(`{"entities":[{"id":"6ba7b810-9dad-31d0-80b4-00c04fd430c8"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_uuid4_as_uuid3_fails", func(t *testing.T) {
+		// UUID v4 (has '4' at position 14)
+		_, err := validator.Unmarshal([]byte(`{"entities":[{"id":"550e8400-e29b-41d4-a716-446655440000"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Entities[0].ID", ve.Errors[0].Field)
+		assert.Contains(t, ve.Errors[0].Message, "must be a valid UUID version 3")
+	})
+
+	t.Run("invalid_uuid5_as_uuid3_fails", func(t *testing.T) {
+		// UUID v5 (has '5' at position 14)
+		_, err := validator.Unmarshal([]byte(`{"entities":[{"id":"886313e1-3b8a-5372-9b90-0c9aee199e5d"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Entities[0].ID", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":[
+			{"id":"6ba7b810-9dad-31d0-80b4-00c04fd430c8"},
+			{"id":"550e8400-e29b-41d4-a716-446655440000"}
+		]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Entities[1].ID", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_UUID3Map tests UUID version 3 constraint in map values via dive.
+func TestDive_UUID3Map(t *testing.T) {
+	type Entity struct {
+		ID string `json:"id" pedantigo:"uuid3"`
+	}
+	type Registry struct {
+		Entities map[string]Entity `json:"entities" pedantigo:"dive"`
+	}
+
+	validator := New[Registry]()
+
+	t.Run("valid_in_map", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":{"item1":{"id":"6ba7b810-9dad-31d0-80b4-00c04fd430c8"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_version_in_map", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":{"item2":{"id":"550e8400-e29b-41d4-a716-446655440000"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.NotEmpty(t, ve.Errors)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_UUID4 tests UUID version 4 constraint in nested structs via dive.
+// uuid4 requires version byte (position 14) to be '4'.
+func TestDive_UUID4(t *testing.T) {
+	type Entity struct {
+		ID string `json:"id" pedantigo:"uuid4"`
+	}
+	type Container struct {
+		Entities []Entity `json:"entities" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_uuid4_in_slice", func(t *testing.T) {
+		// UUID v4 with version byte '4' at position 14
+		_, err := validator.Unmarshal([]byte(`{"entities":[{"id":"f47ac10b-58cc-4372-a567-0e02b2c3d479"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("another_valid_uuid4", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":[{"id":"550e8400-e29b-41d4-a716-446655440000"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_uuid3_as_uuid4_fails", func(t *testing.T) {
+		// UUID v3 (has '3' at position 14)
+		_, err := validator.Unmarshal([]byte(`{"entities":[{"id":"6ba7b810-9dad-31d0-80b4-00c04fd430c8"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Entities[0].ID", ve.Errors[0].Field)
+		assert.Contains(t, ve.Errors[0].Message, "must be a valid UUID version 4")
+	})
+
+	t.Run("invalid_uuid5_as_uuid4_fails", func(t *testing.T) {
+		// UUID v5 (has '5' at position 14)
+		_, err := validator.Unmarshal([]byte(`{"entities":[{"id":"886313e1-3b8a-5372-9b90-0c9aee199e5d"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Entities[0].ID", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":[
+			{"id":"f47ac10b-58cc-4372-a567-0e02b2c3d479"},
+			{"id":"6ba7b810-9dad-31d0-80b4-00c04fd430c8"}
+		]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Entities[1].ID", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_UUID4Map tests UUID version 4 constraint in map values via dive.
+func TestDive_UUID4Map(t *testing.T) {
+	type Entity struct {
+		ID string `json:"id" pedantigo:"uuid4"`
+	}
+	type Registry struct {
+		Entities map[string]Entity `json:"entities" pedantigo:"dive"`
+	}
+
+	validator := New[Registry]()
+
+	t.Run("valid_in_map", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":{"item1":{"id":"f47ac10b-58cc-4372-a567-0e02b2c3d479"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_version_in_map", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":{"item2":{"id":"6ba7b810-9dad-31d0-80b4-00c04fd430c8"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.NotEmpty(t, ve.Errors)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_UUID5 tests UUID version 5 constraint in nested structs via dive.
+// uuid5 requires version byte (position 14) to be '5'.
+func TestDive_UUID5(t *testing.T) {
+	type Entity struct {
+		ID string `json:"id" pedantigo:"uuid5"`
+	}
+	type Container struct {
+		Entities []Entity `json:"entities" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_uuid5_in_slice", func(t *testing.T) {
+		// UUID v5 with version byte '5' at position 14
+		_, err := validator.Unmarshal([]byte(`{"entities":[{"id":"886313e1-3b8a-5372-9b90-0c9aee199e5d"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_uuid3_as_uuid5_fails", func(t *testing.T) {
+		// UUID v3 (has '3' at position 14)
+		_, err := validator.Unmarshal([]byte(`{"entities":[{"id":"6ba7b810-9dad-31d0-80b4-00c04fd430c8"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Entities[0].ID", ve.Errors[0].Field)
+		assert.Contains(t, ve.Errors[0].Message, "must be a valid UUID version 5")
+	})
+
+	t.Run("invalid_uuid4_as_uuid5_fails", func(t *testing.T) {
+		// UUID v4 (has '4' at position 14)
+		_, err := validator.Unmarshal([]byte(`{"entities":[{"id":"550e8400-e29b-41d4-a716-446655440000"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Entities[0].ID", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":[
+			{"id":"886313e1-3b8a-5372-9b90-0c9aee199e5d"},
+			{"id":"550e8400-e29b-41d4-a716-446655440000"}
+		]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Entities[1].ID", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":[]}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_UUID5Map tests UUID version 5 constraint in map values via dive.
+func TestDive_UUID5Map(t *testing.T) {
+	type Entity struct {
+		ID string `json:"id" pedantigo:"uuid5"`
+	}
+	type Registry struct {
+		Entities map[string]Entity `json:"entities" pedantigo:"dive"`
+	}
+
+	validator := New[Registry]()
+
+	t.Run("valid_in_map", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":{"item1":{"id":"886313e1-3b8a-5372-9b90-0c9aee199e5d"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_version_in_map", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":{"item2":{"id":"550e8400-e29b-41d4-a716-446655440000"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.NotEmpty(t, ve.Errors)
+	})
+
+	t.Run("empty_map_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"entities":{}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_AllFormatsSlice tests all format constraints in a single slice dive scenario.
+func TestDive_AllFormatsSlice(t *testing.T) {
+	type Resource struct {
+		URL      string `json:"url" pedantigo:"url"`
+		URI      string `json:"uri" pedantigo:"uri"`
+		HTTPURL  string `json:"http_url" pedantigo:"http_url"`
+		HTTPSURL string `json:"https_url" pedantigo:"https_url"`
+		UUID     string `json:"uuid" pedantigo:"uuid"`
+		UUID3    string `json:"uuid3" pedantigo:"uuid3"`
+		UUID4    string `json:"uuid4" pedantigo:"uuid4"`
+		UUID5    string `json:"uuid5" pedantigo:"uuid5"`
+	}
+	type Container struct {
+		Resources []Resource `json:"resources" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("all_valid_formats", func(t *testing.T) {
+		jsonData := `{
+			"resources": [{
+				"url": "https://example.com/path",
+				"uri": "urn:isbn:0451450523",
+				"http_url": "http://api.example.com",
+				"https_url": "https://secure.example.com",
+				"uuid": "550e8400-e29b-41d4-a716-446655440000",
+				"uuid3": "6ba7b810-9dad-31d0-80b4-00c04fd430c8",
+				"uuid4": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+				"uuid5": "886313e1-3b8a-5372-9b90-0c9aee199e5d"
+			}]
+		}`
+		_, err := validator.Unmarshal([]byte(jsonData))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_url_format", func(t *testing.T) {
+		jsonData := `{
+			"resources": [{
+				"url": "not-a-url",
+				"uri": "urn:isbn:0451450523",
+				"http_url": "http://api.example.com",
+				"https_url": "https://secure.example.com",
+				"uuid": "550e8400-e29b-41d4-a716-446655440000",
+				"uuid3": "6ba7b810-9dad-31d0-80b4-00c04fd430c8",
+				"uuid4": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+				"uuid5": "886313e1-3b8a-5372-9b90-0c9aee199e5d"
+			}]
+		}`
+		_, err := validator.Unmarshal([]byte(jsonData))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Resources[0].URL", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_uuid4_version", func(t *testing.T) {
+		jsonData := `{
+			"resources": [{
+				"url": "https://example.com/path",
+				"uri": "urn:isbn:0451450523",
+				"http_url": "http://api.example.com",
+				"https_url": "https://secure.example.com",
+				"uuid": "550e8400-e29b-41d4-a716-446655440000",
+				"uuid3": "6ba7b810-9dad-31d0-80b4-00c04fd430c8",
+				"uuid4": "6ba7b810-9dad-31d0-80b4-00c04fd430c8",
+				"uuid5": "886313e1-3b8a-5372-9b90-0c9aee199e5d"
+			}]
+		}`
+		_, err := validator.Unmarshal([]byte(jsonData))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Resources[0].UUID4", ve.Errors[0].Field)
+	})
+}
+
+// TestDive_AllFormatsMap tests all format constraints in a single map dive scenario.
+func TestDive_AllFormatsMap(t *testing.T) {
+	type Resource struct {
+		URL      string `json:"url" pedantigo:"url"`
+		UUID     string `json:"uuid" pedantigo:"uuid"`
+		HTTPSURL string `json:"https_url" pedantigo:"https_url"`
+	}
+	type Registry struct {
+		Resources map[string]Resource `json:"resources" pedantigo:"dive"`
+	}
+
+	validator := New[Registry]()
+
+	t.Run("all_valid_formats_in_map", func(t *testing.T) {
+		jsonData := `{
+			"resources": {
+				"resource1": {
+					"url": "https://example.com",
+					"uuid": "550e8400-e29b-41d4-a716-446655440000",
+					"https_url": "https://secure.example.com"
+				}
+			}
+		}`
+		_, err := validator.Unmarshal([]byte(jsonData))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_https_url_in_map", func(t *testing.T) {
+		jsonData := `{
+			"resources": {
+				"resource1": {
+					"url": "https://example.com",
+					"uuid": "550e8400-e29b-41d4-a716-446655440000",
+					"https_url": "http://insecure.example.com"
+				}
+			}
+		}`
+		_, err := validator.Unmarshal([]byte(jsonData))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.NotEmpty(t, ve.Errors)
+	})
+}
+
+// ==================== Network Dive Tests ====================
+// Tests for dive tag with network constraints in nested structs (slices and maps).
+
+// TestDive_IP tests IP constraint in nested structs via dive.
+func TestDive_IP(t *testing.T) {
+	type Server struct {
+		Address string `json:"address" pedantigo:"ip"`
+	}
+	type Container struct {
+		Servers []Server `json:"servers" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_ipv4_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[{"address":"192.168.1.1"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_ipv6_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[{"address":"2001:0db8:85a3:0000:0000:8a2e:0370:7334"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_ipv6_short_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[{"address":"::1"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[{"address":"not-an-ip"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Servers[0].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[{"address":"192.168.1.1"},{"address":"invalid"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Servers[1].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid_ipv4", func(t *testing.T) {
+		type MapContainer struct {
+			Servers map[string]Server `json:"servers" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"servers":{"primary":{"address":"192.168.1.1"},"secondary":{"address":"10.0.0.1"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Servers map[string]Server `json:"servers" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"servers":{"primary":{"address":"invalid-ip"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Servers[primary].Address", ve.Errors[0].Field)
+	})
+}
+
+// TestDive_IPv4 tests IPv4 constraint in nested structs via dive.
+func TestDive_IPv4(t *testing.T) {
+	type Server struct {
+		Address string `json:"address" pedantigo:"ipv4"`
+	}
+	type Container struct {
+		Servers []Server `json:"servers" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_ipv4_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[{"address":"192.168.1.1"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_multiple_ipv4", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[{"address":"192.168.1.1"},{"address":"10.0.0.1"},{"address":"172.16.0.1"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_ipv6_rejected", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[{"address":"2001:0db8:85a3::1"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Servers[0].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_format", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[{"address":"not-an-ip"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Servers[0].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[{"address":"192.168.1.1"},{"address":"invalid"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Servers[1].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Servers map[string]Server `json:"servers" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"servers":{"primary":{"address":"192.168.1.1"},"secondary":{"address":"10.0.0.1"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Servers map[string]Server `json:"servers" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"servers":{"primary":{"address":"2001:db8::1"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Servers[primary].Address", ve.Errors[0].Field)
+	})
+}
+
+// TestDive_IPv6 tests IPv6 constraint in nested structs via dive.
+func TestDive_IPv6(t *testing.T) {
+	type Server struct {
+		Address string `json:"address" pedantigo:"ipv6"`
+	}
+	type Container struct {
+		Servers []Server `json:"servers" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_ipv6_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[{"address":"2001:0db8:85a3:0000:0000:8a2e:0370:7334"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_ipv6_short", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[{"address":"::1"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_multiple_ipv6", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[{"address":"2001:db8::1"},{"address":"::1"},{"address":"fe80::1"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_ipv4_rejected", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[{"address":"192.168.1.1"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Servers[0].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_format", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[{"address":"not-an-ip"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Servers[0].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[{"address":"2001:db8::1"},{"address":"invalid"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Servers[1].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"servers":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Servers map[string]Server `json:"servers" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"servers":{"primary":{"address":"2001:db8::1"},"secondary":{"address":"::1"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Servers map[string]Server `json:"servers" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"servers":{"primary":{"address":"192.168.1.1"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Servers[primary].Address", ve.Errors[0].Field)
+	})
+}
+
+// TestDive_CIDR tests CIDR constraint in nested structs via dive.
+func TestDive_CIDR(t *testing.T) {
+	type Network struct {
+		Subnet string `json:"subnet" pedantigo:"cidr"`
+	}
+	type Container struct {
+		Networks []Network `json:"networks" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_cidrv4_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[{"subnet":"192.168.1.0/24"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_cidrv6_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[{"subnet":"2001:db8::/32"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_multiple_cidr", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[{"subnet":"192.168.1.0/24"},{"subnet":"2001:db8::/32"},{"subnet":"10.0.0.0/8"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_missing_prefix", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[{"subnet":"192.168.1.0"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Networks[0].Subnet", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_format", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[{"subnet":"not-a-cidr"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Networks[0].Subnet", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[{"subnet":"192.168.1.0/24"},{"subnet":"invalid"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Networks[1].Subnet", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Networks map[string]Network `json:"networks" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"networks":{"lan":{"subnet":"192.168.1.0/24"},"wan":{"subnet":"2001:db8::/32"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Networks map[string]Network `json:"networks" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"networks":{"lan":{"subnet":"invalid-cidr"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Networks[lan].Subnet", ve.Errors[0].Field)
+	})
+}
+
+// TestDive_CIDRv4 tests CIDRv4 constraint in nested structs via dive.
+func TestDive_CIDRv4(t *testing.T) {
+	type Network struct {
+		Subnet string `json:"subnet" pedantigo:"cidrv4"`
+	}
+	type Container struct {
+		Networks []Network `json:"networks" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_cidrv4_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[{"subnet":"192.168.1.0/24"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_multiple_cidrv4", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[{"subnet":"192.168.1.0/24"},{"subnet":"10.0.0.0/8"},{"subnet":"172.16.0.0/16"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_cidrv6_rejected", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[{"subnet":"2001:db8::/32"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Networks[0].Subnet", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_format", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[{"subnet":"not-a-cidr"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Networks[0].Subnet", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[{"subnet":"192.168.1.0/24"},{"subnet":"invalid"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Networks[1].Subnet", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Networks map[string]Network `json:"networks" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"networks":{"lan":{"subnet":"192.168.1.0/24"},"wan":{"subnet":"10.0.0.0/8"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Networks map[string]Network `json:"networks" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"networks":{"lan":{"subnet":"2001:db8::/32"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Networks[lan].Subnet", ve.Errors[0].Field)
+	})
+}
+
+// TestDive_CIDRv6 tests CIDRv6 constraint in nested structs via dive.
+func TestDive_CIDRv6(t *testing.T) {
+	type Network struct {
+		Subnet string `json:"subnet" pedantigo:"cidrv6"`
+	}
+	type Container struct {
+		Networks []Network `json:"networks" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_cidrv6_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[{"subnet":"2001:db8::/32"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_multiple_cidrv6", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[{"subnet":"2001:db8::/32"},{"subnet":"fe80::/10"},{"subnet":"::1/128"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_cidrv4_rejected", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[{"subnet":"192.168.1.0/24"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Networks[0].Subnet", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_format", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[{"subnet":"not-a-cidr"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Networks[0].Subnet", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[{"subnet":"2001:db8::/32"},{"subnet":"invalid"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Networks[1].Subnet", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"networks":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Networks map[string]Network `json:"networks" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"networks":{"lan":{"subnet":"2001:db8::/32"},"wan":{"subnet":"fe80::/10"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Networks map[string]Network `json:"networks" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"networks":{"lan":{"subnet":"192.168.1.0/24"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Networks[lan].Subnet", ve.Errors[0].Field)
+	})
+}
+
+// TestDive_MAC tests MAC constraint in nested structs via dive.
+func TestDive_MAC(t *testing.T) {
+	type Device struct {
+		MACAddress string `json:"mac_address" pedantigo:"mac"`
+	}
+	type Container struct {
+		Devices []Device `json:"devices" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_mac_colon_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"devices":[{"mac_address":"00:1B:44:11:3A:B7"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_mac_hyphen_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"devices":[{"mac_address":"00-1B-44-11-3A-B7"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_multiple_mac", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"devices":[{"mac_address":"00:1B:44:11:3A:B7"},{"mac_address":"AA-BB-CC-DD-EE-FF"},{"mac_address":"01:23:45:67:89:ab"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_format", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"devices":[{"mac_address":"not-a-mac"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Devices[0].MACAddress", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_short_mac", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"devices":[{"mac_address":"00:1B:44"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Devices[0].MACAddress", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"devices":[{"mac_address":"00:1B:44:11:3A:B7"},{"mac_address":"invalid"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Devices[1].MACAddress", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"devices":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Devices map[string]Device `json:"devices" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"devices":{"eth0":{"mac_address":"00:1B:44:11:3A:B7"},"eth1":{"mac_address":"AA-BB-CC-DD-EE-FF"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Devices map[string]Device `json:"devices" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"devices":{"eth0":{"mac_address":"invalid-mac"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Devices[eth0].MACAddress", ve.Errors[0].Field)
+	})
+}
+
+// TestDive_Hostname tests hostname constraint in nested structs via dive.
+func TestDive_Hostname(t *testing.T) {
+	type Host struct {
+		Name string `json:"name" pedantigo:"hostname"`
+	}
+	type Container struct {
+		Hosts []Host `json:"hosts" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_hostname_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"hosts":[{"name":"localhost"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_single_letter", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"hosts":[{"name":"a"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_with_hyphen", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"hosts":[{"name":"my-server"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_with_dot", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"hosts":[{"name":"server.example.com"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Hosts[0].Name", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_starts_with_digit", func(t *testing.T) {
+		// RFC 952 requires hostname to start with letter
+		_, err := validator.Unmarshal([]byte(`{"hosts":[{"name":"1server"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Hosts[0].Name", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"hosts":[{"name":"server1"},{"name":"invalid.host"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Hosts[1].Name", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"hosts":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Hosts map[string]Host `json:"hosts" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"hosts":{"primary":{"name":"server1"},"secondary":{"name":"server2"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Hosts map[string]Host `json:"hosts" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"hosts":{"primary":{"name":"server.example.com"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Hosts[primary].Name", ve.Errors[0].Field)
+	})
+}
+
+// TestDive_HostnameRFC1123 tests hostname_rfc1123 constraint in nested structs via dive.
+func TestDive_HostnameRFC1123(t *testing.T) {
+	type Host struct {
+		Name string `json:"name" pedantigo:"hostname_rfc1123"`
+	}
+	type Container struct {
+		Hosts []Host `json:"hosts" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_hostname_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"hosts":[{"name":"my-host"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_starts_with_digit", func(t *testing.T) {
+		// RFC 1123 allows starting with digit
+		_, err := validator.Unmarshal([]byte(`{"hosts":[{"name":"1server"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_with_hyphen", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"hosts":[{"name":"server-01"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_with_dot", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"hosts":[{"name":"server.example.com"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Hosts[0].Name", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"hosts":[{"name":"server1"},{"name":"invalid.host"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Hosts[1].Name", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"hosts":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Hosts map[string]Host `json:"hosts" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"hosts":{"primary":{"name":"1server"},"secondary":{"name":"server-01"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Hosts map[string]Host `json:"hosts" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"hosts":{"primary":{"name":"server.example.com"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Hosts[primary].Name", ve.Errors[0].Field)
+	})
+}
+
+// TestDive_FQDN tests fqdn constraint in nested structs via dive.
+func TestDive_FQDN(t *testing.T) {
+	type Domain struct {
+		Name string `json:"name" pedantigo:"fqdn"`
+	}
+	type Container struct {
+		Domains []Domain `json:"domains" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_fqdn_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"domains":[{"name":"www.example.com"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_multiple_fqdn", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"domains":[{"name":"www.example.com"},{"name":"mail.server.org"},{"name":"api.v2.company.co.uk"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_with_trailing_dot", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"domains":[{"name":"www.example.com."}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_single_label", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"domains":[{"name":"localhost"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Domains[0].Name", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_ip_address", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"domains":[{"name":"192.168.1.1"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Domains[0].Name", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"domains":[{"name":"www.example.com"},{"name":"localhost"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Domains[1].Name", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"domains":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Domains map[string]Domain `json:"domains" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"domains":{"web":{"name":"www.example.com"},"mail":{"name":"mail.example.com"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Domains map[string]Domain `json:"domains" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"domains":{"web":{"name":"localhost"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Domains[web].Name", ve.Errors[0].Field)
+	})
+}
+
+// TestDive_Port tests port constraint in nested structs via dive.
+func TestDive_Port(t *testing.T) {
+	type Service struct {
+		Port int `json:"port" pedantigo:"port"`
+	}
+	type Container struct {
+		Services []Service `json:"services" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_port_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"services":[{"port":80}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_multiple_ports", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"services":[{"port":80},{"port":443},{"port":8080}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_port_zero", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"services":[{"port":0}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_port_max", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"services":[{"port":65535}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_negative_port", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"services":[{"port":-1}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Services[0].Port", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_port_too_high", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"services":[{"port":65536}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Services[0].Port", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"services":[{"port":80},{"port":99999}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Services[1].Port", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"services":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Services map[string]Service `json:"services" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"services":{"http":{"port":80},"https":{"port":443}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Services map[string]Service `json:"services" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"services":{"http":{"port":70000}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Services[http].Port", ve.Errors[0].Field)
+	})
+}
+
+// TestDive_TCPAddr tests tcp_addr constraint in nested structs via dive.
+func TestDive_TCPAddr(t *testing.T) {
+	type Endpoint struct {
+		Address string `json:"address" pedantigo:"tcp_addr"`
+	}
+	type Container struct {
+		Endpoints []Endpoint `json:"endpoints" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_tcp_addr_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"192.168.1.1:8080"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_with_hostname", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"localhost:443"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_multiple_tcp_addr", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"192.168.1.1:8080"},{"address":"localhost:443"},{"address":"example.com:80"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_ipv6", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"[::1]:8080"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_missing_port", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"192.168.1.1"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[0].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_format", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"not-a-tcp-addr"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[0].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"192.168.1.1:8080"},{"address":"invalid"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[1].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Endpoints map[string]Endpoint `json:"endpoints" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"endpoints":{"primary":{"address":"192.168.1.1:8080"},"secondary":{"address":"localhost:443"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Endpoints map[string]Endpoint `json:"endpoints" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"endpoints":{"primary":{"address":"192.168.1.1"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[primary].Address", ve.Errors[0].Field)
+	})
+}
+
+// TestDive_TCP4Addr tests tcp4_addr constraint in nested structs via dive.
+func TestDive_TCP4Addr(t *testing.T) {
+	type Endpoint struct {
+		Address string `json:"address" pedantigo:"tcp4_addr"`
+	}
+	type Container struct {
+		Endpoints []Endpoint `json:"endpoints" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_tcp4_addr_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"192.168.1.1:8080"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_multiple_tcp4_addr", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"192.168.1.1:8080"},{"address":"10.0.0.1:443"},{"address":"172.16.0.1:80"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_hostname_rejected", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"localhost:8080"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[0].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_ipv6_rejected", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"[::1]:8080"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[0].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_missing_port", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"192.168.1.1"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[0].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"192.168.1.1:8080"},{"address":"localhost:443"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[1].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Endpoints map[string]Endpoint `json:"endpoints" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"endpoints":{"primary":{"address":"192.168.1.1:8080"},"secondary":{"address":"10.0.0.1:443"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Endpoints map[string]Endpoint `json:"endpoints" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"endpoints":{"primary":{"address":"localhost:8080"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[primary].Address", ve.Errors[0].Field)
+	})
+}
+
+// TestDive_UDPAddr tests udp_addr constraint in nested structs via dive.
+func TestDive_UDPAddr(t *testing.T) {
+	type Endpoint struct {
+		Address string `json:"address" pedantigo:"udp_addr"`
+	}
+	type Container struct {
+		Endpoints []Endpoint `json:"endpoints" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_udp_addr_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"192.168.1.1:53"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_with_hostname", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"localhost:53"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_multiple_udp_addr", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"192.168.1.1:53"},{"address":"localhost:123"},{"address":"example.com:161"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_ipv6", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"[::1]:53"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_missing_port", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"192.168.1.1"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[0].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_format", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"not-a-udp-addr"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[0].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"192.168.1.1:53"},{"address":"invalid"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[1].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Endpoints map[string]Endpoint `json:"endpoints" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"endpoints":{"dns":{"address":"192.168.1.1:53"},"ntp":{"address":"localhost:123"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Endpoints map[string]Endpoint `json:"endpoints" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"endpoints":{"dns":{"address":"192.168.1.1"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[dns].Address", ve.Errors[0].Field)
+	})
+}
+
+// TestDive_HostnamePort tests hostname_port constraint in nested structs via dive.
+func TestDive_HostnamePort(t *testing.T) {
+	type Endpoint struct {
+		Address string `json:"address" pedantigo:"hostname_port"`
+	}
+	type Container struct {
+		Endpoints []Endpoint `json:"endpoints" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_hostname_port_in_slice", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"localhost:8080"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_fqdn_port", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"example.com:443"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_ip_port", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"192.168.1.1:8080"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_multiple_hostname_port", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"localhost:8080"},{"address":"example.com:443"},{"address":"192.168.1.1:80"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_port_zero", func(t *testing.T) {
+		// hostname_port requires port 1-65535 (NOT 0)
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"localhost:0"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[0].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_missing_port", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"localhost"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[0].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_format", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"not-a-hostname-port"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[0].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("mixed_validity", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[{"address":"localhost:8080"},{"address":"invalid"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[1].Address", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"endpoints":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Endpoints map[string]Endpoint `json:"endpoints" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"endpoints":{"web":{"address":"localhost:8080"},"api":{"address":"example.com:443"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Endpoints map[string]Endpoint `json:"endpoints" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"endpoints":{"web":{"address":"localhost"}}}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Endpoints[web].Address", ve.Errors[0].Field)
+	})
+}
+
+// =============================================================================
+// ENUM DIVE TESTS (oneof, oneofci with nested structs)
+// =============================================================================
+
+// TestOneOf_NestedDive tests that oneof constraint works correctly
+// on fields inside nested structs accessed via dive.
+func TestOneOf_NestedDive(t *testing.T) {
+	type Item struct {
+		Status string `json:"status" pedantigo:"oneof=pending active completed"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid status in nested slice", func(t *testing.T) {
+		jsonData := []byte(`{"items":[{"status":"active"}]}`)
+
+		result, err := validator.Unmarshal(jsonData)
+		require.NoError(t, err, "valid enum value should not error")
+		assert.Equal(t, "active", result.Items[0].Status)
+	})
+
+	t.Run("invalid status in nested slice", func(t *testing.T) {
+		jsonData := []byte(`{"items":[{"status":"invalid"}]}`)
+
+		_, err := validator.Unmarshal(jsonData)
+		require.Error(t, err, "invalid enum value should error")
+
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+
+		found := false
+		for _, fieldErr := range ve.Errors {
+			if fieldErr.Field == "Items[0].Status" {
+				found = true
+				assert.Contains(t, fieldErr.Message, "must be one of: pending, active, completed")
+			}
+		}
+		assert.True(t, found, "expected error for Items[0].Status, got: %v", ve.Errors)
+	})
+
+	t.Run("case sensitivity test - uppercase should fail", func(t *testing.T) {
+		jsonData := []byte(`{"items":[{"status":"ACTIVE"}]}`)
+
+		_, err := validator.Unmarshal(jsonData)
+		require.Error(t, err, "case-sensitive oneof should reject uppercase")
+
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+
+		found := false
+		for _, fieldErr := range ve.Errors {
+			if fieldErr.Field == "Items[0].Status" {
+				found = true
+				assert.Contains(t, fieldErr.Message, "must be one of: pending, active, completed")
+			}
+		}
+		assert.True(t, found, "expected error for Items[0].Status with uppercase value, got: %v", ve.Errors)
+	})
+
+	t.Run("multiple items with mixed validity", func(t *testing.T) {
+		// First item valid, second item invalid
+		jsonData := []byte(`{"items":[{"status":"pending"},{"status":"wrong"}]}`)
+
+		_, err := validator.Unmarshal(jsonData)
+		require.Error(t, err, "second item with invalid status should error")
+
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+
+		found := false
+		for _, fieldErr := range ve.Errors {
+			if fieldErr.Field == "Items[1].Status" {
+				found = true
+				assert.Contains(t, fieldErr.Message, "must be one of: pending, active, completed")
+			}
+		}
+		assert.True(t, found, "expected error for Items[1].Status, got: %v", ve.Errors)
+	})
+
+	t.Run("empty slice should pass", func(t *testing.T) {
+		jsonData := []byte(`{"items":[]}`)
+
+		result, err := validator.Unmarshal(jsonData)
+		require.NoError(t, err, "empty slice should not error")
+		assert.Empty(t, result.Items)
+	})
+
+	t.Run("all valid values should pass", func(t *testing.T) {
+		jsonData := []byte(`{"items":[{"status":"pending"},{"status":"active"},{"status":"completed"}]}`)
+
+		result, err := validator.Unmarshal(jsonData)
+		require.NoError(t, err, "all valid enum values should not error")
+		assert.Len(t, result.Items, 3)
+		assert.Equal(t, "pending", result.Items[0].Status)
+		assert.Equal(t, "active", result.Items[1].Status)
+		assert.Equal(t, "completed", result.Items[2].Status)
+	})
+}
+
+// TestOneOfCI_NestedDive tests that oneofci (case-insensitive) constraint works correctly
+// on fields inside nested structs accessed via dive.
+func TestOneOfCI_NestedDive(t *testing.T) {
+	type Item struct {
+		Role string `json:"role" pedantigo:"oneofci=admin user guest"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("exact match passes", func(t *testing.T) {
+		jsonData := []byte(`{"items":[{"role":"admin"}]}`)
+
+		result, err := validator.Unmarshal(jsonData)
+		require.NoError(t, err, "exact match should not error")
+		assert.Equal(t, "admin", result.Items[0].Role)
+	})
+
+	t.Run("uppercase match passes", func(t *testing.T) {
+		jsonData := []byte(`{"items":[{"role":"ADMIN"}]}`)
+
+		result, err := validator.Unmarshal(jsonData)
+		require.NoError(t, err, "uppercase match should not error for case-insensitive")
+		assert.Equal(t, "ADMIN", result.Items[0].Role)
+	})
+
+	t.Run("mixed case match passes", func(t *testing.T) {
+		jsonData := []byte(`{"items":[{"role":"AdMiN"}]}`)
+
+		result, err := validator.Unmarshal(jsonData)
+		require.NoError(t, err, "mixed case match should not error for case-insensitive")
+		assert.Equal(t, "AdMiN", result.Items[0].Role)
+	})
+
+	t.Run("invalid value fails", func(t *testing.T) {
+		jsonData := []byte(`{"items":[{"role":"superuser"}]}`)
+
+		_, err := validator.Unmarshal(jsonData)
+		require.Error(t, err, "invalid enum value should error")
+
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+
+		found := false
+		for _, fieldErr := range ve.Errors {
+			if fieldErr.Field == "Items[0].Role" {
+				found = true
+				assert.Contains(t, fieldErr.Message, "must be one of (case-insensitive): admin, user, guest")
+			}
+		}
+		assert.True(t, found, "expected error for Items[0].Role, got: %v", ve.Errors)
+	})
+
+	t.Run("multiple items with mixed validity", func(t *testing.T) {
+		// First valid (uppercase), second valid (mixed case), third invalid
+		jsonData := []byte(`{"items":[{"role":"USER"},{"role":"GuesT"},{"role":"invalid"}]}`)
+
+		_, err := validator.Unmarshal(jsonData)
+		require.Error(t, err, "third item with invalid role should error")
+
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+
+		found := false
+		for _, fieldErr := range ve.Errors {
+			if fieldErr.Field == "Items[2].Role" {
+				found = true
+				assert.Contains(t, fieldErr.Message, "must be one of (case-insensitive): admin, user, guest")
+			}
+		}
+		assert.True(t, found, "expected error for Items[2].Role, got: %v", ve.Errors)
+	})
+
+	t.Run("empty slice should pass", func(t *testing.T) {
+		jsonData := []byte(`{"items":[]}`)
+
+		result, err := validator.Unmarshal(jsonData)
+		require.NoError(t, err, "empty slice should not error")
+		assert.Empty(t, result.Items)
+	})
+
+	t.Run("all valid values with different cases should pass", func(t *testing.T) {
+		jsonData := []byte(`{"items":[{"role":"admin"},{"role":"USER"},{"role":"GuesT"}]}`)
+
+		result, err := validator.Unmarshal(jsonData)
+		require.NoError(t, err, "all valid enum values with different cases should not error")
+		assert.Len(t, result.Items, 3)
+		assert.Equal(t, "admin", result.Items[0].Role)
+		assert.Equal(t, "USER", result.Items[1].Role)
+		assert.Equal(t, "GuesT", result.Items[2].Role)
+	})
+}
+
+// TestOneOf_NestedMapDive tests that oneof constraint works correctly
+// in map value structs accessed via dive.
+func TestOneOf_NestedMapDive(t *testing.T) {
+	type Config struct {
+		Environment string `json:"environment" pedantigo:"oneof=dev staging production"`
+	}
+	type Configs struct {
+		ByRegion map[string]Config `json:"by_region" pedantigo:"dive"`
+	}
+
+	validator := New[Configs]()
+
+	t.Run("valid environment in map should pass", func(t *testing.T) {
+		jsonData := []byte(`{"by_region":{"us-east":{"environment":"production"}}}`)
+
+		result, err := validator.Unmarshal(jsonData)
+		require.NoError(t, err, "valid enum value in map should not error")
+		assert.Equal(t, "production", result.ByRegion["us-east"].Environment)
+	})
+
+	t.Run("invalid environment in map should fail", func(t *testing.T) {
+		jsonData := []byte(`{"by_region":{"us-west":{"environment":"local"}}}`)
+
+		_, err := validator.Unmarshal(jsonData)
+		require.Error(t, err, "invalid enum value in map should error")
+
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+
+		// Error should mention the field path including map key
+		assert.NotEmpty(t, ve.Errors, "expected validation errors")
+	})
+
+	t.Run("multiple map entries with mixed validity", func(t *testing.T) {
+		jsonData := []byte(`{"by_region":{"us-east":{"environment":"dev"},"eu-west":{"environment":"invalid"}}}`)
+
+		_, err := validator.Unmarshal(jsonData)
+		require.Error(t, err, "invalid enum value in one map entry should error")
+
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.NotEmpty(t, ve.Errors)
+	})
+
+	t.Run("empty map should pass", func(t *testing.T) {
+		jsonData := []byte(`{"by_region":{}}`)
+
+		result, err := validator.Unmarshal(jsonData)
+		require.NoError(t, err, "empty map should not error")
+		assert.Empty(t, result.ByRegion)
+	})
+
+	t.Run("all valid environments in map should pass", func(t *testing.T) {
+		jsonData := []byte(`{"by_region":{"us-east":{"environment":"production"},"us-west":{"environment":"staging"},"eu":{"environment":"dev"}}}`)
+
+		result, err := validator.Unmarshal(jsonData)
+		require.NoError(t, err, "all valid enum values in map should not error")
+		assert.Len(t, result.ByRegion, 3)
+		assert.Equal(t, "production", result.ByRegion["us-east"].Environment)
+		assert.Equal(t, "staging", result.ByRegion["us-west"].Environment)
+		assert.Equal(t, "dev", result.ByRegion["eu"].Environment)
+	})
+}
+
+// TestOneOfCI_NestedMapDive tests that oneofci constraint works correctly
+// in map value structs accessed via dive.
+func TestOneOfCI_NestedMapDive(t *testing.T) {
+	type Permission struct {
+		Level string `json:"level" pedantigo:"oneofci=read write admin"`
+	}
+	type Permissions struct {
+		ByUser map[string]Permission `json:"by_user" pedantigo:"dive"`
+	}
+
+	validator := New[Permissions]()
+
+	t.Run("exact match in map passes", func(t *testing.T) {
+		jsonData := []byte(`{"by_user":{"alice":{"level":"read"}}}`)
+
+		result, err := validator.Unmarshal(jsonData)
+		require.NoError(t, err, "exact match should not error")
+		assert.Equal(t, "read", result.ByUser["alice"].Level)
+	})
+
+	t.Run("uppercase match in map passes", func(t *testing.T) {
+		jsonData := []byte(`{"by_user":{"bob":{"level":"WRITE"}}}`)
+
+		result, err := validator.Unmarshal(jsonData)
+		require.NoError(t, err, "uppercase match should not error for case-insensitive")
+		assert.Equal(t, "WRITE", result.ByUser["bob"].Level)
+	})
+
+	t.Run("mixed case match in map passes", func(t *testing.T) {
+		jsonData := []byte(`{"by_user":{"charlie":{"level":"AdMiN"}}}`)
+
+		result, err := validator.Unmarshal(jsonData)
+		require.NoError(t, err, "mixed case match should not error for case-insensitive")
+		assert.Equal(t, "AdMiN", result.ByUser["charlie"].Level)
+	})
+
+	t.Run("invalid level in map fails", func(t *testing.T) {
+		jsonData := []byte(`{"by_user":{"dave":{"level":"execute"}}}`)
+
+		_, err := validator.Unmarshal(jsonData)
+		require.Error(t, err, "invalid enum value in map should error")
+
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.NotEmpty(t, ve.Errors)
+	})
+
+	t.Run("multiple map entries with different cases should pass", func(t *testing.T) {
+		jsonData := []byte(`{"by_user":{"alice":{"level":"read"},"bob":{"level":"WRITE"},"charlie":{"level":"AdMiN"}}}`)
+
+		result, err := validator.Unmarshal(jsonData)
+		require.NoError(t, err, "all valid enum values with different cases should not error")
+		assert.Len(t, result.ByUser, 3)
+		assert.Equal(t, "read", result.ByUser["alice"].Level)
+		assert.Equal(t, "WRITE", result.ByUser["bob"].Level)
+		assert.Equal(t, "AdMiN", result.ByUser["charlie"].Level)
+	})
+
+	t.Run("empty map should pass", func(t *testing.T) {
+		jsonData := []byte(`{"by_user":{}}`)
+
+		result, err := validator.Unmarshal(jsonData)
+		require.NoError(t, err, "empty map should not error")
+		assert.Empty(t, result.ByUser)
+	})
+}
+
+// =============================================================================
+// STRING CONSTRAINT DIVE TESTS
+// =============================================================================
+
+// TestDive_Alpha tests alpha constraint in nested structs via dive.
+func TestDive_Alpha(t *testing.T) {
+	type Item struct {
+		Code string `json:"code" pedantigo:"alpha"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_alpha", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"code":"ABC"},{"code":"xyz"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_with_numbers", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"code":"ABC123"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Code", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_with_space", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"code":"AB C"}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"ABC"},"b":{"code":"XYZ"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"ABC123"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_Alphanum tests alphanum constraint in nested structs via dive.
+func TestDive_Alphanum(t *testing.T) {
+	type Item struct {
+		Code string `json:"code" pedantigo:"alphanum"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_alphanum", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"code":"ABC123"},{"code":"xyz789"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_with_special", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"code":"ABC@123"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Code", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"ABC123"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"ABC-123"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_ASCII tests ascii constraint in nested structs via dive.
+func TestDive_ASCII(t *testing.T) {
+	type Item struct {
+		Text string `json:"text" pedantigo:"ascii"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_ascii", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"text":"Hello World 123!"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_unicode", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"text":"Hello 世界"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Text", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"ASCII only"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"café"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_Contains tests contains constraint in nested structs via dive.
+func TestDive_Contains(t *testing.T) {
+	type Item struct {
+		Text string `json:"text" pedantigo:"contains=@"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_contains", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"text":"user@example.com"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_missing_char", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"text":"userexample.com"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Text", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"test@test"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"no at symbol"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_StartsWith tests startswith constraint in nested structs via dive.
+func TestDive_StartsWith(t *testing.T) {
+	type Item struct {
+		Path string `json:"path" pedantigo:"startswith=/api/"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_startswith", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"path":"/api/users"},{"path":"/api/products"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_wrong_prefix", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"path":"/web/users"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Path", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"path":"/api/test"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"path":"/v1/test"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_EndsWith tests endswith constraint in nested structs via dive.
+func TestDive_EndsWith(t *testing.T) {
+	type Item struct {
+		Filename string `json:"filename" pedantigo:"endswith=.json"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_endswith", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"filename":"config.json"},{"filename":"data.json"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_wrong_suffix", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"filename":"config.yaml"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Filename", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"filename":"test.json"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"filename":"test.xml"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_Lowercase tests lowercase constraint in nested structs via dive.
+func TestDive_Lowercase(t *testing.T) {
+	type Item struct {
+		Tag string `json:"tag" pedantigo:"lowercase"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_lowercase", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"tag":"hello"},{"tag":"world"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_has_uppercase", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"tag":"Hello"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Tag", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"tag":"lowercase"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"tag":"UPPERCASE"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_Uppercase tests uppercase constraint in nested structs via dive.
+func TestDive_Uppercase(t *testing.T) {
+	type Item struct {
+		Code string `json:"code" pedantigo:"uppercase"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_uppercase", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"code":"ABC"},{"code":"XYZ"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_has_lowercase", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"code":"Abc"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Code", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"UPPERCASE"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"lowercase"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_Len tests len constraint in nested structs via dive.
+func TestDive_Len(t *testing.T) {
+	type Item struct {
+		Code string `json:"code" pedantigo:"len=5"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_exact_length", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"code":"ABCDE"},{"code":"12345"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_too_short", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"code":"ABC"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Code", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_too_long", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"code":"ABCDEFG"}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"ABCDE"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"AB"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_MinLen tests min constraint on strings in nested structs via dive.
+func TestDive_MinLen(t *testing.T) {
+	type Item struct {
+		Name string `json:"name" pedantigo:"min=3"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_min_length", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"name":"John"},{"name":"Alice"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_exact_min", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"name":"Bob"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_too_short", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"name":"Jo"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Name", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"name":"John"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"name":"Jo"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_MaxLen tests max constraint on strings in nested structs via dive.
+func TestDive_MaxLen(t *testing.T) {
+	type Item struct {
+		Code string `json:"code" pedantigo:"max=5"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_under_max", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"code":"ABC"},{"code":"XY"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_exact_max", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"code":"ABCDE"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_too_long", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"code":"ABCDEFG"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Code", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"ABC"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"TOOLONGCODE"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_Regexp tests regexp constraint in nested structs via dive.
+func TestDive_Regexp(t *testing.T) {
+	type Item struct {
+		SKU string `json:"sku" pedantigo:"regexp=^[A-Z]{3}-[0-9]{4}$"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_pattern", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"sku":"ABC-1234"},{"sku":"XYZ-9999"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_wrong_format", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"sku":"AB-123"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].SKU", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_lowercase", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"sku":"abc-1234"}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"sku":"ABC-1234"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"sku":"invalid"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_Excludes tests excludes constraint in nested structs via dive.
+func TestDive_Excludes(t *testing.T) {
+	type Item struct {
+		Text string `json:"text" pedantigo:"excludes=<script>"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_no_script", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"text":"Hello World"},{"text":"Safe content"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_has_script", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"text":"<script>alert('xss')</script>"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Text", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"safe text"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"has <script> tag"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_PrintASCII tests printascii constraint in nested structs via dive.
+func TestDive_PrintASCII(t *testing.T) {
+	type Item struct {
+		Text string `json:"text" pedantigo:"printascii"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_printable", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"text":"Hello World!"},{"text":"Test 123"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"Printable ASCII"}}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_Numeric tests numeric constraint in nested structs via dive.
+func TestDive_Numeric(t *testing.T) {
+	type Item struct {
+		Value string `json:"value" pedantigo:"numeric"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_numeric_string", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"value":"12345"},{"value":"67890"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_with_decimal", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"value":"123.45"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_with_letters", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"value":"123abc"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Value", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"12345"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"abc"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_Number tests number constraint in nested structs via dive.
+// Note: "number" constraint only accepts pure digits (0-9), no decimals or signs.
+// Use "numeric" constraint for signed decimals.
+func TestDive_Number(t *testing.T) {
+	type Item struct {
+		Value string `json:"value" pedantigo:"number"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_number_string", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"value":"12345"},{"value":"67890"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_zero", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"value":"0"},{"value":"007"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_with_letters", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"value":"12abc"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Value", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_with_decimal", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"value":"123.45"}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("invalid_with_negative", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"value":"-123"}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"12345"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"not a number"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// =============================================================================
+// ENCODING CONSTRAINT DIVE TESTS
+// =============================================================================
+
+// TestDive_Base64 tests base64 constraint in nested structs via dive.
+func TestDive_Base64(t *testing.T) {
+	type Item struct {
+		Data string `json:"data" pedantigo:"base64"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_base64", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"data":"SGVsbG8gV29ybGQ="},{"data":"dGVzdA=="}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_base64", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"data":"not-valid-base64!!!"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Data", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"data":"SGVsbG8="}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"data":"###invalid###"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_Base64URL tests base64url constraint in nested structs via dive.
+func TestDive_Base64URL(t *testing.T) {
+	type Item struct {
+		Data string `json:"data" pedantigo:"base64url"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_base64url", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"data":"SGVsbG8tV29ybGQ_"},{"data":"dGVzdA=="}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_base64url", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"data":"not valid base64url!!!"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Data", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"data":"SGVsbG8="}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"data":"+++invalid+++"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_Hexadecimal tests hexadecimal constraint in nested structs via dive.
+func TestDive_Hexadecimal(t *testing.T) {
+	type Item struct {
+		Hex string `json:"hex" pedantigo:"hexadecimal"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_hex", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"hex":"DEADBEEF"},{"hex":"0123456789abcdef"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_hex", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"hex":"GHIJK"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Hex", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"hex":"CAFE"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"hex":"ZZZZ"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_HexColor tests hexcolor constraint in nested structs via dive.
+func TestDive_HexColor(t *testing.T) {
+	type Item struct {
+		Color string `json:"color" pedantigo:"hexcolor"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_hexcolor", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"color":"#FF5733"},{"color":"#fff"},{"color":"#AABBCC"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_hexcolor", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"color":"#GGGGGG"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Color", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_no_hash", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"color":"FF5733"}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"color":"#123ABC"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"color":"red"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_JSON tests json constraint in nested structs via dive.
+func TestDive_JSON(t *testing.T) {
+	type Item struct {
+		Data string `json:"data" pedantigo:"json"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_json_object", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"data":"{\"key\":\"value\"}"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_json_array", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"data":"[1,2,3]"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_json", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"data":"{invalid json}"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Data", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"data":"{\"valid\":true}"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"data":"not json"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_JWT tests jwt constraint in nested structs via dive.
+func TestDive_JWT(t *testing.T) {
+	type Item struct {
+		Token string `json:"token" pedantigo:"jwt"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_jwt", func(t *testing.T) {
+		// A valid JWT structure (header.payload.signature) - test token, not a real secret
+		_, err := validator.Unmarshal([]byte(`{"items":[{"token":"aaa.bbb.ccc"}]}`)) // gitleaks:allow test token
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_jwt", func(t *testing.T) {
+		// Uses $ character which isn't valid in base64url
+		_, err := validator.Unmarshal([]byte(`{"items":[{"token":"invalid$token.test.here"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Token", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_missing_parts", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"token":"only.two"}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		// Test token with valid JWT structure (header.payload.signature)
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"token":"xxx.yyy.zzz"}}}`)) // gitleaks:allow test token
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"token":"invalid"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// =============================================================================
+// IDENTITY CONSTRAINT DIVE TESTS
+// =============================================================================
+
+// TestDive_Email tests email constraint in nested structs via dive.
+func TestDive_Email(t *testing.T) {
+	type Item struct {
+		Email string `json:"email" pedantigo:"email"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_emails", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"email":"user@example.com"},{"email":"test.user@domain.org"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_no_at", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"email":"userexample.com"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Email", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_no_domain", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"email":"user@"}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"email":"test@test.com"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"email":"invalid-email"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_E164 tests e164 constraint in nested structs via dive.
+func TestDive_E164(t *testing.T) {
+	type Item struct {
+		Phone string `json:"phone" pedantigo:"e164"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_e164", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"phone":"+14155552671"},{"phone":"+442071234567"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_no_plus", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"phone":"14155552671"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Phone", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_with_spaces", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"phone":"+1 415 555 2671"}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"phone":"+14155552671"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"phone":"555-1234"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_ISBN tests isbn constraint in nested structs via dive.
+func TestDive_ISBN(t *testing.T) {
+	type Item struct {
+		ISBN string `json:"isbn" pedantigo:"isbn"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_isbn13", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"isbn":"978-3-16-148410-0"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_isbn10", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"isbn":"0-306-40615-2"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_isbn", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"isbn":"123-456-789"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].ISBN", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"isbn":"978-3-16-148410-0"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"isbn":"not-an-isbn"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_ISBN10 tests isbn10 constraint in nested structs via dive.
+func TestDive_ISBN10(t *testing.T) {
+	type Item struct {
+		ISBN string `json:"isbn" pedantigo:"isbn10"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_isbn10", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"isbn":"0306406152"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_isbn13_as_isbn10", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"isbn":"9783161484100"}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"isbn":"0306406152"}}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_ISBN13 tests isbn13 constraint in nested structs via dive.
+func TestDive_ISBN13(t *testing.T) {
+	type Item struct {
+		ISBN string `json:"isbn" pedantigo:"isbn13"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_isbn13", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"isbn":"9783161484100"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_isbn10_as_isbn13", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"isbn":"0306406152"}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"isbn":"9783161484100"}}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_ULID tests ulid constraint in nested structs via dive.
+func TestDive_ULID(t *testing.T) {
+	type Item struct {
+		ID string `json:"id" pedantigo:"ulid"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_ulid", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"id":"01ARZ3NDEKTSV4RRFFQ69G5FAV"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_ulid_too_short", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"id":"01ARZ3NDEK"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].ID", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_ulid_bad_chars", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"id":"ILOU0000000000000000000000"}]}`)) // I, L, O, U are invalid
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"id":"01ARZ3NDEKTSV4RRFFQ69G5FAV"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"id":"not-a-ulid"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// =============================================================================
+// FINANCE CONSTRAINT DIVE TESTS
+// =============================================================================
+
+// TestDive_CreditCard tests credit_card constraint in nested structs via dive.
+func TestDive_CreditCard(t *testing.T) {
+	type Item struct {
+		Card string `json:"card" pedantigo:"credit_card"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_visa", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"card":"4111111111111111"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_mastercard", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"card":"5500000000000004"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_luhn", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"card":"4111111111111112"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Card", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_too_short", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"card":"411111"}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"card":"4111111111111111"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"card":"1234567890123456"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_SSN tests ssn constraint in nested structs via dive.
+func TestDive_SSN(t *testing.T) {
+	type Item struct {
+		SSN string `json:"ssn" pedantigo:"ssn"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_ssn", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"ssn":"123-45-6789"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_format", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"ssn":"12345-6789"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].SSN", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_too_short", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"ssn":"123-45-678"}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"ssn":"123-45-6789"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"ssn":"invalid"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// =============================================================================
+// HASH CONSTRAINT DIVE TESTS
+// =============================================================================
+
+// TestDive_MD5 tests md5 constraint in nested structs via dive.
+func TestDive_MD5(t *testing.T) {
+	type Item struct {
+		Hash string `json:"hash" pedantigo:"md5"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_md5", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"hash":"d41d8cd98f00b204e9800998ecf8427e"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_too_short", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"hash":"d41d8cd98f00b204"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Hash", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_bad_chars", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"hash":"g41d8cd98f00b204e9800998ecf8427e"}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"hash":"d41d8cd98f00b204e9800998ecf8427e"}}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_SHA256 tests sha256 constraint in nested structs via dive.
+func TestDive_SHA256(t *testing.T) {
+	type Item struct {
+		Hash string `json:"hash" pedantigo:"sha256"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_sha256", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"hash":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_too_short", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"hash":"e3b0c44298fc1c149afbf4c8996fb924"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Hash", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"hash":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_SHA512 tests sha512 constraint in nested structs via dive.
+func TestDive_SHA512(t *testing.T) {
+	type Item struct {
+		Hash string `json:"hash" pedantigo:"sha512"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_sha512", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"hash":"cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_too_short", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"hash":"cf83e1357eefb8bdf1542850d66d8007"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Hash", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"hash":"cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"}}}`))
+		require.NoError(t, err)
+	})
+}
+
+// =============================================================================
+// DATETIME CONSTRAINT DIVE TESTS
+// =============================================================================
+
+// TestDive_Datetime tests datetime constraint in nested structs via dive.
+func TestDive_Datetime(t *testing.T) {
+	type Item struct {
+		Date string `json:"date" pedantigo:"datetime=2006-01-02"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_datetime", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"date":"2024-01-15"},{"date":"2023-12-31"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_format", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"date":"01-15-2024"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Date", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_not_date", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"date":"not-a-date"}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"date":"2024-06-15"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"date":"invalid"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_Timezone tests timezone constraint in nested structs via dive.
+func TestDive_Timezone(t *testing.T) {
+	type Item struct {
+		TZ string `json:"tz" pedantigo:"timezone"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_timezone", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"tz":"America/New_York"},{"tz":"Europe/London"},{"tz":"UTC"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_timezone", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"tz":"Invalid/Timezone"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].TZ", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"tz":"America/Los_Angeles"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"tz":"Not/Real"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// =============================================================================
+// GEO CONSTRAINT DIVE TESTS
+// =============================================================================
+
+// TestDive_Latitude tests latitude constraint in nested structs via dive.
+func TestDive_Latitude(t *testing.T) {
+	type Item struct {
+		Lat float64 `json:"lat" pedantigo:"latitude"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_latitude", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"lat":40.7128},{"lat":-33.8688},{"lat":0}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_too_high", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"lat":91.0}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Lat", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_too_low", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"lat":-91.0}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"lat":51.5074}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"lat":200.0}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_Longitude tests longitude constraint in nested structs via dive.
+func TestDive_Longitude(t *testing.T) {
+	type Item struct {
+		Lng float64 `json:"lng" pedantigo:"longitude"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_longitude", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"lng":-74.0060},{"lng":151.2093},{"lng":0}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_too_high", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"lng":181.0}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Lng", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_too_low", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"lng":-181.0}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"lng":-0.1278}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"lng":200.0}}}`))
+		require.Error(t, err)
+	})
+}
+
+// =============================================================================
+// COLOR CONSTRAINT DIVE TESTS
+// =============================================================================
+
+// TestDive_RGB tests rgb constraint in nested structs via dive.
+func TestDive_RGB(t *testing.T) {
+	type Item struct {
+		Color string `json:"color" pedantigo:"rgb"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_rgb", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"color":"rgb(255, 0, 0)"},{"color":"rgb(0,128,255)"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_rgb", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"color":"rgb(300, 0, 0)"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Color", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"color":"rgb(0, 0, 0)"}}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_RGBA tests rgba constraint in nested structs via dive.
+func TestDive_RGBA(t *testing.T) {
+	type Item struct {
+		Color string `json:"color" pedantigo:"rgba"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_rgba", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"color":"rgba(255, 0, 0, 0.5)"},{"color":"rgba(0,128,255,1)"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_rgba", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"color":"rgba(255, 0, 0, 2)"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Color", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"color":"rgba(0, 0, 0, 0)"}}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_HSL tests hsl constraint in nested structs via dive.
+func TestDive_HSL(t *testing.T) {
+	type Item struct {
+		Color string `json:"color" pedantigo:"hsl"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_hsl", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"color":"hsl(0, 100%, 50%)"},{"color":"hsl(240,50%,50%)"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_hsl", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"color":"hsl(400, 100%, 50%)"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Color", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"color":"hsl(120, 100%, 50%)"}}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_HSLA tests hsla constraint in nested structs via dive.
+func TestDive_HSLA(t *testing.T) {
+	type Item struct {
+		Color string `json:"color" pedantigo:"hsla"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_hsla", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"color":"hsla(0, 100%, 50%, 0.5)"},{"color":"hsla(240,50%,50%,1)"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_hsla", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"color":"hsla(0, 100%, 50%, 2)"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Color", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"color":"hsla(120, 100%, 50%, 0.5)"}}}`))
+		require.NoError(t, err)
+	})
+}
+
+// =============================================================================
+// COMPARISON CONSTRAINT DIVE TESTS
+// =============================================================================
+
+// TestDive_Eq tests eq constraint in nested structs via dive.
+func TestDive_Eq(t *testing.T) {
+	type Item struct {
+		Status string `json:"status" pedantigo:"eq=active"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_eq", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"status":"active"},{"status":"active"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_ne", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"status":"inactive"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Status", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"status":"active"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"status":"disabled"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_Ne tests ne constraint in nested structs via dive.
+func TestDive_Ne(t *testing.T) {
+	type Item struct {
+		Status string `json:"status" pedantigo:"ne=deleted"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_ne", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"status":"active"},{"status":"pending"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_eq", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"status":"deleted"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Status", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"status":"active"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"status":"deleted"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_EqIgnoreCase tests eq_ignore_case constraint in nested structs via dive.
+func TestDive_EqIgnoreCase(t *testing.T) {
+	type Item struct {
+		Type string `json:"type" pedantigo:"eq_ignore_case=premium"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_exact", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"type":"premium"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_uppercase", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"type":"PREMIUM"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_mixed", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"type":"PrEmIuM"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_different", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"type":"basic"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Type", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"type":"PREMIUM"}}}`))
+		require.NoError(t, err)
+	})
+}
+
+// TestDive_NeIgnoreCase tests ne_ignore_case constraint in nested structs via dive.
+func TestDive_NeIgnoreCase(t *testing.T) {
+	type Item struct {
+		Status string `json:"status" pedantigo:"ne_ignore_case=deleted"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_different", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"status":"active"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("valid_different_case", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"status":"ACTIVE"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_exact_match", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"status":"deleted"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Status", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_case_insensitive_match", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"status":"DELETED"}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"status":"active"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"status":"DeLeTed"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// TestDive_ContainsRune tests containsrune constraint in nested structs via dive.
+func TestDive_ContainsRune(t *testing.T) {
+	type Item struct {
+		Value string `json:"value" pedantigo:"containsrune=@"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_contains_rune", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"value":"test@example.com"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_missing_rune", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"value":"testexample.com"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Value", ve.Errors[0].Field)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"user@domain"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"nodomain"}}}`))
+		require.Error(t, err)
+	})
+}
+
+// =============================================================================
+// MISC CONSTRAINT DIVE TESTS
+// =============================================================================
+
+// TestDive_Semver tests semver constraint in nested structs via dive.
+func TestDive_Semver(t *testing.T) {
+	type Item struct {
+		Version string `json:"version" pedantigo:"semver"`
+	}
+	type Container struct {
+		Items []Item `json:"items" pedantigo:"dive"`
+	}
+
+	validator := New[Container]()
+
+	t.Run("valid_semver", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"version":"1.0.0"},{"version":"2.1.3"},{"version":"0.0.1-alpha"}]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid_semver", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"version":"1.0"}]}`))
+		require.Error(t, err)
+		var ve *ValidationError
+		require.ErrorAs(t, err, &ve)
+		assert.Equal(t, "Items[0].Version", ve.Errors[0].Field)
+	})
+
+	t.Run("invalid_not_semver", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[{"version":"version1"}]}`))
+		require.Error(t, err)
+	})
+
+	t.Run("empty_slice_passes", func(t *testing.T) {
+		_, err := validator.Unmarshal([]byte(`{"items":[]}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_valid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"version":"1.2.3"}}}`))
+		require.NoError(t, err)
+	})
+
+	t.Run("map_invalid", func(t *testing.T) {
+		type MapContainer struct {
+			Items map[string]Item `json:"items" pedantigo:"dive"`
+		}
+		mapValidator := New[MapContainer]()
+		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"version":"v1"}}}`))
+		require.Error(t, err)
 	})
 }
