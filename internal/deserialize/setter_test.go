@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // ==================== Primitive Types ====================
@@ -1154,6 +1155,289 @@ func Test_isValidConversion(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := isValidConversion(tt.from, tt.to)
 			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// ==================== Required Field Error Tests ====================
+
+func TestRequiredFieldError_Error(t *testing.T) {
+	err := &RequiredFieldError{Field: "Name"}
+	assert.Equal(t, "is required", err.Error())
+}
+
+func TestMultiRequiredFieldError_Error(t *testing.T) {
+	tests := []struct {
+		name     string
+		errors   []*RequiredFieldError
+		expected string
+	}{
+		{
+			name:     "single error",
+			errors:   []*RequiredFieldError{{Field: "Name"}},
+			expected: "is required",
+		},
+		{
+			name:     "multiple errors",
+			errors:   []*RequiredFieldError{{Field: "Name"}, {Field: "Email"}},
+			expected: "2 required fields missing",
+		},
+		{
+			name:     "three errors",
+			errors:   []*RequiredFieldError{{Field: "A"}, {Field: "B"}, {Field: "C"}},
+			expected: "3 required fields missing",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := &MultiRequiredFieldError{Errors: tt.errors}
+			assert.Equal(t, tt.expected, err.Error())
+		})
+	}
+}
+
+// ==================== SetFieldValueWithOptions Tests ====================
+
+func TestSetFieldValueWithOptions_RequiredFields(t *testing.T) {
+	type Address struct {
+		Street string `json:"street" pedantigo:"required"`
+		City   string `json:"city" pedantigo:"required"`
+	}
+
+	type TestStruct struct {
+		Address Address
+	}
+
+	tests := []struct {
+		name        string
+		value       any
+		opts        FieldOptions
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name:  "nested struct all fields present",
+			value: map[string]any{"street": "123 Main St", "city": "NYC"},
+			opts: FieldOptions{
+				StrictMissingFields: true,
+				TagName:             "pedantigo",
+			},
+			wantErr: false,
+		},
+		{
+			name:  "nested struct missing required field",
+			value: map[string]any{"street": "123 Main St"},
+			opts: FieldOptions{
+				StrictMissingFields: true,
+				TagName:             "pedantigo",
+			},
+			wantErr: true,
+		},
+		{
+			name:  "nested struct missing field but StrictMissingFields false",
+			value: map[string]any{"street": "123 Main St"},
+			opts: FieldOptions{
+				StrictMissingFields: false,
+				TagName:             "pedantigo",
+			},
+			wantErr: false,
+		},
+		{
+			name:  "nested struct with path prefix",
+			value: map[string]any{"street": "123 Main St"},
+			opts: FieldOptions{
+				StrictMissingFields: true,
+				TagName:             "pedantigo",
+				Path:                "Parent",
+			},
+			wantErr: true,
+		},
+		{
+			name:  "nested struct with FieldName (no path)",
+			value: map[string]any{"street": "123 Main St"},
+			opts: FieldOptions{
+				StrictMissingFields: true,
+				TagName:             "pedantigo",
+				FieldName:           "Address",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &TestStruct{}
+			v := reflect.ValueOf(s).Elem()
+			field := v.FieldByName("Address")
+
+			var recursiveSet func(reflect.Value, any, reflect.Type) error
+			recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+				return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, tt.opts)
+			}
+
+			err := SetFieldValueWithOptions(field, tt.value, field.Type(), recursiveSet, tt.opts)
+			if tt.wantErr {
+				require.Error(t, err)
+				var multiErr *MultiRequiredFieldError
+				assert.ErrorAs(t, err, &multiErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestSetFieldValueWithOptions_SliceWithRequiredFields(t *testing.T) {
+	type Item struct {
+		Name  string `json:"name" pedantigo:"required"`
+		Count int    `json:"count" pedantigo:"required"`
+	}
+
+	type TestStruct struct {
+		Items []Item
+	}
+
+	tests := []struct {
+		name    string
+		value   any
+		opts    FieldOptions
+		wantErr bool
+	}{
+		{
+			name: "slice with all required fields present",
+			value: []any{
+				map[string]any{"name": "item1", "count": 5},
+				map[string]any{"name": "item2", "count": 10},
+			},
+			opts: FieldOptions{
+				StrictMissingFields: true,
+				TagName:             "pedantigo",
+				FieldName:           "Items",
+			},
+			wantErr: false,
+		},
+		{
+			name: "slice with missing required field in element",
+			value: []any{
+				map[string]any{"name": "item1", "count": 5},
+				map[string]any{"name": "item2"}, // missing count
+			},
+			opts: FieldOptions{
+				StrictMissingFields: true,
+				TagName:             "pedantigo",
+				FieldName:           "Items",
+			},
+			wantErr: true,
+		},
+		{
+			name: "slice with zero value present (should pass)",
+			value: []any{
+				map[string]any{"name": "item1", "count": 0}, // zero is OK when key present
+			},
+			opts: FieldOptions{
+				StrictMissingFields: true,
+				TagName:             "pedantigo",
+				FieldName:           "Items",
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &TestStruct{}
+			v := reflect.ValueOf(s).Elem()
+			field := v.FieldByName("Items")
+
+			var recursiveSet func(reflect.Value, any, reflect.Type) error
+			recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+				return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, tt.opts)
+			}
+
+			err := SetFieldValueWithOptions(field, tt.value, field.Type(), recursiveSet, tt.opts)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestSetFieldValueWithOptions_MapWithRequiredFields(t *testing.T) {
+	type Data struct {
+		Value int    `json:"value" pedantigo:"required"`
+		Label string `json:"label" pedantigo:"required"`
+	}
+
+	type TestStruct struct {
+		Records map[string]Data
+	}
+
+	tests := []struct {
+		name    string
+		value   any
+		opts    FieldOptions
+		wantErr bool
+	}{
+		{
+			name: "map with all required fields present",
+			value: map[string]any{
+				"key1": map[string]any{"value": 100, "label": "first"},
+				"key2": map[string]any{"value": 200, "label": "second"},
+			},
+			opts: FieldOptions{
+				StrictMissingFields: true,
+				TagName:             "pedantigo",
+				FieldName:           "Records",
+			},
+			wantErr: false,
+		},
+		{
+			name: "map with missing required field in value",
+			value: map[string]any{
+				"key1": map[string]any{"value": 100, "label": "first"},
+				"key2": map[string]any{"value": 200}, // missing label
+			},
+			opts: FieldOptions{
+				StrictMissingFields: true,
+				TagName:             "pedantigo",
+				FieldName:           "Records",
+			},
+			wantErr: true,
+		},
+		{
+			name: "map with zero value present (should pass)",
+			value: map[string]any{
+				"key1": map[string]any{"value": 0, "label": ""}, // zero values OK when keys present
+			},
+			opts: FieldOptions{
+				StrictMissingFields: true,
+				TagName:             "pedantigo",
+				FieldName:           "Records",
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &TestStruct{}
+			v := reflect.ValueOf(s).Elem()
+			field := v.FieldByName("Records")
+
+			var recursiveSet func(reflect.Value, any, reflect.Type) error
+			recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+				return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, tt.opts)
+			}
+
+			err := SetFieldValueWithOptions(field, tt.value, field.Type(), recursiveSet, tt.opts)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
