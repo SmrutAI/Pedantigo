@@ -13,7 +13,7 @@ func TestMaxConstraint(t *testing.T) {
 	tests := []struct {
 		name    string
 		value   any
-		max     int
+		max     float64
 		wantErr bool
 	}{
 		// Valid cases - below max
@@ -51,6 +51,12 @@ func TestMaxConstraint(t *testing.T) {
 		{name: "float32 exceeds max", value: float32(10.5), max: 10, wantErr: true},
 		{name: "float64 below max", value: float64(3.5), max: 10, wantErr: false},
 		{name: "float64 exceeds max", value: float64(10.5), max: 10, wantErr: true},
+
+		// Decimal max values (float bounds)
+		{name: "float below decimal max", value: 0.5, max: 1.0, wantErr: false},
+		{name: "float at decimal max", value: 1.0, max: 1.0, wantErr: false},
+		{name: "float exceeds decimal max", value: 1.5, max: 1.0, wantErr: true},
+		{name: "float within 0-1 range", value: 0.75, max: 1.0, wantErr: false},
 
 		// String (length check)
 		{name: "string below max length", value: "hello", max: 10, wantErr: false},
@@ -232,7 +238,7 @@ func TestMinConstraint(t *testing.T) {
 	tests := []struct {
 		name    string
 		value   any
-		min     int
+		min     float64
 		wantErr bool
 	}{
 		// Valid cases - above min
@@ -253,6 +259,13 @@ func TestMinConstraint(t *testing.T) {
 		{name: "int8 above min", value: int8(50), min: 10, wantErr: false},
 		{name: "uint above min", value: uint(50), min: 10, wantErr: false},
 		{name: "float32 above min", value: float32(5.0), min: 3, wantErr: false},
+
+		// Decimal min values (float bounds)
+		{name: "float above decimal min", value: 0.5, min: 0.0, wantErr: false},
+		{name: "float at decimal min", value: 0.0, min: 0.0, wantErr: false},
+		{name: "float below decimal min", value: -0.1, min: 0.0, wantErr: true},
+		{name: "float within 0-1 range at 0.5 min", value: 0.75, min: 0.5, wantErr: false},
+		{name: "float below 0.5 min", value: 0.3, min: 0.5, wantErr: true},
 
 		// String (length check)
 		{name: "string above min length", value: "hello", min: 3, wantErr: false},

@@ -10,8 +10,8 @@ import (
 
 // Numeric constraint types.
 type (
-	minConstraint            struct{ min int }
-	maxConstraint            struct{ max int }
+	minConstraint            struct{ min float64 }
+	maxConstraint            struct{ max float64 }
 	minLengthConstraint      struct{ minLength int }
 	maxLengthConstraint      struct{ maxLength int }
 	gtConstraint             struct{ threshold float64 }
@@ -36,7 +36,7 @@ const (
 
 // validateBound is a helper that validates numeric bounds (min or max).
 // For min: value must be >= bound. For max: value must be <= bound.
-func validateBound(value any, bound int, mode boundMode) error {
+func validateBound(value any, bound float64, mode boundMode) error {
 	v, ok := derefValue(value)
 	if !ok {
 		return nil // Skip validation for invalid/nil values
@@ -60,35 +60,35 @@ func validateBound(value any, bound int, mode boundMode) error {
 	return formatBoundError(v.Kind(), bound, mode, constraintName)
 }
 
-func checkMinViolation(v reflect.Value, bound int) bool {
+func checkMinViolation(v reflect.Value, bound float64) bool {
 	switch v.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int() < int64(bound)
+		return float64(v.Int()) < bound
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return bound >= 0 && v.Uint() < uint64(bound) //nolint:gosec // bounds checked
+		return float64(v.Uint()) < bound
 	case reflect.Float32, reflect.Float64:
-		return v.Float() < float64(bound)
+		return v.Float() < bound
 	case reflect.String:
-		return len(v.String()) < bound
+		return float64(len(v.String())) < bound
 	}
 	return true // unsupported type is a violation
 }
 
-func checkMaxViolation(v reflect.Value, bound int) bool {
+func checkMaxViolation(v reflect.Value, bound float64) bool {
 	switch v.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int() > int64(bound)
+		return float64(v.Int()) > bound
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return bound >= 0 && v.Uint() > uint64(bound) //nolint:gosec // bounds checked
+		return float64(v.Uint()) > bound
 	case reflect.Float32, reflect.Float64:
-		return v.Float() > float64(bound)
+		return v.Float() > bound
 	case reflect.String:
-		return len(v.String()) > bound
+		return float64(len(v.String())) > bound
 	}
 	return true // unsupported type is a violation
 }
 
-func formatBoundError(kind reflect.Kind, bound int, mode boundMode, constraintName string) error {
+func formatBoundError(kind reflect.Kind, bound float64, mode boundMode, constraintName string) error {
 	msgWord := "at least"
 	code := CodeMinValue
 	if mode == boundMax {
@@ -99,9 +99,9 @@ func formatBoundError(kind reflect.Kind, bound int, mode boundMode, constraintNa
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 		reflect.Float32, reflect.Float64:
-		return NewConstraintErrorf(code, "must be %s %d", msgWord, bound)
+		return NewConstraintErrorf(code, "must be %s %v", msgWord, bound)
 	case reflect.String:
-		return NewConstraintErrorf(code, "must be %s %d characters", msgWord, bound)
+		return NewConstraintErrorf(code, "must be %s %v characters", msgWord, bound)
 	default:
 		return NewConstraintErrorf(CodeUnsupportedType, "%s constraint not supported for type %s", constraintName, kind)
 	}
@@ -407,8 +407,9 @@ func (c disallowInfNanConstraint) Validate(value any) error {
 
 // buildMinConstraint creates a min constraint, handling context-aware type checking.
 // Returns (constraint, true) on success or (nil, false) if parsing fails.
+// Supports both integer (min=5) and decimal (min=0.5) values.
 func buildMinConstraint(value string, fieldType reflect.Type) (Constraint, bool) {
-	minVal, err := strconv.Atoi(value)
+	minVal, err := strconv.ParseFloat(value, 64)
 	if err != nil {
 		return nil, false
 	}
@@ -420,15 +421,17 @@ func buildMinConstraint(value string, fieldType reflect.Type) (Constraint, bool)
 	}
 	kind := checkType.Kind()
 	if kind == reflect.String || kind == reflect.Slice || kind == reflect.Array || kind == reflect.Map {
-		return minLengthConstraint{minLength: minVal}, true
+		// For length constraints, truncate to int (length must be integer)
+		return minLengthConstraint{minLength: int(minVal)}, true
 	}
 	return minConstraint{min: minVal}, true
 }
 
 // buildMaxConstraint creates a max constraint, handling context-aware type checking.
 // Returns (constraint, true) on success or (nil, false) if parsing fails.
+// Supports both integer (max=100) and decimal (max=1.0) values.
 func buildMaxConstraint(value string, fieldType reflect.Type) (Constraint, bool) {
-	maxVal, err := strconv.Atoi(value)
+	maxVal, err := strconv.ParseFloat(value, 64)
 	if err != nil {
 		return nil, false
 	}
@@ -440,7 +443,8 @@ func buildMaxConstraint(value string, fieldType reflect.Type) (Constraint, bool)
 	}
 	kind := checkType.Kind()
 	if kind == reflect.String || kind == reflect.Slice || kind == reflect.Array || kind == reflect.Map {
-		return maxLengthConstraint{maxLength: maxVal}, true
+		// For length constraints, truncate to int (length must be integer)
+		return maxLengthConstraint{maxLength: int(maxVal)}, true
 	}
 	return maxConstraint{max: maxVal}, true
 }
