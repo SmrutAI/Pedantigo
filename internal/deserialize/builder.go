@@ -37,7 +37,7 @@ type BuilderOptions struct {
 func BuildFieldDeserializers(
 	typ reflect.Type,
 	opts BuilderOptions,
-	setFieldValueFunc func(fieldValue reflect.Value, inValue any, fieldType reflect.Type) error,
+	setFieldValueFunc func(fieldValue reflect.Value, inValue any, fieldType reflect.Type, goFieldName string) error,
 	setDefaultValueFunc func(fieldValue reflect.Value, defaultValue string),
 ) map[string]FieldDeserializer {
 	deserializers := make(map[string]FieldDeserializer)
@@ -134,6 +134,7 @@ func BuildFieldDeserializers(
 		// Create field deserializer closure
 		fieldIndex := i
 		fieldType := field.Type
+		goFieldName := field.Name                 // Go struct field name (e.g., "Addresses")
 		_, hasRequired := constraints["required"] // Check if key exists, not if value is non-empty
 		fieldTransformations := transformations   // Capture for closure
 
@@ -185,7 +186,7 @@ func BuildFieldDeserializers(
 			}
 
 			// Field is present in JSON - set the value
-			if err := setFieldValueFunc(fieldValue, inValue, fieldType); err != nil {
+			if err := setFieldValueFunc(fieldValue, inValue, fieldType, goFieldName); err != nil {
 				return err
 			}
 

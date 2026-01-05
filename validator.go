@@ -253,8 +253,19 @@ func (v *Validator[T]) validateDiveTags(typ reflect.Type, tagName string) {
 }
 
 // setFieldValue wraps the deserialize package SetFieldValue for use in validator.
-func (v *Validator[T]) setFieldValue(fieldValue reflect.Value, inValue any, fieldType reflect.Type) error {
-	return deserialize.SetFieldValue(fieldValue, inValue, fieldType, v.setFieldValue)
+// Passes options to enable required checking in nested structs (via dive).
+func (v *Validator[T]) setFieldValue(fieldValue reflect.Value, inValue any, fieldType reflect.Type, goFieldName string) error {
+	opts := deserialize.FieldOptions{
+		StrictMissingFields: v.options.StrictMissingFields,
+		TagName:             v.tagName,
+		FieldName:           goFieldName,
+	}
+	// Create a recursive function that passes the options
+	var recursiveSet func(reflect.Value, any, reflect.Type) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+		return deserialize.SetFieldValueWithOptions(fv, iv, ft, recursiveSet, opts)
+	}
+	return deserialize.SetFieldValueWithOptions(fieldValue, inValue, fieldType, recursiveSet, opts)
 }
 
 // Validate validates a struct and returns any validation errors
@@ -333,18 +344,10 @@ func (v *Validator[T]) validateWithCache(val reflect.Value, path []byte, ctx *va
 		// Build field path using buffer
 		fieldPath := appendPath(ctx.pathBuf[:0], path, cached.Name)
 
-		// Check required for nested struct fields (path != nil)
-		if len(path) > 0 && v.options.StrictMissingFields && cached.IsRequired {
-			if fieldVal.IsZero() {
-				ctx.errs = append(ctx.errs, FieldError{
-					Field:   string(fieldPath),
-					Code:    constraints.CodeRequired,
-					Message: "is required",
-					Value:   fieldVal.Interface(),
-				})
-				continue // Skip further validation for this field
-			}
-		}
+		// NOTE: Required checking for nested fields (via dive) is now done during
+		// deserialization in deserializeStructFields(), which can correctly distinguish
+		// between "key missing from JSON" vs "key present with zero value".
+		// The old IsZero() check here was incorrect for zero values like 0, 0.0, false, "".
 
 		// Apply field constraints
 		for _, c := range cached.Constraints {
@@ -529,16 +532,33 @@ func (v *Validator[T]) Unmarshal(data []byte) (*T, error) {
 		}
 
 		if err := deserializer(&objValue, inValue); err != nil {
-			fieldErrors = append(fieldErrors, FieldError{
-				Field:   fieldName,
-				Message: err.Error(),
-			})
+			// Check if it's a MultiRequiredFieldError with multiple paths
+			var multiErr *deserialize.MultiRequiredFieldError
+			if errors.As(err, &multiErr) {
+				for _, reqErr := range multiErr.Errors {
+					fieldErrors = append(fieldErrors, FieldError{
+						Field:   reqErr.Field,
+						Code:    constraints.CodeRequired,
+						Message: reqErr.Error(),
+					})
+				}
+			} else {
+				// Check if it's a single RequiredFieldError
+				var reqErr *deserialize.RequiredFieldError
+				if errors.As(err, &reqErr) {
+					fieldErrors = append(fieldErrors, FieldError{
+						Field:   reqErr.Field,
+						Code:    constraints.CodeRequired,
+						Message: reqErr.Error(),
+					})
+				} else {
+					fieldErrors = append(fieldErrors, FieldError{
+						Field:   fieldName,
+						Message: err.Error(),
+					})
+				}
+			}
 		}
-	}
-
-	// Return early if deserialization errors
-	if len(fieldErrors) > 0 {
-		return &obj, &ValidationError{Errors: fieldErrors}
 	}
 
 	// Step 3.5: Capture extra fields recursively (for this struct and all nested structs)
@@ -548,8 +568,17 @@ func (v *Validator[T]) Unmarshal(data []byte) (*T, error) {
 
 	// Step 4: Run validation constraints (min, max, email, etc.)
 	// NOTE: 'required' is already skipped in Validate() via buildConstraints
+	// Continue validation even if there were deserialization errors to collect all issues
 	if err := v.Validate(&obj); err != nil {
-		return &obj, err
+		var ve *ValidationError
+		if errors.As(err, &ve) {
+			fieldErrors = append(fieldErrors, ve.Errors...)
+		}
+	}
+
+	// Return all collected errors (from both deserialization and validation)
+	if len(fieldErrors) > 0 {
+		return &obj, &ValidationError{Errors: fieldErrors}
 	}
 
 	return &obj, nil
@@ -940,15 +969,33 @@ func (v *Validator[T]) unmarshalFromMap(jsonMap map[string]any) (*T, error) {
 		}
 
 		if err := deserializer(&objValue, inValue); err != nil {
-			fieldErrors = append(fieldErrors, FieldError{
-				Field:   fieldName,
-				Message: err.Error(),
-			})
+			// Check if it's a MultiRequiredFieldError with multiple paths
+			var multiErr *deserialize.MultiRequiredFieldError
+			if errors.As(err, &multiErr) {
+				for _, reqErr := range multiErr.Errors {
+					fieldErrors = append(fieldErrors, FieldError{
+						Field:   reqErr.Field,
+						Code:    constraints.CodeRequired,
+						Message: reqErr.Error(),
+					})
+				}
+			} else {
+				// Check if it's a single RequiredFieldError
+				var reqErr *deserialize.RequiredFieldError
+				if errors.As(err, &reqErr) {
+					fieldErrors = append(fieldErrors, FieldError{
+						Field:   reqErr.Field,
+						Code:    constraints.CodeRequired,
+						Message: reqErr.Error(),
+					})
+				} else {
+					fieldErrors = append(fieldErrors, FieldError{
+						Field:   fieldName,
+						Message: err.Error(),
+					})
+				}
+			}
 		}
-	}
-
-	if len(fieldErrors) > 0 {
-		return &obj, &ValidationError{Errors: fieldErrors}
 	}
 
 	// Capture extra fields recursively if ExtraAllow mode is enabled
@@ -957,8 +1004,17 @@ func (v *Validator[T]) unmarshalFromMap(jsonMap map[string]any) (*T, error) {
 	}
 
 	// Run validation constraints
+	// Continue validation even if there were deserialization errors to collect all issues
 	if err := v.Validate(&obj); err != nil {
-		return &obj, err
+		var ve *ValidationError
+		if errors.As(err, &ve) {
+			fieldErrors = append(fieldErrors, ve.Errors...)
+		}
+	}
+
+	// Return all collected errors (from both deserialization and validation)
+	if len(fieldErrors) > 0 {
+		return &obj, &ValidationError{Errors: fieldErrors}
 	}
 
 	return &obj, nil

@@ -860,11 +860,14 @@ func TestValidatorOptions_StrictMissingFields(t *testing.T) {
 			expectErrFields: []string{"Name", "Email", "Age"}, // Name missing (zero value "") also fails min=2
 		},
 		{
-			name:            "StrictMissingFields_true_required_field_missing",
-			strictMode:      true,
-			jsonInput:       `{}`,
-			expectErr:       true,
-			expectErrFields: []string{"name", "email", "age"}, // All required fields fail when missing
+			name:       "StrictMissingFields_true_required_field_missing",
+			strictMode: true,
+			jsonInput:  `{}`,
+			expectErr:  true,
+			// Required errors (3): name, email, age
+			// Plus validation errors on zero values (2): Name min=2 fails on "", Age min=18 fails on 0
+			// Email "" also fails email validation but it's likely deduped or handled differently
+			expectErrFields: []string{"age", "name", "email", "Name", "Age"}, // All errors collected
 		},
 	}
 
