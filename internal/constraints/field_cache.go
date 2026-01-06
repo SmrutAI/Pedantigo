@@ -18,6 +18,10 @@ type CachedField struct {
 	CrossFieldConstraints []CrossFieldConstraint // eqfield, gtfield, etc.
 	ContextConstraints    []ContextConstraint    // context-aware validators (looked up at runtime)
 
+	// Skip constraints (evaluated BEFORE other constraints)
+	HasSkipConstraints bool             // O(1) check - zero cost when false
+	SkipConstraints    []SkipConstraint // skip_unless, etc.
+
 	// For collections with dive
 	HasDive            bool
 	ElementConstraints []Constraint // constraints after dive
