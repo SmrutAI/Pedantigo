@@ -158,9 +158,10 @@ func (v *Validator[T]) buildFieldConstraints(typ reflect.Type, tagName string) *
 				cached.KeyConstraints = constraints.BuildConstraints(parsedTag.KeyConstraints, field.Type.Key())
 			}
 
-			// Cross-field constraints (eqfield, gtfield, etc.)
-			cached.CrossFieldConstraints = constraints.BuildCrossFieldConstraintsForField(
+			// Cross-field constraints (eqfield, gtfield, etc.) and skip constraints
+			cached.CrossFieldConstraints, cached.SkipConstraints = constraints.BuildCrossFieldConstraintsForField(
 				parsedTag.CollectionConstraints, typ, i)
+			cached.HasSkipConstraints = len(cached.SkipConstraints) > 0
 		}
 
 		// Recurse for nested structs
@@ -340,6 +341,21 @@ func (v *Validator[T]) validateWithCache(val reflect.Value, path []byte, ctx *va
 	for i := range cache.Fields {
 		cached := &cache.Fields[i]
 		fieldVal := val.Field(cached.FieldIndex)
+
+		// Check skip constraints FIRST (e.g., skip_unless)
+		// This is O(1) when HasSkipConstraints is false (no overhead)
+		if cached.HasSkipConstraints {
+			shouldSkip := false
+			for _, sc := range cached.SkipConstraints {
+				if sc.ShouldSkip(val) {
+					shouldSkip = true
+					break
+				}
+			}
+			if shouldSkip {
+				continue // Skip ALL validation on this field
+			}
+		}
 
 		// Build field path using buffer
 		fieldPath := appendPath(ctx.pathBuf[:0], path, cached.Name)

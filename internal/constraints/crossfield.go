@@ -13,6 +13,12 @@ type CrossFieldConstraint interface {
 	ValidateCrossField(fieldValue any, structValue reflect.Value, fieldName string) error
 }
 
+// SkipConstraint is evaluated BEFORE other constraints.
+// If ShouldSkip returns true, ALL validation on this field is bypassed.
+type SkipConstraint interface {
+	ShouldSkip(structValue reflect.Value) bool
+}
+
 // Cross-field constraint types.
 type (
 	eqFieldConstraint struct {
@@ -79,6 +85,11 @@ type (
 		targetFieldName string     // Keep for error messages
 		targetFieldPath *FieldPath // Replace targetFieldIndex
 		compareValue    string
+
+		// Precomputed for performance
+		isSimplePath     bool                     // true for sibling fields (single-level path)
+		directFieldIndex int                      // O(1) access for simple paths
+		compareFn        func(reflect.Value) bool // Type-specific comparison
 	}
 
 	// requiredWithAllConstraint: field is required if ALL listed fields are present (non-zero).
@@ -106,9 +117,11 @@ type (
 	}
 )
 
-// BuildCrossFieldConstraintsForField builds cross-field constraint instances from parsed tags.
-func BuildCrossFieldConstraintsForField(constraints map[string]string, structType reflect.Type, fieldIndex int) []CrossFieldConstraint {
+// BuildCrossFieldConstraintsForField builds cross-field and skip constraint instances from parsed tags.
+// Returns both types separately so validator can handle skip constraints before other validations.
+func BuildCrossFieldConstraintsForField(constraints map[string]string, structType reflect.Type, fieldIndex int) ([]CrossFieldConstraint, []SkipConstraint) {
 	var result []CrossFieldConstraint
+	var skipResult []SkipConstraint
 
 	fieldName := structType.Field(fieldIndex).Name
 
@@ -183,9 +196,45 @@ func BuildCrossFieldConstraintsForField(constraints map[string]string, structTyp
 			fp := ParseFieldPath(structType, value)
 			result = append(result, excludedWithoutConstraint{targetFieldName: value, targetFieldPath: fp})
 		case "skip_unless":
-			if fieldName, compareValue, ok := parseConditionalConstraint(value, " "); ok {
-				fp := ParseFieldPath(structType, fieldName)
-				result = append(result, skipUnlessConstraint{targetFieldName: fieldName, targetFieldPath: fp, compareValue: compareValue})
+			if targetField, compareValue, ok := parseConditionalConstraint(value, " "); ok {
+				fp := ParseFieldPath(structType, targetField)
+
+				// Precompute optimizations for performance
+				isSimple := len(fp.Parts) == 1
+				directIdx := -1
+				if isSimple {
+					directIdx = fp.IndexAtLevel[0]
+				}
+
+				// Create type-specific comparator (precomputed at build time)
+				var compareFn func(reflect.Value) bool
+				if field, found := structType.FieldByName(targetField); found {
+					switch field.Type.Kind() {
+					case reflect.String:
+						compareFn = func(v reflect.Value) bool { return v.String() == compareValue }
+					case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+						expected, _ := strconv.ParseInt(compareValue, 10, 64)
+						compareFn = func(v reflect.Value) bool { return v.Int() == expected }
+					case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+						expected, _ := strconv.ParseUint(compareValue, 10, 64)
+						compareFn = func(v reflect.Value) bool { return v.Uint() == expected }
+					case reflect.Bool:
+						expected := compareValue == "true"
+						compareFn = func(v reflect.Value) bool { return v.Bool() == expected }
+					default:
+						// Fallback: string comparison via fmt.Sprint
+						compareFn = func(v reflect.Value) bool { return fmt.Sprint(v.Interface()) == compareValue }
+					}
+				}
+
+				skipResult = append(skipResult, skipUnlessConstraint{
+					targetFieldName:  targetField,
+					targetFieldPath:  fp,
+					compareValue:     compareValue,
+					isSimplePath:     isSimple,
+					directFieldIndex: directIdx,
+					compareFn:        compareFn,
+				})
 			}
 		case "required_with_all":
 			names, paths := parseMultiFieldConstraint(structType, value)
@@ -222,7 +271,7 @@ func BuildCrossFieldConstraintsForField(constraints map[string]string, structTyp
 		}
 	}
 
-	return result
+	return result, skipResult
 }
 
 // ============================================================================
@@ -512,24 +561,37 @@ func (c excludedWithoutAllConstraint) ValidateCrossField(fieldValue any, structV
 }
 
 // skipUnlessConstraint: field validation is skipped unless another field matches a value.
+// Implements SkipConstraint interface for proper skip behavior.
+
+// ShouldSkip returns true if validation should be skipped (condition NOT met).
+func (c skipUnlessConstraint) ShouldSkip(structValue reflect.Value) bool {
+	// Early return if compareFn not set (stub behavior)
+	if c.compareFn == nil {
+		return false
+	}
+
+	var target reflect.Value
+	switch {
+	case c.isSimplePath:
+		// O(1) direct field access - no loop
+		target = structValue.Field(c.directFieldIndex)
+	default:
+		// Nested path - use full resolution
+		val, err := c.targetFieldPath.ResolveValue(structValue)
+		if err != nil {
+			return true // Skip if target doesn't exist
+		}
+		target = reflect.ValueOf(val)
+	}
+
+	// Condition NOT met → skip; Condition met → don't skip
+	return !c.compareFn(target)
+}
+
+// ValidateCrossField is kept for backwards compatibility.
+// The actual skip logic is in ShouldSkip().
 func (c skipUnlessConstraint) ValidateCrossField(fieldValue any, structValue reflect.Value, fieldName string) error {
-	// Get the target field value
-	targetValue, err := c.targetFieldPath.ResolveValue(structValue)
-	if err != nil {
-		// Target field doesn't exist - skip validation
-		return nil
-	}
-
-	// Compare target field value to expected value
-	targetStr := CompareToString(targetValue)
-
-	// If condition is NOT met (target != expected), skip validation
-	if targetStr != c.compareValue {
-		return nil // Skip - condition not met
-	}
-
-	// Condition IS met - validation proceeds (return nil means constraint itself passes)
-	// The actual field validation will be done by other constraints
+	// This method is now a no-op - skip logic moved to ShouldSkip()
 	return nil
 }
 
