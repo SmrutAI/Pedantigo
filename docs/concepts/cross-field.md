@@ -325,6 +325,7 @@ order, _ := pedantigo.Unmarshal[Order](data) // ✓ Valid - priority validation 
 - Optional premium features that need validation when enabled
 - Shipping options that vary by order type
 - Payment fields that depend on payment method
+- **Discriminated unions** - See [Lightweight Alternative with skip_unless](/docs/concepts/unions#lightweight-alternative-with-skip_unless) for a complete example
 
 ---
 

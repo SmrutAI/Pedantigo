@@ -441,6 +441,88 @@ result, err := parser.Complete()
 
 :::
 
+## Lightweight Alternative with skip_unless
+
+For scenarios where you don't need streaming support or JSON Schema `oneOf` generation, `skip_unless` provides an alternative to `UnionValidator` that keeps all variants in a single struct.
+
+### The Pattern
+
+```go
+type TV struct {
+    Channel int `json:"channel" pedantigo:"required,min=1,max=999"`
+}
+
+type Fan struct {
+    Speed int `json:"speed" pedantigo:"required,min=1,max=5"`
+}
+
+type Suite struct {
+    SuiteType string `json:"suite_type" pedantigo:"required,oneof=tv fan"`
+    TV        TV     `json:"tv" pedantigo:"skip_unless=SuiteType tv"`
+    Fan       Fan    `json:"fan" pedantigo:"skip_unless=SuiteType fan"`
+}
+```
+
+### How It Works
+
+- `skip_unless=FieldName value` skips **ALL validation** on a field when the condition is NOT met
+- When `SuiteType` is `"tv"`: TV is validated, Fan is completely skipped
+- When `SuiteType` is `"fan"`: Fan is validated, TV is completely skipped
+- Invalid `SuiteType` values are caught by the `oneof` constraint
+
+### Example Usage
+
+```go
+validator := pedantigo.New[Suite]()
+
+// TV mode - TV is validated, Fan is skipped
+tvData := Suite{
+    SuiteType: "tv",
+    TV:        TV{Channel: 42},
+    Fan:       Fan{Speed: 0}, // Would fail min=1, but is skipped
+}
+err := validator.Validate(&tvData) // ✓ Valid
+
+// Fan mode - Fan is validated, TV is skipped
+fanData := Suite{
+    SuiteType: "fan",
+    TV:        TV{Channel: 0}, // Would fail min=1, but is skipped
+    Fan:       Fan{Speed: 3},
+}
+err = validator.Validate(&fanData) // ✓ Valid
+
+// TV mode with invalid TV - fails validation
+invalidData := Suite{
+    SuiteType: "tv",
+    TV:        TV{Channel: 0}, // Fails: min=1
+    Fan:       Fan{Speed: 0},
+}
+err = validator.Validate(&invalidData) // ✗ Error: tv.channel must be at least 1
+```
+
+### When to Use skip_unless vs UnionValidator
+
+| Feature | `skip_unless` | `UnionValidator` |
+|---------|--------------|------------------|
+| Single struct | ✓ | ✗ (separate variant types) |
+| Setup complexity | Simple | Moderate |
+| JSON Schema `oneOf` | ✗ | ✓ |
+| Streaming support | ✗ | ✓ |
+| Type assertion needed | ✗ | ✓ |
+| Multiple discriminator values | ✗ | ✓ |
+
+**Use `skip_unless` when:**
+- You want a simple, single-struct solution
+- You don't need JSON Schema `oneOf` generation
+- You don't need streaming validation
+- Each discriminator value maps to specific fields in one struct
+
+**Use `UnionValidator` when:**
+- You need distinct variant types with their own methods
+- You need JSON Schema `oneOf` with discriminator mapping
+- You're using streaming JSON (LLM outputs)
+- You need the full type-safe union pattern
+
 ## Key Differences from the Simple API
 
 Discriminated unions cannot use the Simple API because:
