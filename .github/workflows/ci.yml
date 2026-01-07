@@ -57,7 +57,7 @@ jobs:
           output: both
           badge: true
           fail_below_min: true
-          thresholds: '80 90'
+          thresholds: '90 95'
 
       - name: Add coverage PR comment
         uses: marocchino/sticky-pull-request-comment@v2
