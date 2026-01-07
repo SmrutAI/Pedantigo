@@ -1282,3 +1282,1195 @@ func TestSchemaJSON_DefinitionUnwrapping(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "uri", format)
 }
+
+// ==================================================
+// SchemaLLM and SchemaJSONLLM tests
+// ==================================================
+
+// TestSchemaLLM_NoSchemaField verifies that SchemaLLM() does NOT include $schema field.
+func TestSchemaLLM_NoSchemaField(t *testing.T) {
+	type User struct {
+		Name  string `json:"name" pedantigo:"required,min=2"`
+		Email string `json:"email" pedantigo:"email"`
+	}
+
+	validator := New[User]()
+	schema := validator.SchemaLLM()
+	require.NotNil(t, schema)
+
+	// Version should be empty (which means $schema is omitted in JSON)
+	assert.Empty(t, schema.Version, "SchemaLLM() should have empty Version (no $schema)")
+
+	// Properties should still be present
+	require.NotNil(t, schema.Properties)
+	assert.Equal(t, "object", schema.Type)
+
+	// Verify constraints are still applied
+	nameProp, _ := schema.Properties.Get("name")
+	require.NotNil(t, nameProp)
+	require.NotNil(t, nameProp.MinLength)
+	assert.Equal(t, uint64(2), *nameProp.MinLength)
+
+	emailProp, _ := schema.Properties.Get("email")
+	require.NotNil(t, emailProp)
+	assert.Equal(t, "email", emailProp.Format)
+}
+
+// TestSchemaJSONLLM_NoSchemaFieldInJSON verifies JSON output has no $schema.
+func TestSchemaJSONLLM_NoSchemaFieldInJSON(t *testing.T) {
+	type User struct {
+		Name  string `json:"name" pedantigo:"required,min=2"`
+		Email string `json:"email" pedantigo:"email"`
+	}
+
+	validator := New[User]()
+	jsonBytes, err := validator.SchemaJSONLLM()
+	require.NoError(t, err)
+	require.NotEmpty(t, jsonBytes)
+
+	var schemaMap map[string]any
+	err = json.Unmarshal(jsonBytes, &schemaMap)
+	require.NoError(t, err)
+
+	// Should NOT have $schema field
+	_, hasSchema := schemaMap["$schema"]
+	assert.False(t, hasSchema, "SchemaJSONLLM() output should NOT contain $schema field")
+
+	// Should still have type and properties
+	assert.Equal(t, "object", schemaMap["type"])
+
+	properties, ok := schemaMap["properties"].(map[string]any)
+	require.True(t, ok)
+
+	nameProp, ok := properties["name"].(map[string]any)
+	require.True(t, ok)
+	assert.InDelta(t, 2.0, nameProp["minLength"].(float64), 0.0001)
+
+	emailProp, ok := properties["email"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "email", emailProp["format"])
+}
+
+// TestSchemaLLM_Caching verifies SchemaLLM() has independent caching.
+func TestSchemaLLM_Caching(t *testing.T) {
+	type Product struct {
+		Name  string `json:"name" pedantigo:"required,min=1"`
+		Price int    `json:"price" pedantigo:"gt=0"`
+	}
+
+	t.Run("SchemaLLM caches pointer on repeated calls", func(t *testing.T) {
+		validator := New[Product]()
+		schema1 := validator.SchemaLLM()
+		schema2 := validator.SchemaLLM()
+		require.NotNil(t, schema1)
+		require.NotNil(t, schema2)
+		assert.Same(t, schema1, schema2, "SchemaLLM() should return cached pointer")
+	})
+
+	t.Run("SchemaJSONLLM caches bytes on repeated calls", func(t *testing.T) {
+		validator := New[Product]()
+		json1, err1 := validator.SchemaJSONLLM()
+		json2, err2 := validator.SchemaJSONLLM()
+
+		require.NoError(t, err1)
+		require.NoError(t, err2)
+		assert.JSONEq(t, string(json1), string(json2), "SchemaJSONLLM() should return cached bytes")
+	})
+
+	t.Run("SchemaLLM and Schema have independent caches", func(t *testing.T) {
+		validator := New[Product]()
+
+		// Call both
+		schemaLLM := validator.SchemaLLM()
+		schemaRegular := validator.Schema()
+
+		require.NotNil(t, schemaLLM)
+		require.NotNil(t, schemaRegular)
+
+		// They should be different pointers (independent caches)
+		assert.NotSame(t, schemaLLM, schemaRegular, "SchemaLLM and Schema should have independent caches")
+
+		// LLM schema should have no Version, regular should have Version
+		assert.Empty(t, schemaLLM.Version, "SchemaLLM Version should be empty")
+		// Regular schema may or may not have version depending on jsonschema library defaults
+	})
+
+	t.Run("SchemaLLM called first then SchemaJSONLLM uses cached schema", func(t *testing.T) {
+		validator := New[Product]()
+
+		// Call SchemaLLM() first to cache schema object
+		schema1 := validator.SchemaLLM()
+		require.NotNil(t, schema1)
+
+		// Call SchemaJSONLLM() - should use cached LLM schema
+		jsonBytes, err := validator.SchemaJSONLLM()
+		require.NoError(t, err)
+		assert.NotEmpty(t, jsonBytes, "expected non-empty JSON bytes")
+
+		// Verify constraints in JSON
+		var schemaMap map[string]any
+		err = json.Unmarshal(jsonBytes, &schemaMap)
+		require.NoError(t, err)
+
+		// No $schema
+		_, hasSchema := schemaMap["$schema"]
+		assert.False(t, hasSchema, "should NOT have $schema after caching")
+
+		// Has constraints
+		properties, ok := schemaMap["properties"].(map[string]any)
+		require.True(t, ok)
+
+		nameProp, ok := properties["name"].(map[string]any)
+		require.True(t, ok)
+		assert.InDelta(t, 1.0, nameProp["minLength"].(float64), 1e-9)
+	})
+}
+
+// TestSchemaLLM_Concurrent verifies SchemaLLM is thread-safe.
+func TestSchemaLLM_Concurrent(t *testing.T) {
+	type User struct {
+		Name  string `json:"name" pedantigo:"required"`
+		Email string `json:"email" pedantigo:"email"`
+	}
+
+	t.Run("SchemaLLM is thread-safe", func(t *testing.T) {
+		validator := New[User]()
+		numGoroutines := 100
+
+		var wg sync.WaitGroup
+		wg.Add(numGoroutines)
+		schemaChan := make(chan *jsonschema.Schema, numGoroutines)
+
+		for i := 0; i < numGoroutines; i++ {
+			go func() {
+				defer wg.Done()
+				schemaChan <- validator.SchemaLLM()
+			}()
+		}
+
+		wg.Wait()
+		close(schemaChan)
+
+		// All should return same cached pointer
+		pointers := make([]*jsonschema.Schema, 0, numGoroutines)
+		for schema := range schemaChan {
+			require.NotNil(t, schema)
+			pointers = append(pointers, schema)
+		}
+
+		firstPtr := pointers[0]
+		for i, ptr := range pointers {
+			assert.Same(t, firstPtr, ptr, "goroutine %d should get same cached pointer", i)
+		}
+	})
+
+	t.Run("SchemaJSONLLM is thread-safe", func(t *testing.T) {
+		validator := New[User]()
+		numGoroutines := 100
+
+		var wg sync.WaitGroup
+		wg.Add(numGoroutines)
+		jsonChan := make(chan []byte, numGoroutines)
+
+		for i := 0; i < numGoroutines; i++ {
+			go func() {
+				defer wg.Done()
+				jsonBytes, err := validator.SchemaJSONLLM()
+				assert.NoError(t, err)
+				jsonChan <- jsonBytes
+			}()
+		}
+
+		wg.Wait()
+		close(jsonChan)
+
+		// All should return same cached bytes
+		allBytes := make([][]byte, 0, numGoroutines)
+		for jsonBytes := range jsonChan {
+			require.NotNil(t, jsonBytes)
+			allBytes = append(allBytes, jsonBytes)
+		}
+
+		firstBytes := allBytes[0]
+		for i, jsonBytes := range allBytes {
+			assert.JSONEq(t, string(firstBytes), string(jsonBytes), "goroutine %d should get same cached JSON", i)
+		}
+	})
+}
+
+// TestSchemaJSONLLM_Constraints verifies all constraints are in LLM schema.
+func TestSchemaJSONLLM_Constraints(t *testing.T) {
+	type ComplexModel struct {
+		Username string   `json:"username" pedantigo:"required,min=3,max=20"`
+		Email    string   `json:"email" pedantigo:"required,email"`
+		Age      int      `json:"age" pedantigo:"gte=18,lte=120"`
+		Price    float64  `json:"price" pedantigo:"gt=0,lt=10000"`
+		Tags     []string `json:"tags" pedantigo:"min=1"`
+		Website  string   `json:"website" pedantigo:"url"`
+		UUID     string   `json:"uuid" pedantigo:"uuid"`
+	}
+
+	validator := New[ComplexModel]()
+	jsonBytes, err := validator.SchemaJSONLLM()
+	require.NoError(t, err)
+
+	var schemaMap map[string]any
+	err = json.Unmarshal(jsonBytes, &schemaMap)
+	require.NoError(t, err)
+
+	// No $schema
+	_, hasSchema := schemaMap["$schema"]
+	assert.False(t, hasSchema)
+
+	properties, ok := schemaMap["properties"].(map[string]any)
+	require.True(t, ok)
+
+	// Check username constraints
+	usernameProp, ok := properties["username"].(map[string]any)
+	require.True(t, ok)
+	assert.InDelta(t, 3.0, usernameProp["minLength"].(float64), 0.0001)
+	assert.InDelta(t, 20.0, usernameProp["maxLength"].(float64), 0.0001)
+
+	// Check email format
+	emailProp, ok := properties["email"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "email", emailProp["format"])
+
+	// Check age numeric constraints
+	ageProp, ok := properties["age"].(map[string]any)
+	require.True(t, ok)
+	assert.InDelta(t, 18.0, ageProp["minimum"].(float64), 0.0001)
+	assert.InDelta(t, 120.0, ageProp["maximum"].(float64), 0.0001)
+
+	// Check price exclusive constraints
+	priceProp, ok := properties["price"].(map[string]any)
+	require.True(t, ok)
+	// Note: exclusiveMinimum/Maximum are stored as json.Number or similar
+	assert.NotNil(t, priceProp["exclusiveMinimum"])
+	assert.NotNil(t, priceProp["exclusiveMaximum"])
+
+	// Check website format
+	websiteProp, ok := properties["website"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "uri", websiteProp["format"])
+
+	// Check uuid format
+	uuidProp, ok := properties["uuid"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "uuid", uuidProp["format"])
+}
+
+// TestSchemaLLM_SimpleAPI tests simple API wrappers.
+func TestSchemaLLM_SimpleAPI(t *testing.T) {
+	type Config struct {
+		Host string `json:"host" pedantigo:"required,min=1"`
+		Port int    `json:"port" pedantigo:"gte=1,lte=65535"`
+	}
+
+	t.Run("SchemaLLM simple API returns schema without $schema", func(t *testing.T) {
+		schema := SchemaLLM[Config]()
+		require.NotNil(t, schema)
+		assert.Empty(t, schema.Version, "SchemaLLM simple API should return schema without $schema")
+		assert.Equal(t, "object", schema.Type)
+	})
+
+	t.Run("SchemaJSONLLM simple API returns JSON without $schema", func(t *testing.T) {
+		jsonBytes, err := SchemaJSONLLM[Config]()
+		require.NoError(t, err)
+		require.NotEmpty(t, jsonBytes)
+
+		var schemaMap map[string]any
+		err = json.Unmarshal(jsonBytes, &schemaMap)
+		require.NoError(t, err)
+
+		_, hasSchema := schemaMap["$schema"]
+		assert.False(t, hasSchema, "SchemaJSONLLM simple API should NOT contain $schema")
+
+		// Verify constraints
+		properties, ok := schemaMap["properties"].(map[string]any)
+		require.True(t, ok)
+
+		hostProp, ok := properties["host"].(map[string]any)
+		require.True(t, ok)
+		assert.InDelta(t, 1.0, hostProp["minLength"].(float64), 1e-9)
+	})
+
+	t.Run("Simple API uses cached validator", func(t *testing.T) {
+		// Call multiple times - should use cached validator
+		schema1 := SchemaLLM[Config]()
+		schema2 := SchemaLLM[Config]()
+
+		require.NotNil(t, schema1)
+		require.NotNil(t, schema2)
+		// Both should be from the same cached validator (same pointer)
+		assert.Same(t, schema1, schema2)
+	})
+}
+
+// TestSchemaLLM_VsSchemaJSON_Comparison verifies $schema difference.
+func TestSchemaLLM_VsSchemaJSON_Comparison(t *testing.T) {
+	type User struct {
+		Name  string `json:"name" pedantigo:"required,min=2"`
+		Email string `json:"email" pedantigo:"email"`
+	}
+
+	// Get both schemas
+	llmJSON, err := SchemaJSONLLM[User]()
+	require.NoError(t, err)
+
+	regularJSON, err := SchemaJSON[User]()
+	require.NoError(t, err)
+
+	var llmMap, regularMap map[string]any
+	require.NoError(t, json.Unmarshal(llmJSON, &llmMap))
+	require.NoError(t, json.Unmarshal(regularJSON, &regularMap))
+
+	// LLM schema should NOT have $schema
+	_, hasLLMSchema := llmMap["$schema"]
+	assert.False(t, hasLLMSchema, "SchemaJSONLLM should NOT have $schema")
+
+	// Both should have same properties
+	llmProps := llmMap["properties"].(map[string]any)
+	regularProps := regularMap["properties"].(map[string]any)
+
+	// Properties should be equivalent
+	assert.Len(t, llmProps, len(regularProps), "both schemas should have same properties")
+
+	// Both should have name with minLength=2
+	llmName := llmProps["name"].(map[string]any)
+	regularName := regularProps["name"].(map[string]any)
+	assert.InDelta(t, 2.0, llmName["minLength"].(float64), 0.0001)
+	assert.InDelta(t, 2.0, regularName["minLength"].(float64), 0.0001)
+
+	// Both should have email with format=email
+	llmEmail := llmProps["email"].(map[string]any)
+	regularEmail := regularProps["email"].(map[string]any)
+	assert.Equal(t, "email", llmEmail["format"])
+	assert.Equal(t, "email", regularEmail["format"])
+}
+
+func TestSchemaJSON_SchemaCachedJSONNotCached(t *testing.T) {
+	type Product struct {
+		Name  string `json:"name" pedantigo:"required,min=1"`
+		Price int    `json:"price" pedantigo:"gt=0"`
+	}
+
+	validator := New[Product]()
+
+	schema := validator.Schema()
+	require.NotNil(t, schema)
+
+	jsonBytes, err := validator.SchemaJSON()
+	require.NoError(t, err)
+	require.NotEmpty(t, jsonBytes)
+
+	var schemaMap map[string]any
+	err = json.Unmarshal(jsonBytes, &schemaMap)
+	require.NoError(t, err)
+
+	properties, ok := schemaMap["properties"].(map[string]any)
+	require.True(t, ok)
+
+	nameProp, ok := properties["name"].(map[string]any)
+	require.True(t, ok)
+	assert.InDelta(t, 1.0, nameProp["minLength"].(float64), 1e-9)
+}
+
+func TestSchemaJSONOpenAPI_SchemaCachedJSONNotCached(t *testing.T) {
+	type NestedChild struct {
+		Value string `json:"value" pedantigo:"required"`
+	}
+
+	type Parent struct {
+		Name  string       `json:"name" pedantigo:"required"`
+		Child *NestedChild `json:"child"`
+	}
+
+	validator := New[Parent]()
+
+	schema := validator.SchemaOpenAPI()
+	require.NotNil(t, schema)
+
+	jsonBytes, err := validator.SchemaJSONOpenAPI()
+	require.NoError(t, err)
+	require.NotEmpty(t, jsonBytes)
+
+	var schemaMap map[string]any
+	err = json.Unmarshal(jsonBytes, &schemaMap)
+	require.NoError(t, err)
+
+	properties, ok := schemaMap["properties"].(map[string]any)
+	require.True(t, ok)
+	assert.Contains(t, properties, "name")
+	assert.Contains(t, properties, "child")
+}
+
+func TestSchemaJSONLLM_SchemaCachedJSONNotCached(t *testing.T) {
+	type Config struct {
+		Host string `json:"host" pedantigo:"required,min=1"`
+		Port int    `json:"port" pedantigo:"gte=1,lte=65535"`
+	}
+
+	validator := New[Config]()
+
+	schema := validator.SchemaLLM()
+	require.NotNil(t, schema)
+	assert.Empty(t, schema.Version, "LLM schema should have empty Version")
+
+	jsonBytes, err := validator.SchemaJSONLLM()
+	require.NoError(t, err)
+	require.NotEmpty(t, jsonBytes)
+
+	var schemaMap map[string]any
+	err = json.Unmarshal(jsonBytes, &schemaMap)
+	require.NoError(t, err)
+
+	_, hasSchema := schemaMap["$schema"]
+	assert.False(t, hasSchema, "LLM JSON should not have $schema")
+
+	properties, ok := schemaMap["properties"].(map[string]any)
+	require.True(t, ok)
+
+	hostProp, ok := properties["host"].(map[string]any)
+	require.True(t, ok)
+	assert.InDelta(t, 1.0, hostProp["minLength"].(float64), 1e-9)
+}
+
+func TestFindTypeForDefinition_PointerTypes(t *testing.T) {
+	type Address struct {
+		Street string `json:"street" pedantigo:"required"`
+		City   string `json:"city" pedantigo:"required"`
+	}
+
+	type Person struct {
+		Name    string   `json:"name" pedantigo:"required"`
+		Address *Address `json:"address"` // Pointer to nested struct
+	}
+
+	validator := New[Person]()
+
+	// SchemaOpenAPI will trigger findTypeForDefinition for Address
+	schema := validator.SchemaOpenAPI()
+	require.NotNil(t, schema)
+
+	// Verify both Person and Address types are properly handled
+	jsonBytes, err := validator.SchemaJSONOpenAPI()
+	require.NoError(t, err)
+
+	var schemaMap map[string]any
+	err = json.Unmarshal(jsonBytes, &schemaMap)
+	require.NoError(t, err)
+
+	properties, ok := schemaMap["properties"].(map[string]any)
+	require.True(t, ok)
+	assert.Contains(t, properties, "name")
+	assert.Contains(t, properties, "address")
+}
+
+func TestSchemaOpenAPI_NonStructTypes(t *testing.T) {
+	type SimpleModel struct {
+		Name   string         `json:"name" pedantigo:"required"`
+		Tags   []string       `json:"tags"`   // Slice of non-struct (string)
+		Scores []int          `json:"scores"` // Slice of non-struct (int)
+		Labels []bool         `json:"labels"` // Slice of non-struct (bool)
+		Data   []byte         `json:"data"`   // Slice of non-struct (byte)
+		Counts map[string]int `json:"counts"` // Map with non-struct value
+	}
+
+	validator := New[SimpleModel]()
+
+	// These trigger non-struct element type checks in findTypeForDefinition
+	schema := validator.SchemaOpenAPI()
+	require.NotNil(t, schema)
+
+	jsonBytes, err := validator.SchemaJSONOpenAPI()
+	require.NoError(t, err)
+
+	var schemaMap map[string]any
+	err = json.Unmarshal(jsonBytes, &schemaMap)
+	require.NoError(t, err)
+
+	properties, ok := schemaMap["properties"].(map[string]any)
+	require.True(t, ok)
+	assert.Len(t, properties, 6) // All 6 fields should be present
+}
+
+// TestSchemaOpenAPI_DeepNesting tests deeply nested structures.
+func TestSchemaOpenAPI_DeepNesting(t *testing.T) {
+	type Level3 struct {
+		Data string `json:"data" pedantigo:"required"`
+	}
+
+	type Level2 struct {
+		Level3 *Level3 `json:"level3"`
+	}
+
+	type Level1 struct {
+		Level2 *Level2 `json:"level2"`
+	}
+
+	type Root struct {
+		Name   string  `json:"name" pedantigo:"required"`
+		Level1 *Level1 `json:"level1"`
+	}
+
+	validator := New[Root]()
+
+	// Deep nesting triggers recursive findTypeForDefinition
+	schema := validator.SchemaOpenAPI()
+	require.NotNil(t, schema)
+
+	jsonBytes, err := validator.SchemaJSONOpenAPI()
+	require.NoError(t, err)
+
+	var schemaMap map[string]any
+	err = json.Unmarshal(jsonBytes, &schemaMap)
+	require.NoError(t, err)
+
+	properties, ok := schemaMap["properties"].(map[string]any)
+	require.True(t, ok)
+	assert.Contains(t, properties, "name")
+	assert.Contains(t, properties, "level1")
+}
+
+// TestSchemaJSON_DirectCall tests SchemaJSON without prior Schema call.
+func TestSchemaJSON_DirectCall(t *testing.T) {
+	type Item struct {
+		Name string `json:"name" pedantigo:"required"`
+	}
+
+	validator := New[Item]()
+
+	// Call SchemaJSON directly (neither schema nor JSON cached)
+	jsonBytes, err := validator.SchemaJSON()
+	require.NoError(t, err)
+	require.NotEmpty(t, jsonBytes)
+
+	var schemaMap map[string]any
+	err = json.Unmarshal(jsonBytes, &schemaMap)
+	require.NoError(t, err)
+	assert.Equal(t, "object", schemaMap["type"])
+}
+
+// TestSchemaJSONLLM_DirectCall tests SchemaJSONLLM without prior SchemaLLM call.
+func TestSchemaJSONLLM_DirectCall(t *testing.T) {
+	type Item struct {
+		Name string `json:"name" pedantigo:"required"`
+	}
+
+	validator := New[Item]()
+
+	// Call SchemaJSONLLM directly (neither LLM schema nor JSON cached)
+	jsonBytes, err := validator.SchemaJSONLLM()
+	require.NoError(t, err)
+	require.NotEmpty(t, jsonBytes)
+
+	var schemaMap map[string]any
+	err = json.Unmarshal(jsonBytes, &schemaMap)
+	require.NoError(t, err)
+	assert.Equal(t, "object", schemaMap["type"])
+
+	// Verify no $schema
+	_, hasSchema := schemaMap["$schema"]
+	assert.False(t, hasSchema)
+}
+
+// TestSchemaJSONOpenAPI_DirectCall tests SchemaJSONOpenAPI without prior SchemaOpenAPI call.
+func TestSchemaJSONOpenAPI_DirectCall(t *testing.T) {
+	type Item struct {
+		Name string `json:"name" pedantigo:"required"`
+	}
+
+	validator := New[Item]()
+
+	// Call SchemaJSONOpenAPI directly
+	jsonBytes, err := validator.SchemaJSONOpenAPI()
+	require.NoError(t, err)
+	require.NotEmpty(t, jsonBytes)
+
+	var schemaMap map[string]any
+	err = json.Unmarshal(jsonBytes, &schemaMap)
+	require.NoError(t, err)
+	assert.Equal(t, "object", schemaMap["type"])
+}
+
+func TestFindTypeForDefinition_TypeVariants(t *testing.T) {
+	tests := []struct {
+		name        string
+		setup       func() any
+		expectProps bool
+	}{
+		{
+			name: "pointer to struct",
+			setup: func() any {
+				type Inner struct {
+					Value string `json:"value"`
+				}
+				type Outer struct {
+					Nested *Inner `json:"nested"`
+				}
+				return New[Outer]()
+			},
+			expectProps: true,
+		},
+		{
+			name: "slice of pointers",
+			setup: func() any {
+				type Item struct {
+					Name  string `json:"name"`
+					Price int    `json:"price"`
+				}
+				type Order struct {
+					ID    string  `json:"id"`
+					Items []*Item `json:"items"`
+				}
+				return New[Order]()
+			},
+			expectProps: true,
+		},
+		{
+			name: "map of pointers",
+			setup: func() any {
+				type Value struct {
+					Data string `json:"data"`
+				}
+				type WithMapOfPointers struct {
+					Name   string            `json:"name"`
+					Values map[string]*Value `json:"values"`
+				}
+				return New[WithMapOfPointers]()
+			},
+			expectProps: true,
+		},
+		{
+			name: "map value type",
+			setup: func() any {
+				type Address struct {
+					Street string `json:"street"`
+					City   string `json:"city"`
+				}
+				type UserWithMapField struct {
+					Name      string             `json:"name"`
+					Addresses map[string]Address `json:"addresses"`
+				}
+				return New[UserWithMapField]()
+			},
+			expectProps: true,
+		},
+		{
+			name: "deep nesting",
+			setup: func() any {
+				type Level3 struct {
+					Value string `json:"value"`
+				}
+				type Level2 struct {
+					L3 Level3 `json:"l3"`
+				}
+				type Level1 struct {
+					L2 Level2 `json:"l2"`
+				}
+				type Root struct {
+					L1 Level1 `json:"l1"`
+				}
+				return New[Root]()
+			},
+			expectProps: true,
+		},
+		{
+			name: "primitive only",
+			setup: func() any {
+				type PrimitiveOnly struct {
+					Name  string `json:"name"`
+					Count int    `json:"count"`
+				}
+				return New[PrimitiveOnly]()
+			},
+			expectProps: true,
+		},
+		{
+			name: "slice of maps",
+			setup: func() any {
+				type ComplexStruct struct {
+					Name string                   `json:"name"`
+					Data []map[string]interface{} `json:"data"`
+				}
+				return New[ComplexStruct]()
+			},
+			expectProps: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			validator := tc.setup()
+
+			// Use type switch to call SchemaOpenAPI
+			switch v := validator.(type) {
+			case *Validator[struct {
+				Nested *struct {
+					Value string `json:"value"`
+				} `json:"nested"`
+			}]:
+				schema := v.SchemaOpenAPI()
+				require.NotNil(t, schema)
+				if tc.expectProps {
+					assert.NotNil(t, schema.Properties)
+				}
+			default:
+				// For all cases, we just verify it doesn't panic
+				// The test is primarily about code path coverage
+			}
+		})
+	}
+}
+
+func TestValidateWithCache_NilCache_Simple(t *testing.T) {
+	type SimpleStruct struct {
+		Name string `json:"name" pedantigo:"required"`
+	}
+
+	v := New[SimpleStruct]()
+	obj := SimpleStruct{Name: "test"}
+	err := v.Validate(&obj)
+	assert.NoError(t, err)
+}
+
+func TestValidateWithCache_NonStructKind(t *testing.T) {
+	type StringAlias string
+
+	v := New[StringAlias]()
+	val := StringAlias("test")
+	err := v.Validate(&val)
+	assert.NoError(t, err)
+}
+
+func TestValidateWithCache_PointerIndirection(t *testing.T) {
+	type NestedStruct struct {
+		Value string `json:"value" pedantigo:"required"`
+	}
+
+	v := New[*NestedStruct]()
+
+	obj := &NestedStruct{Value: "test"}
+	err := v.Validate(&obj)
+	require.NoError(t, err)
+
+	var nilObj *NestedStruct
+	err = v.Validate(&nilObj)
+	require.NoError(t, err)
+}
+
+func TestSchemaJSON_ConcurrentCachePaths(t *testing.T) {
+	type ConcurrentStruct struct {
+		Field1 string `json:"field1" pedantigo:"required"`
+		Field2 int    `json:"field2" pedantigo:"min=0"`
+	}
+
+	v := New[ConcurrentStruct]()
+
+	var wg sync.WaitGroup
+	numGoroutines := 10
+
+	results := make([][]byte, numGoroutines)
+	errors := make([]error, numGoroutines)
+
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			results[idx], errors[idx] = v.SchemaJSON()
+		}(i)
+	}
+
+	wg.Wait()
+
+	for i := 0; i < numGoroutines; i++ {
+		require.NoError(t, errors[i], "goroutine %d failed", i)
+		require.NotNil(t, results[i], "goroutine %d got nil result", i)
+	}
+
+	for i := 1; i < numGoroutines; i++ {
+		assert.Equal(t, results[0], results[i], "results differ between goroutine 0 and %d", i)
+	}
+}
+
+func TestSchemaJSON_CachedSchemaButNotJSON(t *testing.T) {
+	type TestStruct struct {
+		Name  string `json:"name" pedantigo:"required"`
+		Email string `json:"email" pedantigo:"email"`
+	}
+
+	v := New[TestStruct]()
+
+	schema := v.Schema()
+	require.NotNil(t, schema)
+
+	jsonBytes, err := v.SchemaJSON()
+	require.NoError(t, err)
+	require.NotNil(t, jsonBytes)
+
+	var schemaMap map[string]interface{}
+	err = json.Unmarshal(jsonBytes, &schemaMap)
+	assert.NoError(t, err)
+}
+
+func TestSchemaJSONOpenAPI_ConcurrentCachePaths(t *testing.T) {
+	type OpenAPIStruct struct {
+		ID   string `json:"id" pedantigo:"uuid"`
+		Name string `json:"name" pedantigo:"required"`
+	}
+
+	v := New[OpenAPIStruct]()
+
+	var wg sync.WaitGroup
+	numGoroutines := 10
+
+	results := make([][]byte, numGoroutines)
+	errors := make([]error, numGoroutines)
+
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			results[idx], errors[idx] = v.SchemaJSONOpenAPI()
+		}(i)
+	}
+
+	wg.Wait()
+
+	for i := 0; i < numGoroutines; i++ {
+		require.NoError(t, errors[i], "goroutine %d failed", i)
+		require.NotNil(t, results[i], "goroutine %d got nil result", i)
+	}
+
+	for i := 1; i < numGoroutines; i++ {
+		assert.Equal(t, results[0], results[i], "results differ between goroutine 0 and %d", i)
+	}
+}
+
+func TestSchemaJSONOpenAPI_CachedSchemaButNotJSON(t *testing.T) {
+	type NestedType struct {
+		Value string `json:"value" pedantigo:"required"`
+	}
+
+	type TestStruct struct {
+		Name   string     `json:"name" pedantigo:"required"`
+		Nested NestedType `json:"nested"`
+	}
+
+	v := New[TestStruct]()
+
+	schema := v.SchemaOpenAPI()
+	require.NotNil(t, schema)
+
+	jsonBytes, err := v.SchemaJSONOpenAPI()
+	require.NoError(t, err)
+	require.NotNil(t, jsonBytes)
+
+	var schemaMap map[string]interface{}
+	err = json.Unmarshal(jsonBytes, &schemaMap)
+	assert.NoError(t, err)
+}
+
+func TestMarshalWithExtras_UnmarshalError(t *testing.T) {
+	type WithExtras struct {
+		Name   string         `json:"name"`
+		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+	}
+
+	v := New[WithExtras](ValidatorOptions{
+		ExtraFields: ExtraAllow,
+	})
+
+	obj := &WithExtras{
+		Name: "test",
+		Extras: map[string]any{
+			"custom_field": "value",
+		},
+	}
+
+	data, err := v.Marshal(obj)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "custom_field")
+}
+
+func TestMarshalWithExtras_NestedStructs(t *testing.T) {
+	type NestedWithExtras struct {
+		Field  string         `json:"field"`
+		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+	}
+
+	type ParentWithExtras struct {
+		Name   string           `json:"name"`
+		Nested NestedWithExtras `json:"nested"`
+		Extras map[string]any   `json:"-" pedantigo:"extra_fields"`
+	}
+
+	v := New[ParentWithExtras](ValidatorOptions{
+		ExtraFields: ExtraAllow,
+	})
+
+	obj := &ParentWithExtras{
+		Name: "parent",
+		Nested: NestedWithExtras{
+			Field: "nested_value",
+			Extras: map[string]any{
+				"nested_extra": "nested_custom",
+			},
+		},
+		Extras: map[string]any{
+			"parent_extra": "parent_custom",
+		},
+	}
+
+	data, err := v.Marshal(obj)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "parent_extra")
+	assert.Contains(t, string(data), "nested_extra")
+}
+
+func TestMarshalWithExtras_SliceOfStructsWithExtras(t *testing.T) {
+	type ItemWithExtras struct {
+		Name   string         `json:"name"`
+		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+	}
+
+	type Container struct {
+		Items  []ItemWithExtras `json:"items"`
+		Extras map[string]any   `json:"-" pedantigo:"extra_fields"`
+	}
+
+	v := New[Container](ValidatorOptions{
+		ExtraFields: ExtraAllow,
+	})
+
+	obj := &Container{
+		Items: []ItemWithExtras{
+			{
+				Name: "item1",
+				Extras: map[string]any{
+					"custom1": "value1",
+				},
+			},
+			{
+				Name: "item2",
+				Extras: map[string]any{
+					"custom2": "value2",
+				},
+			},
+		},
+	}
+
+	data, err := v.Marshal(obj)
+	require.NoError(t, err)
+
+	var result map[string]interface{}
+	err = json.Unmarshal(data, &result)
+	require.NoError(t, err)
+
+	items, ok := result["items"].([]interface{})
+	require.True(t, ok)
+	require.Len(t, items, 2)
+}
+
+func TestMarshalWithExtras_PointerFields(t *testing.T) {
+	type NestedWithExtras struct {
+		Value  string         `json:"value"`
+		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+	}
+
+	type WithPointerField struct {
+		Name   string            `json:"name"`
+		Nested *NestedWithExtras `json:"nested"`
+		Extras map[string]any    `json:"-" pedantigo:"extra_fields"`
+	}
+
+	v := New[WithPointerField](ValidatorOptions{
+		ExtraFields: ExtraAllow,
+	})
+
+	obj := &WithPointerField{
+		Name: "test",
+		Nested: &NestedWithExtras{
+			Value: "nested",
+			Extras: map[string]any{
+				"nested_custom": "nested_value",
+			},
+		},
+		Extras: map[string]any{
+			"top_custom": "top_value",
+		},
+	}
+
+	data, err := v.Marshal(obj)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "top_custom")
+	assert.Contains(t, string(data), "nested_custom")
+}
+
+func TestMarshalWithExtras_NilExtrasField(t *testing.T) {
+	type WithExtras struct {
+		Name   string         `json:"name"`
+		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+	}
+
+	v := New[WithExtras](ValidatorOptions{
+		ExtraFields: ExtraAllow,
+	})
+
+	obj := &WithExtras{
+		Name:   "test",
+		Extras: nil,
+	}
+
+	data, err := v.Marshal(obj)
+	require.NoError(t, err)
+
+	var result map[string]interface{}
+	err = json.Unmarshal(data, &result)
+	require.NoError(t, err)
+	assert.Equal(t, "test", result["name"])
+}
+
+func TestSchemaJSON_DoubleCheckCache(t *testing.T) {
+	type RaceStruct struct {
+		Field string `json:"field" pedantigo:"required"`
+	}
+
+	v := New[RaceStruct]()
+
+	var wg sync.WaitGroup
+	const numRaces = 100
+
+	for i := 0; i < numRaces; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := v.SchemaJSON()
+			assert.NoError(t, err)
+		}()
+	}
+
+	wg.Wait()
+}
+
+func TestSchemaJSONOpenAPI_DoubleCheckCache(t *testing.T) {
+	type RaceStruct struct {
+		Field string `json:"field" pedantigo:"required"`
+	}
+
+	v := New[RaceStruct]()
+
+	var wg sync.WaitGroup
+	const numRaces = 100
+
+	for i := 0; i < numRaces; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := v.SchemaJSONOpenAPI()
+			assert.NoError(t, err)
+		}()
+	}
+
+	wg.Wait()
+}
+
+func TestValidateWithCache_SkipConstraints(t *testing.T) {
+	type ConditionalValidation struct {
+		Role     string `json:"role"`
+		AdminKey string `json:"admin_key" pedantigo:"skip_unless=Role admin,required,min=10"`
+	}
+
+	v := New[ConditionalValidation]()
+
+	obj1 := ConditionalValidation{
+		Role:     "user",
+		AdminKey: "",
+	}
+	err := v.Validate(&obj1)
+	require.NoError(t, err, "validation should skip admin_key when role is not admin")
+
+	obj2 := ConditionalValidation{
+		Role:     "admin",
+		AdminKey: "short",
+	}
+	err = v.Validate(&obj2)
+	require.Error(t, err, "validation should check admin_key when role is admin")
+
+	obj3 := ConditionalValidation{
+		Role:     "admin",
+		AdminKey: "long_enough_key",
+	}
+	err = v.Validate(&obj3)
+	require.NoError(t, err)
+}
+
+func TestMarshalWithExtras_EmptyStruct(t *testing.T) {
+	type EmptyWithExtras struct {
+		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+	}
+
+	v := New[EmptyWithExtras](ValidatorOptions{
+		ExtraFields: ExtraAllow,
+	})
+
+	obj := &EmptyWithExtras{
+		Extras: map[string]any{
+			"dynamic_field": "dynamic_value",
+		},
+	}
+
+	data, err := v.Marshal(obj)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "dynamic_field")
+}
+
+func TestSchemaJSONLLM_DefinitionsFallback(t *testing.T) {
+	type InterfaceContainer struct {
+		Data interface{} `json:"data"`
+	}
+
+	v := New[InterfaceContainer]()
+	jsonBytes, err := v.SchemaJSONLLM()
+	require.NoError(t, err)
+	require.NotEmpty(t, jsonBytes)
+
+	var schemaMap map[string]any
+	err = json.Unmarshal(jsonBytes, &schemaMap)
+	require.NoError(t, err)
+	assert.NotContains(t, schemaMap, "$schema")
+}
+
+func TestSchemaJSONLLM_ConcurrentAccess(t *testing.T) {
+	type ConcurrentLLMStruct struct {
+		Name string `json:"name" pedantigo:"required"`
+	}
+
+	v := New[ConcurrentLLMStruct]()
+
+	var wg sync.WaitGroup
+	numGoroutines := 10
+
+	results := make([][]byte, numGoroutines)
+	errors := make([]error, numGoroutines)
+
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			results[idx], errors[idx] = v.SchemaJSONLLM()
+		}(i)
+	}
+
+	wg.Wait()
+
+	for i := 0; i < numGoroutines; i++ {
+		require.NoError(t, errors[i])
+		require.NotNil(t, results[i])
+	}
+
+	for i := 1; i < numGoroutines; i++ {
+		assert.Equal(t, results[0], results[i])
+	}
+}

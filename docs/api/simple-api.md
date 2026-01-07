@@ -249,6 +249,52 @@ if err != nil {
 
 ---
 
+### SchemaLLM
+
+Get JSON Schema optimized for LLM APIs (no `$schema` field).
+
+```go
+func SchemaLLM[T any]() *jsonschema.Schema
+```
+
+Returns schema without `$schema` field. Some LLMs (like Groq) echo back schema fields in responses, causing parsing issues.
+
+**Use cases**:
+- OpenAI function calling
+- Anthropic tool use (Claude)
+- Gemini structured outputs
+- Any LLM that echoes schema fields back
+
+**Example**:
+```go
+schema := pedantigo.SchemaLLM[ToolArgs]()
+// schema has no $schema field - cleaner for LLM integration
+```
+
+---
+
+### SchemaJSONLLM
+
+Get JSON Schema as JSON bytes for LLM APIs.
+
+```go
+func SchemaJSONLLM[T any]() ([]byte, error)
+```
+
+Returns JSON bytes without the `$schema` field.
+
+**Example**:
+```go
+schemaBytes, err := pedantigo.SchemaJSONLLM[ToolArgs]()
+if err != nil {
+    log.Fatal(err)
+}
+
+// Send to LLM API - no $schema field in JSON output
+```
+
+---
+
 ### Marshal
 
 Validate and serialize a struct to JSON.

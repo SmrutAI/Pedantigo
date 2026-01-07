@@ -125,10 +125,9 @@ type ExtractedData struct {
 }
 
 func getSystemPrompt() string {
-    // Generate schema once (cached for performance)
-    schema := pedantigo.Schema[ExtractedData]()
-
-    schemaJSON, _ := json.MarshalIndent(schema, "", "  ")
+    // Use SchemaJSONLLM for LLM integrations - no $schema field
+    // Some LLMs (like Groq) echo back $schema, causing parsing issues
+    schemaJSON, _ := pedantigo.SchemaJSONLLM[ExtractedData]()
 
     return fmt.Sprintf(`You are a data extraction assistant.
 Extract the following fields from the input text.

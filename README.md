@@ -33,8 +33,8 @@ if err != nil {
     }
 }
 
-// Generate JSON Schema (for LLM tools, OpenAPI, etc.)
-schemaBytes, _ := pedantigo.SchemaJSON[User]()
+// Generate JSON Schema for LLM tools (no $schema field)
+schemaBytes, _ := pedantigo.SchemaJSONLLM[User]()
 ```
 
 ## Features

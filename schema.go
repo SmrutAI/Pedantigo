@@ -342,3 +342,122 @@ func (v *Validator[T]) searchMapType(fieldType reflect.Type, defName string) ref
 	}
 	return nil
 }
+
+// SchemaLLM generates a JSON Schema optimized for LLM APIs (no $schema field).
+// Returns expanded schema with nested objects inlined (no $ref/$defs).
+// The $schema field is omitted because some LLMs (like Groq) echo it back in responses.
+// Use this for: OpenAI function calling, Anthropic tool use, Claude structured outputs.
+//
+// Note: This has independent caching from Schema() to allow different optimizations.
+func (v *Validator[T]) SchemaLLM() *jsonschema.Schema {
+	// Fast path: read lock check for cached LLM schema
+	v.schemaMu.RLock()
+	if v.cachedSchemaLLM != nil {
+		cached := v.cachedSchemaLLM
+		v.schemaMu.RUnlock()
+		return cached
+	}
+	v.schemaMu.RUnlock()
+
+	// Slow path: generate and cache
+	v.schemaMu.Lock()
+	defer v.schemaMu.Unlock()
+
+	// Double-check (another goroutine may have cached it while we waited for the lock)
+	if v.cachedSchemaLLM != nil {
+		return v.cachedSchemaLLM
+	}
+
+	// Generate base schema using schema package
+	actualSchema := schemagen.GenerateBaseSchema[T]()
+
+	// Enhance schema with our custom constraints using the configured tag name
+	schemagen.EnhanceSchema(actualSchema, v.typ, v.parseTagFunc())
+
+	// Clear $schema field for LLM compatibility (Version field has omitempty tag)
+	actualSchema.Version = ""
+
+	// Cache result
+	v.cachedSchemaLLM = actualSchema
+	return actualSchema
+}
+
+// SchemaJSONLLM generates JSON Schema as JSON bytes optimized for LLM APIs.
+// Returns expanded schema with nested objects inlined (no $ref/$defs) and no $schema field.
+// Use this for: OpenAI function calling, Anthropic tool use, Claude structured outputs.
+//
+// Note: This has independent caching from SchemaJSON() to allow different optimizations.
+func (v *Validator[T]) SchemaJSONLLM() ([]byte, error) {
+	// Fast path: read lock check for cached LLM JSON
+	v.schemaMu.RLock()
+	if v.cachedLLMJSON != nil {
+		cached := v.cachedLLMJSON
+		v.schemaMu.RUnlock()
+		return cached, nil
+	}
+	// Check if LLM schema is cached (we'll marshal it)
+	if v.cachedSchemaLLM != nil {
+		schema := v.cachedSchemaLLM
+		v.schemaMu.RUnlock()
+
+		// Marshal outside lock
+		jsonBytes, err := json.MarshalIndent(schema, "", "  ")
+		if err != nil {
+			return nil, err
+		}
+
+		// Cache the JSON bytes
+		v.schemaMu.Lock()
+		v.cachedLLMJSON = jsonBytes
+		v.schemaMu.Unlock()
+
+		return jsonBytes, nil
+	}
+	v.schemaMu.RUnlock()
+
+	// Slow path: generate LLM schema and JSON, then cache both
+	v.schemaMu.Lock()
+	defer v.schemaMu.Unlock()
+
+	// Double-check both caches
+	if v.cachedLLMJSON != nil {
+		return v.cachedLLMJSON, nil
+	}
+
+	// Generate schema WITHOUT calling SchemaLLM() to avoid deadlock
+	var zero T
+	reflector := jsonschema.Reflector{
+		ExpandedStruct: true,
+		DoNotReference: true,
+	}
+	baseSchema := reflector.Reflect(zero)
+
+	actualSchema := baseSchema
+	if baseSchema.Properties == nil && len(baseSchema.Definitions) > 0 {
+		for _, def := range baseSchema.Definitions {
+			if def.Type == "object" && def.Properties != nil {
+				actualSchema = def
+				break
+			}
+		}
+	}
+
+	actualSchema.Required = nil
+	schemagen.EnhanceSchema(actualSchema, v.typ, v.parseTagFunc())
+
+	// Clear $schema field for LLM compatibility
+	actualSchema.Version = ""
+
+	// Cache LLM schema
+	v.cachedSchemaLLM = actualSchema
+
+	// Marshal to JSON
+	jsonBytes, err := json.MarshalIndent(actualSchema, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+
+	// Cache JSON bytes
+	v.cachedLLMJSON = jsonBytes
+	return jsonBytes, nil
+}
