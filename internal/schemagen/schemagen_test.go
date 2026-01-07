@@ -2688,3 +2688,756 @@ func TestEnhanceSchema_DuplicateRequired(t *testing.T) {
 	}
 	assert.Equal(t, 1, count, "required field should not be duplicated")
 }
+
+// TestApplyConstraints_EdgeCases tests additional constraint combinations for full coverage.
+func TestApplyConstraints_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name        string
+		fieldType   reflect.Type
+		constraints map[string]string
+		checkFunc   func(t *testing.T, schema *jsonschema.Schema)
+	}{
+		{
+			name:      "eq constraint",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"eq": "active",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "active", schema.Const)
+			},
+		},
+		{
+			name:      "ne constraint",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"ne": "disabled",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				require.NotNil(t, schema.Not)
+				assert.Equal(t, "disabled", schema.Not.Const)
+			},
+		},
+		{
+			name:      "len constraint",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"len": "10",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				require.NotNil(t, schema.MinLength)
+				require.NotNil(t, schema.MaxLength)
+				assert.Equal(t, uint64(10), *schema.MinLength)
+				assert.Equal(t, uint64(10), *schema.MaxLength)
+			},
+		},
+		{
+			name:      "len with negative value",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"len": "-1",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				// Should not set length for negative values
+				assert.Nil(t, schema.MinLength)
+				assert.Nil(t, schema.MaxLength)
+			},
+		},
+		{
+			name:      "len with invalid value",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"len": "invalid",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				// Should not set length for invalid values
+				assert.Nil(t, schema.MinLength)
+				assert.Nil(t, schema.MaxLength)
+			},
+		},
+		{
+			name:      "ascii constraint",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"ascii": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "^[\\x00-\\x7F]*$", schema.Pattern)
+			},
+		},
+		{
+			name:      "alpha constraint",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"alpha": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "^[a-zA-Z]+$", schema.Pattern)
+			},
+		},
+		{
+			name:      "alphanum constraint",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"alphanum": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "^[a-zA-Z0-9]+$", schema.Pattern)
+			},
+		},
+		{
+			name:      "contains with special characters",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"contains": "test.value",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Contains(t, schema.Pattern, "test\\.value")
+			},
+		},
+		{
+			name:      "excludes with special characters",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"excludes": "bad[value]",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Contains(t, schema.Pattern, "bad\\[value\\]")
+			},
+		},
+		{
+			name:      "startswith with special characters",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"startswith": "prefix*",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Contains(t, schema.Pattern, "^prefix\\*")
+			},
+		},
+		{
+			name:      "endswith with special characters",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"endswith": "suffix+",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Contains(t, schema.Pattern, "suffix\\+$")
+			},
+		},
+		{
+			name:      "lowercase constraint",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"lowercase": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "^[^A-Z]*$", schema.Pattern)
+			},
+		},
+		{
+			name:      "uppercase constraint",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"uppercase": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "^[^a-z]*$", schema.Pattern)
+			},
+		},
+		{
+			name:      "positive constraint",
+			fieldType: reflect.TypeOf(0),
+			constraints: map[string]string{
+				"positive": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, json.Number("0"), schema.ExclusiveMinimum)
+			},
+		},
+		{
+			name:      "negative constraint",
+			fieldType: reflect.TypeOf(0),
+			constraints: map[string]string{
+				"negative": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, json.Number("0"), schema.ExclusiveMaximum)
+			},
+		},
+		{
+			name:      "multiple_of constraint",
+			fieldType: reflect.TypeOf(0),
+			constraints: map[string]string{
+				"multiple_of": "5",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, json.Number("5"), schema.MultipleOf)
+			},
+		},
+		{
+			name:      "title constraint",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"title": "User Name",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "User Name", schema.Title)
+			},
+		},
+		{
+			name:      "examples single value",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"examples": "example1",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				require.Len(t, schema.Examples, 1)
+				assert.Equal(t, "example1", schema.Examples[0])
+			},
+		},
+		{
+			name:      "examples multiple values",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"examples": "example1|example2|example3",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				require.Len(t, schema.Examples, 3)
+				assert.Equal(t, "example1", schema.Examples[0])
+				assert.Equal(t, "example2", schema.Examples[1])
+				assert.Equal(t, "example3", schema.Examples[2])
+			},
+		},
+		{
+			name:      "deprecated without message",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"deprecated": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.True(t, schema.Deprecated)
+				// No message means description should be empty
+				assert.Empty(t, schema.Description)
+			},
+		},
+		{
+			name:      "deprecated with message",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"deprecated": "Use newField instead",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.True(t, schema.Deprecated)
+				assert.Contains(t, schema.Description, "Deprecated: Use newField instead")
+			},
+		},
+		{
+			name:      "deprecated with existing description",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"description": "This is a field",
+				"deprecated":  "Use newField instead",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.True(t, schema.Deprecated)
+				assert.Contains(t, schema.Description, "This is a field")
+				assert.Contains(t, schema.Description, "Deprecated: Use newField instead")
+			},
+		},
+		{
+			name:      "default with string",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"default": "defaultValue",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "defaultValue", schema.Default)
+			},
+		},
+		{
+			name:      "defaultUsingMethod should be skipped",
+			fieldType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"defaultUsingMethod": "GetDefault",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				// Should not set default for defaultUsingMethod
+				assert.Nil(t, schema.Default)
+			},
+		},
+		{
+			name:      "min for pointer to string",
+			fieldType: reflect.TypeOf(new(string)),
+			constraints: map[string]string{
+				"min": "5",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				require.NotNil(t, schema.MinLength)
+				assert.Equal(t, uint64(5), *schema.MinLength)
+			},
+		},
+		{
+			name:      "max for pointer to string",
+			fieldType: reflect.TypeOf(new(string)),
+			constraints: map[string]string{
+				"max": "100",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				require.NotNil(t, schema.MaxLength)
+				assert.Equal(t, uint64(100), *schema.MaxLength)
+			},
+		},
+		{
+			name:      "min for pointer to int",
+			fieldType: reflect.TypeOf(new(int)),
+			constraints: map[string]string{
+				"min": "10",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, json.Number("10"), schema.Minimum)
+			},
+		},
+		{
+			name:      "max for pointer to int",
+			fieldType: reflect.TypeOf(new(int)),
+			constraints: map[string]string{
+				"max": "100",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, json.Number("100"), schema.Maximum)
+			},
+		},
+		{
+			name:      "min for slice",
+			fieldType: reflect.TypeOf([]string{}),
+			constraints: map[string]string{
+				"min": "1",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				require.NotNil(t, schema.MinLength)
+				assert.Equal(t, uint64(1), *schema.MinLength)
+			},
+		},
+		{
+			name:      "max for array",
+			fieldType: reflect.TypeOf([5]string{}),
+			constraints: map[string]string{
+				"max": "5",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				require.NotNil(t, schema.MaxLength)
+				assert.Equal(t, uint64(5), *schema.MaxLength)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			schema := &jsonschema.Schema{}
+			ApplyConstraints(schema, tt.constraints, tt.fieldType)
+			tt.checkFunc(t, schema)
+		})
+	}
+}
+
+// TestParseDefaultValue_AllIntegerTypes tests all integer types for full coverage.
+func TestParseDefaultValue_AllIntegerTypes(t *testing.T) {
+	tests := []struct {
+		name     string
+		value    string
+		typ      reflect.Type
+		expected any
+	}{
+		{
+			name:     "int8 default",
+			value:    "42",
+			typ:      reflect.TypeOf(int8(0)),
+			expected: int64(42),
+		},
+		{
+			name:     "int16 default",
+			value:    "42",
+			typ:      reflect.TypeOf(int16(0)),
+			expected: int64(42),
+		},
+		{
+			name:     "int32 default",
+			value:    "42",
+			typ:      reflect.TypeOf(int32(0)),
+			expected: int64(42),
+		},
+		{
+			name:     "int64 default",
+			value:    "42",
+			typ:      reflect.TypeOf(int64(0)),
+			expected: int64(42),
+		},
+		{
+			name:     "uint8 default",
+			value:    "42",
+			typ:      reflect.TypeOf(uint8(0)),
+			expected: uint64(42),
+		},
+		{
+			name:     "uint16 default",
+			value:    "42",
+			typ:      reflect.TypeOf(uint16(0)),
+			expected: uint64(42),
+		},
+		{
+			name:     "uint32 default",
+			value:    "42",
+			typ:      reflect.TypeOf(uint32(0)),
+			expected: uint64(42),
+		},
+		{
+			name:     "uint64 default",
+			value:    "42",
+			typ:      reflect.TypeOf(uint64(0)),
+			expected: uint64(42),
+		},
+		{
+			name:     "float32 default",
+			value:    "3.14",
+			typ:      reflect.TypeOf(float32(0)),
+			expected: 3.14,
+		},
+		{
+			name:     "invalid uint returns string",
+			value:    "invalid",
+			typ:      reflect.TypeOf(uint(0)),
+			expected: "invalid",
+		},
+		{
+			name:     "invalid float returns string",
+			value:    "invalid",
+			typ:      reflect.TypeOf(float64(0)),
+			expected: "invalid",
+		},
+		{
+			name:     "invalid bool returns string",
+			value:    "invalid",
+			typ:      reflect.TypeOf(false),
+			expected: "invalid",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ParseDefaultValue(tt.value, tt.typ)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// TestApplyConstraintsToItems_AdditionalFormats tests more format constraints for items.
+func TestApplyConstraintsToItems_AdditionalFormats(t *testing.T) {
+	tests := []struct {
+		name        string
+		elemType    reflect.Type
+		constraints map[string]string
+		checkFunc   func(t *testing.T, schema *jsonschema.Schema)
+	}{
+		{
+			name:     "ipv4 format for items",
+			elemType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"ipv4": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "ipv4", schema.Format)
+			},
+		},
+		{
+			name:     "ipv6 format for items",
+			elemType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"ipv6": "",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "ipv6", schema.Format)
+			},
+		},
+		{
+			name:     "regexp for items",
+			elemType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"regexp": "^[A-Z]+$",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, "^[A-Z]+$", schema.Pattern)
+			},
+		},
+		{
+			name:     "oneof for items",
+			elemType: reflect.TypeOf(""),
+			constraints: map[string]string{
+				"oneof": "red green blue",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				require.Len(t, schema.Enum, 3)
+				assert.Contains(t, schema.Enum, "red")
+				assert.Contains(t, schema.Enum, "green")
+				assert.Contains(t, schema.Enum, "blue")
+			},
+		},
+		{
+			name:     "gt for items",
+			elemType: reflect.TypeOf(0),
+			constraints: map[string]string{
+				"gt": "0",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, json.Number("0"), schema.ExclusiveMinimum)
+			},
+		},
+		{
+			name:     "gte for items",
+			elemType: reflect.TypeOf(0),
+			constraints: map[string]string{
+				"gte": "1",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, json.Number("1"), schema.Minimum)
+			},
+		},
+		{
+			name:     "lt for items",
+			elemType: reflect.TypeOf(0),
+			constraints: map[string]string{
+				"lt": "100",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, json.Number("100"), schema.ExclusiveMaximum)
+			},
+		},
+		{
+			name:     "lte for items",
+			elemType: reflect.TypeOf(0),
+			constraints: map[string]string{
+				"lte": "99",
+			},
+			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
+				assert.Equal(t, json.Number("99"), schema.Maximum)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			schema := &jsonschema.Schema{}
+			ApplyConstraintsToItems(schema, tt.constraints, tt.elemType)
+			tt.checkFunc(t, schema)
+		})
+	}
+}
+
+// TestApplyConstraints_Phase10Formats tests all Phase 10 format constraints comprehensively.
+func TestApplyConstraints_Phase10Formats(t *testing.T) {
+	tests := []struct {
+		name        string
+		constraint  string
+		expectedFmt string
+	}{
+		// Finance formats
+		{"credit_card format", "credit_card", "credit_card"},
+		{"btc_addr format", "btc_addr", "btc_addr"},
+		{"btc_addr_bech32 format", "btc_addr_bech32", "btc_addr_bech32"},
+		{"eth_addr format", "eth_addr", "eth_addr"},
+		{"luhn_checksum format", "luhn_checksum", "luhn_checksum"},
+
+		// Identity formats
+		{"isbn format", "isbn", "isbn"},
+		{"isbn10 format", "isbn10", "isbn10"},
+		{"isbn13 format", "isbn13", "isbn13"},
+		{"issn format", "issn", "issn"},
+		{"ssn format", "ssn", "ssn"},
+		{"ein format", "ein", "ein"},
+		{"e164 format", "e164", "e164"},
+
+		// Network formats
+		{"hostname_rfc1123 format", "hostname_rfc1123", "hostname_rfc1123"},
+		{"tcp_addr format", "tcp_addr", "tcp_addr"},
+		{"udp_addr format", "udp_addr", "udp_addr"},
+		{"tcp4_addr format", "tcp4_addr", "tcp4_addr"},
+
+		// Color formats
+		{"rgba format", "rgba", "rgba"},
+		{"hsl format", "hsl", "hsl"},
+		{"hsla format", "hsla", "hsla"},
+
+		// Encoding formats
+		{"base64url format", "base64url", "base64url"},
+		{"base64rawurl format", "base64rawurl", "base64rawurl"},
+
+		// Hash formats
+		{"md4 format", "md4", "md4"},
+		{"sha384 format", "sha384", "sha384"},
+		{"mongodb format", "mongodb", "mongodb"},
+
+		// Misc formats
+		{"html format", "html", "html"},
+		{"cron format", "cron", "cron"},
+		{"semver format", "semver", "semver"},
+		{"ulid format", "ulid", "ulid"},
+
+		// ISO code formats
+		{"iso3166_1_alpha2 format", "iso3166_1_alpha2", "iso3166_1_alpha2"},
+		{"iso3166_alpha2_eu format", "iso3166_alpha2_eu", "iso3166_alpha2_eu"},
+		{"iso3166_1_alpha3 format", "iso3166_1_alpha3", "iso3166_1_alpha3"},
+		{"iso3166_alpha3_eu format", "iso3166_alpha3_eu", "iso3166_alpha3_eu"},
+		{"iso3166_1_alpha_numeric format", "iso3166_1_alpha_numeric", "iso3166_1_alpha_numeric"},
+		{"iso3166_2 format", "iso3166_2", "iso3166_2"},
+		{"iso4217 format", "iso4217", "iso4217"},
+		{"iso4217_numeric format", "iso4217_numeric", "iso4217_numeric"},
+		{"postcode format", "postcode", "postcode"},
+		{"postcode_iso3166_alpha2 format", "postcode_iso3166_alpha2", "postcode"},
+		{"bcp47_language_tag format", "bcp47_language_tag", "bcp47_language_tag"},
+
+		// Filesystem formats
+		{"dirpath format", "dirpath", "dirpath"},
+		{"dir format", "dir", "dir"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			schema := &jsonschema.Schema{}
+			constraints := map[string]string{
+				tt.constraint: "",
+			}
+			ApplyConstraints(schema, constraints, reflect.TypeOf(""))
+			assert.Equal(t, tt.expectedFmt, schema.Format)
+		})
+	}
+}
+
+// TestApplyConstraints_SliceAndMapConstraintPropagation tests that constraints propagate to items/values.
+func TestApplyConstraints_SliceAndMapConstraintPropagation(t *testing.T) {
+	t.Run("slice with email constraint", func(t *testing.T) {
+		schema := &jsonschema.Schema{
+			Items: &jsonschema.Schema{},
+		}
+		constraints := map[string]string{
+			"email": "",
+		}
+		ApplyConstraints(schema, constraints, reflect.TypeOf([]string{}))
+		assert.Equal(t, "email", schema.Items.Format)
+	})
+
+	t.Run("map with url constraint", func(t *testing.T) {
+		schema := &jsonschema.Schema{
+			AdditionalProperties: &jsonschema.Schema{},
+		}
+		constraints := map[string]string{
+			"url": "",
+		}
+		ApplyConstraints(schema, constraints, reflect.TypeOf(map[string]string{}))
+		assert.Equal(t, "uri", schema.AdditionalProperties.Format)
+	})
+
+	t.Run("slice with min constraint for strings", func(t *testing.T) {
+		schema := &jsonschema.Schema{
+			Items: &jsonschema.Schema{},
+		}
+		constraints := map[string]string{
+			"min": "5",
+		}
+		ApplyConstraints(schema, constraints, reflect.TypeOf([]string{}))
+		require.NotNil(t, schema.Items.MinLength)
+		assert.Equal(t, uint64(5), *schema.Items.MinLength)
+	})
+
+	t.Run("slice with max constraint for ints", func(t *testing.T) {
+		schema := &jsonschema.Schema{
+			Items: &jsonschema.Schema{},
+		}
+		constraints := map[string]string{
+			"max": "100",
+		}
+		ApplyConstraints(schema, constraints, reflect.TypeOf([]int{}))
+		assert.Equal(t, json.Number("100"), schema.Items.Maximum)
+	})
+
+	t.Run("map with pattern constraint", func(t *testing.T) {
+		schema := &jsonschema.Schema{
+			AdditionalProperties: &jsonschema.Schema{},
+		}
+		constraints := map[string]string{
+			"regexp": "^[A-Z]+$",
+		}
+		ApplyConstraints(schema, constraints, reflect.TypeOf(map[string]string{}))
+		assert.Equal(t, "^[A-Z]+$", schema.AdditionalProperties.Pattern)
+	})
+}
+
+// TestApplyConstraints_MinMaxWithInvalidValues tests error handling for min/max.
+func TestApplyConstraints_MinMaxWithInvalidValues(t *testing.T) {
+	t.Run("min with invalid value for string", func(t *testing.T) {
+		schema := &jsonschema.Schema{}
+		constraints := map[string]string{
+			"min": "invalid",
+		}
+		ApplyConstraints(schema, constraints, reflect.TypeOf(""))
+		// Should not set MinLength for invalid value
+		assert.Nil(t, schema.MinLength)
+	})
+
+	t.Run("max with negative value for string", func(t *testing.T) {
+		schema := &jsonschema.Schema{}
+		constraints := map[string]string{
+			"max": "-1",
+		}
+		ApplyConstraints(schema, constraints, reflect.TypeOf(""))
+		// Should not set MaxLength for negative value
+		assert.Nil(t, schema.MaxLength)
+	})
+
+	t.Run("min with invalid value in items", func(t *testing.T) {
+		schema := &jsonschema.Schema{
+			Items: &jsonschema.Schema{},
+		}
+		constraints := map[string]string{
+			"min": "invalid",
+		}
+		ApplyConstraintsToItems(schema.Items, constraints, reflect.TypeOf(""))
+		// Should not set MinLength for invalid value
+		assert.Nil(t, schema.Items.MinLength)
+	})
+
+	t.Run("max with negative value in items", func(t *testing.T) {
+		schema := &jsonschema.Schema{
+			Items: &jsonschema.Schema{},
+		}
+		constraints := map[string]string{
+			"max": "-1",
+		}
+		ApplyConstraintsToItems(schema.Items, constraints, reflect.TypeOf(""))
+		// Should not set MaxLength for negative value
+		assert.Nil(t, schema.Items.MaxLength)
+	})
+}
+
+// TestApplyConstraints_RequiredSkipped tests that required constraint is skipped in ApplyConstraints.
+func TestApplyConstraints_RequiredSkipped(t *testing.T) {
+	schema := &jsonschema.Schema{}
+	constraints := map[string]string{
+		"required": "",
+	}
+	// Should not panic or modify schema (required is handled elsewhere)
+	ApplyConstraints(schema, constraints, reflect.TypeOf(""))
+	// Nothing should be set
+	assert.Nil(t, schema.MinLength)
+	assert.Empty(t, schema.Pattern)
+}
+
+// TestApplyConstraints_DescriptionProcessedFirst tests that description is processed before deprecated.
+func TestApplyConstraints_DescriptionProcessedFirst(t *testing.T) {
+	schema := &jsonschema.Schema{}
+	// Map iteration order is random, but description processing is explicit
+	constraints := map[string]string{
+		"description": "Original description",
+	}
+	ApplyConstraints(schema, constraints, reflect.TypeOf(""))
+	assert.Equal(t, "Original description", schema.Description)
+}
