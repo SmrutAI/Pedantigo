@@ -196,6 +196,29 @@ if err != nil {
 // Embed in OpenAPI 3.1 spec under components/schemas
 ```
 
+#### SchemaLLM
+
+Get JSON Schema optimized for LLM APIs (no `$schema` field).
+
+```go
+schema := validator.SchemaLLM()
+// Returns schema without $schema field for LLM tool calling
+```
+
+The `$schema` field is omitted because some LLMs (like Groq) echo it back in responses, causing parsing issues.
+
+#### SchemaJSONLLM
+
+Get JSON Schema as JSON bytes for LLM APIs.
+
+```go
+schemaBytes, err := validator.SchemaJSONLLM()
+if err != nil {
+    // Handle error
+}
+// JSON has no $schema field - cleaner for LLM integration
+```
+
 ### Marshal Methods
 
 Validate and convert struct to JSON.

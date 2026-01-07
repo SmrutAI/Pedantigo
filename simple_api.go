@@ -136,6 +136,33 @@ func SchemaJSONOpenAPI[T any]() ([]byte, error) {
 	return getOrCreateValidator[T]().SchemaJSONOpenAPI()
 }
 
+// SchemaLLM returns a JSON Schema optimized for LLM APIs (no $schema field).
+// The schema is cached within the validator for maximum performance.
+// Use this for: OpenAI function calling, Anthropic tool use, Claude structured outputs.
+//
+// Example:
+//
+//	schema := pedantigo.SchemaLLM[User]()
+//	// schema contains the JSON Schema object without $schema field
+func SchemaLLM[T any]() *jsonschema.Schema {
+	return getOrCreateValidator[T]().SchemaLLM()
+}
+
+// SchemaJSONLLM returns a JSON Schema as JSON bytes optimized for LLM APIs.
+// The $schema field is omitted because some LLMs (like Groq) echo it back in responses.
+// Use this for: OpenAI function calling, Anthropic tool use, Claude structured outputs.
+//
+// Example:
+//
+//	schemaBytes, err := pedantigo.SchemaJSONLLM[User]()
+//	if err != nil {
+//	    // Handle error
+//	}
+//	// JSON output will NOT contain "$schema" field
+func SchemaJSONLLM[T any]() ([]byte, error) {
+	return getOrCreateValidator[T]().SchemaJSONLLM()
+}
+
 // Marshal validates and marshals a struct to JSON using default options.
 // It uses a cached validator for type T, creating one if necessary.
 //

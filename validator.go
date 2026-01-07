@@ -34,6 +34,8 @@ type Validator[T any] struct {
 	cachedSchemaJSON  []byte             // SchemaJSON() result
 	cachedOpenAPI     *jsonschema.Schema // SchemaOpenAPI() result
 	cachedOpenAPIJSON []byte             // SchemaJSONOpenAPI() result
+	cachedSchemaLLM   *jsonschema.Schema // SchemaLLM() result (no $schema field)
+	cachedLLMJSON     []byte             // SchemaJSONLLM() result
 
 	// Extra fields support (nil when ExtraAllow disabled)
 	extraFieldInfo *deserialize.ExtraFieldInfo

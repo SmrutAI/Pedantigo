@@ -66,10 +66,15 @@ Pedantigo's default `Schema()` and `SchemaJSON()` produce **flattened schemas** 
 
 ### Schema Output Comparison
 
-| Function | `$ref/$defs` | Best For |
-|----------|--------------|----------|
-| `Schema()` / `SchemaJSON()` | **No** - all types expanded inline | LLM tool calling (OpenAI, Anthropic, Gemini) |
-| `SchemaOpenAPI()` / `SchemaJSONOpenAPI()` | **Yes** - uses references | OpenAPI specs, Swagger docs |
+| Function | `$ref/$defs` | `$schema` | Best For |
+|----------|--------------|-----------|----------|
+| `Schema()` / `SchemaJSON()` | **No** - expanded inline | **Yes** | General purpose, form generation |
+| `SchemaLLM()` / `SchemaJSONLLM()` | **No** - expanded inline | **No** | LLM tool calling (OpenAI, Anthropic, Gemini) |
+| `SchemaOpenAPI()` / `SchemaJSONOpenAPI()` | **Yes** - uses references | **Yes** | OpenAPI specs, Swagger docs |
+
+:::tip LLM Schema Recommendation
+Use `SchemaLLM()` / `SchemaJSONLLM()` for LLM integrations. The `$schema` field is omitted because some LLMs (like Groq) echo it back in responses, causing parsing issues.
+:::
 
 ### Example: Flattened Schema Output
 
@@ -219,6 +224,89 @@ if err != nil {
 
 // Embed in OpenAPI YAML/JSON specification
 ```
+
+---
+
+### SchemaLLM()
+
+Get a JSON Schema optimized for LLM APIs (no `$schema` field).
+
+```go
+func SchemaLLM[T any]() *jsonschema.Schema
+```
+
+**Returns**: A `*jsonschema.Schema` object without the `$schema` field.
+
+**Why no `$schema`?**: Some LLMs (like Groq) echo back the `$schema` field in responses, causing JSON parsing issues. Omitting it ensures cleaner LLM responses.
+
+**Use cases**:
+- OpenAI function calling
+- Anthropic tool use
+- Claude structured outputs
+- Gemini structured generation
+- Any LLM that echoes schema fields
+
+**Example**:
+```go
+type ToolArgs struct {
+    Query  string `json:"query" pedantigo:"required,min=1,description=Search query"`
+    Limit  int    `json:"limit" pedantigo:"min=1,max=100,description=Max results"`
+}
+
+// Get schema for LLM function calling
+schema := pedantigo.SchemaLLM[ToolArgs]()
+// schema.Version is empty, so no $schema in output
+```
+
+---
+
+### SchemaJSONLLM()
+
+Get JSON Schema as JSON bytes optimized for LLM APIs.
+
+```go
+func SchemaJSONLLM[T any]() ([]byte, error)
+```
+
+**Returns**: JSON bytes without the `$schema` field.
+
+**Example**:
+```go
+type FunctionResponse struct {
+    Thought string `json:"thought" pedantigo:"required,description=Chain of thought"`
+    Action  string `json:"action" pedantigo:"required,oneof=search respond,description=Action to take"`
+}
+
+schemaBytes, err := pedantigo.SchemaJSONLLM[FunctionResponse]()
+if err != nil {
+    log.Fatal(err)
+}
+
+// Use in OpenAI function calling API
+// JSON output will NOT contain "$schema" field
+fmt.Println(string(schemaBytes))
+```
+
+**Output**:
+```json
+{
+  "type": "object",
+  "properties": {
+    "thought": {
+      "type": "string",
+      "description": "Chain of thought"
+    },
+    "action": {
+      "type": "string",
+      "description": "Action to take",
+      "enum": ["search", "respond"]
+    }
+  },
+  "required": ["thought", "action"]
+}
+```
+
+Note: No `"$schema": "https://json-schema.org/draft/2020-12/schema"` field in the output.
 
 ---
 
