@@ -994,3 +994,227 @@ func getMapKeys(m map[string]FieldDeserializer) []string {
 	}
 	return keys
 }
+
+// TestBuildFieldDeserializers_ExtraFieldsTagSkip tests that fields with extra_fields tag are skipped.
+func TestBuildFieldDeserializers_ExtraFieldsTagSkip(t *testing.T) {
+	type ExtraCapture struct {
+		Name   string         `json:"name" pedantigo:"required"`
+		Extras map[string]any `json:"extras" pedantigo:"extra_fields"`
+	}
+
+	opts := BuilderOptions{TagName: "pedantigo", StrictMissingFields: true}
+	deserializers := BuildFieldDeserializers(
+		reflect.TypeOf(ExtraCapture{}),
+		opts,
+		func(fieldValue reflect.Value, inValue any, fieldType reflect.Type, goFieldName string) error {
+			return nil
+		},
+		func(fieldValue reflect.Value, defaultValue string) {},
+	)
+
+	// Extras field should be skipped because it has extra_fields tag
+	assert.NotContains(t, getMapKeys(deserializers), "extras", "extra_fields tagged field should be skipped")
+	assert.Contains(t, getMapKeys(deserializers), "name", "regular field should be included")
+}
+
+// TestBuildFieldDeserializers_StaticDefaultApplied tests that static defaults are applied for missing fields.
+func TestBuildFieldDeserializers_StaticDefaultApplied(t *testing.T) {
+	type WithDefault struct {
+		Name string `json:"name" pedantigo:"default=DefaultName"`
+	}
+
+	opts := BuilderOptions{TagName: "pedantigo", StrictMissingFields: true}
+
+	var setDefaultCalled bool
+	var setDefaultValue string
+	deserializers := BuildFieldDeserializers(
+		reflect.TypeOf(WithDefault{}),
+		opts,
+		func(fieldValue reflect.Value, inValue any, fieldType reflect.Type, goFieldName string) error {
+			return nil
+		},
+		func(fieldValue reflect.Value, defaultValue string) {
+			setDefaultCalled = true
+			setDefaultValue = defaultValue
+			fieldValue.SetString(defaultValue)
+		},
+	)
+
+	instance := WithDefault{}
+	outPtr := reflect.ValueOf(&instance).Elem()
+
+	deser, exists := deserializers["name"]
+	require.True(t, exists)
+
+	// Call with missing field sentinel - should trigger default
+	err := deser(&outPtr, FieldMissingSentinel)
+	require.NoError(t, err)
+	assert.True(t, setDefaultCalled, "setDefaultValueFunc should be called for missing field with default")
+	assert.Equal(t, "DefaultName", setDefaultValue, "default value should be passed to setDefaultValueFunc")
+}
+
+// TestBuildFieldDeserializers_StaticDefaultWithTransform tests default with string transformation.
+func TestBuildFieldDeserializers_StaticDefaultWithTransform(t *testing.T) {
+	type WithDefaultAndTransform struct {
+		Name string `json:"name" pedantigo:"default=  hello  ,strip_whitespace,to_upper"`
+	}
+
+	opts := BuilderOptions{TagName: "pedantigo", StrictMissingFields: true}
+
+	deserializers := BuildFieldDeserializers(
+		reflect.TypeOf(WithDefaultAndTransform{}),
+		opts,
+		func(fieldValue reflect.Value, inValue any, fieldType reflect.Type, goFieldName string) error {
+			return nil
+		},
+		func(fieldValue reflect.Value, defaultValue string) {
+			fieldValue.SetString(defaultValue)
+		},
+	)
+
+	instance := WithDefaultAndTransform{}
+	outPtr := reflect.ValueOf(&instance).Elem()
+
+	deser, exists := deserializers["name"]
+	require.True(t, exists)
+
+	// Call with missing field - should apply default then transform
+	err := deser(&outPtr, FieldMissingSentinel)
+	require.NoError(t, err)
+	// After strip_whitespace + to_upper, "  hello  " becomes "HELLO"
+	assert.Equal(t, "HELLO", instance.Name)
+}
+
+// TestBuildFieldDeserializers_SetFieldValueError tests error propagation from setFieldValueFunc.
+func TestBuildFieldDeserializers_SetFieldValueError(t *testing.T) {
+	type Simple struct {
+		Name string `json:"name"`
+	}
+
+	opts := BuilderOptions{TagName: "pedantigo", StrictMissingFields: true}
+
+	deserializers := BuildFieldDeserializers(
+		reflect.TypeOf(Simple{}),
+		opts,
+		func(fieldValue reflect.Value, inValue any, fieldType reflect.Type, goFieldName string) error {
+			return assert.AnError // Return an error
+		},
+		func(fieldValue reflect.Value, defaultValue string) {},
+	)
+
+	instance := Simple{}
+	outPtr := reflect.ValueOf(&instance).Elem()
+
+	deser, exists := deserializers["name"]
+	require.True(t, exists)
+
+	// Call with present value - should trigger setFieldValueFunc which returns error
+	err := deser(&outPtr, "value")
+	require.Error(t, err)
+	assert.Equal(t, assert.AnError, err)
+}
+
+// MethodDefaultStruct is a struct with defaultUsingMethod.
+type MethodDefaultStruct struct {
+	Port int `json:"port" pedantigo:"defaultUsingMethod=GetDefaultPort"`
+}
+
+// GetDefaultPort returns the default port.
+func (m *MethodDefaultStruct) GetDefaultPort() (int, error) {
+	return 8080, nil
+}
+
+// TestBuildFieldDeserializers_MethodDefaultApplied tests defaultUsingMethod execution.
+func TestBuildFieldDeserializers_MethodDefaultApplied(t *testing.T) {
+	opts := BuilderOptions{TagName: "pedantigo", StrictMissingFields: true}
+
+	deserializers := BuildFieldDeserializers(
+		reflect.TypeOf(MethodDefaultStruct{}),
+		opts,
+		func(fieldValue reflect.Value, inValue any, fieldType reflect.Type, goFieldName string) error {
+			return nil
+		},
+		func(fieldValue reflect.Value, defaultValue string) {},
+	)
+
+	instance := MethodDefaultStruct{}
+	outPtr := reflect.ValueOf(&instance).Elem()
+
+	deser, exists := deserializers["port"]
+	require.True(t, exists)
+
+	// Call with missing field - should trigger method default
+	err := deser(&outPtr, FieldMissingSentinel)
+	require.NoError(t, err)
+	assert.Equal(t, 8080, instance.Port)
+}
+
+// MethodDefaultErrorStruct is a struct with defaultUsingMethod that returns an error.
+type MethodDefaultErrorStruct struct {
+	Port int `json:"port" pedantigo:"defaultUsingMethod=GetDefaultPortWithError"`
+}
+
+// GetDefaultPortWithError returns an error.
+func (m *MethodDefaultErrorStruct) GetDefaultPortWithError() (int, error) {
+	return 0, assert.AnError
+}
+
+// TestBuildFieldDeserializers_MethodDefaultError tests error from defaultUsingMethod.
+func TestBuildFieldDeserializers_MethodDefaultError(t *testing.T) {
+	opts := BuilderOptions{TagName: "pedantigo", StrictMissingFields: true}
+
+	deserializers := BuildFieldDeserializers(
+		reflect.TypeOf(MethodDefaultErrorStruct{}),
+		opts,
+		func(fieldValue reflect.Value, inValue any, fieldType reflect.Type, goFieldName string) error {
+			return nil
+		},
+		func(fieldValue reflect.Value, defaultValue string) {},
+	)
+
+	instance := MethodDefaultErrorStruct{}
+	outPtr := reflect.ValueOf(&instance).Elem()
+
+	deser, exists := deserializers["port"]
+	require.True(t, exists)
+
+	// Call with missing field - should trigger method default which returns error
+	err := deser(&outPtr, FieldMissingSentinel)
+	require.Error(t, err)
+	assert.Equal(t, assert.AnError, err)
+}
+
+// MethodDefaultStringStruct has a method default for string field with transformations.
+type MethodDefaultStringStruct struct {
+	Name string `json:"name" pedantigo:"defaultUsingMethod=GetDefaultName,to_upper"`
+}
+
+// GetDefaultName returns default name.
+func (m *MethodDefaultStringStruct) GetDefaultName() (string, error) {
+	return "default", nil
+}
+
+// TestBuildFieldDeserializers_MethodDefaultWithTransform tests method default with transformations.
+func TestBuildFieldDeserializers_MethodDefaultWithTransform(t *testing.T) {
+	opts := BuilderOptions{TagName: "pedantigo", StrictMissingFields: true}
+
+	deserializers := BuildFieldDeserializers(
+		reflect.TypeOf(MethodDefaultStringStruct{}),
+		opts,
+		func(fieldValue reflect.Value, inValue any, fieldType reflect.Type, goFieldName string) error {
+			return nil
+		},
+		func(fieldValue reflect.Value, defaultValue string) {},
+	)
+
+	instance := MethodDefaultStringStruct{}
+	outPtr := reflect.ValueOf(&instance).Elem()
+
+	deser, exists := deserializers["name"]
+	require.True(t, exists)
+
+	// Call with missing field - should trigger method default + to_upper transform
+	err := deser(&outPtr, FieldMissingSentinel)
+	require.NoError(t, err)
+	assert.Equal(t, "DEFAULT", instance.Name) // "default" -> "DEFAULT" via to_upper
+}

@@ -183,3 +183,33 @@ func TestDetectExtraField_WrongTagValue_ReturnsNil(t *testing.T) {
 
 	assert.Nil(t, result, "Should return nil when tag value is not 'extra_fields'")
 }
+
+// TestDetectExtraField_PointerType tests DetectExtraField dereferences pointer types.
+func TestDetectExtraField_PointerType(t *testing.T) {
+	type HasExtra struct {
+		Name   string         `json:"name"`
+		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+	}
+
+	// Pass pointer to struct type
+	typ := reflect.TypeOf(&HasExtra{})
+	result := DetectExtraField(typ, "pedantigo")
+
+	assert.NotNil(t, result, "Should handle pointer types by dereferencing")
+	assert.Equal(t, 1, result.FieldIndex)
+}
+
+// TestDetectExtraField_NonStructType tests DetectExtraField returns nil for non-struct types.
+func TestDetectExtraField_NonStructType(t *testing.T) {
+	// Test with string type
+	result := DetectExtraField(reflect.TypeOf(""), "pedantigo")
+	assert.Nil(t, result, "Should return nil for string type")
+
+	// Test with int type
+	result = DetectExtraField(reflect.TypeOf(0), "pedantigo")
+	assert.Nil(t, result, "Should return nil for int type")
+
+	// Test with slice type
+	result = DetectExtraField(reflect.TypeOf([]string{}), "pedantigo")
+	assert.Nil(t, result, "Should return nil for slice type")
+}

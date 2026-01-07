@@ -1,6 +1,7 @@
 package deserialize
 
 import (
+	"fmt"
 	"math"
 	"reflect"
 	"testing"
@@ -1440,4 +1441,347 @@ func TestSetFieldValueWithOptions_MapWithRequiredFields(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestSetFieldValueWithOptions_NilToNonPointer tests setting nil to non-pointer fields.
+func TestSetFieldValueWithOptions_NilToNonPointer(t *testing.T) {
+	type Sample struct {
+		Name string
+	}
+
+	out := Sample{Name: "original"}
+	field := reflect.ValueOf(&out).Elem().Field(0)
+
+	var recursiveSet func(reflect.Value, any, reflect.Type) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	}
+
+	// Set nil value to a non-pointer string field
+	err := SetFieldValueWithOptions(field, nil, field.Type(), recursiveSet, FieldOptions{})
+	require.NoError(t, err)
+	assert.Empty(t, out.Name, "nil should set string to zero value")
+}
+
+// TestSetFieldValueWithOptions_NestedMapNotMapStringAny tests nested map that's not map[string]any.
+func TestSetFieldValueWithOptions_NestedMapNotMapStringAny(t *testing.T) {
+	type Inner struct {
+		Value int `json:"value"`
+	}
+	type Outer struct {
+		Inner Inner `json:"inner"`
+	}
+
+	out := Outer{}
+	field := reflect.ValueOf(&out).Elem().Field(0)
+
+	var recursiveSet func(reflect.Value, any, reflect.Type) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	}
+
+	// Provide a map[string]any
+	input := map[string]any{"value": float64(42)}
+	err := SetFieldValueWithOptions(field, input, field.Type(), recursiveSet, FieldOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, 42, out.Inner.Value)
+}
+
+// TestDeserializeStructFields_UnexportedField tests that unexported fields are skipped.
+func TestDeserializeStructFields_UnexportedField(t *testing.T) {
+	type HasUnexported struct {
+		Public   string `json:"public"`
+		internal string //nolint:unused // intentionally unexported for test
+	}
+
+	out := HasUnexported{}
+	inputMap := map[string]any{
+		"public":   "hello",
+		"internal": "ignored",
+	}
+
+	var recursiveSet func(reflect.Value, any, reflect.Type) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	}
+
+	err := deserializeStructFields(reflect.ValueOf(&out).Elem(), reflect.TypeOf(out), inputMap, recursiveSet, FieldOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, "hello", out.Public)
+}
+
+// TestDeserializeStructFields_JSONTagWithComma tests JSON tags with comma (e.g., "field,omitempty").
+func TestDeserializeStructFields_JSONTagWithComma(t *testing.T) {
+	type WithOmitempty struct {
+		Name  string `json:"name,omitempty"`
+		Value int    `json:"value,omitempty"`
+	}
+
+	out := WithOmitempty{}
+	inputMap := map[string]any{
+		"name":  "test",
+		"value": 42,
+	}
+
+	var recursiveSet func(reflect.Value, any, reflect.Type) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	}
+
+	err := deserializeStructFields(reflect.ValueOf(&out).Elem(), reflect.TypeOf(out), inputMap, recursiveSet, FieldOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, "test", out.Name)
+	assert.Equal(t, 42, out.Value)
+}
+
+// TestSetFieldValueWithOptions_PointerRecursiveError tests error propagation in pointer handling.
+func TestSetFieldValueWithOptions_PointerRecursiveError(t *testing.T) {
+	type Nested struct {
+		Value string `json:"value"`
+	}
+
+	type Parent struct {
+		Nested *Nested
+	}
+
+	out := Parent{}
+	field := reflect.ValueOf(&out).Elem().Field(0)
+
+	// Create a recursive func that always returns an error for nested calls
+	var recursiveSet func(reflect.Value, any, reflect.Type) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+		// Return error for nested struct types
+		if ft.Kind() == reflect.Struct && ft.Name() == "Nested" {
+			return fmt.Errorf("forced error in nested struct")
+		}
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	}
+
+	// Input that will trigger pointer allocation and nested deserialization
+	input := map[string]any{"value": "test"}
+	err := SetFieldValueWithOptions(field, input, field.Type(), recursiveSet, FieldOptions{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "forced error")
+}
+
+// TestSetSliceField_RecursiveError tests error propagation from recursiveSetFunc in non-struct slice elements.
+func TestSetSliceField_RecursiveError(t *testing.T) {
+	type Parent struct {
+		Values []int
+	}
+
+	out := Parent{}
+	field := reflect.ValueOf(&out).Elem().Field(0)
+
+	// Create a recursive func that returns error for int types
+	var recursiveSet func(reflect.Value, any, reflect.Type) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+		if ft.Kind() == reflect.Int {
+			return fmt.Errorf("forced error for int")
+		}
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	}
+
+	input := []any{1, 2, 3}
+	err := SetFieldValueWithOptions(field, input, field.Type(), recursiveSet, FieldOptions{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "forced error for int")
+}
+
+// TestSetMapField_KeyConversion tests map key type conversion.
+func TestSetMapField_KeyConversion(t *testing.T) {
+	// Test convertible key type (interface{} to string)
+	type WithMap struct {
+		Data map[string]int
+	}
+
+	out := WithMap{}
+	field := reflect.ValueOf(&out).Elem().Field(0)
+
+	var recursiveSet func(reflect.Value, any, reflect.Type) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	}
+
+	input := map[string]any{"key1": 100, "key2": 200}
+	err := SetFieldValueWithOptions(field, input, field.Type(), recursiveSet, FieldOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, 100, out.Data["key1"])
+	assert.Equal(t, 200, out.Data["key2"])
+}
+
+// TestSetMapField_RecursiveError tests error propagation from recursiveSetFunc in non-struct map values.
+func TestSetMapField_RecursiveError(t *testing.T) {
+	type Parent struct {
+		Data map[string]int
+	}
+
+	out := Parent{}
+	field := reflect.ValueOf(&out).Elem().Field(0)
+
+	// Create a recursive func that returns error for int types
+	var recursiveSet func(reflect.Value, any, reflect.Type) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+		if ft.Kind() == reflect.Int {
+			return fmt.Errorf("forced error for int map value")
+		}
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	}
+
+	input := map[string]any{"key1": 100}
+	err := SetFieldValueWithOptions(field, input, field.Type(), recursiveSet, FieldOptions{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "forced error for int map value")
+}
+
+// TestDeserializeStructFields_RecursiveError tests error from recursiveSetFunc that's not MultiRequiredFieldError.
+func TestDeserializeStructFields_RecursiveError(t *testing.T) {
+	type Inner struct {
+		Value int `json:"value"`
+	}
+
+	out := Inner{}
+	inputMap := map[string]any{"value": 42}
+
+	// Create a recursive func that returns a regular error (not MultiRequiredFieldError)
+	recursiveSet := func(fv reflect.Value, iv any, ft reflect.Type) error {
+		return fmt.Errorf("forced type conversion error")
+	}
+
+	err := deserializeStructFields(reflect.ValueOf(&out).Elem(), reflect.TypeOf(out), inputMap, recursiveSet, FieldOptions{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "forced type conversion error")
+}
+
+// TestDeserializeStructFields_MultiRequiredErrorPropagation tests MultiRequiredFieldError propagation.
+func TestDeserializeStructFields_MultiRequiredErrorPropagation(t *testing.T) {
+	type Nested struct {
+		Name string `json:"name" pedantigo:"required"`
+	}
+	type Parent struct {
+		Nested Nested `json:"nested"`
+	}
+
+	out := Parent{}
+	inputMap := map[string]any{
+		"nested": map[string]any{}, // empty map - missing required field "name"
+	}
+
+	var recursiveSet func(reflect.Value, any, reflect.Type) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{
+			StrictMissingFields: true,
+			TagName:             "pedantigo",
+		})
+	}
+
+	err := deserializeStructFields(reflect.ValueOf(&out).Elem(), reflect.TypeOf(out), inputMap, recursiveSet, FieldOptions{
+		StrictMissingFields: true,
+		TagName:             "pedantigo",
+	})
+	require.Error(t, err)
+	var multiErr *MultiRequiredFieldError
+	assert.ErrorAs(t, err, &multiErr)
+}
+
+// TestSetSliceField_NonMapStructError tests error when slice element is struct but input is not a map.
+func TestSetSliceField_NonMapStructError(t *testing.T) {
+	type Item struct {
+		Name string `json:"name"`
+	}
+	type Parent struct {
+		Items []Item
+	}
+
+	out := Parent{}
+	field := reflect.ValueOf(&out).Elem().Field(0)
+
+	var recursiveSet func(reflect.Value, any, reflect.Type) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	}
+
+	// Input has struct elements but with non-map type - will be handled by recursiveSetFunc
+	// This won't hit the "expected map for struct element" error because the type assertion
+	// only fails when the value is a map kind but not map[string]any specifically
+	input := []any{"not a map", "also not a map"}
+	err := SetFieldValueWithOptions(field, input, field.Type(), recursiveSet, FieldOptions{})
+	assert.Error(t, err)
+}
+
+// TestSetMapField_NonMapStructError tests error when map value is struct but input is not map.
+func TestSetMapField_NonMapStructError(t *testing.T) {
+	type Item struct {
+		Name string `json:"name"`
+	}
+	type Parent struct {
+		Items map[string]Item
+	}
+
+	out := Parent{}
+	field := reflect.ValueOf(&out).Elem().Field(0)
+
+	var recursiveSet func(reflect.Value, any, reflect.Type) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	}
+
+	// Input has struct values but with non-map type
+	input := map[string]any{"key1": "not a map"}
+	err := SetFieldValueWithOptions(field, input, field.Type(), recursiveSet, FieldOptions{})
+	assert.Error(t, err)
+}
+
+// TestSetSliceField_OtherErrorInStructDeserialization tests non-MultiRequiredFieldError in slice struct deserialization.
+func TestSetSliceField_OtherErrorInStructDeserialization(t *testing.T) {
+	type Item struct {
+		Value int `json:"value"`
+	}
+	type Parent struct {
+		Items []Item
+	}
+
+	out := Parent{}
+	field := reflect.ValueOf(&out).Elem().Field(0)
+
+	// Create a recursiveSet that returns a non-MultiRequiredFieldError
+	var recursiveSet func(reflect.Value, any, reflect.Type) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+		if ft.Kind() == reflect.Int {
+			return fmt.Errorf("forced int conversion error")
+		}
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	}
+
+	input := []any{map[string]any{"value": 42}}
+	err := SetFieldValueWithOptions(field, input, field.Type(), recursiveSet, FieldOptions{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "forced int conversion error")
+}
+
+// TestSetMapField_OtherErrorInStructDeserialization tests non-MultiRequiredFieldError in map struct deserialization.
+func TestSetMapField_OtherErrorInStructDeserialization(t *testing.T) {
+	type Item struct {
+		Value int `json:"value"`
+	}
+	type Parent struct {
+		Items map[string]Item
+	}
+
+	out := Parent{}
+	field := reflect.ValueOf(&out).Elem().Field(0)
+
+	// Create a recursiveSet that returns a non-MultiRequiredFieldError
+	var recursiveSet func(reflect.Value, any, reflect.Type) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+		if ft.Kind() == reflect.Int {
+			return fmt.Errorf("forced int conversion error")
+		}
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	}
+
+	input := map[string]any{"key1": map[string]any{"value": 42}}
+	err := SetFieldValueWithOptions(field, input, field.Type(), recursiveSet, FieldOptions{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "forced int conversion error")
 }

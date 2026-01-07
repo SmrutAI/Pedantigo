@@ -929,3 +929,176 @@ func TestToFilteredMap_EmptyStruct(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Empty(t, result)
 }
+
+// ==================== isZeroValue Tests ====================
+
+func TestIsZeroValue_Channel(t *testing.T) {
+	// Nil channel
+	var nilChan chan int
+	assert.True(t, isZeroValue(reflect.ValueOf(nilChan)), "nil channel should be zero")
+
+	// Non-nil channel
+	nonNilChan := make(chan int)
+	assert.False(t, isZeroValue(reflect.ValueOf(nonNilChan)), "non-nil channel should not be zero")
+}
+
+func TestIsZeroValue_Func(t *testing.T) {
+	// Nil func
+	var nilFunc func()
+	assert.True(t, isZeroValue(reflect.ValueOf(nilFunc)), "nil func should be zero")
+
+	// Non-nil func
+	nonNilFunc := func() {}
+	assert.False(t, isZeroValue(reflect.ValueOf(nonNilFunc)), "non-nil func should not be zero")
+}
+
+func TestIsZeroValue_Array(t *testing.T) {
+	// Zero array (all elements are zero)
+	var zeroArray [3]int
+	assert.True(t, isZeroValue(reflect.ValueOf(zeroArray)), "zero array should be zero")
+
+	// Non-zero array (has at least one non-zero element)
+	nonZeroArray := [3]int{0, 1, 0}
+	assert.False(t, isZeroValue(reflect.ValueOf(nonZeroArray)), "non-zero array should not be zero")
+
+	// Empty array
+	var emptyArray [0]int
+	assert.True(t, isZeroValue(reflect.ValueOf(emptyArray)), "empty array should be zero")
+}
+
+func TestIsZeroValue_ArrayOfPointers(t *testing.T) {
+	// Array of nil pointers
+	var nilPtrArray [2]*int
+	assert.True(t, isZeroValue(reflect.ValueOf(nilPtrArray)), "array of nil pointers should be zero")
+
+	// Array with one non-nil pointer
+	val := 42
+	nonNilPtrArray := [2]*int{nil, &val}
+	assert.False(t, isZeroValue(reflect.ValueOf(nonNilPtrArray)), "array with non-nil pointer should not be zero")
+}
+
+func TestIsZeroValue_Struct(t *testing.T) {
+	type Inner struct {
+		Value int
+	}
+
+	// Zero struct
+	var zeroStruct Inner
+	assert.True(t, isZeroValue(reflect.ValueOf(zeroStruct)), "zero struct should be zero")
+
+	// Non-zero struct
+	nonZeroStruct := Inner{Value: 42}
+	assert.False(t, isZeroValue(reflect.ValueOf(nonZeroStruct)), "non-zero struct should not be zero")
+}
+
+func TestIsZeroValue_NestedStruct(t *testing.T) {
+	type Nested struct {
+		Inner struct {
+			Value int
+		}
+	}
+
+	// Zero nested struct
+	var zeroNested Nested
+	assert.True(t, isZeroValue(reflect.ValueOf(zeroNested)), "zero nested struct should be zero")
+
+	// Non-zero nested struct
+	nonZeroNested := Nested{}
+	nonZeroNested.Inner.Value = 42
+	assert.False(t, isZeroValue(reflect.ValueOf(nonZeroNested)), "non-zero nested struct should not be zero")
+}
+
+func TestIsZeroValue_Interface(t *testing.T) {
+	// Nil interface
+	var nilInterface interface{}
+	assert.True(t, isZeroValue(reflect.ValueOf(&nilInterface).Elem()), "nil interface should be zero")
+
+	// Non-nil interface
+	var nonNilInterface interface{} = 42
+	assert.False(t, isZeroValue(reflect.ValueOf(&nonNilInterface).Elem()), "non-nil interface should not be zero")
+}
+
+func TestIsZeroValue_Map(t *testing.T) {
+	// Nil map
+	var nilMap map[string]int
+	assert.True(t, isZeroValue(reflect.ValueOf(nilMap)), "nil map should be zero")
+
+	// Empty but non-nil map
+	emptyMap := make(map[string]int)
+	assert.False(t, isZeroValue(reflect.ValueOf(emptyMap)), "non-nil empty map should not be zero")
+}
+
+func TestIsZeroValue_Slice(t *testing.T) {
+	// Nil slice
+	var nilSlice []int
+	assert.True(t, isZeroValue(reflect.ValueOf(nilSlice)), "nil slice should be zero")
+
+	// Empty but non-nil slice
+	emptySlice := make([]int, 0)
+	assert.False(t, isZeroValue(reflect.ValueOf(emptySlice)), "non-nil empty slice should not be zero")
+}
+
+func TestIsZeroValue_Pointer(t *testing.T) {
+	// Nil pointer
+	var nilPtr *int
+	assert.True(t, isZeroValue(reflect.ValueOf(nilPtr)), "nil pointer should be zero")
+
+	// Non-nil pointer to zero value
+	zeroVal := 0
+	assert.False(t, isZeroValue(reflect.ValueOf(&zeroVal)), "non-nil pointer should not be zero")
+}
+
+func TestIsZeroValue_Primitives(t *testing.T) {
+	tests := []struct {
+		name  string
+		value interface{}
+		want  bool
+	}{
+		{"zero int", 0, true},
+		{"non-zero int", 42, false},
+		{"zero float64", 0.0, true},
+		{"non-zero float64", 3.14, false},
+		{"zero string", "", true},
+		{"non-zero string", "hello", false},
+		{"false bool", false, true},
+		{"true bool", true, false},
+		{"zero uint", uint(0), true},
+		{"non-zero uint", uint(42), false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isZeroValue(reflect.ValueOf(tt.value))
+			assert.Equal(t, tt.want, result)
+		})
+	}
+}
+
+func TestIsZeroValue_StructWithPointerField(t *testing.T) {
+	type WithPointer struct {
+		Ptr *int
+	}
+
+	// Zero (nil pointer field)
+	var zero WithPointer
+	assert.True(t, isZeroValue(reflect.ValueOf(zero)), "struct with nil pointer should be zero")
+
+	// Non-zero (non-nil pointer field)
+	val := 42
+	nonZero := WithPointer{Ptr: &val}
+	assert.False(t, isZeroValue(reflect.ValueOf(nonZero)), "struct with non-nil pointer should not be zero")
+}
+
+func TestIsZeroValue_ArrayOfStructs(t *testing.T) {
+	type Inner struct {
+		Value int
+	}
+
+	// Zero array of structs
+	var zeroArray [2]Inner
+	assert.True(t, isZeroValue(reflect.ValueOf(zeroArray)), "array of zero structs should be zero")
+
+	// Non-zero array of structs
+	nonZeroArray := [2]Inner{{Value: 1}, {Value: 0}}
+	assert.False(t, isZeroValue(reflect.ValueOf(nonZeroArray)), "array with non-zero struct should not be zero")
+}

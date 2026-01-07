@@ -2615,3 +2615,76 @@ func TestEnhanceSchema_WithComplexMetadata(t *testing.T) {
 	require.NotNil(t, statusProp.Enum)
 	assert.Len(t, statusProp.Enum, 2)
 }
+
+// TestEnhanceSchema_NilProperties tests EnhanceSchema handles nil properties.
+func TestEnhanceSchema_NilProperties(t *testing.T) {
+	type Empty struct {
+		unexported string //nolint:unused // intentionally unused for test
+	}
+
+	parseTagFunc := func(tag reflect.StructTag) map[string]string {
+		return nil
+	}
+
+	// Create schema with nil properties
+	schema := &jsonschema.Schema{Type: "object", Properties: nil}
+
+	// Should not panic
+	EnhanceSchema(schema, reflect.TypeOf(Empty{}), parseTagFunc)
+}
+
+// TestEnhanceSchema_FieldWithoutSchema tests when field schema doesn't exist.
+func TestEnhanceSchema_FieldWithoutSchema(t *testing.T) {
+	type Missing struct {
+		Name string `json:"name" pedantigo:"required"`
+	}
+
+	parseTagFunc := func(tag reflect.StructTag) map[string]string {
+		pedantigoTag := tag.Get("pedantigo")
+		if pedantigoTag == "" {
+			return nil
+		}
+		return map[string]string{"required": ""}
+	}
+
+	// Create schema without the property
+	schema := &jsonschema.Schema{
+		Type:       "object",
+		Properties: jsonschema.NewProperties(),
+	}
+
+	// Should not panic when property doesn't exist
+	EnhanceSchema(schema, reflect.TypeOf(Missing{}), parseTagFunc)
+}
+
+// TestEnhanceSchema_DuplicateRequired tests that required fields aren't duplicated.
+func TestEnhanceSchema_DuplicateRequired(t *testing.T) {
+	type User struct {
+		Name string `json:"name" pedantigo:"required"`
+	}
+
+	parseTagFunc := func(tag reflect.StructTag) map[string]string {
+		pedantigoTag := tag.Get("pedantigo")
+		if pedantigoTag == "" {
+			return nil
+		}
+		return map[string]string{"required": ""}
+	}
+
+	schema := GenerateBaseSchema[User]()
+	require.NotNil(t, schema)
+
+	// Pre-add name to required
+	schema.Required = []string{"name"}
+
+	EnhanceSchema(schema, reflect.TypeOf(User{}), parseTagFunc)
+
+	// Name should appear only once
+	count := 0
+	for _, r := range schema.Required {
+		if r == "name" {
+			count++
+		}
+	}
+	assert.Equal(t, 1, count, "required field should not be duplicated")
+}
