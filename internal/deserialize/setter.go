@@ -283,9 +283,45 @@ func deserializeStructFields(
 		// Check if field exists in JSON
 		val, exists := inputMap[jsonFieldName]
 		if !exists {
-			// Field missing from JSON - check if required
+			// Parse tags to check for defaults and required
+			tagName := opts.TagName
+			if tagName == "" {
+				tagName = tags.DefaultTagName
+			}
+			parsedTag := tags.ParseTagWithName(field.Tag, tagName)
+
+			// Apply static default if present
+			if defVal, hasDefault := parsedTag["default"]; hasDefault {
+				fieldVal := structValue.Field(j)
+				var setDefault func(reflect.Value, string)
+				setDefault = func(fv reflect.Value, dv string) {
+					SetDefaultValue(fv, dv, setDefault)
+				}
+				setDefault(fieldVal, defVal)
+				continue
+			}
+
+			// Apply defaultUsingMethod if present
+			if methodName, hasMethod := parsedTag["defaultUsingMethod"]; hasMethod {
+				fieldVal := structValue.Field(j)
+				if structValue.CanAddr() {
+					ptrValue := structValue.Addr()
+					method := ptrValue.MethodByName(methodName)
+					if method.IsValid() {
+						results := method.Call(nil)
+						if len(results) == 2 {
+							if !results[1].IsNil() {
+								return results[1].Interface().(error)
+							}
+							fieldVal.Set(results[0])
+						}
+					}
+				}
+				continue
+			}
+
+			// No default - check if required
 			if opts.StrictMissingFields {
-				parsedTag := tags.ParseTagWithName(field.Tag, opts.TagName)
 				if _, hasRequired := parsedTag["required"]; hasRequired {
 					requiredErrors = append(requiredErrors, &RequiredFieldError{Field: fullPath})
 				}
