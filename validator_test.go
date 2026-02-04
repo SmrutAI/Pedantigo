@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -2398,4 +2399,152 @@ func TestStringTransformations_WithValidation(t *testing.T) {
 		}
 	}
 	assert.True(t, foundEmailError, "expected email validation error")
+}
+
+// ============================================================
+// Circular reference types (must be package-level for cross-ref)
+// ============================================================
+
+// circularConversation references circularMessage, which references back.
+type circularConversation struct {
+	ID       string            `json:"id" pedantigo:"required"`
+	Messages []circularMessage `json:"messages" pedantigo:"dive"`
+}
+
+type circularMessage struct {
+	ID           string                `json:"id" pedantigo:"required"`
+	Conversation *circularConversation `json:"conversation"`
+}
+
+// TestCircularReference_Construction tests that New[T]() does not stack overflow
+// on circular type references. Regression test for #15.
+func TestCircularReference_Construction(t *testing.T) {
+	// This should NOT panic with stack overflow
+	require.NotPanics(t, func() {
+		_ = New[circularConversation]()
+	}, "New[T]() should handle circular type references without stack overflow")
+}
+
+// TestCircularReference_Validation tests that validation works on circular structs.
+func TestCircularReference_Validation(t *testing.T) {
+	v := New[circularConversation]()
+
+	conv := &circularConversation{
+		ID: "conv-1",
+		Messages: []circularMessage{
+			{
+				ID:           "msg-1",
+				Conversation: nil, // nil back-reference is fine
+			},
+		},
+	}
+
+	err := v.Validate(conv)
+	require.NoError(t, err)
+}
+
+// TestCircularReference_ValidationWithBackRef tests validation when the back-reference is populated.
+func TestCircularReference_ValidationWithBackRef(t *testing.T) {
+	v := New[circularConversation]()
+
+	conv := &circularConversation{
+		ID: "conv-1",
+	}
+	conv.Messages = []circularMessage{
+		{
+			ID:           "msg-1",
+			Conversation: conv, // circular back-reference
+		},
+	}
+
+	// Should not infinite loop during validation
+	err := v.Validate(conv)
+	require.NoError(t, err)
+}
+
+// TestCircularReference_Unmarshal tests that Unmarshal works with circular types.
+func TestCircularReference_Unmarshal(t *testing.T) {
+	v := New[circularConversation]()
+
+	result, err := v.Unmarshal([]byte(`{
+		"id": "conv-1",
+		"messages": [
+			{"id": "msg-1"}
+		]
+	}`))
+	require.NoError(t, err)
+	assert.Equal(t, "conv-1", result.ID)
+	require.Len(t, result.Messages, 1)
+	assert.Equal(t, "msg-1", result.Messages[0].ID)
+}
+
+// Self-referencing type (tree structure).
+type circularTreeNode struct {
+	Name     string              `json:"name" pedantigo:"required"`
+	Children []*circularTreeNode `json:"children" pedantigo:"dive"`
+}
+
+// TestCircularReference_SelfReferencing tests self-referencing types (trees).
+func TestCircularReference_SelfReferencing(t *testing.T) {
+	require.NotPanics(t, func() {
+		_ = New[circularTreeNode]()
+	}, "New[T]() should handle self-referencing types without stack overflow")
+
+	v := New[circularTreeNode]()
+	tree := &circularTreeNode{
+		Name: "root",
+		Children: []*circularTreeNode{
+			{Name: "child1"},
+			{Name: "child2", Children: []*circularTreeNode{
+				{Name: "grandchild"},
+			}},
+		},
+	}
+	err := v.Validate(tree)
+	require.NoError(t, err)
+}
+
+// validatableApp is a type that implements Validatable by calling back into pedantigo.
+type validatableApp struct {
+	Name string `json:"name" pedantigo:"required"`
+}
+
+var (
+	validatableAppValidator     *Validator[validatableApp]
+	validatableAppValidatorOnce sync.Once
+)
+
+func getValidatableAppValidator() *Validator[validatableApp] {
+	validatableAppValidatorOnce.Do(func() {
+		validatableAppValidator = New[validatableApp]()
+	})
+	return validatableAppValidator
+}
+
+func (a *validatableApp) Validate() error {
+	return getValidatableAppValidator().Validate(a)
+}
+
+// TestValidatable_ReentrancyGuard tests that Validatable.Validate() does not
+// cause infinite recursion when it calls back into pedantigo. Regression test for #15.
+func TestValidatable_ReentrancyGuard(t *testing.T) {
+	app := &validatableApp{Name: "my-app"}
+
+	// This should NOT cause stack overflow
+	err := getValidatableAppValidator().Validate(app)
+	require.NoError(t, err)
+}
+
+// TestValidatable_ReentrancyGuard_Unmarshal tests re-entrancy through Unmarshal path.
+// Unmarshal checks 'required' (unlike Validate), so a missing field triggers an error
+// while also exercising the Validatable → re-entrancy guard path.
+func TestValidatable_ReentrancyGuard_Unmarshal(t *testing.T) {
+	// Missing required "name" field → should return validation error, not stack overflow
+	_, err := getValidatableAppValidator().Unmarshal([]byte(`{}`))
+	require.Error(t, err)
+
+	// Valid JSON with name present → should succeed without stack overflow
+	app, err := getValidatableAppValidator().Unmarshal([]byte(`{"name":"my-app"}`))
+	require.NoError(t, err)
+	assert.Equal(t, "my-app", app.Name)
 }
