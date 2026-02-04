@@ -313,6 +313,115 @@ func TestUnmarshal_DefaultValues(t *testing.T) {
 	assert.Equal(t, "active", user.Status)
 }
 
+// TestUnmarshal_NestedStructDefaults tests that default= tags are applied to
+// fields inside nested structs during Unmarshal. Regression test for #17.
+func TestUnmarshal_NestedStructDefaults(t *testing.T) {
+	type FactConfig struct {
+		MaxPasses int `json:"max_passes" pedantigo:"default=1,gte=0,lte=5"`
+		MaxTokens int `json:"max_tokens" pedantigo:"default=2048,gte=100,lte=16384"`
+	}
+
+	type ExtractionConfig struct {
+		Fact *FactConfig `json:"fact,omitempty"`
+	}
+
+	type CreateAppRequest struct {
+		Name             string            `json:"name" pedantigo:"required,min=1,max=255"`
+		ExtractionConfig *ExtractionConfig `json:"extraction_config,omitempty" pedantigo:"omitempty"`
+	}
+
+	t.Run("top-level defaults work", func(t *testing.T) {
+		// Baseline: top-level struct defaults work correctly
+		v := New[FactConfig]()
+		result, err := v.Unmarshal([]byte(`{}`))
+		require.NoError(t, err)
+		assert.Equal(t, 1, result.MaxPasses, "MaxPasses default should be 1")
+		assert.Equal(t, 2048, result.MaxTokens, "MaxTokens default should be 2048")
+	})
+
+	t.Run("nested struct defaults applied for missing fields", func(t *testing.T) {
+		// Core bug: nested struct field max_tokens is missing from JSON,
+		// default=2048 should be applied, then gte=100 should pass.
+		v := New[CreateAppRequest]()
+		result, err := v.Unmarshal([]byte(`{
+			"name": "test-app",
+			"extraction_config": {
+				"fact": {
+					"max_passes": 2
+				}
+			}
+		}`))
+		require.NoError(t, err, "expected no error: max_tokens should default to 2048")
+		require.NotNil(t, result.ExtractionConfig)
+		require.NotNil(t, result.ExtractionConfig.Fact)
+		assert.Equal(t, 2, result.ExtractionConfig.Fact.MaxPasses)
+		assert.Equal(t, 2048, result.ExtractionConfig.Fact.MaxTokens,
+			"missing max_tokens should get default=2048")
+	})
+
+	t.Run("nested struct all fields missing get defaults", func(t *testing.T) {
+		// All fields in nested struct are missing - all should get defaults
+		v := New[CreateAppRequest]()
+		result, err := v.Unmarshal([]byte(`{
+			"name": "test-app",
+			"extraction_config": {
+				"fact": {}
+			}
+		}`))
+		require.NoError(t, err, "expected no error: all fields should get defaults")
+		require.NotNil(t, result.ExtractionConfig.Fact)
+		assert.Equal(t, 1, result.ExtractionConfig.Fact.MaxPasses,
+			"missing max_passes should get default=1")
+		assert.Equal(t, 2048, result.ExtractionConfig.Fact.MaxTokens,
+			"missing max_tokens should get default=2048")
+	})
+
+	t.Run("explicit values override defaults in nested struct", func(t *testing.T) {
+		// When values ARE provided, they should be used (not overwritten by defaults)
+		v := New[CreateAppRequest]()
+		result, err := v.Unmarshal([]byte(`{
+			"name": "test-app",
+			"extraction_config": {
+				"fact": {
+					"max_passes": 3,
+					"max_tokens": 4096
+				}
+			}
+		}`))
+		require.NoError(t, err)
+		assert.Equal(t, 3, result.ExtractionConfig.Fact.MaxPasses)
+		assert.Equal(t, 4096, result.ExtractionConfig.Fact.MaxTokens)
+	})
+
+	t.Run("deeply nested struct defaults", func(t *testing.T) {
+		// Non-pointer nested struct (direct embedding)
+		type Inner struct {
+			Timeout int    `json:"timeout" pedantigo:"default=30"`
+			Mode    string `json:"mode" pedantigo:"default=auto"`
+		}
+		type Middle struct {
+			Inner Inner `json:"inner"`
+		}
+		type Outer struct {
+			Name   string `json:"name" pedantigo:"required"`
+			Middle Middle `json:"middle"`
+		}
+
+		v := New[Outer]()
+		result, err := v.Unmarshal([]byte(`{
+			"name": "test",
+			"middle": {
+				"inner": {}
+			}
+		}`))
+		require.NoError(t, err)
+		assert.Equal(t, 30, result.Middle.Inner.Timeout,
+			"deeply nested timeout should get default=30")
+		assert.Equal(t, "auto", result.Middle.Inner.Mode,
+			"deeply nested mode should get default=auto")
+	})
+}
+
 func TestUnmarshal_NestedValidation(t *testing.T) {
 	type Address struct {
 		City string `json:"city" pedantigo:"required,min=1"` // min=1 for non-empty string

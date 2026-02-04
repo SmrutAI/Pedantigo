@@ -1,37 +1,121 @@
-.PHONY: help build test test-verbose test-coverage test-ci test-ci-cov vet fmt lint clean install run bench
+# pedantigo Makefile
+# Run `make help` for available targets
+
+# Use bash for PIPESTATUS support (required for test-run target)
+SHELL := /bin/bash
+
+.PHONY: help build test test-verbose test-run test-clean-cache test-coverage \
+        test-ci test-ci-cov vet fmt lint deps check clean install bench
 
 # Default target
-help:
-	@echo "Available targets:"
-	@echo "  make build         - Build the project"
-	@echo "  make test          - Run all tests"
-	@echo "  make test-verbose  - Run tests with verbose output"
-	@echo "  make test-coverage - Run tests with coverage report"
-	@echo "  make vet           - Run go vet"
-	@echo "  make fmt           - Format code with gofmt"
-	@echo "  make lint          - Run golangci-lint (requires installation)"
-	@echo "  make bench         - Run benchmarks"
-	@echo "  make clean         - Clean build artifacts"
-	@echo "  make install       - Install dependencies"
-	@echo "  make all           - Run fmt, vet, and test"
+.DEFAULT_GOAL := help
 
-# Build the project
-build:
+# ============================================
+# HELP
+# ============================================
+
+help: ## Show this help message
+	@echo "Pedantigo - Pydantic-inspired validation library for Go"
+	@echo ""
+	@echo "Usage: make [target]"
+	@echo ""
+	@echo "Targets:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@echo ""
+	@echo "\033[1mTest Runner Examples (make test-run):\033[0m"
+	@echo "  make test-run                                  # All tests"
+	@echo "  make test-run RUN=TestMyFunction               # Single test by name"
+	@echo "  make test-run RUN=TestUnmarshal                # Tests matching pattern"
+	@echo "  make test-run PKG=./internal/constraints/...   # Tests in specific package"
+	@echo "  make test-run TIMEOUT=5m                       # Custom timeout"
+
+# ============================================
+# FLEXIBLE TEST RUNNER
+# ============================================
+# Usage Examples:
+#   make test-run                                  # All tests
+#   make test-run RUN=TestMyFunction               # Single test by name
+#   make test-run PKG=./internal/constraints/...   # Tests in specific package
+#   make test-run TIMEOUT=5m                       # Custom timeout
+
+# Test runner defaults
+RUN ?=
+PKG ?= ./...
+TIMEOUT ?= 10m
+
+# Common go test flags
+GO_TEST_FLAGS := -v -race -count=1
+
+test-run: ## Flexible test runner (use RUN=TestName PKG=./path TIMEOUT=5m)
+	@echo "═══════════════════════════════════════════════════════"
+	@echo "Test Run: $$(date)"
+	@echo "═══════════════════════════════════════════════════════"
+	@echo "Config:"
+	@echo "  RUN:     $(if $(RUN),$(RUN),(all tests))"
+	@echo "  PKG:     $(PKG)"
+	@echo "  TIMEOUT: $(TIMEOUT)"
+	@echo "═══════════════════════════════════════════════════════"
+	@echo ""
+	@go test $(GO_TEST_FLAGS) \
+		$(if $(RUN),-run=$(RUN),) \
+		-timeout $(TIMEOUT) \
+		$(PKG) 2>&1 | tee /tmp/pedantigo_test_output.log; \
+		EXIT_CODE=$${PIPESTATUS[0]}; \
+		echo ""; \
+		echo "═══════════════════════════════════════════════════════"; \
+		echo "Exit code: $$EXIT_CODE"; \
+		echo "Output saved to: /tmp/pedantigo_test_output.log"; \
+		echo "═══════════════════════════════════════════════════════"; \
+		exit $$EXIT_CODE
+
+# ============================================
+# BUILD & QUALITY
+# ============================================
+
+build: ## Build the project
 	@echo "Building..."
 	go build -v ./...
 
-# Run all tests (parallel with race detection)
-test:
+vet: ## Run go vet
+	@echo "Running go vet..."
+	go vet ./...
+
+fmt: ## Format code with goimports + gofmt
+	@echo "Formatting code..."
+	@which goimports > /dev/null || (echo "goimports not installed. Install with: go install golang.org/x/tools/cmd/goimports@latest" && exit 1)
+	goimports -w -local github.com/SmrutAI/pedantigo .
+	gofmt -s -w .
+
+lint: ## Run golangci-lint
+	@echo "Running golangci-lint..."
+	@which golangci-lint > /dev/null || (echo "golangci-lint not installed. Install with: brew install golangci-lint" && exit 1)
+	golangci-lint run ./...
+
+deps: ## Download and tidy Go dependencies
+	@echo "Tidying dependencies..."
+	go mod download
+	go mod tidy
+	@echo "Dependencies up to date"
+
+check: lint test ## Run lint + all tests
+
+# ============================================
+# TESTING
+# ============================================
+
+test: ## Run all tests (parallel with race detection)
 	@echo "Running tests (parallel, race detection enabled)..."
 	go test -race -parallel 8 -count=1 ./...
 
-# Run tests with verbose output
-test-verbose:
+test-verbose: ## Run tests with verbose output
 	@echo "Running tests (verbose)..."
 	go test -v -race -parallel 8 -count=1 ./...
 
-# Run tests with coverage
-test-coverage:
+test-clean-cache: ## Clean Go test cache (forces recompilation)
+	go clean -testcache
+	@echo "Test cache cleaned"
+
+test-coverage: ## Run tests with coverage report and threshold check
 	@echo "Running tests with coverage..."
 	go test -race -parallel 8 -cover -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out -o coverage.html
@@ -42,65 +126,42 @@ test-coverage:
 	echo "Current coverage: $${COVERAGE}%"; \
 	echo "Target coverage: $${THRESHOLD}%"; \
 	if awk -v cov="$$COVERAGE" -v thresh="$$THRESHOLD" 'BEGIN {exit !(cov >= thresh)}'; then \
-		echo "✓ Coverage check passed"; \
+		echo "Coverage check passed"; \
 	else \
-		echo "⚠ Coverage below target: $${COVERAGE}% < $${THRESHOLD}%"; \
+		echo "Coverage below target: $${COVERAGE}% < $${THRESHOLD}%"; \
 		exit 1; \
 	fi
 
-# CI: Run tests with JUnit XML output
-test-ci:
+# ============================================
+# CI TARGETS
+# ============================================
+
+test-ci: ## CI: Run tests with JUnit XML output
 	@echo "Running tests (CI mode, JUnit XML output)..."
 	go test -race -parallel 8 -count=1 -v ./... 2>&1 | go-junit-report -set-exit-code > test-results.xml
 
-# CI: Run tests with coverage + JUnit XML output (single run)
-test-ci-cov:
+test-ci-cov: ## CI: Run tests with coverage + JUnit XML output
 	@echo "Running tests with coverage (CI mode)..."
 	go test -race -parallel 8 -v -coverprofile=coverage.out -covermode=atomic ./... 2>&1 | go-junit-report -set-exit-code > test-results.xml
 	go tool cover -func=coverage.out | grep total | awk '{print $$3}' > coverage.txt
 
-# Run go vet
-vet:
-	@echo "Running go vet..."
-	go vet ./...
+# ============================================
+# BENCHMARKS & MISC
+# ============================================
 
-# Format code (uses goimports for import grouping)
-fix_fmt:
-	@echo "Formatting code..."
-	@which goimports > /dev/null || (echo "goimports not installed. Install with: go install golang.org/x/tools/cmd/goimports@latest" && exit 1)
-	goimports -w -local github.com/SmrutAI/pedantigo .
-	gofmt -s -w .
-
-# Format code (alias for compatibility)
-fmt: fix_fmt
-
-# Run linter (requires golangci-lint)
-lint:
-	@echo "Running golangci-lint..."
-	@which golangci-lint > /dev/null || (echo "golangci-lint not installed. Install with: brew install golangci-lint" && exit 1)
-	golangci-lint run ./...
-
-# Run benchmarks
-bench:
+bench: ## Run benchmarks
 	@echo "Running benchmarks..."
 	go test -bench=. -benchmem ./...
 
-# Clean build artifacts
-clean:
+clean: ## Clean build artifacts
 	@echo "Cleaning..."
 	go clean
-	rm -f coverage.out coverage.html coverage.txt test-results.xml
+	rm -f coverage.out coverage.html coverage.txt test-results.xml coverage.xml
 
-# Install/update dependencies
-install:
-	@echo "Installing dependencies..."
-	go mod download
-	go mod tidy
+install: deps ## Install/update dependencies (alias for deps)
 
-# Run all checks (fmt, vet, test)
-all: fmt vet test
+all: fmt vet test ## Run fmt, vet, and test
 	@echo "All checks passed!"
 
-# Quick check before commit
-pre-commit: fmt vet test-coverage
+pre-commit: fmt vet test-coverage ## Quick check before commit
 	@echo "Pre-commit checks passed!"
