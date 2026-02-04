@@ -39,6 +39,11 @@ type Validator[T any] struct {
 
 	// Extra fields support (nil when ExtraAllow disabled)
 	extraFieldInfo *deserialize.ExtraFieldInfo
+
+	// Re-entrancy guard for Validatable.Validate() calls (#15)
+	// Tracks object pointers currently being validated to prevent infinite recursion
+	// when a user's Validate() method calls back into pedantigo.
+	validating sync.Map
 }
 
 // New creates a new Validator for type T with optional configuration.
@@ -79,7 +84,8 @@ func New[T any](opts ...ValidatorOptions) *Validator[T] {
 	validator.validateDiveTags(typ, tagName)
 
 	// Build field constraints at creation time (the key optimization)
-	validator.fieldCache = validator.buildFieldConstraints(typ, tagName)
+	// Pass visited set to detect circular type references (#15)
+	validator.fieldCache = validator.buildFieldConstraints(typ, tagName, make(map[reflect.Type]bool))
 
 	// Detect extra_fields for ExtraAllow mode
 	if options.ExtraFields == ExtraAllow {
@@ -93,7 +99,8 @@ func New[T any](opts ...ValidatorOptions) *Validator[T] {
 }
 
 // buildFieldConstraints builds and caches all field constraints at creation time.
-func (v *Validator[T]) buildFieldConstraints(typ reflect.Type, tagName string) *constraints.FieldCache {
+// visited tracks types already being processed to detect circular references (#15).
+func (v *Validator[T]) buildFieldConstraints(typ reflect.Type, tagName string, visited map[reflect.Type]bool) *constraints.FieldCache {
 	// Handle pointer types
 	if typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
@@ -102,6 +109,15 @@ func (v *Validator[T]) buildFieldConstraints(typ reflect.Type, tagName string) *
 	if typ.Kind() != reflect.Struct {
 		return nil
 	}
+
+	// Detect circular type references: if we're already building constraints
+	// for this type, return nil to break the cycle. At validation time, nil
+	// NestedCache means "don't recurse" which is correct — the parent type's
+	// validator already covers its own fields.
+	if visited[typ] {
+		return nil
+	}
+	visited[typ] = true
 
 	cache := constraints.NewFieldCache()
 
@@ -166,17 +182,17 @@ func (v *Validator[T]) buildFieldConstraints(typ reflect.Type, tagName string) *
 			cached.HasSkipConstraints = len(cached.SkipConstraints) > 0
 		}
 
-		// Recurse for nested structs
+		// Recurse for nested structs (passing visited set for cycle detection)
 		switch fieldType.Kind() {
 		case reflect.Struct:
-			cached.NestedCache = v.buildFieldConstraints(fieldType, tagName)
+			cached.NestedCache = v.buildFieldConstraints(fieldType, tagName, visited)
 		case reflect.Slice, reflect.Map:
 			elemType := fieldType.Elem()
 			if elemType.Kind() == reflect.Ptr {
 				elemType = elemType.Elem()
 			}
 			if elemType.Kind() == reflect.Struct {
-				cached.NestedCache = v.buildFieldConstraints(elemType, tagName)
+				cached.NestedCache = v.buildFieldConstraints(elemType, tagName, visited)
 			}
 		}
 
@@ -291,19 +307,25 @@ func (v *Validator[T]) Validate(obj *T) error {
 	// Validate all fields using struct tags (required is skipped via buildConstraints)
 	v.validateWithCache(reflect.ValueOf(obj).Elem(), nil, ctx, v.fieldCache)
 
-	// Check if struct implements Validatable for cross-field validation
+	// Check if struct implements Validatable for cross-field validation.
+	// Use re-entrancy guard to prevent infinite recursion when user's
+	// Validate() method calls back into pedantigo (#15).
 	if validatable, ok := any(obj).(Validatable); ok {
-		if err := validatable.Validate(); err != nil {
-			// Check if it's a ValidationError with multiple errors
-			var ve *ValidationError
-			if errors.As(err, &ve) {
-				ctx.errs = append(ctx.errs, ve.Errors...)
-			} else {
-				// Single error or custom error type
-				ctx.errs = append(ctx.errs, FieldError{
-					Field:   "root",
-					Message: err.Error(),
-				})
+		key := reflect.ValueOf(obj).Pointer()
+		if _, alreadyValidating := v.validating.LoadOrStore(key, true); !alreadyValidating {
+			defer v.validating.Delete(key)
+			if err := validatable.Validate(); err != nil {
+				// Check if it's a ValidationError with multiple errors
+				var ve *ValidationError
+				if errors.As(err, &ve) {
+					ctx.errs = append(ctx.errs, ve.Errors...)
+				} else {
+					// Single error or custom error type
+					ctx.errs = append(ctx.errs, FieldError{
+						Field:   "root",
+						Message: err.Error(),
+					})
+				}
 			}
 		}
 	}
