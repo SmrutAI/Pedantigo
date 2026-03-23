@@ -234,6 +234,13 @@ See the [Collection Constraints](/docs/constraints/collection) page for detailed
 |-----------|-----------|-------------|---------|
 | `default` | Value | Default value if field missing | `pedantigo:"default=active"` |
 
+For slice fields, use **space-separated values** (consistent with `oneof` syntax):
+
+```go
+Scopes []string `json:"scopes" pedantigo:"default=read write"`
+Tags   []string `json:"tags" pedantigo:"default=general"`
+```
+
 ## Complete Example
 
 Here's a realistic example combining constraints from multiple categories:

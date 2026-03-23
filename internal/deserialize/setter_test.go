@@ -1030,6 +1030,39 @@ func TestSetDefaultValue_UnsettableField(t *testing.T) {
 	assert.Equal(t, "success", exported.String())
 }
 
+func TestSetDefaultValue_SliceDefaults(t *testing.T) {
+	type TestStruct struct {
+		Strings []string
+		Ints    []int
+		Empty   []string
+		Invalid []string
+	}
+
+	tests := []struct {
+		name         string
+		fieldName    string
+		defaultValue string
+		expected     any
+	}{
+		{name: "string slice", fieldName: "Strings", defaultValue: "read write", expected: []string{"read", "write"}},
+		{name: "int slice", fieldName: "Ints", defaultValue: "1 2 3", expected: []int{1, 2, 3}},
+		{name: "empty string", fieldName: "Empty", defaultValue: "", expected: []string(nil)},              // Empty string = no elements, stays nil
+		{name: "single element", fieldName: "Invalid", defaultValue: "admin", expected: []string{"admin"}}, // Single value works too
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &TestStruct{}
+			v := reflect.ValueOf(s).Elem()
+			field := v.FieldByName(tt.fieldName)
+
+			SetDefaultValue(field, tt.defaultValue, recursiveSetDefault)
+
+			assert.Equal(t, tt.expected, field.Interface())
+		})
+	}
+}
+
 // ==================== Helper Functions ====================
 
 // recursiveSetFuncNoop is a no-op recursive set function for testing.

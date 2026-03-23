@@ -234,7 +234,9 @@ func TestMacConstraint(t *testing.T) {
 		{"invalid MAC - too long", "00:1A:2B:3C:4D:5E:6F", true},
 		{"invalid MAC - invalid hex", "00:GG:2B:3C:4D:5E", true},
 		{"invalid MAC - mixed separators", "00:1A-2B:3C-4D:5E", true},
-		{"invalid MAC - no separators", "001A2B3C4D5E", true},
+		// Go 1.26+ net.ParseMAC accepts no-separator MACs per IEEE EUI-48 base-16 spec.
+		// See: https://github.com/golang/go/issues/66682
+		{"valid MAC - no separators (Go 1.26+)", "001A2B3C4D5E", false},
 		{"invalid MAC - IP address", "192.168.1.1", true},
 		// Nil pointer - should skip validation
 		{"nil pointer", (*string)(nil), false},

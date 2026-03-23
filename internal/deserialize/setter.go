@@ -563,5 +563,39 @@ func SetDefaultValue(fieldValue reflect.Value, defaultValue string, recursiveSet
 		if b, err := strconv.ParseBool(defaultValue); err == nil {
 			fieldValue.SetBool(b)
 		}
+	case reflect.Slice:
+		// Parse space-separated string (e.g., "read write") into the slice type,
+		// consistent with oneof constraint syntax.
+		parts := strings.Fields(defaultValue)
+		if len(parts) == 0 {
+			return
+		}
+		elemType := fieldValue.Type().Elem()
+		slice := reflect.MakeSlice(fieldValue.Type(), 0, len(parts))
+		for _, part := range parts {
+			elem := reflect.New(elemType).Elem()
+			switch elemType.Kind() {
+			case reflect.String:
+				elem.SetString(part)
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				if i, err := strconv.ParseInt(part, 10, 64); err == nil {
+					elem.SetInt(i)
+				}
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				if u, err := strconv.ParseUint(part, 10, 64); err == nil {
+					elem.SetUint(u)
+				}
+			case reflect.Float32, reflect.Float64:
+				if f, err := strconv.ParseFloat(part, 64); err == nil {
+					elem.SetFloat(f)
+				}
+			case reflect.Bool:
+				if b, err := strconv.ParseBool(part); err == nil {
+					elem.SetBool(b)
+				}
+			}
+			slice = reflect.Append(slice, elem)
+		}
+		fieldValue.Set(slice)
 	}
 }

@@ -271,6 +271,15 @@ type Config struct {
 }
 ```
 
+For slice fields, use **space-separated values** (consistent with `oneof` syntax):
+
+```go
+type APIKeyRequest struct {
+    Scopes []string `json:"scopes" pedantigo:"default=read write,dive,oneof=read write admin"`
+}
+// Missing "scopes" field → defaults to ["read", "write"]
+```
+
 Defaults are applied only for missing fields during `Unmarshal`. For dynamic defaults, use `defaultFactory`:
 
 ```go
