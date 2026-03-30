@@ -31,6 +31,11 @@ type CachedField struct {
 	IsCollection bool // slice or map
 	IsMap        bool // specifically a map
 	IsRequired   bool // has required tag (for nested struct validation)
+	// IsOmitEmpty is true when the pedantigo tag contains "omitempty".
+	// When true, regular constraints and collection/nested recursion are
+	// skipped if the field is at its zero value. Cross-field constraints
+	// (required_with, required_if, eqfield, etc.) always run regardless.
+	IsOmitEmpty bool
 
 	// For nested structs (recursive cache)
 	NestedCache *FieldCache

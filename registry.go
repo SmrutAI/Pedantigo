@@ -223,7 +223,7 @@ func isBuiltInValidator(name string) bool {
 	builtInValidators := map[string]bool{
 		// Core
 		"required": true, "const": true,
-		// Reserved for future use (not implemented, but prevents custom validator conflicts)
+		// When present, skips all constraints if the field is at its zero value (empty string, nil pointer/slice/map).
 		"omitempty": true,
 		// String
 		"min": true, "max": true, "len": true, "regex": true, "regexp": true, "pattern": true,

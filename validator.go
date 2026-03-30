@@ -159,6 +159,11 @@ func (v *Validator[T]) buildFieldConstraints(typ reflect.Type, tagName string, v
 				cached.IsRequired = true
 			}
 
+			// Check for omitempty tag
+			if _, hasOmitEmpty := parsedTag.CollectionConstraints["omitempty"]; hasOmitEmpty {
+				cached.IsOmitEmpty = true
+			}
+
 			// Constraints before dive (or regular field constraints)
 			if len(parsedTag.CollectionConstraints) > 0 {
 				cached.Constraints = constraints.BuildConstraints(parsedTag.CollectionConstraints, field.Type)
@@ -389,14 +394,22 @@ func (v *Validator[T]) validateWithCache(val reflect.Value, path []byte, ctx *va
 		// between "key missing from JSON" vs "key present with zero value".
 		// The old IsZero() check here was incorrect for zero values like 0, 0.0, false, "".
 
-		// Apply field constraints
-		for _, c := range cached.Constraints {
-			if err := c.Validate(fieldVal.Interface()); err != nil {
-				ctx.errs = append(ctx.errs, v.newFieldError(string(fieldPath), err, fieldVal.Interface()))
+		// omitempty: when set and field is zero, skip regular constraints and
+		// collection/nested recursion, but ALWAYS run cross-field constraints
+		// (required_with, required_if, eqfield, etc.) because they need to
+		// evaluate the field even when it is at its zero value.
+		isOmitEmptyZero := cached.IsOmitEmpty && fieldVal.IsZero()
+
+		// Apply field constraints (skip for omitempty zero-value fields)
+		if !isOmitEmptyZero {
+			for _, c := range cached.Constraints {
+				if err := c.Validate(fieldVal.Interface()); err != nil {
+					ctx.errs = append(ctx.errs, v.newFieldError(string(fieldPath), err, fieldVal.Interface()))
+				}
 			}
 		}
 
-		// Apply cross-field constraints
+		// Apply cross-field constraints (always run, even for omitempty zero-value fields)
 		for _, c := range cached.CrossFieldConstraints {
 			if err := c.ValidateCrossField(fieldVal.Interface(), val, string(fieldPath)); err != nil {
 				var valErr *ValidationError
@@ -411,16 +424,19 @@ func (v *Validator[T]) validateWithCache(val reflect.Value, path []byte, ctx *va
 			}
 		}
 
-		// Handle collections with dive (requires dive to recurse into elements, like playground)
-		if cached.IsCollection && cached.HasDive {
-			if cached.IsMap {
-				v.validateMapWithCache(fieldVal, fieldPath, ctx, cached)
-			} else {
-				v.validateSliceWithCache(fieldVal, fieldPath, ctx, cached)
+		// Handle collections with dive and nested struct recursion
+		// (skip for omitempty zero-value fields)
+		if !isOmitEmptyZero {
+			if cached.IsCollection && cached.HasDive {
+				if cached.IsMap {
+					v.validateMapWithCache(fieldVal, fieldPath, ctx, cached)
+				} else {
+					v.validateSliceWithCache(fieldVal, fieldPath, ctx, cached)
+				}
+			} else if cached.NestedCache != nil && !cached.IsCollection {
+				// Recurse for nested structs (but NOT collection elements without dive)
+				v.validateWithCache(fieldVal, fieldPath, ctx, cached.NestedCache)
 			}
-		} else if cached.NestedCache != nil && !cached.IsCollection {
-			// Recurse for nested structs (but NOT collection elements without dive)
-			v.validateWithCache(fieldVal, fieldPath, ctx, cached.NestedCache)
 		}
 	}
 }
