@@ -81,7 +81,6 @@ These validator tags are **not needed** in Pedantigo:
 
 | Tag             | Why Not Needed                                                                        |
 |-----------------|---------------------------------------------------------------------------------------|
-| `omitempty`     | Pedantigo tracks JSON field presence. Empty values skip validation unless `required`. |
 | `omitnil`       | Nil pointers are handled automatically.                                               |
 | `omitzero`      | Zero values skip validation unless `required`.                                        |
 | `-`             | Simply don't add a tag.                                                               |
@@ -89,15 +88,32 @@ These validator tags are **not needed** in Pedantigo:
 | `nostructlevel` | Not needed.                                                                           |
 | `isdefault`     | Not needed - check for zero value in code.                                            |
 
-**Example migration:**
+### `omitempty` — Supported Natively with Explicit Semantics
+
+Unlike `go-playground/validator`, where `omitempty` is a special-cased tag name, Pedantigo supports `omitempty` as a first-class **validation constraint** in the `pedantigo` tag. The behaviour is explicit and predictable:
+
+- **Regular constraints** (`min`, `max`, `oneof`, `email`, etc.) are skipped when the field is at its zero value.
+- **Cross-field constraints** (`required_with`, `required_if`, `eqfield`, etc.) always run, even for zero-value fields.
 
 ```go
-// validator
+// go-playground/validator
 Email string `validate:"omitempty,email"`
 
-// pedantigo (same behavior)
-Email string `validate:"email"`
+// pedantigo — omitempty is a real constraint with the same effect for this case
+Email string `pedantigo:"omitempty,email"`
+
+// But the behavior is now explicit: if Email is "", email validation is skipped.
+// If Email is "invalid", email validation runs and fails.
 ```
+
+If a field was previously tagged with `validate:"omitempty,email"` only to suppress errors on empty strings, you can migrate it as-is. If the intent was simply that the field is optional with no format constraint, remove the constraint entirely:
+
+```go
+// No constraint needed — optional field, no format check
+Notes string `json:"notes,omitempty"`
+```
+
+See [omitempty as a Validation Constraint](/docs/api/initialization#pedantigo-omitempty) for the full reference.
 
 ---
 
@@ -226,8 +242,9 @@ Pedantigo provides features not available in validator:
    ```
 
 3. **Remove unnecessary tags:**
-   - Delete `omitempty`, `omitnil`, `omitzero`
+   - Delete `omitnil`, `omitzero` — handled automatically by Pedantigo
    - Delete `-` tags (just remove the tag entirely)
+   - For `omitempty`: keep it if you want explicit zero-value skip semantics (see [omitempty as a Validation Constraint](/docs/api/initialization#pedantigo-omitempty)); remove it if the field is simply optional with no format constraint
 
 4. **Test your structs:**
    ```go

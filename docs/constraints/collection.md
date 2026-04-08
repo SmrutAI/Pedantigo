@@ -272,15 +272,17 @@ type UserPreferences struct {
     Tags []string `json:"tags,omitempty" pedantigo:"default="`
 
     // If not provided, defaults to a predefined list
-    Regions []string `json:"regions" pedantigo:"default=us-east-1,us-west-2"`
+    Regions []string `json:"regions" pedantigo:"default=us-east-1 us-west-2"`
 }
 ```
 
 **Behavior:**
-- For slices/arrays: `default=` creates an empty collection
-- For slices with values: `default=value1,value2,value3` creates a collection with default items
-- Only applied when the field is missing from JSON (not when empty)
+- For slices/arrays: `default=` (empty value) creates an empty collection
+- For slices with values: use **space-separated items** — `default=value1 value2 value3` — consistent with the `oneof` constraint syntax
+- Only applied when the field is missing from JSON (not when the field is present but empty)
 - Works with `omitempty` in JSON tags
+
+**Syntax note:** Space-separated values are used (not comma-separated) because commas are the pedantigo constraint separator. `default=us-east-1,us-west-2` would be parsed as two constraints (`default=us-east-1` and `us-west-2`), which is incorrect.
 
 ## Complete Example
 

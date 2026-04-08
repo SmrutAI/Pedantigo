@@ -466,17 +466,36 @@ Generated schema:
 
 ### Examples
 
-Provide example values in the schema:
+Provide example values in the schema using a JSON array literal:
 
 ```go
 type Product struct {
-    Name     string  `json:"name" pedantigo:"required,examples=Laptop|Monitor|Keyboard"`
-    Price    float64 `json:"price" pedantigo:"gt=0,examples=99.99|299.99|1999.99"`
-    Discount float64 `json:"discount" pedantigo:"min=0,max=100,examples=10|25|50"`
+    Name     string  `json:"name" pedantigo:"required,examples=[\"Laptop\",\"Monitor\",\"Keyboard\"]"`
+    Price    float64 `json:"price" pedantigo:"gt=0,examples=[99.99,299.99,1999.99]"`
+    Discount float64 `json:"discount" pedantigo:"min=0,max=100,examples=[10,25,50]"`
 }
 ```
 
-**Syntax**: Pipe-separated values `examples=value1|value2|value3`
+**Syntax**: `examples=<JSON array>` — the value must be a valid JSON array literal. The array is parsed as-is, so element types follow JSON rules: strings need quotes, numbers do not.
+
+```go
+// String examples
+Name string `pedantigo:"examples=[\"Alice\",\"Bob\"]"`
+
+// Integer examples
+Age int `pedantigo:"examples=[18,25,42]"`
+
+// Float examples
+Score float64 `pedantigo:"examples=[0.5,0.75,1.0]"`
+
+// Nested array examples (e.g. for [][]int fields)
+Pairs [][]int `pedantigo:"examples=[[0,1],[2,3],[4,5]]"`
+```
+
+:::note Breaking change
+The previous pipe-separated syntax (`examples=Alice|Bob`) is no longer supported. All `examples=`
+values must be JSON array literals.
+:::
 
 Generated schema:
 ```json
