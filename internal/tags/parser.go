@@ -1,6 +1,8 @@
 package tags
 
 import (
+	"encoding/json"
+	"io"
 	"reflect"
 	"strings"
 )
@@ -10,6 +12,53 @@ const DefaultTagName = "pedantigo"
 
 // ExtraFieldsTag is the tag value for fields that store extra/unknown JSON fields.
 const ExtraFieldsTag = "extra_fields"
+
+// splitTagConstraints splits a pedantigo tag string by commas, treating any
+// key=<JSON> segment as atomic by using json.Decoder to find where the JSON ends.
+// This enables values like examples=[[0,2],[1,3,5],[]] and examples=["a","b"].
+// Tags with no JSON values behave identically to strings.Split.
+func splitTagConstraints(tag string) []string {
+	var parts []string
+	remaining := tag
+
+	for remaining != "" {
+		commaIdx := strings.IndexByte(remaining, ',')
+		if commaIdx == -1 {
+			parts = append(parts, remaining)
+			break
+		}
+
+		// Check if there is a key=<json> at the head of remaining.
+		// Only trigger JSON detection if the '=' appears before the first ','.
+		eqIdx := strings.IndexByte(remaining[:commaIdx], '=')
+		if eqIdx != -1 {
+			afterEq := remaining[eqIdx+1:]
+			if afterEq != "" && (afterEq[0] == '[' || afterEq[0] == '{' || afterEq[0] == '"') {
+				dec := json.NewDecoder(strings.NewReader(afterEq))
+				dec.UseNumber()
+				var raw json.RawMessage
+				if err := dec.Decode(&raw); err == nil {
+					// dec.Buffered() is an in-memory *bytes.Buffer — ReadAll cannot fail on it.
+					bufferedBytes, readErr := io.ReadAll(dec.Buffered())
+					if readErr == nil {
+						consumed := eqIdx + 1 + (len(afterEq) - len(bufferedBytes))
+						parts = append(parts, remaining[:consumed])
+						after := remaining[consumed:]
+						if after != "" && after[0] == ',' {
+							after = after[1:]
+						}
+						remaining = after
+						continue
+					}
+				}
+			}
+		}
+
+		parts = append(parts, remaining[:commaIdx])
+		remaining = remaining[commaIdx+1:]
+	}
+	return parts
+}
 
 // ParseTag parses a struct tag using the default "pedantigo" tag name.
 // Example: pedantigo:"required,email,min=18" -> map{"required": "", "email": "", "min": "18"}
@@ -29,7 +78,7 @@ func ParseTagWithName(tag reflect.StructTag, tagName string) map[string]string {
 	}
 
 	constraints := make(map[string]string)
-	parts := strings.Split(validateTag, ",")
+	parts := splitTagConstraints(validateTag)
 
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
@@ -112,7 +161,7 @@ func ParseTagWithDiveAndName(tag reflect.StructTag, tagName string) *ParsedTag {
 		ElementConstraints:    make(map[string]string),
 	}
 
-	parts := strings.Split(validateTag, ",")
+	parts := splitTagConstraints(validateTag)
 
 	// State machine states
 	const (

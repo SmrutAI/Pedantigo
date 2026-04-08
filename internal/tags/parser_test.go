@@ -103,6 +103,44 @@ func TestParseTag_ValidConstraints(t *testing.T) {
 			wantKeys:   map[string]string{"min": "5", "exclude": "internal", "max": "100"},
 			wantLength: 3,
 		},
+		// JSON array examples tests
+		{
+			name: "examples_json_array_of_strings",
+			tag:  reflect.StructTag(`pedantigo:"required,examples=[\"a\",\"b\",\"c\"]"`),
+			wantKeys: map[string]string{
+				"required": "",
+				"examples": `["a","b","c"]`,
+			},
+			wantLength: 2,
+		},
+		{
+			name: "examples_json_array_of_ints",
+			tag:  reflect.StructTag(`pedantigo:"required,examples=[0,1,2,3]"`),
+			wantKeys: map[string]string{
+				"required": "",
+				"examples": "[0,1,2,3]",
+			},
+			wantLength: 2,
+		},
+		{
+			name: "examples_json_array_of_arrays",
+			tag:  reflect.StructTag(`pedantigo:"required,examples=[[0,2],[1,3,5],[]]"`),
+			wantKeys: map[string]string{
+				"required": "",
+				"examples": "[[0,2],[1,3,5],[]]",
+			},
+			wantLength: 2,
+		},
+		{
+			name: "examples_json_with_constraints_before_and_after",
+			tag:  reflect.StructTag(`pedantigo:"gte=0,examples=[[0,2],[1,3,5]],description=test desc"`),
+			wantKeys: map[string]string{
+				"gte":         "0",
+				"examples":    "[[0,2],[1,3,5]]",
+				"description": "test desc",
+			},
+			wantLength: 3,
+		},
 		// OR operator tests
 		{
 			name:       "or_operator_simple",

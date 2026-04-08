@@ -2,7 +2,9 @@ package schemagen
 
 import (
 	"encoding/json"
+	"io"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -1185,10 +1187,10 @@ func TestApplyConstraints(t *testing.T) {
 			},
 		},
 		{
-			name:      "examples single value",
+			name:      "examples json array single value",
 			fieldType: reflect.TypeOf(""),
 			constraints: map[string]string{
-				"examples": "John Doe",
+				"examples": `["John Doe"]`,
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
 				require.NotNil(t, schema.Examples)
@@ -1197,24 +1199,10 @@ func TestApplyConstraints(t *testing.T) {
 			},
 		},
 		{
-			name:      "examples multiple values pipe-separated",
+			name:      "examples json array of strings",
 			fieldType: reflect.TypeOf(""),
 			constraints: map[string]string{
-				"examples": "John|Jane|Bob",
-			},
-			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				require.NotNil(t, schema.Examples)
-				require.Len(t, schema.Examples, 3)
-				assert.Equal(t, "John", schema.Examples[0])
-				assert.Equal(t, "Jane", schema.Examples[1])
-				assert.Equal(t, "Bob", schema.Examples[2])
-			},
-		},
-		{
-			name:      "examples trims whitespace",
-			fieldType: reflect.TypeOf(""),
-			constraints: map[string]string{
-				"examples": "John | Jane | Bob ",
+				"examples": `["John","Jane","Bob"]`,
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
 				require.NotNil(t, schema.Examples)
@@ -1230,7 +1218,7 @@ func TestApplyConstraints(t *testing.T) {
 			constraints: map[string]string{
 				"title":       "User Full Name",
 				"description": "The complete name of the user",
-				"examples":    "John Doe|Jane Smith|Bob Johnson",
+				"examples":    `["John Doe","Jane Smith","Bob Johnson"]`,
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
 				assert.Equal(t, "User Full Name", schema.Title)
@@ -1263,18 +1251,18 @@ func TestApplyConstraints(t *testing.T) {
 			},
 		},
 		{
-			name:      "examples with numeric values",
+			name:      "examples json array of numeric values",
 			fieldType: reflect.TypeOf(0),
 			constraints: map[string]string{
-				"examples": "18|25|30",
+				"examples": "[18,25,30]",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
 				require.NotNil(t, schema.Examples)
 				require.Len(t, schema.Examples, 3)
-				// Examples are stored as strings after trimming
-				assert.Equal(t, "18", schema.Examples[0])
-				assert.Equal(t, "25", schema.Examples[1])
-				assert.Equal(t, "30", schema.Examples[2])
+				// json.Unmarshal of [18,25,30] produces float64 values
+				assert.InDelta(t, float64(18), schema.Examples[0], 0)
+				assert.InDelta(t, float64(25), schema.Examples[1], 0)
+				assert.InDelta(t, float64(30), schema.Examples[2], 0)
 			},
 		},
 		{
@@ -1286,7 +1274,7 @@ func TestApplyConstraints(t *testing.T) {
 				"max":         "50",
 				"title":       "Username",
 				"description": "Unique username for the account",
-				"examples":    "alice|bob|charlie",
+				"examples":    `["alice","bob","charlie"]`,
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
 				// Check validation constraints
@@ -1306,15 +1294,14 @@ func TestApplyConstraints(t *testing.T) {
 			},
 		},
 		{
-			name:      "empty examples value",
+			name:      "empty examples value produces no examples",
 			fieldType: reflect.TypeOf(""),
 			constraints: map[string]string{
 				"examples": "",
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
-				require.NotNil(t, schema.Examples)
-				require.Len(t, schema.Examples, 1)
-				assert.Empty(t, schema.Examples[0])
+				// Empty string is not valid JSON — examples are silently skipped
+				assert.Nil(t, schema.Examples)
 			},
 		},
 		{
@@ -1712,19 +1699,42 @@ func TestFullIntegration(t *testing.T) {
 // Helper functions for simple tag parsing.
 func splitConstraints(tag string) []string {
 	var parts []string
-	current := ""
-	for _, ch := range tag {
-		if ch == ',' {
-			if current != "" {
-				parts = append(parts, current)
-				current = ""
-			}
-		} else {
-			current += string(ch)
+	remaining := tag
+
+	for remaining != "" {
+		commaIdx := strings.IndexByte(remaining, ',')
+		if commaIdx == -1 {
+			parts = append(parts, remaining)
+			break
 		}
-	}
-	if current != "" {
-		parts = append(parts, current)
+
+		// If there is a key=<json> at the head, use json.Decoder to find where the JSON ends.
+		eqIdx := strings.IndexByte(remaining[:commaIdx], '=')
+		if eqIdx != -1 {
+			afterEq := remaining[eqIdx+1:]
+			if afterEq != "" && (afterEq[0] == '[' || afterEq[0] == '{' || afterEq[0] == '"') {
+				dec := json.NewDecoder(strings.NewReader(afterEq))
+				dec.UseNumber()
+				var raw json.RawMessage
+				if err := dec.Decode(&raw); err == nil {
+					// dec.Buffered() is an in-memory reader — ReadAll cannot fail.
+					bufferedBytes, readErr := io.ReadAll(dec.Buffered())
+					if readErr == nil {
+						consumed := eqIdx + 1 + (len(afterEq) - len(bufferedBytes))
+						parts = append(parts, remaining[:consumed])
+						after := remaining[consumed:]
+						if after != "" && after[0] == ',' {
+							after = after[1:]
+						}
+						remaining = after
+						continue
+					}
+				}
+			}
+		}
+
+		parts = append(parts, remaining[:commaIdx])
+		remaining = remaining[commaIdx+1:]
 	}
 	return parts
 }
@@ -2493,9 +2503,9 @@ func TestApplyConstraints_MapWithConstraints(t *testing.T) {
 
 // MetadataStruct is a test struct with schema metadata.
 type MetadataStruct struct {
-	Name  string `json:"name" pedantigo:"required,title=User Name,description=Full name of user,examples=John|Jane"`
-	Age   int    `json:"age" pedantigo:"min=0,description=Age in years,examples=18|25|30"`
-	Email string `json:"email" pedantigo:"email,title=Email Address,description=Contact email,examples=john@example.com|jane@example.com"`
+	Name  string `json:"name" pedantigo:"required,title=User Name,description=Full name of user,examples=[\"John\",\"Jane\"]"`
+	Age   int    `json:"age" pedantigo:"min=0,description=Age in years,examples=[18,25,30]"`
+	Email string `json:"email" pedantigo:"email,title=Email Address,description=Contact email,examples=[\"john@example.com\",\"jane@example.com\"]"`
 }
 
 // TestEnhanceSchema_WithMetadata tests metadata propagation through EnhanceSchema.
@@ -2538,9 +2548,10 @@ func TestEnhanceSchema_WithMetadata(t *testing.T) {
 	assert.Equal(t, "Age in years", ageProp.Description)
 	require.NotNil(t, ageProp.Examples)
 	require.Len(t, ageProp.Examples, 3)
-	assert.Equal(t, "18", ageProp.Examples[0])
-	assert.Equal(t, "25", ageProp.Examples[1])
-	assert.Equal(t, "30", ageProp.Examples[2])
+	// json.Unmarshal of [18,25,30] produces float64 values
+	assert.InDelta(t, float64(18), ageProp.Examples[0], 0)
+	assert.InDelta(t, float64(25), ageProp.Examples[1], 0)
+	assert.InDelta(t, float64(30), ageProp.Examples[2], 0)
 	assert.Equal(t, json.Number("0"), ageProp.Minimum)
 
 	// Check email field metadata and constraints
@@ -2557,9 +2568,9 @@ func TestEnhanceSchema_WithMetadata(t *testing.T) {
 
 // ComplexMetadataStruct tests metadata with special characters and edge cases.
 type ComplexMetadataStruct struct {
-	Description string `json:"description" pedantigo:"title=Item Description,examples=This is a test|Another example here"`
+	Description string `json:"description" pedantigo:"title=Item Description,examples=[\"This is a test\",\"Another example here\"]"`
 	Count       int    `json:"count" pedantigo:"title=Item Count,description=Number of items available"`
-	Status      string `json:"status" pedantigo:"oneof=active inactive,title=Status,description=Current status,examples=active|inactive"`
+	Status      string `json:"status" pedantigo:"oneof=active inactive,title=Status,description=Current status,examples=[\"active\",\"inactive\"]"`
 }
 
 // TestEnhanceSchema_WithComplexMetadata tests metadata with special characters.
@@ -2886,10 +2897,10 @@ func TestApplyConstraints_EdgeCases(t *testing.T) {
 			},
 		},
 		{
-			name:      "examples single value",
+			name:      "examples json array single value",
 			fieldType: reflect.TypeOf(""),
 			constraints: map[string]string{
-				"examples": "example1",
+				"examples": `["example1"]`,
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
 				require.Len(t, schema.Examples, 1)
@@ -2897,10 +2908,10 @@ func TestApplyConstraints_EdgeCases(t *testing.T) {
 			},
 		},
 		{
-			name:      "examples multiple values",
+			name:      "examples json array multiple values",
 			fieldType: reflect.TypeOf(""),
 			constraints: map[string]string{
-				"examples": "example1|example2|example3",
+				"examples": `["example1","example2","example3"]`,
 			},
 			checkFunc: func(t *testing.T, schema *jsonschema.Schema) {
 				require.Len(t, schema.Examples, 3)

@@ -408,12 +408,13 @@ func ApplyConstraints(schema *jsonschema.Schema, constraintsMap map[string]strin
 			schema.Title = value
 
 		case metaExamples:
-			// Split by pipe delimiter for multiple examples
-			examples := strings.Split(value, "|")
-			schema.Examples = make([]any, len(examples))
-			for i, ex := range examples {
-				schema.Examples[i] = strings.TrimSpace(ex)
+			// Value must be a JSON array literal, e.g. ["a","b"] or [0,1,2] or [[0,2],[1,3,5],[]]
+			trimmed := strings.TrimSpace(value)
+			var jsonExamples []any
+			if err := json.Unmarshal([]byte(trimmed), &jsonExamples); err == nil {
+				schema.Examples = jsonExamples
 			}
+			// If not valid JSON, examples are silently skipped (invalid tag syntax)
 
 		case metaDeprecated:
 			schema.Deprecated = true

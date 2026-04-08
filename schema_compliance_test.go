@@ -410,7 +410,7 @@ func TestSchemaCompliance_Metadata(t *testing.T) {
 			name: "examples",
 			setup: func() ([]byte, error) {
 				type Email struct {
-					Address string `json:"address" pedantigo:"email,examples=user@example.com|admin@test.org"`
+					Address string `json:"address" pedantigo:"email,examples=[\"user@example.com\",\"admin@test.org\"]"`
 				}
 				return New[Email]().SchemaJSON()
 			},
