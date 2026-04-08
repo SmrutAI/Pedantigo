@@ -251,24 +251,24 @@ if err != nil {
 
 ### SchemaLLM
 
-Get JSON Schema optimized for LLM APIs (no `$schema` field).
+Get JSON Schema optimized for LLM APIs (no `$schema` or `$id` fields).
 
 ```go
 func SchemaLLM[T any]() *jsonschema.Schema
 ```
 
-Returns schema without `$schema` field. Some LLMs (like Groq) echo back schema fields in responses, causing parsing issues.
+Returns schema with both `$schema` and `$id` cleared. Some LLMs (like Groq) echo back schema metadata fields in responses, causing JSON parsing failures.
 
 **Use cases**:
 - OpenAI function calling
 - Anthropic tool use (Claude)
 - Gemini structured outputs
-- Any LLM that echoes schema fields back
+- Any LLM that echoes schema metadata fields back
 
 **Example**:
 ```go
 schema := pedantigo.SchemaLLM[ToolArgs]()
-// schema has no $schema field - cleaner for LLM integration
+// schema has no $schema or $id fields - cleaner for LLM integration
 ```
 
 ---
@@ -281,7 +281,7 @@ Get JSON Schema as JSON bytes for LLM APIs.
 func SchemaJSONLLM[T any]() ([]byte, error)
 ```
 
-Returns JSON bytes without the `$schema` field.
+Returns JSON bytes with both `$schema` and `$id` fields absent.
 
 **Example**:
 ```go
@@ -290,7 +290,7 @@ if err != nil {
     log.Fatal(err)
 }
 
-// Send to LLM API - no $schema field in JSON output
+// Send to LLM API - no $schema or $id fields in JSON output
 ```
 
 ---

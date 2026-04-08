@@ -33,6 +33,7 @@ The fundamental constraints applicable across multiple types:
 | Constraint | Parameter | Description | Example |
 |-----------|-----------|-------------|---------|
 | `required` | None | Field must be present in the input | `pedantigo:"required"` |
+| `omitempty` | None | Skip regular constraints when the field is at its zero value; cross-field constraints still run | `pedantigo:"omitempty,email"` |
 | `min` | Numeric | Minimum value (numeric) or length (string) | `pedantigo:"min=18"` |
 | `max` | Numeric | Maximum value (numeric) or length (string) | `pedantigo:"max=100"` |
 | `gt` | Numeric | Greater than | `pedantigo:"gt=0"` |
@@ -46,6 +47,7 @@ The fundamental constraints applicable across multiple types:
 | `len` | Numeric | Exact length (strings/arrays) | `pedantigo:"len=32"` |
 
 See the [Numeric Constraints](/docs/constraints/numeric) page for detailed numeric range examples.
+See [omitempty as a Validation Constraint](/docs/api/initialization#pedantigo-omitempty) for the full `omitempty` reference including cross-field interaction.
 
 ### String Constraints
 

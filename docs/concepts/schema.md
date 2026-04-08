@@ -66,14 +66,14 @@ Pedantigo's default `Schema()` and `SchemaJSON()` produce **flattened schemas** 
 
 ### Schema Output Comparison
 
-| Function | `$ref/$defs` | `$schema` | Best For |
-|----------|--------------|-----------|----------|
-| `Schema()` / `SchemaJSON()` | **No** - expanded inline | **Yes** | General purpose, form generation |
-| `SchemaLLM()` / `SchemaJSONLLM()` | **No** - expanded inline | **No** | LLM tool calling (OpenAI, Anthropic, Gemini) |
-| `SchemaOpenAPI()` / `SchemaJSONOpenAPI()` | **Yes** - uses references | **Yes** | OpenAPI specs, Swagger docs |
+| Function | `$ref/$defs` | `$schema` | `$id` | Best For |
+|----------|--------------|-----------|-------|----------|
+| `Schema()` / `SchemaJSON()` | **No** - expanded inline | **Yes** | **Yes** | General purpose, form generation |
+| `SchemaLLM()` / `SchemaJSONLLM()` | **No** - expanded inline | **No** | **No** | LLM tool calling (OpenAI, Anthropic, Gemini) |
+| `SchemaOpenAPI()` / `SchemaJSONOpenAPI()` | **Yes** - uses references | **Yes** | **Yes** | OpenAPI specs, Swagger docs |
 
 :::tip LLM Schema Recommendation
-Use `SchemaLLM()` / `SchemaJSONLLM()` for LLM integrations. The `$schema` field is omitted because some LLMs (like Groq) echo it back in responses, causing parsing issues.
+Use `SchemaLLM()` / `SchemaJSONLLM()` for LLM integrations. Both `$schema` and `$id` fields are omitted — some LLMs (like Groq) echo schema metadata fields back in their responses, causing JSON parsing failures.
 :::
 
 ### Example: Flattened Schema Output
@@ -229,22 +229,22 @@ if err != nil {
 
 ### SchemaLLM()
 
-Get a JSON Schema optimized for LLM APIs (no `$schema` field).
+Get a JSON Schema optimized for LLM APIs (no `$schema` or `$id` fields).
 
 ```go
 func SchemaLLM[T any]() *jsonschema.Schema
 ```
 
-**Returns**: A `*jsonschema.Schema` object without the `$schema` field.
+**Returns**: A `*jsonschema.Schema` object with both `$schema` and `$id` cleared.
 
-**Why no `$schema`?**: Some LLMs (like Groq) echo back the `$schema` field in responses, causing JSON parsing issues. Omitting it ensures cleaner LLM responses.
+**Why strip these fields?**: Some LLMs (like Groq) echo back schema metadata fields (`$schema`, `$id`) verbatim in their JSON responses, breaking downstream parsing. Stripping both fields at the source prevents this class of failure.
 
 **Use cases**:
 - OpenAI function calling
 - Anthropic tool use
 - Claude structured outputs
 - Gemini structured generation
-- Any LLM that echoes schema fields
+- Any LLM that echoes schema metadata fields
 
 **Example**:
 ```go
@@ -255,7 +255,8 @@ type ToolArgs struct {
 
 // Get schema for LLM function calling
 schema := pedantigo.SchemaLLM[ToolArgs]()
-// schema.Version is empty, so no $schema in output
+// schema.Version is "" → no $schema in output
+// schema.ID is ""      → no $id in output
 ```
 
 ---
@@ -268,7 +269,7 @@ Get JSON Schema as JSON bytes optimized for LLM APIs.
 func SchemaJSONLLM[T any]() ([]byte, error)
 ```
 
-**Returns**: JSON bytes without the `$schema` field.
+**Returns**: JSON bytes with both `$schema` and `$id` fields absent.
 
 **Example**:
 ```go
@@ -283,7 +284,7 @@ if err != nil {
 }
 
 // Use in OpenAI function calling API
-// JSON output will NOT contain "$schema" field
+// JSON output will NOT contain "$schema" or "$id" fields
 fmt.Println(string(schemaBytes))
 ```
 
@@ -306,7 +307,7 @@ fmt.Println(string(schemaBytes))
 }
 ```
 
-Note: No `"$schema": "https://json-schema.org/draft/2020-12/schema"` field in the output.
+Note: Neither `"$schema"` nor `"$id"` appear in the output.
 
 ---
 

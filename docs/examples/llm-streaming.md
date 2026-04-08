@@ -125,8 +125,8 @@ type ExtractedData struct {
 }
 
 func getSystemPrompt() string {
-    // Use SchemaJSONLLM for LLM integrations - no $schema field
-    // Some LLMs (like Groq) echo back $schema, causing parsing issues
+    // Use SchemaJSONLLM for LLM integrations - no $schema or $id fields
+    // Some LLMs (like Groq) echo back $schema/$id, causing parsing issues
     schemaJSON, _ := pedantigo.SchemaJSONLLM[ExtractedData]()
 
     return fmt.Sprintf(`You are a data extraction assistant.

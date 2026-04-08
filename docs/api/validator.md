@@ -198,14 +198,14 @@ if err != nil {
 
 #### SchemaLLM
 
-Get JSON Schema optimized for LLM APIs (no `$schema` field).
+Get JSON Schema optimized for LLM APIs (no `$schema` or `$id` fields).
 
 ```go
 schema := validator.SchemaLLM()
-// Returns schema without $schema field for LLM tool calling
+// Returns schema without $schema or $id fields for LLM tool calling
 ```
 
-The `$schema` field is omitted because some LLMs (like Groq) echo it back in responses, causing parsing issues.
+Both `$schema` and `$id` are cleared because some LLMs (like Groq) echo schema metadata fields back in their responses, causing JSON parsing failures.
 
 #### SchemaJSONLLM
 
@@ -216,7 +216,7 @@ schemaBytes, err := validator.SchemaJSONLLM()
 if err != nil {
     // Handle error
 }
-// JSON has no $schema field - cleaner for LLM integration
+// JSON has no $schema or $id fields - cleaner for LLM integration
 ```
 
 ### Marshal Methods

@@ -2,6 +2,7 @@ package pedantigo
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 	"testing"
 
@@ -1349,6 +1350,117 @@ func TestSchemaJSONLLM_NoSchemaFieldInJSON(t *testing.T) {
 	emailProp, ok := properties["email"].(map[string]any)
 	require.True(t, ok)
 	assert.Equal(t, "email", emailProp["format"])
+}
+
+// TestSchemaLLM_NoIDOrSchemaField verifies SchemaLLM() strips both $id and $schema
+// from the schema object, including nested structs.
+func TestSchemaLLM_NoIDOrSchemaField(t *testing.T) {
+	type Address struct {
+		City    string `json:"city" pedantigo:"required"`
+		Country string `json:"country" pedantigo:"required"`
+	}
+	type Company struct {
+		Name    string  `json:"name" pedantigo:"required"`
+		Address Address `json:"address" pedantigo:"required"`
+	}
+	type Employee struct {
+		Name    string  `json:"name" pedantigo:"required"`
+		Company Company `json:"company" pedantigo:"required"`
+		Home    Address `json:"home"`
+	}
+
+	validator := New[Employee]()
+	schema := validator.SchemaLLM()
+	require.NotNil(t, schema)
+
+	assert.Empty(t, schema.Version, "SchemaLLM() must clear $schema (Version)")
+	assert.Empty(t, string(schema.ID), "SchemaLLM() must clear $id (ID)")
+
+	// Marshal and verify no $id or $schema appear anywhere in JSON output.
+	jsonBytes, err := json.Marshal(schema)
+	require.NoError(t, err)
+
+	var raw any
+	require.NoError(t, json.Unmarshal(jsonBytes, &raw))
+
+	var assertNoMetadata func(v any, path string)
+	assertNoMetadata = func(v any, path string) {
+		switch val := v.(type) {
+		case map[string]any:
+			_, hasID := val["$id"]
+			assert.False(t, hasID, "$id must not appear at %s", path)
+			_, hasSchema := val["$schema"]
+			assert.False(t, hasSchema, "$schema must not appear at %s", path)
+			for k, child := range val {
+				assertNoMetadata(child, path+"."+k)
+			}
+		case []any:
+			for i, item := range val {
+				assertNoMetadata(item, fmt.Sprintf("%s[%d]", path, i))
+			}
+		}
+	}
+	assertNoMetadata(raw, "$")
+}
+
+// TestSchemaJSONLLM_NoIDOrSchemaFieldAnywhere verifies SchemaJSONLLM() strips both
+// $id and $schema from the JSON output at every nesting level.
+// SchemaJSONLLM has its own independent code path (to avoid deadlock with SchemaLLM),
+// so both paths must be tested separately.
+func TestSchemaJSONLLM_NoIDOrSchemaFieldAnywhere(t *testing.T) {
+	type Address struct {
+		City    string `json:"city" pedantigo:"required"`
+		Country string `json:"country" pedantigo:"required"`
+	}
+	type Company struct {
+		Name    string  `json:"name" pedantigo:"required"`
+		Address Address `json:"address" pedantigo:"required"`
+	}
+	type Employee struct {
+		Name    string  `json:"name" pedantigo:"required"`
+		Company Company `json:"company" pedantigo:"required"`
+		Home    Address `json:"home"`
+	}
+
+	validator := New[Employee]()
+	jsonBytes, err := validator.SchemaJSONLLM()
+	require.NoError(t, err)
+	require.NotEmpty(t, jsonBytes)
+
+	var raw any
+	require.NoError(t, json.Unmarshal(jsonBytes, &raw))
+
+	var assertNoMetadata func(v any, path string)
+	assertNoMetadata = func(v any, path string) {
+		switch val := v.(type) {
+		case map[string]any:
+			_, hasID := val["$id"]
+			assert.False(t, hasID, "$id must not appear at %s", path)
+			_, hasSchema := val["$schema"]
+			assert.False(t, hasSchema, "$schema must not appear at %s", path)
+			for k, child := range val {
+				assertNoMetadata(child, path+"."+k)
+			}
+		case []any:
+			for i, item := range val {
+				assertNoMetadata(item, fmt.Sprintf("%s[%d]", path, i))
+			}
+		}
+	}
+	assertNoMetadata(raw, "$")
+
+	// Sanity: nested struct fields must still be present and inlined.
+	var schemaMap map[string]any
+	require.NoError(t, json.Unmarshal(jsonBytes, &schemaMap))
+	props := schemaMap["properties"].(map[string]any)
+	companyProp := props["company"].(map[string]any)
+	companyProps := companyProp["properties"].(map[string]any)
+	assert.Contains(t, companyProps, "name", "nested Company.Name must be present")
+	assert.Contains(t, companyProps, "address", "nested Company.Address must be present")
+	addressProp := companyProps["address"].(map[string]any)
+	addressProps := addressProp["properties"].(map[string]any)
+	assert.Contains(t, addressProps, "city", "deeply nested Address.City must be present")
+	assert.Contains(t, addressProps, "country", "deeply nested Address.Country must be present")
 }
 
 // TestSchemaLLM_Caching verifies SchemaLLM() has independent caching.

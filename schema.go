@@ -374,8 +374,11 @@ func (v *Validator[T]) SchemaLLM() *jsonschema.Schema {
 	// Enhance schema with our custom constraints using the configured tag name
 	schemagen.EnhanceSchema(actualSchema, v.typ, v.parseTagFunc())
 
-	// Clear $schema field for LLM compatibility (Version field has omitempty tag)
+	// Clear $schema and $id fields for LLM compatibility.
+	// Version ($schema) and ID ($id) both have omitempty JSON tags,
+	// so setting them to empty values omits them from marshaled output.
 	actualSchema.Version = ""
+	actualSchema.ID = ""
 
 	// Cache result
 	v.cachedSchemaLLM = actualSchema
@@ -445,8 +448,9 @@ func (v *Validator[T]) SchemaJSONLLM() ([]byte, error) {
 	actualSchema.Required = nil
 	schemagen.EnhanceSchema(actualSchema, v.typ, v.parseTagFunc())
 
-	// Clear $schema field for LLM compatibility
+	// Clear $schema and $id fields for LLM compatibility
 	actualSchema.Version = ""
+	actualSchema.ID = ""
 
 	// Cache LLM schema
 	v.cachedSchemaLLM = actualSchema

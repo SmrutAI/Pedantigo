@@ -28,6 +28,8 @@ Global functions with automatic caching. Uses [DefaultValidatorOptions()](#defau
 | `pedantigo.NewModel[T](input)`               | Create from map/struct           |
 | `pedantigo.Schema[T]()`                      | Get JSON Schema                  |
 | `pedantigo.SchemaJSON[T]()`                  | Get JSON Schema as bytes         |
+| `pedantigo.SchemaLLM[T]()`                   | Get JSON Schema for LLM APIs (no `$schema` or `$id`) |
+| `pedantigo.SchemaJSONLLM[T]()`               | LLM schema as bytes (no `$schema` or `$id`) |
 | `pedantigo.SchemaOpenAPI[T]()`               | Get OpenAPI 3.1 component schema |
 | `pedantigo.SchemaJSONOpenAPI[T]()`           | OpenAPI 3.1 schema as bytes      |
 | `pedantigo.Marshal[T](obj)`                  | Marshal struct to JSON           |
@@ -67,6 +69,8 @@ Explicit validator instances with [custom options](#validator-options).
 | `v.NewModel(input)`               | Create from map/struct    |
 | `v.Schema()`                      | Get JSON Schema           |
 | `v.SchemaJSON()`                  | Schema as bytes           |
+| `v.SchemaLLM()`                   | LLM schema (no `$schema` or `$id`) |
+| `v.SchemaJSONLLM()`               | LLM schema as bytes (no `$schema` or `$id`) |
 | `v.SchemaOpenAPI()`               | OpenAPI 3.1 schema        |
 | `v.SchemaJSONOpenAPI()`           | OpenAPI 3.1 as bytes      |
 | `v.Marshal(obj)`                  | Marshal to JSON           |
