@@ -115,6 +115,39 @@ if err != nil {
 
 **Use Case:** Post-construction validation or programmatic struct creation.
 
+**Validates:** Format constraints, cross-field constraints only. **Does NOT validate `required` fields** — Go cannot distinguish missing fields from zero values in an already-unmarshaled struct.
+
+### StructPartial
+
+Validate only the specified fields.
+
+```go
+err := validator.StructPartial(user, "Email", "Age")
+```
+
+**Validates:** Constraints on specified fields only. **Does NOT validate `required` fields or unspecified fields.**
+
+### StructExcept
+
+Validate all fields except the specified ones.
+
+```go
+err := validator.StructExcept(user, "Password")
+```
+
+**Validates:** Constraints on non-excluded fields only. **Does NOT validate `required` fields or excluded fields.**
+
+### Quick Reference
+
+| Method | Validates | Use When |
+|--------|-----------|----------|
+| **Unmarshal()** | Required + constraints + cross-field | Parsing JSON (API requests, webhooks) |
+| **Validate()** | Constraints + cross-field only | Programmatic struct creation |
+| **StructPartial()** | Constraints on specified fields only | Partial updates or selective validation |
+| **StructExcept()** | Constraints on non-excluded fields only | Skipping sensitive fields |
+
+**Key:** Required field validation only works during JSON unmarshaling. Once a struct exists in memory, you cannot detect missing fields — use `Unmarshal()` for that.
+
 ### NewModel
 
 Create a validated instance from various input types.
