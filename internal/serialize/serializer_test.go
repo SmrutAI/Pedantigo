@@ -236,7 +236,7 @@ func TestShouldIncludeField_OmitZero_ZeroValue(t *testing.T) {
 		name       string
 		meta       FieldMetadata
 		opts       Options
-		fieldValue interface{}
+		fieldValue any
 		want       bool
 	}{
 		{
@@ -1010,11 +1010,11 @@ func TestIsZeroValue_NestedStruct(t *testing.T) {
 
 func TestIsZeroValue_Interface(t *testing.T) {
 	// Nil interface
-	var nilInterface interface{}
+	var nilInterface any
 	assert.True(t, isZeroValue(reflect.ValueOf(&nilInterface).Elem()), "nil interface should be zero")
 
 	// Non-nil interface
-	var nonNilInterface interface{} = 42
+	var nonNilInterface any = 42
 	assert.False(t, isZeroValue(reflect.ValueOf(&nonNilInterface).Elem()), "non-nil interface should not be zero")
 }
 
@@ -1051,7 +1051,7 @@ func TestIsZeroValue_Pointer(t *testing.T) {
 func TestIsZeroValue_Primitives(t *testing.T) {
 	tests := []struct {
 		name  string
-		value interface{}
+		value any
 		want  bool
 	}{
 		{"zero int", 0, true},

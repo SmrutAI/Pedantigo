@@ -948,7 +948,7 @@ func (v *Validator[T]) MarshalWithOptions(obj *T, opts MarshalOptions) ([]byte, 
 }
 
 // Dict converts the object into a dict.
-func (v *Validator[T]) Dict(obj *T) (map[string]interface{}, error) {
+func (v *Validator[T]) Dict(obj *T) (map[string]any, error) {
 	// If extras field exists, merge extras into the dict
 	if v.extraFieldInfo != nil {
 		// Marshal to JSON (which includes extras via marshalWithExtras)
@@ -956,7 +956,7 @@ func (v *Validator[T]) Dict(obj *T) (map[string]interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		var dict map[string]interface{}
+		var dict map[string]any
 		if err := json.Unmarshal(data, &dict); err != nil {
 			return nil, err
 		}
@@ -965,7 +965,7 @@ func (v *Validator[T]) Dict(obj *T) (map[string]interface{}, error) {
 
 	// Standard dict conversion
 	data, _ := json.Marshal(obj)
-	var dict map[string]interface{}
+	var dict map[string]any
 	if err := json.Unmarshal(data, &dict); err != nil {
 		return nil, err
 	}

@@ -12,11 +12,11 @@ func TestFieldError(t *testing.T) {
 		field       string
 		code        string
 		message     string
-		value       interface{}
+		value       any
 		wantField   string
 		wantCode    string
 		wantMessage string
-		wantValue   interface{}
+		wantValue   any
 	}{
 		{
 			name:        "email_required",

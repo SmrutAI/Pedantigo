@@ -104,7 +104,7 @@ func splitPath(path string) []string {
 //   - structValue: A reflect.Value of the struct instance to traverse
 //
 // Returns:
-//   - The field value as any (interface{})
+//   - The field value as any (any)
 //   - Error if a nil pointer is encountered in the path
 func (fp *FieldPath) ResolveValue(structValue reflect.Value) (any, error) {
 	current := structValue
@@ -124,7 +124,7 @@ func (fp *FieldPath) ResolveValue(structValue reflect.Value) (any, error) {
 		current = current.Field(fieldIndex)
 	}
 
-	// Return the final field value as interface{}
+	// Return the final field value as any
 	return current.Interface(), nil
 }
 

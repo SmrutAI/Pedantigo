@@ -401,10 +401,10 @@ jsonData, _ := pedantigo.MarshalWithOptions(config, opts)
 
 ### Dict
 
-Convert a struct to `map[string]interface{}`.
+Convert a struct to `map[string]any`.
 
 ```go
-func Dict[T any](obj *T) (map[string]interface{}, error)
+func Dict[T any](obj *T) (map[string]any, error)
 ```
 
 Serializes a struct into a map. Useful for dynamic access or intermediate transformations.

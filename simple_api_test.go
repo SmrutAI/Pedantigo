@@ -743,10 +743,10 @@ func TestNewModel_MapInput_Comprehensive(t *testing.T) {
 		Address *Address `json:"address"`
 	}
 
-	input := map[string]interface{}{
+	input := map[string]any{
 		"name": "Alice",
 		"age":  30,
-		"address": map[string]interface{}{
+		"address": map[string]any{
 			"street": "123 Main St",
 			"city":   "Boston",
 		},
@@ -876,7 +876,7 @@ func TestIsZeroValue_Comprehensive(t *testing.T) {
 		},
 		{
 			name:   "non-nil interface is not zero",
-			setup:  func() any { var i interface{} = "test"; return i },
+			setup:  func() any { var i any = "test"; return i },
 			isZero: false,
 		},
 		{

@@ -1623,7 +1623,7 @@ func TestSetSliceField_RecursiveError(t *testing.T) {
 
 // TestSetMapField_KeyConversion tests map key type conversion.
 func TestSetMapField_KeyConversion(t *testing.T) {
-	// Test convertible key type (interface{} to string)
+	// Test convertible key type (any to string)
 	type WithMap struct {
 		Data map[string]int
 	}

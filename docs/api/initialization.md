@@ -443,7 +443,7 @@ fmt.Println(user.Extras["phone"]) // Output: 555-1234
    Extras map[string]any `json:"-" pedantigo:"extra_fields"`
    ```
 
-2. **The field type must be `map[string]any`** (or `map[string]interface{}`)
+2. **The field type must be `map[string]any`** (or `map[string]any`)
 
 3. **Fail-fast validation:** If `ExtraAllow` is set but no `extra_fields` field exists, `New[T]()` panics at startup
 

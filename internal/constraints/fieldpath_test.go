@@ -301,9 +301,9 @@ func TestParseFieldPath_UnexportedField_Panics(t *testing.T) {
 func TestFieldPath_ResolveValue_Success(t *testing.T) {
 	tests := []struct {
 		name          string
-		structValue   interface{}
+		structValue   any
 		path          string
-		expectedValue interface{}
+		expectedValue any
 	}{
 		{
 			name:          "resolve simple Name field",
@@ -368,9 +368,9 @@ func TestFieldPath_ResolveValue_Success(t *testing.T) {
 func TestFieldPath_ResolveValue_WithPointer(t *testing.T) {
 	tests := []struct {
 		name          string
-		structValue   interface{}
+		structValue   any
 		path          string
-		expectedValue interface{}
+		expectedValue any
 	}{
 		{
 			name: "resolve through pointer to struct",
@@ -422,7 +422,7 @@ func TestFieldPath_ResolveValue_WithPointer(t *testing.T) {
 func TestFieldPath_ResolveValue_NilPointer(t *testing.T) {
 	tests := []struct {
 		name        string
-		structValue interface{}
+		structValue any
 		path        string
 	}{
 		{

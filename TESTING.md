@@ -86,8 +86,8 @@ func TestCrossFieldConstraints(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		validator interface{}
-		data      interface{}
+		validator any
+		data      any
 		expectErr bool
 	}{
 		{
@@ -354,7 +354,7 @@ make test-coverage
 func TestValidation(t *testing.T) {
 	tests := []struct{
 		name string
-		data interface{}
+		data any
 		expectErr bool
 	}{
 		{name: "valid input", data: valid, expectErr: false},              // Happy path

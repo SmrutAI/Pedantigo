@@ -54,7 +54,7 @@ user.Validate()  // Calls BaseModel.Validate(), but it can't access Name/Email
 
 ```go
 type BaseModel struct {
-    self interface{}  // Store reference to parent
+    self any  // Store reference to parent
 }
 
 func Init[T any](obj *T) {
@@ -77,11 +77,11 @@ user.Validate()
 
 ```go
 type Validatable interface {
-    GetValidationTarget() interface{}
+    GetValidationTarget() any
 }
 
 // Every struct needs this boilerplate
-func (u *User) GetValidationTarget() interface{} {
+func (u *User) GetValidationTarget() any {
     return u
 }
 ```

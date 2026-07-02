@@ -53,7 +53,7 @@ func DetectExtraField(typ reflect.Type, tagName string) *ExtraFieldInfo {
 			panic("multiple fields tagged with pedantigo:\"extra_fields\" found: only one is allowed")
 		}
 
-		// Validate field type is map[string]any or map[string]interface{}
+		// Validate field type is map[string]any or map[string]any
 		fieldType := field.Type
 
 		// Check it's not a pointer
@@ -72,9 +72,9 @@ func DetectExtraField(typ reflect.Type, tagName string) *ExtraFieldInfo {
 			panic(fmt.Sprintf("field '%s' tagged with pedantigo:\"extra_fields\" must be of type map[string]any", field.Name))
 		}
 
-		// Check map value type is any/interface{}
+		// Check map value type is any/any
 		valueType := fieldType.Elem()
-		// interface{} is the same as any, both have Kind() == reflect.Interface
+		// any is the same as any, both have Kind() == reflect.Interface
 		// We need to check if it's the empty interface (no methods)
 		if valueType.Kind() != reflect.Interface || valueType.NumMethod() != 0 {
 			panic(fmt.Sprintf("field '%s' tagged with pedantigo:\"extra_fields\" must be of type map[string]any", field.Name))

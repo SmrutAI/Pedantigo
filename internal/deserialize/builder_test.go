@@ -684,9 +684,9 @@ func TestBuildFieldDeserializers_EdgeCases(t *testing.T) {
 			expectedFields:     []string{"custom"},
 		},
 		{
-			name: "interface{} field",
+			name: "any field",
 			structType: struct {
-				Data interface{}
+				Data any
 			}{},
 			expectedFieldCount: 1,
 			expectedFields:     []string{"Data"},

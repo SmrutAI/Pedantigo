@@ -54,8 +54,8 @@ func TestExcludedIf(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		validator interface{}
-		data      interface{}
+		validator any
+		data      any
 		expectErr bool
 		errField  string
 	}{
@@ -178,8 +178,8 @@ func TestExcludedUnless(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		validator interface{}
-		data      interface{}
+		validator any
+		data      any
 		expectErr bool
 		errField  string
 	}{
@@ -256,8 +256,8 @@ func TestExcludedWith(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		validator interface{}
-		data      interface{}
+		validator any
+		data      any
 		expectErr bool
 		errField  string
 	}{
@@ -392,8 +392,8 @@ func TestExcludedWithout(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		validator interface{}
-		data      interface{}
+		validator any
+		data      any
 		expectErr bool
 		errField  string
 	}{

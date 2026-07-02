@@ -190,7 +190,7 @@ func MarshalWithOptions[T any](obj *T, opts MarshalOptions) ([]byte, error) {
 	return getOrCreateValidator[T]().MarshalWithOptions(obj, opts)
 }
 
-// Dict converts a struct into a map[string]interface{}.
+// Dict converts a struct into a map[string]any.
 // It uses a cached validator for type T, creating one if necessary.
 //
 // Example:
@@ -199,7 +199,7 @@ func MarshalWithOptions[T any](obj *T, opts MarshalOptions) ([]byte, error) {
 //	dict, err := pedantigo.Dict(user)
 //	// dict["email"] == "test@example.com"
 //	// dict["age"] == 25
-func Dict[T any](obj *T) (map[string]interface{}, error) {
+func Dict[T any](obj *T) (map[string]any, error) {
 	return getOrCreateValidator[T]().Dict(obj)
 }
 

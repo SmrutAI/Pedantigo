@@ -19,12 +19,12 @@ import (
 func TestSchema_TypeMapping(t *testing.T) {
 	tests := []struct {
 		name     string
-		setup    func() (interface{}, *jsonschema.Schema) // Returns validator and expected properties
+		setup    func() (any, *jsonschema.Schema) // Returns validator and expected properties
 		validate func(*testing.T, *jsonschema.Schema)
 	}{
 		{
 			name: "basic types (string, int)",
-			setup: func() (interface{}, *jsonschema.Schema) {
+			setup: func() (any, *jsonschema.Schema) {
 				type User struct {
 					Name  string `json:"name"`
 					Age   int    `json:"age"`
@@ -48,7 +48,7 @@ func TestSchema_TypeMapping(t *testing.T) {
 		},
 		{
 			name: "nested struct",
-			setup: func() (interface{}, *jsonschema.Schema) {
+			setup: func() (any, *jsonschema.Schema) {
 				type Address struct {
 					City string `json:"city" pedantigo:"required"`
 					Zip  string `json:"zip" pedantigo:"min=5"`
@@ -80,7 +80,7 @@ func TestSchema_TypeMapping(t *testing.T) {
 		},
 		{
 			name: "slice with item constraints",
-			setup: func() (interface{}, *jsonschema.Schema) {
+			setup: func() (any, *jsonschema.Schema) {
 				type Config struct {
 					Tags   []string `json:"tags" pedantigo:"min=3"`
 					Admins []string `json:"admins" pedantigo:"email"`
@@ -105,7 +105,7 @@ func TestSchema_TypeMapping(t *testing.T) {
 		},
 		{
 			name: "map with value constraints",
-			setup: func() (interface{}, *jsonschema.Schema) {
+			setup: func() (any, *jsonschema.Schema) {
 				type Config struct {
 					Settings map[string]string `json:"settings" pedantigo:"min=3"`
 					Contacts map[string]string `json:"contacts" pedantigo:"email"`
@@ -149,12 +149,12 @@ func TestSchema_TypeMapping(t *testing.T) {
 func TestSchema_Constraints(t *testing.T) {
 	tests := []struct {
 		name     string
-		setup    func() interface{}
+		setup    func() any
 		validate func(*testing.T, *jsonschema.Schema)
 	}{
 		{
 			name: "required fields",
-			setup: func() interface{} {
+			setup: func() any {
 				type User struct {
 					Name  string `json:"name" pedantigo:"required"`
 					Email string `json:"email" pedantigo:"required"`
@@ -174,7 +174,7 @@ func TestSchema_Constraints(t *testing.T) {
 		},
 		{
 			name: "numeric constraints (gt/lt/gte/lte/min/max)",
-			setup: func() interface{} {
+			setup: func() any {
 				type Product struct {
 					Price    float64 `json:"price" pedantigo:"gt=0,lt=10000"`
 					Stock    int     `json:"stock" pedantigo:"gte=0,lte=1000"`
@@ -198,7 +198,7 @@ func TestSchema_Constraints(t *testing.T) {
 		},
 		{
 			name: "string length constraints (min/max)",
-			setup: func() interface{} {
+			setup: func() any {
 				type User struct {
 					Username string `json:"username" pedantigo:"min=3,max=20"`
 					Bio      string `json:"bio" pedantigo:"max=500"`
@@ -219,7 +219,7 @@ func TestSchema_Constraints(t *testing.T) {
 		},
 		{
 			name: "format constraints (email, url, uuid, ipv4, ipv6)",
-			setup: func() interface{} {
+			setup: func() any {
 				type Contact struct {
 					Email    string `json:"email" pedantigo:"email"`
 					Website  string `json:"website" pedantigo:"url"`
@@ -249,7 +249,7 @@ func TestSchema_Constraints(t *testing.T) {
 		},
 		{
 			name: "regex pattern constraint",
-			setup: func() interface{} {
+			setup: func() any {
 				type Code struct {
 					ZipCode string `json:"zipCode" pedantigo:"regexp=^[0-9]{5}$"`
 				}
@@ -262,7 +262,7 @@ func TestSchema_Constraints(t *testing.T) {
 		},
 		{
 			name: "default values (int, string, bool)",
-			setup: func() interface{} {
+			setup: func() any {
 				type Config struct {
 					Port    int    `json:"port" pedantigo:"default=8080"`
 					Host    string `json:"host" pedantigo:"default=localhost"`
@@ -308,12 +308,12 @@ func TestSchema_Constraints(t *testing.T) {
 func TestSchemaJSON_Serialization(t *testing.T) {
 	tests := []struct {
 		name     string
-		setup    func() interface{}
-		validate func(*testing.T, interface{})
+		setup    func() any
+		validate func(*testing.T, any)
 	}{
 		{
 			name: "SchemaJSON produces valid JSON",
-			setup: func() interface{} {
+			setup: func() any {
 				type User struct {
 					Name  string `json:"name" pedantigo:"required,min=3"`
 					Email string `json:"email" pedantigo:"required,email"`
@@ -321,7 +321,7 @@ func TestSchemaJSON_Serialization(t *testing.T) {
 				}
 				return New[User]()
 			},
-			validate: func(t *testing.T, v interface{}) {
+			validate: func(t *testing.T, v any) {
 				validator, ok := v.(interface{ SchemaJSON() ([]byte, error) })
 				require.True(t, ok, "validator missing SchemaJSON method")
 
@@ -350,7 +350,7 @@ func TestSchemaJSON_Serialization(t *testing.T) {
 		},
 		{
 			name: "SchemaJSONOpenAPI with nested references and $defs",
-			setup: func() interface{} {
+			setup: func() any {
 				type Address struct {
 					City string `json:"city" pedantigo:"required"`
 					Zip  string `json:"zip" pedantigo:"min=5"`
@@ -361,7 +361,7 @@ func TestSchemaJSON_Serialization(t *testing.T) {
 				}
 				return New[User]()
 			},
-			validate: func(t *testing.T, v interface{}) {
+			validate: func(t *testing.T, v any) {
 				validator, ok := v.(interface{ SchemaJSONOpenAPI() ([]byte, error) })
 				require.True(t, ok, "validator missing SchemaJSONOpenAPI method")
 
@@ -411,7 +411,7 @@ func TestSchemaJSON_Serialization(t *testing.T) {
 		},
 		{
 			name: "SchemaOpenAPI returns nested definitions with constraints",
-			setup: func() interface{} {
+			setup: func() any {
 				type Contact struct {
 					Email string `json:"email" pedantigo:"required,email"`
 					Phone string `json:"phone" pedantigo:"min=10"`
@@ -422,7 +422,7 @@ func TestSchemaJSON_Serialization(t *testing.T) {
 				}
 				return New[Company]()
 			},
-			validate: func(t *testing.T, v interface{}) {
+			validate: func(t *testing.T, v any) {
 				validator, ok := v.(interface{ SchemaOpenAPI() *jsonschema.Schema })
 				require.True(t, ok, "validator missing SchemaOpenAPI method")
 
@@ -471,19 +471,19 @@ func TestSchemaJSON_Serialization(t *testing.T) {
 func TestSchema_Caching(t *testing.T) {
 	tests := []struct {
 		name     string
-		setup    func() interface{}
-		validate func(*testing.T, interface{})
+		setup    func() any
+		validate func(*testing.T, any)
 	}{
 		{
 			name: "Schema() caches pointer on repeated calls",
-			setup: func() interface{} {
+			setup: func() any {
 				type Product struct {
 					Name  string  `json:"name" pedantigo:"required,min=3"`
 					Price float64 `json:"price" pedantigo:"gt=0"`
 				}
 				return New[Product]()
 			},
-			validate: func(t *testing.T, v interface{}) {
+			validate: func(t *testing.T, v any) {
 				validator := v.(interface{ Schema() *jsonschema.Schema })
 				schema1 := validator.Schema()
 				schema2 := validator.Schema()
@@ -494,14 +494,14 @@ func TestSchema_Caching(t *testing.T) {
 		},
 		{
 			name: "SchemaJSON() caches bytes on repeated calls",
-			setup: func() interface{} {
+			setup: func() any {
 				type Config struct {
 					Host string `json:"host" pedantigo:"required,min=1"`
 					Port int    `json:"port" pedantigo:"gt=0,lt=65536"`
 				}
 				return New[Config]()
 			},
-			validate: func(t *testing.T, v interface{}) {
+			validate: func(t *testing.T, v any) {
 				validator := v.(interface{ SchemaJSON() ([]byte, error) })
 				json1, err1 := validator.SchemaJSON()
 				json2, err2 := validator.SchemaJSON()
@@ -514,14 +514,14 @@ func TestSchema_Caching(t *testing.T) {
 		},
 		{
 			name: "SchemaOpenAPI() caches pointer on repeated calls",
-			setup: func() interface{} {
+			setup: func() any {
 				type Item struct {
 					ID    string `json:"id" pedantigo:"required,uuid"`
 					Title string `json:"title" pedantigo:"required,min=5"`
 				}
 				return New[Item]()
 			},
-			validate: func(t *testing.T, v interface{}) {
+			validate: func(t *testing.T, v any) {
 				validator := v.(interface{ SchemaOpenAPI() *jsonschema.Schema })
 				openapi1 := validator.SchemaOpenAPI()
 				openapi2 := validator.SchemaOpenAPI()
@@ -532,14 +532,14 @@ func TestSchema_Caching(t *testing.T) {
 		},
 		{
 			name: "SchemaJSONOpenAPI() caches bytes on repeated calls",
-			setup: func() interface{} {
+			setup: func() any {
 				type Event struct {
 					Name      string `json:"name" pedantigo:"required,min=1"`
 					Timestamp int64  `json:"timestamp" pedantigo:"required,gte=0"`
 				}
 				return New[Event]()
 			},
-			validate: func(t *testing.T, v interface{}) {
+			validate: func(t *testing.T, v any) {
 				validator := v.(interface{ SchemaJSONOpenAPI() ([]byte, error) })
 				json1, err1 := validator.SchemaJSONOpenAPI()
 				json2, err2 := validator.SchemaJSONOpenAPI()
@@ -552,7 +552,7 @@ func TestSchema_Caching(t *testing.T) {
 		},
 		{
 			name: "independent validators have independent caches",
-			setup: func() interface{} {
+			setup: func() any {
 				type Cat struct {
 					Name string `json:"name" pedantigo:"required"`
 				}
@@ -565,7 +565,7 @@ func TestSchema_Caching(t *testing.T) {
 					dog interface{ Schema() *jsonschema.Schema }
 				}{New[Cat](), New[Dog]()}
 			},
-			validate: func(t *testing.T, v interface{}) {
+			validate: func(t *testing.T, v any) {
 				pair := v.(struct {
 					cat interface{ Schema() *jsonschema.Schema }
 					dog interface{ Schema() *jsonschema.Schema }
@@ -596,19 +596,19 @@ func TestSchema_Caching(t *testing.T) {
 func TestSchema_ConcurrencySafe(t *testing.T) {
 	tests := []struct {
 		name     string
-		setup    func() interface{}
-		validate func(*testing.T, interface{})
+		setup    func() any
+		validate func(*testing.T, any)
 	}{
 		{
 			name: "Schema() is thread-safe with 100 concurrent goroutines",
-			setup: func() interface{} {
+			setup: func() any {
 				type User struct {
 					Name  string `json:"name" pedantigo:"required"`
 					Email string `json:"email" pedantigo:"required,email"`
 				}
 				return New[User]()
 			},
-			validate: func(t *testing.T, v interface{}) {
+			validate: func(t *testing.T, v any) {
 				validator := v.(interface{ Schema() *jsonschema.Schema })
 				numGoroutines := 100
 
@@ -641,14 +641,14 @@ func TestSchema_ConcurrencySafe(t *testing.T) {
 		},
 		{
 			name: "SchemaJSON() is thread-safe with 100 concurrent goroutines",
-			setup: func() interface{} {
+			setup: func() any {
 				type Settings struct {
 					Timeout int `json:"timeout" pedantigo:"gt=0,lt=60000"`
 					Retries int `json:"retries" pedantigo:"gte=0,lte=10"`
 				}
 				return New[Settings]()
 			},
-			validate: func(t *testing.T, v interface{}) {
+			validate: func(t *testing.T, v any) {
 				validator := v.(interface{ SchemaJSON() ([]byte, error) })
 				numGoroutines := 100
 
@@ -2103,8 +2103,8 @@ func TestFindTypeForDefinition_TypeVariants(t *testing.T) {
 			name: "slice of maps",
 			setup: func() any {
 				type ComplexStruct struct {
-					Name string                   `json:"name"`
-					Data []map[string]interface{} `json:"data"`
+					Name string           `json:"name"`
+					Data []map[string]any `json:"data"`
 				}
 				return New[ComplexStruct]()
 			},
@@ -2221,7 +2221,7 @@ func TestSchemaJSON_CachedSchemaButNotJSON(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, jsonBytes)
 
-	var schemaMap map[string]interface{}
+	var schemaMap map[string]any
 	err = json.Unmarshal(jsonBytes, &schemaMap)
 	assert.NoError(t, err)
 }
@@ -2279,7 +2279,7 @@ func TestSchemaJSONOpenAPI_CachedSchemaButNotJSON(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, jsonBytes)
 
-	var schemaMap map[string]interface{}
+	var schemaMap map[string]any
 	err = json.Unmarshal(jsonBytes, &schemaMap)
 	assert.NoError(t, err)
 }
@@ -2376,11 +2376,11 @@ func TestMarshalWithExtras_SliceOfStructsWithExtras(t *testing.T) {
 	data, err := v.Marshal(obj)
 	require.NoError(t, err)
 
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.Unmarshal(data, &result)
 	require.NoError(t, err)
 
-	items, ok := result["items"].([]interface{})
+	items, ok := result["items"].([]any)
 	require.True(t, ok)
 	require.Len(t, items, 2)
 }
@@ -2438,7 +2438,7 @@ func TestMarshalWithExtras_NilExtrasField(t *testing.T) {
 	data, err := v.Marshal(obj)
 	require.NoError(t, err)
 
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.Unmarshal(data, &result)
 	require.NoError(t, err)
 	assert.Equal(t, "test", result["name"])
@@ -2540,7 +2540,7 @@ func TestMarshalWithExtras_EmptyStruct(t *testing.T) {
 
 func TestSchemaJSONLLM_DefinitionsFallback(t *testing.T) {
 	type InterfaceContainer struct {
-		Data interface{} `json:"data"`
+		Data any `json:"data"`
 	}
 
 	v := New[InterfaceContainer]()

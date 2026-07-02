@@ -56,8 +56,8 @@ func TestRequiredIf(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		form      interface{}
-		validator interface{}
+		form      any
+		validator any
 		wantErr   bool
 		wantField string
 	}{
@@ -206,7 +206,7 @@ func TestRequiredUnless(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		form      interface{}
+		form      any
 		wantErr   bool
 		wantField string
 	}{
@@ -329,7 +329,7 @@ func TestRequiredWith(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		form      interface{}
+		form      any
 		wantErr   bool
 		wantField string
 	}{
@@ -462,7 +462,7 @@ func TestRequiredWithout(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		form      interface{}
+		form      any
 		wantErr   bool
 		wantField string
 	}{

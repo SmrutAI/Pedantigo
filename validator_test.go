@@ -153,7 +153,7 @@ func TestMarshal_Valid(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify JSON is valid and contains expected fields
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(data, &result))
 
 	assert.Equal(t, "John Doe", result["name"])
@@ -1214,7 +1214,7 @@ func TestValidator_Dict(t *testing.T) {
 	tests := []struct {
 		name     string
 		obj      any
-		expected map[string]interface{}
+		expected map[string]any
 	}{
 		{
 			name: "basic struct with primitives",
@@ -1229,13 +1229,13 @@ func TestValidator_Dict(t *testing.T) {
 					City:   "Springfield",
 				},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"name":   "Alice",
 				"email":  "alice@example.com",
 				"age":    float64(25),
 				"active": true,
-				"tags":   []interface{}{"admin", "developer"},
-				"address": map[string]interface{}{
+				"tags":   []any{"admin", "developer"},
+				"address": map[string]any{
 					"street": "123 Main St",
 					"city":   "Springfield",
 				},
@@ -1254,13 +1254,13 @@ func TestValidator_Dict(t *testing.T) {
 					City:   "",
 				},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"name":   "",
 				"email":  "",
 				"age":    float64(0),
 				"active": false,
 				"tags":   nil,
-				"address": map[string]interface{}{
+				"address": map[string]any{
 					"street": "",
 					"city":   "",
 				},
@@ -1273,7 +1273,7 @@ func TestValidator_Dict(t *testing.T) {
 				Enabled: nil,
 				Name:    nil,
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"port":    nil,
 				"enabled": nil,
 				"name":    nil,
@@ -1291,7 +1291,7 @@ func TestValidator_Dict(t *testing.T) {
 					Name:    &name,
 				}
 			}(),
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"port":    float64(8080),
 				"enabled": true,
 				"name":    "myapp",
@@ -1308,7 +1308,7 @@ func TestValidator_Dict(t *testing.T) {
 					Name:    &name,
 				}
 			}(),
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"port":    float64(3000),
 				"enabled": nil,
 				"name":    "service",
@@ -1318,7 +1318,7 @@ func TestValidator_Dict(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var dict map[string]interface{}
+			var dict map[string]any
 			var err error
 
 			// Use type assertion to call Dict with correct type
@@ -1581,7 +1581,7 @@ func TestValidator_MarshalWithOptions_ExcludeContext(t *testing.T) {
 	dataResponse, err := validator.MarshalWithOptions(user, optsResponse)
 	require.NoError(t, err)
 
-	var resultResponse map[string]interface{}
+	var resultResponse map[string]any
 	require.NoError(t, json.Unmarshal(dataResponse, &resultResponse))
 
 	assert.InDelta(t, float64(1), resultResponse["id"], 0.001)
@@ -1594,7 +1594,7 @@ func TestValidator_MarshalWithOptions_ExcludeContext(t *testing.T) {
 	dataLog, err := validator.MarshalWithOptions(user, optsLog)
 	require.NoError(t, err)
 
-	var resultLog map[string]interface{}
+	var resultLog map[string]any
 	require.NoError(t, json.Unmarshal(dataLog, &resultLog))
 
 	assert.InDelta(t, float64(1), resultLog["id"], 0.001)
@@ -1607,7 +1607,7 @@ func TestValidator_MarshalWithOptions_ExcludeContext(t *testing.T) {
 	dataNone, err := validator.MarshalWithOptions(user, optsNone)
 	require.NoError(t, err)
 
-	var resultNone map[string]interface{}
+	var resultNone map[string]any
 	require.NoError(t, json.Unmarshal(dataNone, &resultNone))
 
 	assert.InDelta(t, float64(1), resultNone["id"], 0.001)
@@ -1685,7 +1685,7 @@ func TestValidator_MarshalWithOptions_OmitZero(t *testing.T) {
 			data, err := validator.MarshalWithOptions(tt.config, tt.opts)
 			require.NoError(t, err)
 
-			var result map[string]interface{}
+			var result map[string]any
 			require.NoError(t, json.Unmarshal(data, &result))
 
 			for _, field := range tt.shouldHave {
@@ -1721,7 +1721,7 @@ func TestValidator_MarshalWithOptions_CombinedExcludeAndOmitZero(t *testing.T) {
 	data, err := validator.MarshalWithOptions(user, opts)
 	require.NoError(t, err)
 
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(data, &result))
 
 	// Should include: id, name, email, token
@@ -1790,7 +1790,7 @@ func TestValidator_MarshalWithOptions_PointerFields(t *testing.T) {
 	data1, err := validator.MarshalWithOptions(config1, opts)
 	require.NoError(t, err)
 
-	var result1 map[string]interface{}
+	var result1 map[string]any
 	require.NoError(t, json.Unmarshal(data1, &result1))
 
 	assert.Equal(t, "app", result1["name"])
@@ -1809,7 +1809,7 @@ func TestValidator_MarshalWithOptions_PointerFields(t *testing.T) {
 	data2, err := validator.MarshalWithOptions(config2, opts)
 	require.NoError(t, err)
 
-	var result2 map[string]interface{}
+	var result2 map[string]any
 	require.NoError(t, json.Unmarshal(data2, &result2))
 
 	assert.Equal(t, "app", result2["name"])
@@ -1846,7 +1846,7 @@ func TestValidator_MarshalWithOptions_NestedStructs(t *testing.T) {
 	data, err := validator.MarshalWithOptions(user, opts)
 	require.NoError(t, err)
 
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(data, &result))
 
 	// Should include name
@@ -1856,7 +1856,7 @@ func TestValidator_MarshalWithOptions_NestedStructs(t *testing.T) {
 	assert.NotContains(t, result, "password")
 
 	// Should include nested address with all fields (postal_code not excluded in "response" context)
-	address, ok := result["address"].(map[string]interface{})
+	address, ok := result["address"].(map[string]any)
 	require.True(t, ok)
 	assert.Equal(t, "123 Main St", address["street"])
 	assert.Equal(t, "NYC", address["city"])
@@ -1867,11 +1867,11 @@ func TestValidator_MarshalWithOptions_NestedStructs(t *testing.T) {
 	dataSummary, err := validator.MarshalWithOptions(user, optsSummary)
 	require.NoError(t, err)
 
-	var resultSummary map[string]interface{}
+	var resultSummary map[string]any
 	require.NoError(t, json.Unmarshal(dataSummary, &resultSummary))
 
 	// Nested address should exclude postal_code in "summary" context
-	addressSummary, ok := resultSummary["address"].(map[string]interface{})
+	addressSummary, ok := resultSummary["address"].(map[string]any)
 	require.True(t, ok)
 	assert.Equal(t, "123 Main St", addressSummary["street"])
 	assert.Equal(t, "NYC", addressSummary["city"])
@@ -1896,7 +1896,7 @@ func TestValidator_Marshal_BackwardCompatible(t *testing.T) {
 	data, err := validator.Marshal(user)
 	require.NoError(t, err)
 
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(data, &result))
 
 	assert.InDelta(t, float64(1), result["id"], 0.001)
@@ -1946,7 +1946,7 @@ func TestValidator_MarshalWithOptions_MultipleExclusionContexts(t *testing.T) {
 			data, err := validator.MarshalWithOptions(user, opts)
 			require.NoError(t, err)
 
-			var result map[string]interface{}
+			var result map[string]any
 			require.NoError(t, json.Unmarshal(data, &result))
 
 			assert.InDelta(t, float64(1), result["id"], 0.001)

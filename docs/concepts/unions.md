@@ -127,7 +127,7 @@ if err != nil {
     return
 }
 
-// result is interface{}, need type assertion
+// result is any, need type assertion
 payment := result.(CreditCard)
 fmt.Printf("Processing card: %s\n", payment.CardNumber)
 ```

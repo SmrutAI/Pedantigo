@@ -42,8 +42,8 @@ type privateExtraField struct {
 }
 
 type MapStringInterface struct {
-	Name   string                 `json:"name"`
-	Extras map[string]interface{} `json:"-" pedantigo:"extra_fields"` // interface{} is alias for any
+	Name   string         `json:"name"`
+	Extras map[string]any `json:"-" pedantigo:"extra_fields"` // any is alias for any
 }
 
 type WrongMapKeyType struct {
@@ -68,11 +68,11 @@ func TestDetectExtraField_ValidField_ReturnsInfo(t *testing.T) {
 }
 
 func TestDetectExtraField_MapStringInterface_ReturnsInfo(t *testing.T) {
-	// interface{} is an alias for any, should be accepted
+	// any is an alias for any, should be accepted
 	typ := reflect.TypeOf(MapStringInterface{})
 	result := DetectExtraField(typ, "pedantigo")
 
-	require.NotNil(t, result, "Should detect extra_fields field with map[string]interface{}")
+	require.NotNil(t, result, "Should detect extra_fields field with map[string]any")
 	assert.Equal(t, 1, result.FieldIndex, "Extra field should be at index 1")
 	assert.Equal(t, "Extras", result.FieldName, "Field name should be 'Extras'")
 }
@@ -116,7 +116,7 @@ func TestDetectExtraField_WrongMapValueType_Panics(t *testing.T) {
 		func() {
 			DetectExtraField(typ, "pedantigo")
 		},
-		"Should panic when map value type is not any/interface{}",
+		"Should panic when map value type is not any/any",
 	)
 }
 
