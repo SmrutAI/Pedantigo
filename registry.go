@@ -9,8 +9,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/SmrutAI/pedantigo/internal/constraints"
-	"github.com/SmrutAI/pedantigo/internal/tags"
+	"github.com/SmrutAI/pedantigo/v2/internal/constraints"
+	"github.com/SmrutAI/pedantigo/v2/internal/tags"
 )
 
 // ValidationFunc is the signature for custom field-level validation functions.

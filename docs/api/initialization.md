@@ -6,6 +6,10 @@ sidebar_position: 0
 
 Complete reference for all Pedantigo initialization methods and configuration options.
 
+:::note v2: default `TagName` changed
+The default struct tag (and `TagName`/`SetTagName` default, described below) changed from `pedantigo` to `validate` in v2. See the [v1 to v2 migration guide](../migration/v1-to-v2) if you're upgrading.
+:::
+
 ## Quick Comparison {#quick-comparison}
 
 | API             | Use Case             | Customizable       | Link                  |

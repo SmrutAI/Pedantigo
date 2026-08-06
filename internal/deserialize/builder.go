@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/SmrutAI/pedantigo/internal/tags"
+	"github.com/SmrutAI/pedantigo/v2/internal/tags"
 )
 
 // StringTransformations holds flags for string transformations to apply during deserialization.

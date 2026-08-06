@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	pedantigo "github.com/SmrutAI/pedantigo"
+	pedantigo "github.com/SmrutAI/pedantigo/v2"
 )
 
 // TestOrConstraint_FirstMatches tests OR constraint when first option matches.

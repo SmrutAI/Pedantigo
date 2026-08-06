@@ -8,6 +8,10 @@ import TabItem from '@theme/TabItem';
 
 # Welcome to Pedantigo
 
+:::note v2: default tag changed to `validate`
+This is v2 documentation. The default struct tag changed from `pedantigo` to `validate` — no other behavior changed. If you're upgrading from v1, read the [migration guide](./migration/v1-to-v2) first.
+:::
+
 **Type-safe JSON validation for Go, inspired by Pydantic**
 
 Pedantigo brings Pydantic's elegant validation patterns to Go with a reflection-based design that feels natural in the Go ecosystem.
@@ -30,7 +34,7 @@ package main
 
 import (
     "fmt"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type User struct {

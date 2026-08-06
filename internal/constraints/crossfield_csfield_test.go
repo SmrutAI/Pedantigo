@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	pedantigo "github.com/SmrutAI/pedantigo"
+	pedantigo "github.com/SmrutAI/pedantigo/v2"
 )
 
 func TestCsFieldConstraints(t *testing.T) {
