@@ -16,7 +16,7 @@ package main
 import (
     "fmt"
     "encoding/json"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type User struct {
@@ -555,7 +555,7 @@ package main
 
 import (
     "fmt"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type CreateUserRequest struct {

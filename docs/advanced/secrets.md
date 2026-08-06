@@ -138,7 +138,7 @@ package main
 import (
     "fmt"
     "log"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type AppConfig struct {
@@ -260,7 +260,7 @@ import (
     "crypto/cipher"
     "encoding/base64"
     "fmt"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type SecurityConfig struct {
@@ -333,7 +333,7 @@ import (
     "fmt"
     "log"
     "net/http"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type ServerConfig struct {

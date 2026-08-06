@@ -12,17 +12,17 @@ Get started with Pedantigo in minutes. This guide shows you the essential patter
 ## Step 1: Install Pedantigo
 
 ```bash
-go get github.com/smrutai/pedantigo
+go get github.com/SmrutAI/pedantigo/v2
 ```
 
 ## Step 2: Define Your Struct
 
-Add `pedantigo` struct tags to define validation rules:
+Add `validate` struct tags to define validation rules:
 
 ```go
 package main
 
-import "github.com/smrutai/pedantigo"
+import "github.com/SmrutAI/pedantigo/v2"
 
 type User struct {
     Email    string `json:"email" validate:"required,email"`
@@ -90,7 +90,7 @@ Pedantigo provides two APIs: a Simple API for most use cases, and a Validator AP
 ```go
 package main
 
-import "github.com/smrutai/pedantigo"
+import "github.com/SmrutAI/pedantigo/v2"
 
 func main() {
     // Global functions with automatic caching - no setup needed
@@ -117,7 +117,7 @@ func main() {
 ```go
 package main
 
-import "github.com/smrutai/pedantigo"
+import "github.com/SmrutAI/pedantigo/v2"
 
 func main() {
     // Explicit validator for custom options
@@ -201,7 +201,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type User struct {

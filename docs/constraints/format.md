@@ -862,7 +862,7 @@ package main
 
 import (
     "fmt"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type UserAccount struct {

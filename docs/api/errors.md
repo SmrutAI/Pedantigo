@@ -178,7 +178,7 @@ Use the `errors.As()` function for cleaner error handling:
 ```go
 import (
     "errors"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 user, err := pedantigo.Unmarshal[User](jsonData)
@@ -289,7 +289,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type Address struct {

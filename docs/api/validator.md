@@ -27,7 +27,7 @@ The Validator API creates reusable validator instances with custom configuration
 ### Default Options
 
 ```go
-import "github.com/SmrutAI/pedantigo"
+import "github.com/SmrutAI/pedantigo/v2"
 
 type User struct {
     Email string `validate:"required,email"`
@@ -45,7 +45,7 @@ Default options:
 ### Custom Options
 
 ```go
-import "github.com/SmrutAI/pedantigo"
+import "github.com/SmrutAI/pedantigo/v2"
 
 // Create with custom options
 validator := pedantigo.New[User](pedantigo.ValidatorOptions{
@@ -449,7 +449,7 @@ package main
 
 import (
     "fmt"
-    "github.com/SmrutAI/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type User struct {

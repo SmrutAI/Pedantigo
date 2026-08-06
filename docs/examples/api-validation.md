@@ -44,7 +44,7 @@ import (
     "errors"
     "io"
     "net/http"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type CreateUserRequest struct {
@@ -145,7 +145,7 @@ import (
     "io"
     "net/http"
     "github.com/gin-gonic/gin"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type CreateUserRequest struct {
@@ -220,7 +220,7 @@ import (
     "io"
     "net/http"
     "github.com/labstack/echo/v4"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type CreateUserRequest struct {
@@ -376,7 +376,7 @@ import (
     "errors"
     "io"
     "net/http"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 // Request types
@@ -468,7 +468,7 @@ package main
 import (
     "encoding/json"
     "net/http"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type CreateUserRequest struct {
@@ -564,7 +564,7 @@ import (
     "encoding/json"
     "errors"
     "net/http"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type ErrorResponse struct {
@@ -653,7 +653,7 @@ import (
     "io"
     "net/http"
     "uuid"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 // Request DTOs

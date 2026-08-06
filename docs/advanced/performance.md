@@ -187,7 +187,7 @@ package main
 
 import (
     "testing"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type User struct {
@@ -357,7 +357,7 @@ For applications handling 100k+ requests per second:
 ```go
 package myapp
 
-import "github.com/smrutai/pedantigo"
+import "github.com/SmrutAI/pedantigo/v2"
 
 // 1. Pre-create validators at startup
 var (
@@ -405,7 +405,7 @@ package main
 import (
     "encoding/json"
     "net/http"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type User struct {
@@ -446,7 +446,7 @@ func main() {
 package main
 
 import (
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type Item struct {

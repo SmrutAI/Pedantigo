@@ -508,7 +508,7 @@ import (
     "fmt"
     "time"
 
-    pedantigo "github.com/SmrutAI/pedantigo"
+    pedantigo "github.com/SmrutAI/pedantigo/v2"
 )
 
 type EventRegistration struct {

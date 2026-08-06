@@ -92,7 +92,7 @@ package main
 import (
     "errors"
     "strings"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 func init() {
@@ -154,7 +154,7 @@ Once registered, use custom validators in the `pedantigo` struct tag:
 ```go
 package main
 
-import "github.com/smrutai/pedantigo"
+import "github.com/SmrutAI/pedantigo/v2"
 
 type User struct {
     Email      string `json:"email" validate:"required,email"`
@@ -641,7 +641,7 @@ import (
     "regexp"
     "strconv"
     "strings"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 // Custom field validators

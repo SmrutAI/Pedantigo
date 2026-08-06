@@ -252,7 +252,7 @@ package main
 
 import (
     "log"
-    "github.com/smrutai/pedantigo"
+    "github.com/SmrutAI/pedantigo/v2"
 )
 
 type UserProfile struct {

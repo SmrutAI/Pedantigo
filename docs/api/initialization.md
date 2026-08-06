@@ -678,7 +678,7 @@ import (
 	"errors"
 	"log"
 
-	"github.com/smrutai/pedantigo"
+	"github.com/SmrutAI/pedantigo/v2"
 )
 
 type CreateUserRequest struct {
