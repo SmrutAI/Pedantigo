@@ -582,11 +582,12 @@ Override the struct tag name for a specific validator instance.
 
 **Default**: Uses global tag name (`"validate"` by default, or whatever was set via `SetTagName()`)
 
-| Value        | Behavior                          |
-|--------------|-----------------------------------|
-| `""` (empty) | Use global default                |
-| `"validate"` | Use go-playground/validator style |
-| `"binding"`  | Use gin-gonic style               |
+| Value         | Behavior                              |
+|---------------|----------------------------------------|
+| `""` (empty)  | Use global default                     |
+| `"validate"`  | Use go-playground/validator style      |
+| `"binding"`   | Use gin-gonic style                    |
+| `"pedantigo"` | Use the v1 default tag name explicitly |
 
 ```go
 // Use go-playground/validator style tags

@@ -48,6 +48,54 @@ func TestCustomTagName_PlaygroundCompatibility(t *testing.T) {
 	resetValidatorCreatedForTesting()
 }
 
+// TestCustomTagName_PedantigoStillWorks verifies that "pedantigo" — the v1
+// default tag name — still works as an explicit custom tag name in v2, via
+// both the global SetTagName and a per-instance ValidatorOptions override.
+func TestCustomTagName_PedantigoStillWorks(t *testing.T) {
+	type User struct {
+		Email string `json:"email" pedantigo:"required,email"`
+		Age   int    `json:"age" pedantigo:"min=18,max=120"`
+	}
+
+	t.Run("global SetTagName", func(t *testing.T) {
+		resetTagNameForTesting()
+		resetValidatorCreatedForTesting()
+
+		SetTagName("pedantigo")
+		v := New[User]()
+
+		valid, err := v.Unmarshal([]byte(`{"email": "test@example.com", "age": 25}`))
+		require.NoError(t, err)
+		assert.Equal(t, "test@example.com", valid.Email)
+
+		_, err = v.Unmarshal([]byte(`{"email": "invalid", "age": 25}`))
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "email")
+
+		resetTagNameForTesting()
+		resetValidatorCreatedForTesting()
+	})
+
+	t.Run("per-instance ValidatorOptions", func(t *testing.T) {
+		resetTagNameForTesting()
+		resetValidatorCreatedForTesting()
+
+		// Global stays at the v2 default ("validate"); only this instance uses "pedantigo".
+		v := New[User](ValidatorOptions{TagName: "pedantigo"})
+
+		valid, err := v.Unmarshal([]byte(`{"email": "test@example.com", "age": 25}`))
+		require.NoError(t, err)
+		assert.Equal(t, "test@example.com", valid.Email)
+
+		_, err = v.Unmarshal([]byte(`{"email": "test@example.com", "age": 10}`))
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "Age")
+
+		resetTagNameForTesting()
+		resetValidatorCreatedForTesting()
+	})
+}
+
 // TestCustomTagName_InstanceOverridesGlobal tests that per-instance TagName
 // overrides the global setting.
 func TestCustomTagName_InstanceOverridesGlobal(t *testing.T) {

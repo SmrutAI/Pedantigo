@@ -43,7 +43,7 @@ func TestSetTagName_Empty_FallsBack(t *testing.T) {
 	resetValidatorCreatedForTesting()
 
 	SetTagName("")
-	assert.Equal(t, "validate", GetTagName(), "empty tag name should fall back to 'pedantigo'")
+	assert.Equal(t, "validate", GetTagName(), "empty tag name should fall back to 'validate'")
 
 	resetValidatorCreatedForTesting()
 }

@@ -55,7 +55,7 @@ func TestResolveTagName_DefaultGlobal(t *testing.T) {
 	opts := ValidatorOptions{}
 	resolved := resolveTagName(opts)
 
-	assert.Equal(t, "validate", resolved, "default global should be 'pedantigo'")
+	assert.Equal(t, "validate", resolved, "default global should be 'validate'")
 }
 
 // TestDefaultValidatorOptions_TagNameEmpty verifies default options has empty TagName.
