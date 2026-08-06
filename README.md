@@ -6,7 +6,8 @@
 
 Type-safe JSON validation and schema generation for Go.
 
-> **v2 breaking change:** the default struct tag changed from `pedantigo` to `validate`. If you're upgrading from v1, see the [migration guide](docs/migration/v1-to-v2.md) before you update.
+> **v2 breaking change:** the default struct tag changed from `pedantigo` to `validate`. This is to be in sync with wider range of community tools like swaggo that work with `validate` tags
+> If you're upgrading from v1, see the [migration guide](docs/migration/v1-to-v2.md) before you update.
 
 ## Installation
 
