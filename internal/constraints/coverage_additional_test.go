@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	. "github.com/SmrutAI/pedantigo"
+	. "github.com/SmrutAI/pedantigo/v2"
 )
 
 // TestISO3166NumericConstraint_EdgeCases tests edge cases for ISO 3166-1 numeric constraint.

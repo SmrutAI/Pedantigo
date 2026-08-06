@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	pedantigo "github.com/SmrutAI/pedantigo"
+	pedantigo "github.com/SmrutAI/pedantigo/v2"
 )
 
 // TestPostcodeISO3166Alpha2Alias tests the postcode_iso3166_alpha2 alias.

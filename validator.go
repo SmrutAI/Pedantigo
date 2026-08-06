@@ -12,10 +12,10 @@ import (
 
 	"github.com/invopop/jsonschema"
 
-	"github.com/SmrutAI/pedantigo/internal/constraints"
-	"github.com/SmrutAI/pedantigo/internal/deserialize"
-	"github.com/SmrutAI/pedantigo/internal/serialize"
-	"github.com/SmrutAI/pedantigo/internal/tags"
+	"github.com/SmrutAI/pedantigo/v2/internal/constraints"
+	"github.com/SmrutAI/pedantigo/v2/internal/deserialize"
+	"github.com/SmrutAI/pedantigo/v2/internal/serialize"
+	"github.com/SmrutAI/pedantigo/v2/internal/tags"
 )
 
 // Validator validates structs of type T.

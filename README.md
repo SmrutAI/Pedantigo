@@ -6,10 +6,12 @@
 
 Type-safe JSON validation and schema generation for Go.
 
+> **v2 breaking change:** the default struct tag changed from `pedantigo` to `validate`. If you're upgrading from v1, see the [migration guide](docs/migration/v1-to-v2.md) before you update.
+
 ## Installation
 
 ```bash
-go get github.com/SmrutAI/pedantigo
+go get github.com/SmrutAI/pedantigo/v2
 ```
 
 Requires Go 1.21+

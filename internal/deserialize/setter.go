@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SmrutAI/pedantigo/internal/tags"
+	"github.com/SmrutAI/pedantigo/v2/internal/tags"
 )
 
 // FieldOptions contains options for field deserialization and required checking.

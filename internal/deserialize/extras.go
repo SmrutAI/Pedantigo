@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/SmrutAI/pedantigo/internal/tags"
+	"github.com/SmrutAI/pedantigo/v2/internal/tags"
 )
 
 // ExtraFieldInfo holds metadata about a struct's extra_fields field.

@@ -6,8 +6,8 @@ import (
 
 	"github.com/invopop/jsonschema"
 
-	"github.com/SmrutAI/pedantigo/internal/schemagen"
-	"github.com/SmrutAI/pedantigo/internal/tags"
+	"github.com/SmrutAI/pedantigo/v2/internal/schemagen"
+	"github.com/SmrutAI/pedantigo/v2/internal/tags"
 )
 
 // parseTagFunc creates a closure that parses tags using the validator's configured tag name.

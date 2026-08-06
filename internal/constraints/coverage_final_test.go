@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	. "github.com/SmrutAI/pedantigo"
+	. "github.com/SmrutAI/pedantigo/v2"
 )
 
 // coverage_final_test.go - Final coverage improvement tests

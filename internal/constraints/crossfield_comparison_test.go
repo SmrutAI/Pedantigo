@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	. "github.com/SmrutAI/pedantigo"
+	. "github.com/SmrutAI/pedantigo/v2"
 )
 
 // TestCrossFieldComparison tests all cross-field comparison constraints.
