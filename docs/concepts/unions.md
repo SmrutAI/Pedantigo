@@ -30,23 +30,23 @@ Each variant in your union should be a separate struct with appropriate validati
 
 ```go
 type CreditCard struct {
-    Type       string `json:"type" pedantigo:"required"`
-    CardNumber string `json:"cardNumber" pedantigo:"required,pattern=^[0-9]{16}$"`
-    CVC        string `json:"cvc" pedantigo:"required,pattern=^[0-9]{3}$"`
-    ExpiryDate string `json:"expiryDate" pedantigo:"required,pattern=^[0-9]{2}/[0-9]{2}$"`
+    Type       string `json:"type" validate:"required"`
+    CardNumber string `json:"cardNumber" validate:"required,pattern=^[0-9]{16}$"`
+    CVC        string `json:"cvc" validate:"required,pattern=^[0-9]{3}$"`
+    ExpiryDate string `json:"expiryDate" validate:"required,pattern=^[0-9]{2}/[0-9]{2}$"`
 }
 
 type BankTransfer struct {
-    Type           string `json:"type" pedantigo:"required"`
-    AccountNumber  string `json:"accountNumber" pedantigo:"required,pattern=^[0-9]{10,12}$"`
-    RoutingNumber  string `json:"routingNumber" pedantigo:"required,pattern=^[0-9]{9}$"`
-    AccountHolderName string `json:"accountHolderName" pedantigo:"required,min=2"`
+    Type           string `json:"type" validate:"required"`
+    AccountNumber  string `json:"accountNumber" validate:"required,pattern=^[0-9]{10,12}$"`
+    RoutingNumber  string `json:"routingNumber" validate:"required,pattern=^[0-9]{9}$"`
+    AccountHolderName string `json:"accountHolderName" validate:"required,min=2"`
 }
 
 type DigitalWallet struct {
-    Type     string `json:"type" pedantigo:"required"`
-    WalletID string `json:"walletId" pedantigo:"required,min=1"`
-    Provider string `json:"provider" pedantigo:"required,enum=apple_pay|google_pay|paypal"`
+    Type     string `json:"type" validate:"required"`
+    WalletID string `json:"walletId" validate:"required,min=1"`
+    Provider string `json:"provider" validate:"required,enum=apple_pay|google_pay|paypal"`
 }
 ```
 
@@ -227,10 +227,10 @@ Each variant can implement the `Validatable` interface for cross-field checks:
 
 ```go
 type CreditCard struct {
-    Type       string `json:"type" pedantigo:"required"`
-    CardNumber string `json:"cardNumber" pedantigo:"required"`
-    CVC        string `json:"cvc" pedantigo:"required"`
-    ExpiryDate string `json:"expiryDate" pedantigo:"required"`
+    Type       string `json:"type" validate:"required"`
+    CardNumber string `json:"cardNumber" validate:"required"`
+    CVC        string `json:"cvc" validate:"required"`
+    ExpiryDate string `json:"expiryDate" validate:"required"`
 }
 
 func (c CreditCard) Validate() error {
@@ -276,10 +276,10 @@ import (
 
 // Define payment method variants
 type CreditCard struct {
-    Type       string `json:"type" pedantigo:"required"`
-    CardNumber string `json:"cardNumber" pedantigo:"required,pattern=^[0-9]{16}$"`
-    CVC        string `json:"cvc" pedantigo:"required,pattern=^[0-9]{3}$"`
-    ExpiryDate string `json:"expiryDate" pedantigo:"required"`
+    Type       string `json:"type" validate:"required"`
+    CardNumber string `json:"cardNumber" validate:"required,pattern=^[0-9]{16}$"`
+    CVC        string `json:"cvc" validate:"required,pattern=^[0-9]{3}$"`
+    ExpiryDate string `json:"expiryDate" validate:"required"`
 }
 
 func (c CreditCard) Validate() error {
@@ -291,15 +291,15 @@ func (c CreditCard) Validate() error {
 }
 
 type BankTransfer struct {
-    Type           string `json:"type" pedantigo:"required"`
-    AccountNumber  string `json:"accountNumber" pedantigo:"required,pattern=^[0-9]{10,12}$"`
-    RoutingNumber  string `json:"routingNumber" pedantigo:"required,pattern=^[0-9]{9}$"`
+    Type           string `json:"type" validate:"required"`
+    AccountNumber  string `json:"accountNumber" validate:"required,pattern=^[0-9]{10,12}$"`
+    RoutingNumber  string `json:"routingNumber" validate:"required,pattern=^[0-9]{9}$"`
 }
 
 type DigitalWallet struct {
-    Type     string `json:"type" pedantigo:"required"`
-    WalletID string `json:"walletId" pedantigo:"required,min=1"`
-    Provider string `json:"provider" pedantigo:"required,enum=apple_pay|google_pay|paypal"`
+    Type     string `json:"type" validate:"required"`
+    WalletID string `json:"walletId" validate:"required,min=1"`
+    Provider string `json:"provider" validate:"required,enum=apple_pay|google_pay|paypal"`
 }
 
 func main() {
@@ -449,17 +449,17 @@ For scenarios where you don't need streaming support or JSON Schema `oneOf` gene
 
 ```go
 type TV struct {
-    Channel int `json:"channel" pedantigo:"required,min=1,max=999"`
+    Channel int `json:"channel" validate:"required,min=1,max=999"`
 }
 
 type Fan struct {
-    Speed int `json:"speed" pedantigo:"required,min=1,max=5"`
+    Speed int `json:"speed" validate:"required,min=1,max=5"`
 }
 
 type Suite struct {
-    SuiteType string `json:"suite_type" pedantigo:"required,oneof=tv fan"`
-    TV        TV     `json:"tv" pedantigo:"skip_unless=SuiteType tv"`
-    Fan       Fan    `json:"fan" pedantigo:"skip_unless=SuiteType fan"`
+    SuiteType string `json:"suite_type" validate:"required,oneof=tv fan"`
+    TV        TV     `json:"tv" validate:"skip_unless=SuiteType tv"`
+    Fan       Fan    `json:"fan" validate:"skip_unless=SuiteType fan"`
 }
 ```
 

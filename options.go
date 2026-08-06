@@ -24,7 +24,7 @@ type ValidatorOptions struct {
 	ExtraFields ExtraFieldsMode
 
 	// TagName overrides the global struct tag name for this validator instance.
-	// If empty, the global tag name (set via SetTagName or defaulting to "pedantigo") is used.
+	// If empty, the global tag name (set via SetTagName or defaulting to "validate") is used.
 	// This allows different validators to use different struct tag names.
 	//
 	// Example:

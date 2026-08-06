@@ -12,7 +12,7 @@ import (
 
 type ValidExtraField struct {
 	Name   string         `json:"name"`
-	Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+	Extras map[string]any `json:"-" validate:"extra_fields"`
 }
 
 type NoExtraField struct {
@@ -22,45 +22,45 @@ type NoExtraField struct {
 
 type WrongType struct {
 	Name   string `json:"name"`
-	Extras string `json:"-" pedantigo:"extra_fields"` // Wrong type!
+	Extras string `json:"-" validate:"extra_fields"` // Wrong type!
 }
 
 type MultipleExtraFields struct {
 	Name    string         `json:"name"`
-	Extras1 map[string]any `json:"-" pedantigo:"extra_fields"`
-	Extras2 map[string]any `json:"-" pedantigo:"extra_fields"` // Duplicate!
+	Extras1 map[string]any `json:"-" validate:"extra_fields"`
+	Extras2 map[string]any `json:"-" validate:"extra_fields"` // Duplicate!
 }
 
 type PointerMapField struct {
 	Name   string          `json:"name"`
-	Extras *map[string]any `json:"-" pedantigo:"extra_fields"` // Pointer to map - should fail
+	Extras *map[string]any `json:"-" validate:"extra_fields"` // Pointer to map - should fail
 }
 
 type privateExtraField struct {
 	Name   string
-	extras map[string]any `json:"-" pedantigo:"extra_fields"` //nolint:unused // private field - ignored
+	extras map[string]any `json:"-" validate:"extra_fields"` //nolint:unused // private field - ignored
 }
 
 type MapStringInterface struct {
 	Name   string                 `json:"name"`
-	Extras map[string]interface{} `json:"-" pedantigo:"extra_fields"` // interface{} is alias for any
+	Extras map[string]interface{} `json:"-" validate:"extra_fields"` // interface{} is alias for any
 }
 
 type WrongMapKeyType struct {
 	Name   string      `json:"name"`
-	Extras map[int]any `json:"-" pedantigo:"extra_fields"` // Wrong key type!
+	Extras map[int]any `json:"-" validate:"extra_fields"` // Wrong key type!
 }
 
 type WrongMapValueType struct {
 	Name   string            `json:"name"`
-	Extras map[string]string `json:"-" pedantigo:"extra_fields"` // Wrong value type!
+	Extras map[string]string `json:"-" validate:"extra_fields"` // Wrong value type!
 }
 
 // Tests
 
 func TestDetectExtraField_ValidField_ReturnsInfo(t *testing.T) {
 	typ := reflect.TypeOf(ValidExtraField{})
-	result := DetectExtraField(typ, "pedantigo")
+	result := DetectExtraField(typ, "validate")
 
 	require.NotNil(t, result, "Should detect extra_fields field")
 	assert.Equal(t, 1, result.FieldIndex, "Extra field should be at index 1")
@@ -70,7 +70,7 @@ func TestDetectExtraField_ValidField_ReturnsInfo(t *testing.T) {
 func TestDetectExtraField_MapStringInterface_ReturnsInfo(t *testing.T) {
 	// interface{} is an alias for any, should be accepted
 	typ := reflect.TypeOf(MapStringInterface{})
-	result := DetectExtraField(typ, "pedantigo")
+	result := DetectExtraField(typ, "validate")
 
 	require.NotNil(t, result, "Should detect extra_fields field with map[string]interface{}")
 	assert.Equal(t, 1, result.FieldIndex, "Extra field should be at index 1")
@@ -79,7 +79,7 @@ func TestDetectExtraField_MapStringInterface_ReturnsInfo(t *testing.T) {
 
 func TestDetectExtraField_NoExtraField_ReturnsNil(t *testing.T) {
 	typ := reflect.TypeOf(NoExtraField{})
-	result := DetectExtraField(typ, "pedantigo")
+	result := DetectExtraField(typ, "validate")
 
 	assert.Nil(t, result, "Should return nil when no extra_fields field exists")
 }
@@ -90,7 +90,7 @@ func TestDetectExtraField_WrongType_Panics(t *testing.T) {
 	require.PanicsWithValue(t,
 		"field 'Extras' tagged with pedantigo:\"extra_fields\" must be of type map[string]any",
 		func() {
-			DetectExtraField(typ, "pedantigo")
+			DetectExtraField(typ, "validate")
 		},
 		"Should panic when field type is not map[string]any",
 	)
@@ -102,7 +102,7 @@ func TestDetectExtraField_WrongMapKeyType_Panics(t *testing.T) {
 	require.PanicsWithValue(t,
 		"field 'Extras' tagged with pedantigo:\"extra_fields\" must be of type map[string]any",
 		func() {
-			DetectExtraField(typ, "pedantigo")
+			DetectExtraField(typ, "validate")
 		},
 		"Should panic when map key type is not string",
 	)
@@ -114,7 +114,7 @@ func TestDetectExtraField_WrongMapValueType_Panics(t *testing.T) {
 	require.PanicsWithValue(t,
 		"field 'Extras' tagged with pedantigo:\"extra_fields\" must be of type map[string]any",
 		func() {
-			DetectExtraField(typ, "pedantigo")
+			DetectExtraField(typ, "validate")
 		},
 		"Should panic when map value type is not any/interface{}",
 	)
@@ -126,7 +126,7 @@ func TestDetectExtraField_MultipleExtraFields_Panics(t *testing.T) {
 	require.PanicsWithValue(t,
 		"multiple fields tagged with pedantigo:\"extra_fields\" found: only one is allowed",
 		func() {
-			DetectExtraField(typ, "pedantigo")
+			DetectExtraField(typ, "validate")
 		},
 		"Should panic when multiple extra_fields tags exist",
 	)
@@ -138,7 +138,7 @@ func TestDetectExtraField_PointerToMapStringAny_Panics(t *testing.T) {
 	require.PanicsWithValue(t,
 		"field 'Extras' tagged with pedantigo:\"extra_fields\" must be of type map[string]any",
 		func() {
-			DetectExtraField(typ, "pedantigo")
+			DetectExtraField(typ, "validate")
 		},
 		"Should panic when field is pointer to map[string]any",
 	)
@@ -147,15 +147,19 @@ func TestDetectExtraField_PointerToMapStringAny_Panics(t *testing.T) {
 func TestDetectExtraField_PrivateField_Ignored(t *testing.T) {
 	// Private fields should be ignored even if they have the tag
 	typ := reflect.TypeOf(privateExtraField{})
-	result := DetectExtraField(typ, "pedantigo")
+	result := DetectExtraField(typ, "validate")
 
 	assert.Nil(t, result, "Should ignore private fields with extra_fields tag")
 }
 
 func TestDetectExtraField_DifferentTagName_ReturnsNil(t *testing.T) {
-	// When using a different tag name, should not detect the field
-	typ := reflect.TypeOf(ValidExtraField{})
-	result := DetectExtraField(typ, "validate") // Different tag name
+	// Field is tagged with "binding", but we look up using "validate" - should not match.
+	type BindingTaggedField struct {
+		Name   string         `json:"name"`
+		Extras map[string]any `json:"-" binding:"extra_fields"`
+	}
+	typ := reflect.TypeOf(BindingTaggedField{})
+	result := DetectExtraField(typ, "validate") // Different tag name than the struct uses
 
 	assert.Nil(t, result, "Should return nil when using different tag name")
 }
@@ -163,11 +167,11 @@ func TestDetectExtraField_DifferentTagName_ReturnsNil(t *testing.T) {
 func TestDetectExtraField_EmptyTagValue_ReturnsNil(t *testing.T) {
 	type EmptyTag struct {
 		Name   string         `json:"name"`
-		Extras map[string]any `json:"-" pedantigo:""` // Empty tag value
+		Extras map[string]any `json:"-" validate:""` // Empty tag value
 	}
 
 	typ := reflect.TypeOf(EmptyTag{})
-	result := DetectExtraField(typ, "pedantigo")
+	result := DetectExtraField(typ, "validate")
 
 	assert.Nil(t, result, "Should return nil when tag value is empty")
 }
@@ -175,11 +179,11 @@ func TestDetectExtraField_EmptyTagValue_ReturnsNil(t *testing.T) {
 func TestDetectExtraField_WrongTagValue_ReturnsNil(t *testing.T) {
 	type WrongTagValue struct {
 		Name   string         `json:"name"`
-		Extras map[string]any `json:"-" pedantigo:"something_else"` // Wrong tag value
+		Extras map[string]any `json:"-" validate:"something_else"` // Wrong tag value
 	}
 
 	typ := reflect.TypeOf(WrongTagValue{})
-	result := DetectExtraField(typ, "pedantigo")
+	result := DetectExtraField(typ, "validate")
 
 	assert.Nil(t, result, "Should return nil when tag value is not 'extra_fields'")
 }
@@ -188,12 +192,12 @@ func TestDetectExtraField_WrongTagValue_ReturnsNil(t *testing.T) {
 func TestDetectExtraField_PointerType(t *testing.T) {
 	type HasExtra struct {
 		Name   string         `json:"name"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 
 	// Pass pointer to struct type
 	typ := reflect.TypeOf(&HasExtra{})
-	result := DetectExtraField(typ, "pedantigo")
+	result := DetectExtraField(typ, "validate")
 
 	assert.NotNil(t, result, "Should handle pointer types by dereferencing")
 	assert.Equal(t, 1, result.FieldIndex)
@@ -202,14 +206,14 @@ func TestDetectExtraField_PointerType(t *testing.T) {
 // TestDetectExtraField_NonStructType tests DetectExtraField returns nil for non-struct types.
 func TestDetectExtraField_NonStructType(t *testing.T) {
 	// Test with string type
-	result := DetectExtraField(reflect.TypeOf(""), "pedantigo")
+	result := DetectExtraField(reflect.TypeOf(""), "validate")
 	assert.Nil(t, result, "Should return nil for string type")
 
 	// Test with int type
-	result = DetectExtraField(reflect.TypeOf(0), "pedantigo")
+	result = DetectExtraField(reflect.TypeOf(0), "validate")
 	assert.Nil(t, result, "Should return nil for int type")
 
 	// Test with slice type
-	result = DetectExtraField(reflect.TypeOf([]string{}), "pedantigo")
+	result = DetectExtraField(reflect.TypeOf([]string{}), "validate")
 	assert.Nil(t, result, "Should return nil for slice type")
 }

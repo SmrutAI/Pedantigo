@@ -29,7 +29,7 @@ func TestCrossFieldComparison_IncompatibleTypesAllOperators(t *testing.T) {
 	t.Run("eqfield: string vs int incompatible", func(t *testing.T) {
 		type MixedEq struct {
 			IntField    int    `json:"int_field"`
-			StringField string `json:"string_field" pedantigo:"eqfield=IntField"`
+			StringField string `json:"string_field" validate:"eqfield=IntField"`
 		}
 
 		validator := New[MixedEq]()
@@ -46,7 +46,7 @@ func TestCrossFieldComparison_IncompatibleTypesAllOperators(t *testing.T) {
 	t.Run("nefield: bool vs string incompatible", func(t *testing.T) {
 		type MixedNe struct {
 			BoolField   bool   `json:"bool_field"`
-			StringField string `json:"string_field" pedantigo:"nefield=BoolField"`
+			StringField string `json:"string_field" validate:"nefield=BoolField"`
 		}
 
 		validator := New[MixedNe]()
@@ -63,7 +63,7 @@ func TestCrossFieldComparison_IncompatibleTypesAllOperators(t *testing.T) {
 	t.Run("gtfield: slice vs int incompatible", func(t *testing.T) {
 		type MixedGt struct {
 			IntField   int   `json:"int_field"`
-			SliceField []int `json:"slice_field" pedantigo:"gtfield=IntField"`
+			SliceField []int `json:"slice_field" validate:"gtfield=IntField"`
 		}
 
 		validator := New[MixedGt]()
@@ -80,7 +80,7 @@ func TestCrossFieldComparison_IncompatibleTypesAllOperators(t *testing.T) {
 	t.Run("gtefield: map vs float incompatible", func(t *testing.T) {
 		type MixedGte struct {
 			FloatField float64        `json:"float_field"`
-			MapField   map[string]int `json:"map_field" pedantigo:"gtefield=FloatField"`
+			MapField   map[string]int `json:"map_field" validate:"gtefield=FloatField"`
 		}
 
 		validator := New[MixedGte]()
@@ -97,7 +97,7 @@ func TestCrossFieldComparison_IncompatibleTypesAllOperators(t *testing.T) {
 	t.Run("ltfield: int vs bool incompatible", func(t *testing.T) {
 		type MixedLt struct {
 			BoolField bool `json:"bool_field"`
-			IntField  int  `json:"int_field" pedantigo:"ltfield=BoolField"`
+			IntField  int  `json:"int_field" validate:"ltfield=BoolField"`
 		}
 
 		validator := New[MixedLt]()
@@ -117,7 +117,7 @@ func TestCrossFieldComparison_IncompatibleTypesAllOperators(t *testing.T) {
 		}
 		type MixedLte struct {
 			InnerField Inner   `json:"inner_field"`
-			FloatField float64 `json:"float_field" pedantigo:"ltefield=InnerField"`
+			FloatField float64 `json:"float_field" validate:"ltefield=InnerField"`
 		}
 
 		validator := New[MixedLte]()
@@ -139,7 +139,7 @@ func TestSkipUnless_ValidateCrossFieldNoOp(t *testing.T) {
 	t.Run("skip_unless ValidateCrossField is no-op", func(t *testing.T) {
 		type Form struct {
 			Status string `json:"status"`
-			Data   string `json:"data" pedantigo:"skip_unless=Status active,required"`
+			Data   string `json:"data" validate:"skip_unless=Status active,required"`
 		}
 
 		validator := New[Form]()
@@ -168,7 +168,7 @@ func TestSkipUnless_ShouldSkip_CompareFnNil(t *testing.T) {
 	t.Run("skip_unless with normal compareFn", func(t *testing.T) {
 		type Form struct {
 			Type string `json:"type"`
-			Data string `json:"data" pedantigo:"skip_unless=Type admin,required"`
+			Data string `json:"data" validate:"skip_unless=Type admin,required"`
 		}
 
 		validator := New[Form]()
@@ -201,7 +201,7 @@ func TestSkipUnless_ShouldSkip_CompareFnNil(t *testing.T) {
 func TestISO31661AlphaNumeric_AdditionalUintTypes(t *testing.T) {
 	t.Run("iso3166_1_alpha_numeric: uint16 over 999 fails", func(t *testing.T) {
 		type Country struct {
-			Code uint16 `json:"code" pedantigo:"iso3166_1_alpha_numeric"`
+			Code uint16 `json:"code" validate:"iso3166_1_alpha_numeric"`
 		}
 
 		validator := New[Country]()
@@ -214,7 +214,7 @@ func TestISO31661AlphaNumeric_AdditionalUintTypes(t *testing.T) {
 
 	t.Run("iso3166_1_alpha_numeric: uint32 over 999 fails", func(t *testing.T) {
 		type Country struct {
-			Code uint32 `json:"code" pedantigo:"iso3166_1_alpha_numeric"`
+			Code uint32 `json:"code" validate:"iso3166_1_alpha_numeric"`
 		}
 
 		validator := New[Country]()
@@ -227,7 +227,7 @@ func TestISO31661AlphaNumeric_AdditionalUintTypes(t *testing.T) {
 
 	t.Run("iso3166_1_alpha_numeric: uint64 over 999 fails", func(t *testing.T) {
 		type Country struct {
-			Code uint64 `json:"code" pedantigo:"iso3166_1_alpha_numeric"`
+			Code uint64 `json:"code" validate:"iso3166_1_alpha_numeric"`
 		}
 
 		validator := New[Country]()
@@ -244,7 +244,7 @@ func TestISO31661AlphaNumeric_AdditionalUintTypes(t *testing.T) {
 func TestISO4217Numeric_AdditionalUintTypes(t *testing.T) {
 	t.Run("iso4217_numeric: uint16 over 999 fails", func(t *testing.T) {
 		type Currency struct {
-			Code uint16 `json:"code" pedantigo:"iso4217_numeric"`
+			Code uint16 `json:"code" validate:"iso4217_numeric"`
 		}
 
 		validator := New[Currency]()
@@ -257,7 +257,7 @@ func TestISO4217Numeric_AdditionalUintTypes(t *testing.T) {
 
 	t.Run("iso4217_numeric: uint32 over 999 fails", func(t *testing.T) {
 		type Currency struct {
-			Code uint32 `json:"code" pedantigo:"iso4217_numeric"`
+			Code uint32 `json:"code" validate:"iso4217_numeric"`
 		}
 
 		validator := New[Currency]()
@@ -270,7 +270,7 @@ func TestISO4217Numeric_AdditionalUintTypes(t *testing.T) {
 
 	t.Run("iso4217_numeric: uint64 over 999 fails", func(t *testing.T) {
 		type Currency struct {
-			Code uint64 `json:"code" pedantigo:"iso4217_numeric"`
+			Code uint64 `json:"code" validate:"iso4217_numeric"`
 		}
 
 		validator := New[Currency]()
@@ -292,7 +292,7 @@ func TestISO4217Numeric_AdditionalUintTypes(t *testing.T) {
 func TestISSN_XChecksum(t *testing.T) {
 	t.Run("issn: X checksum valid", func(t *testing.T) {
 		type Publication struct {
-			ISSN string `json:"issn" pedantigo:"issn"`
+			ISSN string `json:"issn" validate:"issn"`
 		}
 
 		validator := New[Publication]()
@@ -316,7 +316,7 @@ func TestISSN_XChecksum(t *testing.T) {
 
 	t.Run("issn: X at wrong position invalid", func(t *testing.T) {
 		type Publication struct {
-			ISSN string `json:"issn" pedantigo:"issn"`
+			ISSN string `json:"issn" validate:"issn"`
 		}
 
 		validator := New[Publication]()
@@ -334,7 +334,7 @@ func TestISSN_XChecksum(t *testing.T) {
 
 	t.Run("issn: X checksum without dash", func(t *testing.T) {
 		type Publication struct {
-			ISSN string `json:"issn" pedantigo:"issn"`
+			ISSN string `json:"issn" validate:"issn"`
 		}
 
 		validator := New[Publication]()
@@ -355,7 +355,7 @@ func TestISSN_XChecksum(t *testing.T) {
 func TestISSN_EdgeCases(t *testing.T) {
 	t.Run("issn: checksum validation", func(t *testing.T) {
 		type Publication struct {
-			ISSN string `json:"issn" pedantigo:"issn"`
+			ISSN string `json:"issn" validate:"issn"`
 		}
 
 		validator := New[Publication]()

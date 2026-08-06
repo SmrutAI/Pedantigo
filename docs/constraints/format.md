@@ -15,9 +15,9 @@ Validates that a string is a **valid email address** following RFC 5322 specific
 ```go
 type Contact struct {
     // Email must be a valid email address
-    Email string `json:"email" pedantigo:"required,email"`
+    Email string `json:"email" validate:"required,email"`
     // Backup email is optional but must be valid if provided
-    BackupEmail string `json:"backup_email,omitempty" pedantigo:"email"`
+    BackupEmail string `json:"backup_email,omitempty" validate:"email"`
 }
 ```
 
@@ -31,9 +31,9 @@ Validates that a string is a **valid URL** with a scheme (http, https, ftp, etc.
 ```go
 type SocialProfile struct {
     // Website URL must be valid
-    Website string `json:"website" pedantigo:"required,url"`
+    Website string `json:"website" validate:"required,url"`
     // Optional portfolio URL
-    Portfolio string `json:"portfolio,omitempty" pedantigo:"url"`
+    Portfolio string `json:"portfolio,omitempty" validate:"url"`
 }
 ```
 
@@ -47,7 +47,7 @@ Validates that a string is a **valid URI** (Uniform Resource Identifier) with an
 ```go
 type DatabaseConfig struct {
     // Database connection URI (any scheme allowed)
-    ConnectionString string `json:"connection_string" pedantigo:"required,uri"`
+    ConnectionString string `json:"connection_string" validate:"required,uri"`
 }
 ```
 
@@ -70,9 +70,9 @@ Validates that a string is a **valid UUID** (Universally Unique Identifier) in s
 ```go
 type Document struct {
     // Unique document identifier must be a valid UUID
-    ID string `json:"id" pedantigo:"required,uuid"`
+    ID string `json:"id" validate:"required,uuid"`
     // Correlation ID for tracking, optional but must be UUID if provided
-    CorrelationID string `json:"correlation_id,omitempty" pedantigo:"uuid"`
+    CorrelationID string `json:"correlation_id,omitempty" validate:"uuid"`
 }
 ```
 
@@ -86,7 +86,7 @@ Validates that a string is a **valid ULID** (Universally Unique Lexicographicall
 ```go
 type Order struct {
     // ULID provides sortable unique ID with timestamp
-    ID string `json:"id" pedantigo:"required,ulid"`
+    ID string `json:"id" validate:"required,ulid"`
 }
 ```
 
@@ -102,7 +102,7 @@ Validates that a string is a **valid IP address** (IPv4 or IPv6).
 ```go
 type NetworkConfig struct {
     // Accept any valid IP version
-    Address string `json:"address" pedantigo:"required,ip"`
+    Address string `json:"address" validate:"required,ip"`
 }
 ```
 
@@ -116,7 +116,7 @@ Validates that a string is a **valid IPv4 address**.
 ```go
 type ServerConfig struct {
     // IPv4 address for legacy systems
-    IPv4Address string `json:"ipv4_address" pedantigo:"required,ipv4"`
+    IPv4Address string `json:"ipv4_address" validate:"required,ipv4"`
 }
 ```
 
@@ -130,7 +130,7 @@ Validates that a string is a **valid IPv6 address**.
 ```go
 type ModernNetworkConfig struct {
     // IPv6 address for modern networks
-    Address string `json:"address" pedantigo:"required,ipv6"`
+    Address string `json:"address" validate:"required,ipv6"`
 }
 ```
 
@@ -144,7 +144,7 @@ Validates that a string is a **valid CIDR notation** for IPv4 or IPv6.
 ```go
 type NetworkRoute struct {
     // CIDR block for routing, accepts both IPv4 and IPv6
-    Network string `json:"network" pedantigo:"required,cidr"`
+    Network string `json:"network" validate:"required,cidr"`
 }
 ```
 
@@ -158,7 +158,7 @@ Validates that a string is a **valid IPv4 CIDR notation**.
 ```go
 type SubnetConfig struct {
     // IPv4 CIDR notation for subnet specification
-    Subnet string `json:"subnet" pedantigo:"required,cidrv4"`
+    Subnet string `json:"subnet" validate:"required,cidrv4"`
 }
 ```
 
@@ -172,7 +172,7 @@ Validates that a string is a **valid IPv6 CIDR notation**.
 ```go
 type IPv6Network struct {
     // IPv6 CIDR notation for modern networks
-    Prefix string `json:"prefix" pedantigo:"required,cidrv6"`
+    Prefix string `json:"prefix" validate:"required,cidrv6"`
 }
 ```
 
@@ -186,7 +186,7 @@ Validates that a string is a **valid MAC address**.
 ```go
 type NetworkInterface struct {
     // MAC address for device identification
-    HardwareAddress string `json:"mac_address" pedantigo:"required,mac"`
+    HardwareAddress string `json:"mac_address" validate:"required,mac"`
 }
 ```
 
@@ -200,7 +200,7 @@ Validates that a string is a **valid hostname** (flexible format).
 ```go
 type ServerInfo struct {
     // Hostname for the server
-    Hostname string `json:"hostname" pedantigo:"required,hostname"`
+    Hostname string `json:"hostname" validate:"required,hostname"`
 }
 ```
 
@@ -214,7 +214,7 @@ Validates that a string is a **valid RFC 1123 hostname** (stricter standard).
 ```go
 type DNSRecord struct {
     // RFC 1123 compliant hostname
-    Name string `json:"name" pedantigo:"required,hostname_rfc1123"`
+    Name string `json:"name" validate:"required,hostname_rfc1123"`
 }
 ```
 
@@ -228,7 +228,7 @@ Validates that a string is a **fully qualified domain name**.
 ```go
 type DomainConfig struct {
     // Must be a complete domain name
-    Domain string `json:"domain" pedantigo:"required,fqdn"`
+    Domain string `json:"domain" validate:"required,fqdn"`
 }
 ```
 
@@ -242,9 +242,9 @@ Validates that a string or integer is a **valid port number** (1-65535).
 ```go
 type ServiceEndpoint struct {
     // Port number must be in valid range
-    Port int `json:"port" pedantigo:"required,port"`
+    Port int `json:"port" validate:"required,port"`
     // Also works with strings
-    PortString string `json:"port_string" pedantigo:"required,port"`
+    PortString string `json:"port_string" validate:"required,port"`
 }
 ```
 
@@ -258,7 +258,7 @@ Validates that a string is a **valid TCP address** in `host:port` format.
 ```go
 type TCPConnection struct {
     // TCP address for server connection
-    Address string `json:"address" pedantigo:"required,tcp_addr"`
+    Address string `json:"address" validate:"required,tcp_addr"`
 }
 ```
 
@@ -272,7 +272,7 @@ Validates that a string is a **valid UDP address** in `host:port` format.
 ```go
 type UDPConnection struct {
     // UDP address for datagram communication
-    Address string `json:"address" pedantigo:"required,udp_addr"`
+    Address string `json:"address" validate:"required,udp_addr"`
 }
 ```
 
@@ -286,7 +286,7 @@ Validates that a string is a **valid IPv4 TCP address**.
 ```go
 type IPv4TCPEndpoint struct {
     // IPv4 TCP endpoint
-    Endpoint string `json:"endpoint" pedantigo:"required,tcp4_addr"`
+    Endpoint string `json:"endpoint" validate:"required,tcp4_addr"`
 }
 ```
 
@@ -302,7 +302,7 @@ Validates that a string is a **valid credit card number** using Luhn algorithm.
 ```go
 type PaymentInfo struct {
     // Credit card number must pass Luhn validation
-    CardNumber string `json:"card_number" pedantigo:"required,credit_card"`
+    CardNumber string `json:"card_number" validate:"required,credit_card"`
 }
 ```
 
@@ -318,7 +318,7 @@ Validates that a string **passes the Luhn algorithm** checksum.
 ```go
 type AccountVerification struct {
     // Account number must pass Luhn validation
-    AccountNumber string `json:"account_number" pedantigo:"required,luhn_checksum"`
+    AccountNumber string `json:"account_number" validate:"required,luhn_checksum"`
 }
 ```
 
@@ -332,7 +332,7 @@ Validates that a string is a **valid Bitcoin address** (P2PKH or P2SH format).
 ```go
 type CryptoWallet struct {
     // Bitcoin address for receiving payments
-    BTCAddress string `json:"btc_address" pedantigo:"required,btc_addr"`
+    BTCAddress string `json:"btc_address" validate:"required,btc_addr"`
 }
 ```
 
@@ -346,7 +346,7 @@ Validates that a string is a **valid Bech32-encoded Bitcoin address** (SegWit fo
 ```go
 type ModernWallet struct {
     // SegWit Bitcoin address
-    Address string `json:"address" pedantigo:"required,btc_addr_bech32"`
+    Address string `json:"address" validate:"required,btc_addr_bech32"`
 }
 ```
 
@@ -360,7 +360,7 @@ Validates that a string is a **valid Ethereum address** (0x prefix with 40 hex c
 ```go
 type EthereumWallet struct {
     // Ethereum address for contract interactions
-    Address string `json:"address" pedantigo:"required,eth_addr"`
+    Address string `json:"address" validate:"required,eth_addr"`
 }
 ```
 
@@ -376,11 +376,11 @@ Validates that a string is a **valid ISBN** (International Standard Book Number)
 ```go
 type Book struct {
     // Accept either ISBN-10 or ISBN-13
-    ISBN string `json:"isbn" pedantigo:"required,isbn"`
+    ISBN string `json:"isbn" validate:"required,isbn"`
     // Specifically ISBN-13
-    ISBN13 string `json:"isbn_13" pedantigo:"required,isbn13"`
+    ISBN13 string `json:"isbn_13" validate:"required,isbn13"`
     // Specifically ISBN-10
-    ISBN10 string `json:"isbn_10,omitempty" pedantigo:"isbn10"`
+    ISBN10 string `json:"isbn_10,omitempty" validate:"isbn10"`
 }
 ```
 
@@ -397,7 +397,7 @@ Validates that a string is a **valid ISSN** (International Standard Serial Numbe
 ```go
 type Magazine struct {
     // ISSN for identifying the journal
-    ISSN string `json:"issn" pedantigo:"required,issn"`
+    ISSN string `json:"issn" validate:"required,issn"`
 }
 ```
 
@@ -411,7 +411,7 @@ Validates that a string is a **valid US Social Security Number** format.
 ```go
 type EmployeeInfo struct {
     // US Social Security Number
-    SSN string `json:"ssn" pedantigo:"required,ssn"`
+    SSN string `json:"ssn" validate:"required,ssn"`
 }
 ```
 
@@ -425,7 +425,7 @@ Validates that a string is a **valid US Employer Identification Number** format.
 ```go
 type CompanyInfo struct {
     // US EIN for business identification
-    EIN string `json:"ein" pedantigo:"required,ein"`
+    EIN string `json:"ein" validate:"required,ein"`
 }
 ```
 
@@ -439,7 +439,7 @@ Validates that a string is a **valid E.164 phone number format** (+country code 
 ```go
 type ContactInfo struct {
     // International phone number in E.164 format
-    Phone string `json:"phone" pedantigo:"required,e164"`
+    Phone string `json:"phone" validate:"required,e164"`
 }
 ```
 
@@ -455,7 +455,7 @@ Validates that a string is a **valid JWT** (JSON Web Token) structure.
 ```go
 type AuthToken struct {
     // JWT bearer token
-    Token string `json:"token" pedantigo:"required,jwt"`
+    Token string `json:"token" validate:"required,jwt"`
 }
 ```
 
@@ -469,7 +469,7 @@ Validates that a string is **valid JSON** format.
 ```go
 type ConfigData struct {
     // String containing valid JSON
-    MetadataJSON string `json:"metadata" pedantigo:"required,json"`
+    MetadataJSON string `json:"metadata" validate:"required,json"`
 }
 ```
 
@@ -483,11 +483,11 @@ Validates that a string is **valid Base64 encoding**.
 ```go
 type EncodedData struct {
     // Standard Base64 (may have padding)
-    Data string `json:"data" pedantigo:"required,base64"`
+    Data string `json:"data" validate:"required,base64"`
     // URL-safe Base64 (may have padding)
-    URLSafe string `json:"url_safe" pedantigo:"required,base64url"`
+    URLSafe string `json:"url_safe" validate:"required,base64url"`
     // URL-safe Base64 without padding
-    RawURL string `json:"raw_url" pedantigo:"required,base64rawurl"`
+    RawURL string `json:"raw_url" validate:"required,base64rawurl"`
 }
 ```
 
@@ -507,11 +507,11 @@ Validates that a string is a **valid hash** in the specified algorithm format.
 ```go
 type FileIntegrity struct {
     // MD5 hash (128-bit, 32 hex chars)
-    MD5 string `json:"md5" pedantigo:"required,md5"`
+    MD5 string `json:"md5" validate:"required,md5"`
     // SHA256 hash (256-bit, 64 hex chars)
-    SHA256 string `json:"sha256" pedantigo:"required,sha256"`
+    SHA256 string `json:"sha256" validate:"required,sha256"`
     // SHA512 hash (512-bit, 128 hex chars)
-    SHA512 string `json:"sha512" pedantigo:"required,sha512"`
+    SHA512 string `json:"sha512" validate:"required,sha512"`
 }
 ```
 
@@ -529,7 +529,7 @@ Validates that a string is a **valid MongoDB ObjectID** (24 hex characters).
 ```go
 type MongoDocument struct {
     // MongoDB document identifier
-    ID string `json:"id" pedantigo:"required,mongodb"`
+    ID string `json:"id" validate:"required,mongodb"`
 }
 ```
 
@@ -545,9 +545,9 @@ Validates that a string is a **valid ISO 3166-1 country code**.
 ```go
 type Address struct {
     // ISO 3166-1 alpha-2 code (US, GB, FR, etc.)
-    CountryCode2 string `json:"country_code_2" pedantigo:"required,iso3166_alpha2"`
+    CountryCode2 string `json:"country_code_2" validate:"required,iso3166_alpha2"`
     // ISO 3166-1 alpha-3 code (USA, GBR, FRA, etc.)
-    CountryCode3 string `json:"country_code_3" pedantigo:"required,iso3166_alpha3"`
+    CountryCode3 string `json:"country_code_3" validate:"required,iso3166_alpha3"`
 }
 ```
 
@@ -564,7 +564,7 @@ Validates that a string is a **valid ISO 3166-1 numeric country code**.
 ```go
 type CountryNumeric struct {
     // ISO 3166-1 numeric code (840 for USA, 826 for GB, etc.)
-    Code string `json:"code" pedantigo:"required,iso3166_numeric"`
+    Code string `json:"code" validate:"required,iso3166_numeric"`
 }
 ```
 
@@ -578,7 +578,7 @@ Validates that a string is a **valid ISO 3166-2 subdivision code** (country-subd
 ```go
 type SubdivisionInfo struct {
     // ISO 3166-2 code like US-CA (California), GB-ENG (England)
-    Code string `json:"subdivision" pedantigo:"required,iso3166_2"`
+    Code string `json:"subdivision" validate:"required,iso3166_2"`
 }
 ```
 
@@ -592,7 +592,7 @@ Validates that a string is a **valid ISO 3166-1 code for EU member states only**
 ```go
 type EUAddress struct {
     // Must be an EU country (alpha-2)
-    CountryCode string `json:"country_code" pedantigo:"required,iso3166_alpha2_eu"`
+    CountryCode string `json:"country_code" validate:"required,iso3166_alpha2_eu"`
 }
 ```
 
@@ -608,9 +608,9 @@ Validates that a string is a **valid ISO 4217 currency code**.
 ```go
 type PriceInfo struct {
     // ISO 4217 3-letter currency code
-    Currency string `json:"currency" pedantigo:"required,iso4217"`
+    Currency string `json:"currency" validate:"required,iso4217"`
     // ISO 4217 numeric code
-    CurrencyNumeric string `json:"currency_numeric" pedantigo:"required,iso4217_numeric"`
+    CurrencyNumeric string `json:"currency_numeric" validate:"required,iso4217_numeric"`
 }
 ```
 
@@ -627,11 +627,11 @@ Validates that a string is a **valid postal code** for a specific country. Both 
 ```go
 type InternationalAddress struct {
     // US zipcode (5 or 9 digits)
-    ZipUS string `json:"zip" pedantigo:"required,postcode=US"`
+    ZipUS string `json:"zip" validate:"required,postcode=US"`
     // UK postcode format (using alias)
-    PostcodeUK string `json:"postcode" pedantigo:"required,postcode_iso3166_alpha2=GB"`
+    PostcodeUK string `json:"postcode" validate:"required,postcode_iso3166_alpha2=GB"`
     // Canadian postal code format
-    PostcodeCA string `json:"postal_code" pedantigo:"required,postcode=CA"`
+    PostcodeCA string `json:"postal_code" validate:"required,postcode=CA"`
 }
 ```
 
@@ -649,7 +649,7 @@ Validates that a string is a **valid BCP 47 language tag**.
 ```go
 type LocalizationSettings struct {
     // BCP 47 language tag (en, fr-CA, zh-Hans-CN, etc.)
-    Language string `json:"language" pedantigo:"required,bcp47"`
+    Language string `json:"language" validate:"required,bcp47"`
 }
 ```
 
@@ -665,9 +665,9 @@ Validates that a string or number is a **valid geographic coordinate**.
 ```go
 type GeoLocation struct {
     // Latitude: -90 to 90 degrees
-    Latitude float64 `json:"latitude" pedantigo:"required,latitude"`
+    Latitude float64 `json:"latitude" validate:"required,latitude"`
     // Longitude: -180 to 180 degrees
-    Longitude float64 `json:"longitude" pedantigo:"required,longitude"`
+    Longitude float64 `json:"longitude" validate:"required,longitude"`
 }
 ```
 
@@ -686,11 +686,11 @@ Validates that a string is a **valid color format**.
 ```go
 type ThemeConfig struct {
     // Hexadecimal color
-    PrimaryColor string `json:"primary" pedantigo:"required,hexcolor"`
+    PrimaryColor string `json:"primary" validate:"required,hexcolor"`
     // RGB color
-    SecondaryColor string `json:"secondary" pedantigo:"required,rgb"`
+    SecondaryColor string `json:"secondary" validate:"required,rgb"`
     // RGBA color with transparency
-    TransparentColor string `json:"transparent" pedantigo:"rgba"`
+    TransparentColor string `json:"transparent" validate:"rgba"`
 }
 ```
 
@@ -710,8 +710,8 @@ Validates that a string is a **valid color in any CSS format**. This is a conven
 ```go
 type ThemeConfig struct {
     // Accept any valid CSS color format
-    PrimaryColor string `json:"primary" pedantigo:"required,iscolor"`
-    AccentColor  string `json:"accent" pedantigo:"iscolor"`
+    PrimaryColor string `json:"primary" validate:"required,iscolor"`
+    AccentColor  string `json:"accent" validate:"iscolor"`
 }
 ```
 
@@ -734,7 +734,7 @@ Validates that a string **contains HTML markup**.
 ```go
 type BlogPost struct {
     // Post content must contain HTML
-    Content string `json:"content" pedantigo:"required,html"`
+    Content string `json:"content" validate:"required,html"`
 }
 ```
 
@@ -748,7 +748,7 @@ Validates that a string is a **valid cron expression**.
 ```go
 type ScheduledTask struct {
     // Cron schedule for task execution
-    Schedule string `json:"schedule" pedantigo:"required,cron"`
+    Schedule string `json:"schedule" validate:"required,cron"`
 }
 ```
 
@@ -762,7 +762,7 @@ Validates that a string is a **valid Semantic Version** (major.minor.patch).
 ```go
 type PackageInfo struct {
     // Semantic version for package
-    Version string `json:"version" pedantigo:"required,semver"`
+    Version string `json:"version" validate:"required,semver"`
 }
 ```
 
@@ -776,13 +776,13 @@ Validates that a string matches a **Go time layout format**.
 ```go
 type Event struct {
     // ISO 8601 date format
-    Date string `json:"date" pedantigo:"required,datetime=2006-01-02"`
+    Date string `json:"date" validate:"required,datetime=2006-01-02"`
 
     // Full datetime with seconds
-    Timestamp string `json:"timestamp" pedantigo:"required,datetime=2006-01-02 15:04:05"`
+    Timestamp string `json:"timestamp" validate:"required,datetime=2006-01-02 15:04:05"`
 
     // RFC 3339 format
-    CreatedAt string `json:"created_at" pedantigo:"datetime=2006-01-02T15:04:05Z07:00"`
+    CreatedAt string `json:"created_at" validate:"datetime=2006-01-02T15:04:05Z07:00"`
 }
 ```
 
@@ -807,9 +807,9 @@ Validates that a string is a **valid file or directory path**.
 ```go
 type FileConfig struct {
     // Path to a file
-    FilePath string `json:"file" pedantigo:"required,filepath"`
+    FilePath string `json:"file" validate:"required,filepath"`
     // Path to a directory
-    DirPath string `json:"directory" pedantigo:"required,dirpath"`
+    DirPath string `json:"directory" validate:"required,dirpath"`
 }
 ```
 
@@ -826,9 +826,9 @@ Validates that a path **exists** and is a file or directory respectively.
 ```go
 type ExistingFileConfig struct {
     // File must exist on filesystem
-    ExistingFile string `json:"existing_file" pedantigo:"required,file"`
+    ExistingFile string `json:"existing_file" validate:"required,file"`
     // Directory must exist on filesystem
-    ExistingDir string `json:"existing_dir" pedantigo:"required,dir"`
+    ExistingDir string `json:"existing_dir" validate:"required,dir"`
 }
 ```
 
@@ -842,7 +842,7 @@ Validates that a file path points to a **valid image file** by checking magic by
 ```go
 type UserProfile struct {
     // Avatar must be a valid image file
-    Avatar string `json:"avatar" pedantigo:"required,image"`
+    Avatar string `json:"avatar" validate:"required,image"`
 }
 ```
 
@@ -867,67 +867,67 @@ import (
 
 type UserAccount struct {
     // UUID identifier
-    ID string `json:"id" pedantigo:"required,uuid"`
+    ID string `json:"id" validate:"required,uuid"`
 
     // Email address
-    Email string `json:"email" pedantigo:"required,email"`
+    Email string `json:"email" validate:"required,email"`
 
     // Personal website
-    Website string `json:"website,omitempty" pedantigo:"url"`
+    Website string `json:"website,omitempty" validate:"url"`
 
     // International phone
-    Phone string `json:"phone" pedantigo:"required,e164"`
+    Phone string `json:"phone" validate:"required,e164"`
 
     // Country location
-    Country string `json:"country" pedantigo:"required,iso3166_alpha2"`
+    Country string `json:"country" validate:"required,iso3166_alpha2"`
 
     // Preferred language
-    Language string `json:"language" pedantigo:"required,bcp47"`
+    Language string `json:"language" validate:"required,bcp47"`
 
     // Birth coordinates
-    BirthLatitude float64 `json:"birth_latitude,omitempty" pedantigo:"latitude"`
-    BirthLongitude float64 `json:"birth_longitude,omitempty" pedantigo:"longitude"`
+    BirthLatitude float64 `json:"birth_latitude,omitempty" validate:"latitude"`
+    BirthLongitude float64 `json:"birth_longitude,omitempty" validate:"longitude"`
 
     // Authentication
-    JWTToken string `json:"jwt" pedantigo:"required,jwt"`
+    JWTToken string `json:"jwt" validate:"required,jwt"`
 }
 
 type CompanyInfo struct {
     // Company identifier
-    ID string `json:"id" pedantigo:"required,uuid"`
+    ID string `json:"id" validate:"required,uuid"`
 
     // Official website
-    Website string `json:"website" pedantigo:"required,url"`
+    Website string `json:"website" validate:"required,url"`
 
     // Tax identifier
-    EIN string `json:"ein" pedantigo:"required,ein"`
+    EIN string `json:"ein" validate:"required,ein"`
 
     // Company country (EU only)
-    Country string `json:"country" pedantigo:"required,iso3166_alpha2_eu"`
+    Country string `json:"country" validate:"required,iso3166_alpha2_eu"`
 
     // Operating currency
-    Currency string `json:"currency" pedantigo:"required,iso4217"`
+    Currency string `json:"currency" validate:"required,iso4217"`
 
     // Server IP address
-    ServerIP string `json:"server_ip" pedantigo:"required,ipv4"`
+    ServerIP string `json:"server_ip" validate:"required,ipv4"`
 
     // Network subnet
-    Subnet string `json:"subnet" pedantigo:"required,cidrv4"`
+    Subnet string `json:"subnet" validate:"required,cidrv4"`
 
     // Network interface MAC
-    MacAddress string `json:"mac" pedantigo:"required,mac"`
+    MacAddress string `json:"mac" validate:"required,mac"`
 
     // DNS hostname
-    Hostname string `json:"hostname" pedantigo:"required,hostname_rfc1123"`
+    Hostname string `json:"hostname" validate:"required,hostname_rfc1123"`
 
     // Primary contact port
-    ContactPort int `json:"contact_port" pedantigo:"required,port"`
+    ContactPort int `json:"contact_port" validate:"required,port"`
 
     // Brand color scheme
-    PrimaryColor string `json:"primary_color" pedantigo:"required,hexcolor"`
+    PrimaryColor string `json:"primary_color" validate:"required,hexcolor"`
 
     // Release version
-    SoftwareVersion string `json:"version" pedantigo:"required,semver"`
+    SoftwareVersion string `json:"version" validate:"required,semver"`
 }
 
 func main() {

@@ -157,12 +157,12 @@ package main
 import "github.com/smrutai/pedantigo"
 
 type User struct {
-    Email      string `json:"email" pedantigo:"required,email"`
-    Phone      string `json:"phone" pedantigo:"us_phone"`
+    Email      string `json:"email" validate:"required,email"`
+    Phone      string `json:"phone" validate:"us_phone"`
 }
 
 type Payment struct {
-    CardNumber string `json:"card_number" pedantigo:"required,credit_card"`
+    CardNumber string `json:"card_number" validate:"required,credit_card"`
 }
 
 func main() {
@@ -207,8 +207,8 @@ func ValidateLength(value any, param string) error {
 pedantigo.RegisterValidation("length", ValidateLength)
 
 type Product struct {
-    SKU string `json:"sku" pedantigo:"length=12"` // Exactly 12 chars
-    UPC string `json:"upc" pedantigo:"length=13"` // Exactly 13 chars
+    SKU string `json:"sku" validate:"length=12"` // Exactly 12 chars
+    UPC string `json:"upc" validate:"length=13"` // Exactly 13 chars
 }
 ```
 
@@ -263,7 +263,7 @@ Use `ValidateCtx` instead of `Validate` to pass the context:
 
 ```go
 type User struct {
-    Email string `json:"email" pedantigo:"required,email,db_unique"`
+    Email string `json:"email" validate:"required,email,db_unique"`
 }
 
 func CreateUser(ctx context.Context, data []byte) (*User, error) {
@@ -315,8 +315,8 @@ if err != nil {
 }
 
 type User struct {
-    // Instead of: `pedantigo:"required,alphanum,min=3,max=20"`
-    Username string `json:"username" pedantigo:"username"`
+    // Instead of: `validate:"required,alphanum,min=3,max=20"`
+    Username string `json:"username" validate:"username"`
 }
 ```
 
@@ -330,7 +330,7 @@ if err != nil {
 }
 
 type Theme struct {
-    Primary string `json:"primary" pedantigo:"required,color"`
+    Primary string `json:"primary" validate:"required,color"`
 }
 ```
 
@@ -347,7 +347,7 @@ Pedantigo includes built-in aliases for common patterns:
 ```go
 type Design struct {
     // Accepts any valid CSS color format
-    BackgroundColor string `json:"background" pedantigo:"iscolor"`
+    BackgroundColor string `json:"background" validate:"iscolor"`
 }
 ```
 
@@ -376,9 +376,9 @@ type Validatable interface {
 
 ```go
 type PasswordChange struct {
-    CurrentPassword string `json:"current_password" pedantigo:"required,minLength=8"`
-    NewPassword     string `json:"new_password" pedantigo:"required,minLength=8"`
-    Confirm         string `json:"confirm" pedantigo:"required,eqfield=NewPassword"`
+    CurrentPassword string `json:"current_password" validate:"required,minLength=8"`
+    NewPassword     string `json:"new_password" validate:"required,minLength=8"`
+    Confirm         string `json:"confirm" validate:"required,eqfield=NewPassword"`
 }
 
 // Implement Validatable for custom business logic
@@ -423,15 +423,15 @@ type StructLevelFunc[T any] func(obj *T) error
 
 ```go
 type Order struct {
-    Items      []OrderItem `json:"items" pedantigo:"required"`
-    TotalPrice float64     `json:"total_price" pedantigo:"required,gt=0"`
-    DiscountPercent int    `json:"discount_percent" pedantigo:"min=0,max=100"`
+    Items      []OrderItem `json:"items" validate:"required"`
+    TotalPrice float64     `json:"total_price" validate:"required,gt=0"`
+    DiscountPercent int    `json:"discount_percent" validate:"min=0,max=100"`
 }
 
 type OrderItem struct {
-    Product string  `json:"product" pedantigo:"required"`
-    Qty     int     `json:"qty" pedantigo:"required,min=1"`
-    Price   float64 `json:"price" pedantigo:"required,gt=0"`
+    Product string  `json:"product" validate:"required"`
+    Qty     int     `json:"qty" validate:"required,min=1"`
+    Price   float64 `json:"price" validate:"required,gt=0"`
 }
 
 // Register struct-level validation
@@ -542,7 +542,7 @@ Design validators to be independent and composable with other constraints:
 ```go
 // These work together
 type Username struct {
-    Name string `json:"name" pedantigo:"required,alphanumeric,minLength=3,maxLength=20,username_available"`
+    Name string `json:"name" validate:"required,alphanumeric,minLength=3,maxLength=20,username_available"`
 }
 
 // username_available checks if the username is not in the reserved list
@@ -692,11 +692,11 @@ func ValidateSlug(value any, param string) error {
 }
 
 type ThemeConfig struct {
-    Name          string `json:"name" pedantigo:"required,minLength=3,maxLength=50"`
-    Slug          string `json:"slug" pedantigo:"required,slug"`
-    PrimaryColor  string `json:"primary_color" pedantigo:"required,hex_color"`
-    SecondaryColor string `json:"secondary_color" pedantigo:"hex_color"`
-    AccentColor   string `json:"accent_color" pedantigo:"hex_color"`
+    Name          string `json:"name" validate:"required,minLength=3,maxLength=50"`
+    Slug          string `json:"slug" validate:"required,slug"`
+    PrimaryColor  string `json:"primary_color" validate:"required,hex_color"`
+    SecondaryColor string `json:"secondary_color" validate:"hex_color"`
+    AccentColor   string `json:"accent_color" validate:"hex_color"`
 }
 
 // Validate custom cross-field rules
@@ -708,10 +708,10 @@ func (t ThemeConfig) Validate() error {
 }
 
 type UserProfile struct {
-    Email      string `json:"email" pedantigo:"required,email"`
-    Phone      string `json:"phone" pedantigo:"us_phone"`
-    Theme      ThemeConfig `json:"theme" pedantigo:"required"`
-    Bio        string `json:"bio" pedantigo:"maxLength=500"`
+    Email      string `json:"email" validate:"required,email"`
+    Phone      string `json:"phone" validate:"us_phone"`
+    Theme      ThemeConfig `json:"theme" validate:"required"`
+    Bio        string `json:"bio" validate:"maxLength=500"`
 }
 
 func init() {

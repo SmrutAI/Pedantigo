@@ -235,10 +235,10 @@ func runFormatTest(t *testing.T, tt formatTestCase, fieldName, errMsg string, fv
 // URL format validator types and methods.
 type urlFormatValidator struct{}
 type urlPtrStruct struct {
-	Website *string `json:"website" pedantigo:"url"`
+	Website *string `json:"website" validate:"url"`
 }
 type urlValStruct struct {
-	Website string `json:"website" pedantigo:"url"`
+	Website string `json:"website" validate:"url"`
 }
 
 func (urlFormatValidator) unmarshalPointer(json []byte) (*string, error) {
@@ -255,10 +255,10 @@ func (urlFormatValidator) unmarshalValue(json []byte) (string, error) {
 // UUID format validator types and methods.
 type uuidFormatValidator struct{}
 type uuidPtrStruct struct {
-	ID *string `json:"id" pedantigo:"uuid"`
+	ID *string `json:"id" validate:"uuid"`
 }
 type uuidValStruct struct {
-	ID string `json:"id" pedantigo:"uuid"`
+	ID string `json:"id" validate:"uuid"`
 }
 
 func (uuidFormatValidator) unmarshalPointer(json []byte) (*string, error) {
@@ -275,10 +275,10 @@ func (uuidFormatValidator) unmarshalValue(json []byte) (string, error) {
 // IPv4 format validator types and methods.
 type ipv4FormatValidator struct{}
 type ipv4PtrStruct struct {
-	IP *string `json:"ip" pedantigo:"ipv4"`
+	IP *string `json:"ip" validate:"ipv4"`
 }
 type ipv4ValStruct struct {
-	IP string `json:"ip" pedantigo:"ipv4"`
+	IP string `json:"ip" validate:"ipv4"`
 }
 
 func (ipv4FormatValidator) unmarshalPointer(json []byte) (*string, error) {
@@ -295,10 +295,10 @@ func (ipv4FormatValidator) unmarshalValue(json []byte) (string, error) {
 // IPv6 format validator types and methods.
 type ipv6FormatValidator struct{}
 type ipv6PtrStruct struct {
-	IP *string `json:"ip" pedantigo:"ipv6"`
+	IP *string `json:"ip" validate:"ipv6"`
 }
 type ipv6ValStruct struct {
-	IP string `json:"ip" pedantigo:"ipv6"`
+	IP string `json:"ip" validate:"ipv6"`
 }
 
 func (ipv6FormatValidator) unmarshalPointer(json []byte) (*string, error) {
@@ -339,7 +339,7 @@ func TestRegex_UppercasePattern(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.usePointer {
 				type Code struct {
-					Value *string `json:"value" pedantigo:"regexp=^[A-Z]{3}$"`
+					Value *string `json:"value" validate:"regexp=^[A-Z]{3}$"`
 				}
 				validator := New[Code]()
 				code, err := validator.Unmarshal([]byte(tt.json))
@@ -357,7 +357,7 @@ func TestRegex_UppercasePattern(t *testing.T) {
 				}
 			} else {
 				type Code struct {
-					Value string `json:"value" pedantigo:"regexp=^[A-Z]{3}$"`
+					Value string `json:"value" validate:"regexp=^[A-Z]{3}$"`
 				}
 				validator := New[Code]()
 				code, err := validator.Unmarshal([]byte(tt.json))
@@ -387,7 +387,7 @@ func TestRegex_DigitsPattern(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			type Code struct {
-				Value string `json:"value" pedantigo:"regexp=^\\d{4}$"`
+				Value string `json:"value" validate:"regexp=^\\d{4}$"`
 			}
 			validator := New[Code]()
 			code, err := validator.Unmarshal([]byte(tt.json))
@@ -498,13 +498,13 @@ func TestMinLength(t *testing.T) {
 				// Non-pointer test case
 				// User represents the data structure
 				type User struct {
-					Username string `json:"username" pedantigo:"min=3"`
+					Username string `json:"username" validate:"min=3"`
 				}
 
 				// For empty string test, use min=1
 				if tt.minVal == 1 {
 					type UserMin1 struct {
-						Username string `json:"username" pedantigo:"min=1"`
+						Username string `json:"username" validate:"min=1"`
 					}
 					validator := New[UserMin1]()
 					_, err := validator.Unmarshal([]byte(tt.json))
@@ -551,7 +551,7 @@ func TestMinLength(t *testing.T) {
 				// Pointer test case
 				// User represents the data structure
 				type User struct {
-					Bio *string `json:"bio" pedantigo:"min=10"`
+					Bio *string `json:"bio" validate:"min=10"`
 				}
 
 				validator := New[User]()
@@ -590,16 +590,16 @@ func TestMinLength(t *testing.T) {
 
 // max length test struct types (moved outside to reduce cognitive complexity).
 type userMax10 struct {
-	Username string `json:"username" pedantigo:"max=10"`
+	Username string `json:"username" validate:"max=10"`
 }
 type userMax5 struct {
-	Username string `json:"username" pedantigo:"max=5"`
+	Username string `json:"username" validate:"max=5"`
 }
 type userMinMax struct {
-	Password string `json:"password" pedantigo:"min=8,max=20"`
+	Password string `json:"password" validate:"min=8,max=20"`
 }
 type userBioPtr struct {
-	Bio *string `json:"bio" pedantigo:"max=20"`
+	Bio *string `json:"bio" validate:"max=20"`
 }
 
 // runMaxLengthStringTest handles non-pointer max length tests.
@@ -800,7 +800,7 @@ func TestGt(t *testing.T) {
 			switch tt.valueType {
 			case "int":
 				type Product struct {
-					Stock int `json:"stock" pedantigo:"gt=0"`
+					Stock int `json:"stock" validate:"gt=0"`
 				}
 
 				validator := New[Product]()
@@ -829,7 +829,7 @@ func TestGt(t *testing.T) {
 
 			case "float64":
 				type Product struct {
-					Price float64 `json:"price" pedantigo:"gt=0"`
+					Price float64 `json:"price" validate:"gt=0"`
 				}
 
 				validator := New[Product]()
@@ -858,7 +858,7 @@ func TestGt(t *testing.T) {
 
 			case "uint":
 				type Config struct {
-					Port uint `json:"port" pedantigo:"gt=1024"`
+					Port uint `json:"port" validate:"gt=1024"`
 				}
 
 				validator := New[Config]()
@@ -887,7 +887,7 @@ func TestGt(t *testing.T) {
 
 			case "intPtr":
 				type Product struct {
-					Stock *int `json:"stock" pedantigo:"gt=0"`
+					Stock *int `json:"stock" validate:"gt=0"`
 				}
 
 				validator := New[Product]()
@@ -931,7 +931,7 @@ func TestGt(t *testing.T) {
 // TestGe tests Ge validation.
 func TestGe(t *testing.T) {
 	type Product struct {
-		Stock int `json:"stock" pedantigo:"gte=0"`
+		Stock int `json:"stock" validate:"gte=0"`
 	}
 
 	tests := []struct {
@@ -995,10 +995,10 @@ func TestGe(t *testing.T) {
 
 // ltLteProduct types for lt/lte testing.
 type ltProduct struct {
-	Discount int `json:"discount" pedantigo:"lt=100"`
+	Discount int `json:"discount" validate:"lt=100"`
 }
 type lteProduct struct {
-	Discount int `json:"discount" pedantigo:"lte=100"`
+	Discount int `json:"discount" validate:"lte=100"`
 }
 
 // TestLtLte tests lt and lte constraints in a unified table-driven test.
@@ -1123,7 +1123,7 @@ func TestEnum(t *testing.T) {
 			switch tt.testType {
 			case "string_valid":
 				type User struct {
-					Role string `json:"role" pedantigo:"oneof=admin user guest"`
+					Role string `json:"role" validate:"oneof=admin user guest"`
 				}
 				validator := New[User]()
 				user, err := validator.Unmarshal([]byte(tt.json))
@@ -1132,7 +1132,7 @@ func TestEnum(t *testing.T) {
 
 			case "string_invalid":
 				type User struct {
-					Role string `json:"role" pedantigo:"oneof=admin user guest"`
+					Role string `json:"role" validate:"oneof=admin user guest"`
 				}
 				validator := New[User]()
 				_, err := validator.Unmarshal([]byte(tt.json))
@@ -1149,7 +1149,7 @@ func TestEnum(t *testing.T) {
 
 			case "int_valid":
 				type Status struct {
-					Code int `json:"code" pedantigo:"oneof=200 201 204"`
+					Code int `json:"code" validate:"oneof=200 201 204"`
 				}
 				validator := New[Status]()
 				status, err := validator.Unmarshal([]byte(tt.json))
@@ -1158,7 +1158,7 @@ func TestEnum(t *testing.T) {
 
 			case "int_invalid":
 				type Status struct {
-					Code int `json:"code" pedantigo:"oneof=200 201 204"`
+					Code int `json:"code" validate:"oneof=200 201 204"`
 				}
 				validator := New[Status]()
 				_, err := validator.Unmarshal([]byte(tt.json))
@@ -1175,7 +1175,7 @@ func TestEnum(t *testing.T) {
 
 			case "slice":
 				type Config struct {
-					Roles []string `json:"roles" pedantigo:"dive,oneof=admin user guest"`
+					Roles []string `json:"roles" validate:"dive,oneof=admin user guest"`
 				}
 				validator := New[Config]()
 				_, err := validator.Unmarshal([]byte(tt.json))
@@ -1193,7 +1193,7 @@ func TestEnum(t *testing.T) {
 
 			case "map":
 				type Config struct {
-					Permissions map[string]string `json:"permissions" pedantigo:"dive,oneof=read write execute"`
+					Permissions map[string]string `json:"permissions" validate:"dive,oneof=read write execute"`
 				}
 				validator := New[Config]()
 				_, err := validator.Unmarshal([]byte(tt.json))
@@ -1211,7 +1211,7 @@ func TestEnum(t *testing.T) {
 
 			case "schema":
 				type User struct {
-					Role string `json:"role" pedantigo:"oneof=admin user guest"`
+					Role string `json:"role" validate:"oneof=admin user guest"`
 				}
 				validator := New[User]()
 				schema := validator.Schema()
@@ -1325,7 +1325,7 @@ func TestEq(t *testing.T) {
 			switch tt.testType {
 			case "string_valid":
 				type Message struct {
-					Type string `json:"type" pedantigo:"eq=user"`
+					Type string `json:"type" validate:"eq=user"`
 				}
 				validator := New[Message]()
 				msg, err := validator.Unmarshal([]byte(tt.json))
@@ -1334,7 +1334,7 @@ func TestEq(t *testing.T) {
 
 			case "string_invalid":
 				type Message struct {
-					Type string `json:"type" pedantigo:"eq=user"`
+					Type string `json:"type" validate:"eq=user"`
 				}
 				validator := New[Message]()
 				_, err := validator.Unmarshal([]byte(tt.json))
@@ -1352,7 +1352,7 @@ func TestEq(t *testing.T) {
 
 			case "int_valid":
 				type Config struct {
-					Version int `json:"version" pedantigo:"eq=1"`
+					Version int `json:"version" validate:"eq=1"`
 				}
 				validator := New[Config]()
 				cfg, err := validator.Unmarshal([]byte(tt.json))
@@ -1361,7 +1361,7 @@ func TestEq(t *testing.T) {
 
 			case "int_invalid":
 				type Config struct {
-					Version int `json:"version" pedantigo:"eq=1"`
+					Version int `json:"version" validate:"eq=1"`
 				}
 				validator := New[Config]()
 				_, err := validator.Unmarshal([]byte(tt.json))
@@ -1379,7 +1379,7 @@ func TestEq(t *testing.T) {
 
 			case "float_valid":
 				type Rate struct {
-					Rate float64 `json:"rate" pedantigo:"eq=0.5"`
+					Rate float64 `json:"rate" validate:"eq=0.5"`
 				}
 				validator := New[Rate]()
 				r, err := validator.Unmarshal([]byte(tt.json))
@@ -1388,7 +1388,7 @@ func TestEq(t *testing.T) {
 
 			case "pointer_valid":
 				type Event struct {
-					Kind *string `json:"kind" pedantigo:"eq=event"`
+					Kind *string `json:"kind" validate:"eq=event"`
 				}
 				validator := New[Event]()
 				ev, err := validator.Unmarshal([]byte(tt.json))
@@ -1398,7 +1398,7 @@ func TestEq(t *testing.T) {
 
 			case "pointer_nil":
 				type Event struct {
-					Kind *string `json:"kind" pedantigo:"eq=event"`
+					Kind *string `json:"kind" validate:"eq=event"`
 				}
 				validator := New[Event]()
 				ev, err := validator.Unmarshal([]byte(tt.json))
@@ -1414,7 +1414,7 @@ func TestEqWithCombinedConstraints(t *testing.T) {
 	// eq combined with required
 	t.Run("eq with required", func(t *testing.T) {
 		type APIVersion struct {
-			Version string `json:"version" pedantigo:"required,eq=v1"`
+			Version string `json:"version" validate:"required,eq=v1"`
 		}
 		validator := New[APIVersion]()
 
@@ -1432,7 +1432,7 @@ func TestEqWithCombinedConstraints(t *testing.T) {
 // TestEqBoolValue tests eq constraint with boolean values.
 func TestEqBoolValue(t *testing.T) {
 	type Feature struct {
-		Enabled bool `json:"enabled" pedantigo:"eq=true"`
+		Enabled bool `json:"enabled" validate:"eq=true"`
 	}
 	validator := New[Feature]()
 
@@ -1525,7 +1525,7 @@ func TestNe(t *testing.T) {
 			switch tt.testType {
 			case "string_valid":
 				type Status struct {
-					Status string `json:"status" pedantigo:"ne=banned"`
+					Status string `json:"status" validate:"ne=banned"`
 				}
 				validator := New[Status]()
 				s, err := validator.Unmarshal([]byte(tt.json))
@@ -1534,7 +1534,7 @@ func TestNe(t *testing.T) {
 
 			case "string_invalid":
 				type Status struct {
-					Status string `json:"status" pedantigo:"ne=banned"`
+					Status string `json:"status" validate:"ne=banned"`
 				}
 				validator := New[Status]()
 				_, err := validator.Unmarshal([]byte(tt.json))
@@ -1552,7 +1552,7 @@ func TestNe(t *testing.T) {
 
 			case "int_valid":
 				type Config struct {
-					Version int `json:"version" pedantigo:"ne=0"`
+					Version int `json:"version" validate:"ne=0"`
 				}
 				validator := New[Config]()
 				cfg, err := validator.Unmarshal([]byte(tt.json))
@@ -1561,7 +1561,7 @@ func TestNe(t *testing.T) {
 
 			case "int_invalid":
 				type Config struct {
-					Version int `json:"version" pedantigo:"ne=0"`
+					Version int `json:"version" validate:"ne=0"`
 				}
 				validator := New[Config]()
 				_, err := validator.Unmarshal([]byte(tt.json))
@@ -1579,7 +1579,7 @@ func TestNe(t *testing.T) {
 
 			case "pointer_valid":
 				type Event struct {
-					Kind *string `json:"kind" pedantigo:"ne=banned"`
+					Kind *string `json:"kind" validate:"ne=banned"`
 				}
 				validator := New[Event]()
 				ev, err := validator.Unmarshal([]byte(tt.json))
@@ -1589,7 +1589,7 @@ func TestNe(t *testing.T) {
 
 			case "pointer_nil":
 				type Event struct {
-					Kind *string `json:"kind" pedantigo:"ne=banned"`
+					Kind *string `json:"kind" validate:"ne=banned"`
 				}
 				validator := New[Event]()
 				ev, err := validator.Unmarshal([]byte(tt.json))
@@ -1605,7 +1605,7 @@ func TestNeWithCombinedConstraints(t *testing.T) {
 	// ne combined with required
 	t.Run("ne with required", func(t *testing.T) {
 		type UserStatus struct {
-			Status string `json:"status" pedantigo:"required,ne=deleted"`
+			Status string `json:"status" validate:"required,ne=deleted"`
 		}
 		validator := New[UserStatus]()
 
@@ -1674,7 +1674,7 @@ func TestOneofci(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			type User struct {
-				Role string `json:"role" pedantigo:"oneofci=admin user guest"`
+				Role string `json:"role" validate:"oneofci=admin user guest"`
 			}
 			validator := New[User]()
 			user, err := validator.Unmarshal([]byte(tt.json))
@@ -1703,7 +1703,7 @@ func TestOneofci(t *testing.T) {
 // TestIscolorAlias tests the built-in iscolor alias that expands to color format validators.
 func TestIscolorAlias(t *testing.T) {
 	type Config struct {
-		Color string `json:"color" pedantigo:"iscolor"`
+		Color string `json:"color" validate:"iscolor"`
 	}
 	validator := New[Config]()
 
@@ -1751,7 +1751,7 @@ func TestIscolorAlias(t *testing.T) {
 // TestUriConstraint tests the uri constraint for database and other URI formats.
 func TestUriConstraintIntegration(t *testing.T) {
 	type Config struct {
-		DatabaseURL string `json:"database_url" pedantigo:"uri"`
+		DatabaseURL string `json:"database_url" validate:"uri"`
 	}
 	validator := New[Config]()
 

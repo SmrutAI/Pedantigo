@@ -25,10 +25,10 @@ package main
 import "github.com/smrutai/pedantigo"
 
 type User struct {
-    Email    string `json:"email" pedantigo:"required,email"`
-    Age      int    `json:"age" pedantigo:"required,min=18,max=120"`
-    Username string `json:"username" pedantigo:"required,min=3,max=20"`
-    Website  string `json:"website,omitempty" pedantigo:"url"`
+    Email    string `json:"email" validate:"required,email"`
+    Age      int    `json:"age" validate:"required,min=18,max=120"`
+    Username string `json:"username" validate:"required,min=3,max=20"`
+    Website  string `json:"website,omitempty" validate:"url"`
 }
 ```
 
@@ -176,18 +176,18 @@ Field: username, Error: field is required
 
 | Constraint | Example | Description |
 |------------|---------|-------------|
-| `required` | `pedantigo:"required"` | Field must be present (not missing) |
-| `email` | `pedantigo:"email"` | Must be valid email format |
-| `url` | `pedantigo:"url"` | Must be valid URL |
-| `min`/`max` | `pedantigo:"min=0,max=100"` | Numeric range (int, float) |
-| `minLength`/`maxLength` | `pedantigo:"minLength=3,maxLength=20"` | String length |
-| `minItems`/`maxItems` | `pedantigo:"minItems=1,maxItems=10"` | Array/slice size |
-| `pattern` | `pedantigo:"pattern=^[a-z]+$"` | Regex pattern match |
-| `oneof` | `pedantigo:"oneof=red green blue"` | Must be one of values |
-| `uuid` | `pedantigo:"uuid"` | Valid UUID format |
-| `alpha` | `pedantigo:"alpha"` | Only letters |
-| `alphanumeric` | `pedantigo:"alphanumeric"` | Letters and numbers only |
-| `numeric` | `pedantigo:"numeric"` | Only numbers (string) |
+| `required` | `validate:"required"` | Field must be present (not missing) |
+| `email` | `validate:"email"` | Must be valid email format |
+| `url` | `validate:"url"` | Must be valid URL |
+| `min`/`max` | `validate:"min=0,max=100"` | Numeric range (int, float) |
+| `minLength`/`maxLength` | `validate:"minLength=3,maxLength=20"` | String length |
+| `minItems`/`maxItems` | `validate:"minItems=1,maxItems=10"` | Array/slice size |
+| `pattern` | `validate:"pattern=^[a-z]+$"` | Regex pattern match |
+| `oneof` | `validate:"oneof=red green blue"` | Must be one of values |
+| `uuid` | `validate:"uuid"` | Valid UUID format |
+| `alpha` | `validate:"alpha"` | Only letters |
+| `alphanumeric` | `validate:"alphanumeric"` | Letters and numbers only |
+| `numeric` | `validate:"numeric"` | Only numbers (string) |
 
 See the [Constraints Reference](/docs/concepts/constraints) for the complete list.
 
@@ -205,11 +205,11 @@ import (
 )
 
 type User struct {
-    Email    string `json:"email" pedantigo:"required,email"`
-    Age      int    `json:"age" pedantigo:"required,min=18,max=120"`
-    Username string `json:"username" pedantigo:"required,minLength=3,maxLength=20,alphanumeric"`
-    Website  string `json:"website,omitempty" pedantigo:"url"`
-    Role     string `json:"role" pedantigo:"required,oneof=admin user guest"`
+    Email    string `json:"email" validate:"required,email"`
+    Age      int    `json:"age" validate:"required,min=18,max=120"`
+    Username string `json:"username" validate:"required,minLength=3,maxLength=20,alphanumeric"`
+    Website  string `json:"website,omitempty" validate:"url"`
+    Role     string `json:"role" validate:"required,oneof=admin user guest"`
 }
 
 func main() {

@@ -1235,8 +1235,8 @@ func TestMultiRequiredFieldError_Error(t *testing.T) {
 
 func TestSetFieldValueWithOptions_RequiredFields(t *testing.T) {
 	type Address struct {
-		Street string `json:"street" pedantigo:"required"`
-		City   string `json:"city" pedantigo:"required"`
+		Street string `json:"street" validate:"required"`
+		City   string `json:"city" validate:"required"`
 	}
 
 	type TestStruct struct {
@@ -1255,7 +1255,7 @@ func TestSetFieldValueWithOptions_RequiredFields(t *testing.T) {
 			value: map[string]any{"street": "123 Main St", "city": "NYC"},
 			opts: FieldOptions{
 				StrictMissingFields: true,
-				TagName:             "pedantigo",
+				TagName:             "validate",
 			},
 			wantErr: false,
 		},
@@ -1264,7 +1264,7 @@ func TestSetFieldValueWithOptions_RequiredFields(t *testing.T) {
 			value: map[string]any{"street": "123 Main St"},
 			opts: FieldOptions{
 				StrictMissingFields: true,
-				TagName:             "pedantigo",
+				TagName:             "validate",
 			},
 			wantErr: true,
 		},
@@ -1273,7 +1273,7 @@ func TestSetFieldValueWithOptions_RequiredFields(t *testing.T) {
 			value: map[string]any{"street": "123 Main St"},
 			opts: FieldOptions{
 				StrictMissingFields: false,
-				TagName:             "pedantigo",
+				TagName:             "validate",
 			},
 			wantErr: false,
 		},
@@ -1282,7 +1282,7 @@ func TestSetFieldValueWithOptions_RequiredFields(t *testing.T) {
 			value: map[string]any{"street": "123 Main St"},
 			opts: FieldOptions{
 				StrictMissingFields: true,
-				TagName:             "pedantigo",
+				TagName:             "validate",
 				Path:                "Parent",
 			},
 			wantErr: true,
@@ -1292,7 +1292,7 @@ func TestSetFieldValueWithOptions_RequiredFields(t *testing.T) {
 			value: map[string]any{"street": "123 Main St"},
 			opts: FieldOptions{
 				StrictMissingFields: true,
-				TagName:             "pedantigo",
+				TagName:             "validate",
 				FieldName:           "Address",
 			},
 			wantErr: true,
@@ -1324,8 +1324,8 @@ func TestSetFieldValueWithOptions_RequiredFields(t *testing.T) {
 
 func TestSetFieldValueWithOptions_SliceWithRequiredFields(t *testing.T) {
 	type Item struct {
-		Name  string `json:"name" pedantigo:"required"`
-		Count int    `json:"count" pedantigo:"required"`
+		Name  string `json:"name" validate:"required"`
+		Count int    `json:"count" validate:"required"`
 	}
 
 	type TestStruct struct {
@@ -1346,7 +1346,7 @@ func TestSetFieldValueWithOptions_SliceWithRequiredFields(t *testing.T) {
 			},
 			opts: FieldOptions{
 				StrictMissingFields: true,
-				TagName:             "pedantigo",
+				TagName:             "validate",
 				FieldName:           "Items",
 			},
 			wantErr: false,
@@ -1359,7 +1359,7 @@ func TestSetFieldValueWithOptions_SliceWithRequiredFields(t *testing.T) {
 			},
 			opts: FieldOptions{
 				StrictMissingFields: true,
-				TagName:             "pedantigo",
+				TagName:             "validate",
 				FieldName:           "Items",
 			},
 			wantErr: true,
@@ -1371,7 +1371,7 @@ func TestSetFieldValueWithOptions_SliceWithRequiredFields(t *testing.T) {
 			},
 			opts: FieldOptions{
 				StrictMissingFields: true,
-				TagName:             "pedantigo",
+				TagName:             "validate",
 				FieldName:           "Items",
 			},
 			wantErr: false,
@@ -1401,8 +1401,8 @@ func TestSetFieldValueWithOptions_SliceWithRequiredFields(t *testing.T) {
 
 func TestSetFieldValueWithOptions_MapWithRequiredFields(t *testing.T) {
 	type Data struct {
-		Value int    `json:"value" pedantigo:"required"`
-		Label string `json:"label" pedantigo:"required"`
+		Value int    `json:"value" validate:"required"`
+		Label string `json:"label" validate:"required"`
 	}
 
 	type TestStruct struct {
@@ -1423,7 +1423,7 @@ func TestSetFieldValueWithOptions_MapWithRequiredFields(t *testing.T) {
 			},
 			opts: FieldOptions{
 				StrictMissingFields: true,
-				TagName:             "pedantigo",
+				TagName:             "validate",
 				FieldName:           "Records",
 			},
 			wantErr: false,
@@ -1436,7 +1436,7 @@ func TestSetFieldValueWithOptions_MapWithRequiredFields(t *testing.T) {
 			},
 			opts: FieldOptions{
 				StrictMissingFields: true,
-				TagName:             "pedantigo",
+				TagName:             "validate",
 				FieldName:           "Records",
 			},
 			wantErr: true,
@@ -1448,7 +1448,7 @@ func TestSetFieldValueWithOptions_MapWithRequiredFields(t *testing.T) {
 			},
 			opts: FieldOptions{
 				StrictMissingFields: true,
-				TagName:             "pedantigo",
+				TagName:             "validate",
 				FieldName:           "Records",
 			},
 			wantErr: false,
@@ -1689,7 +1689,7 @@ func TestDeserializeStructFields_RecursiveError(t *testing.T) {
 // TestDeserializeStructFields_MultiRequiredErrorPropagation tests MultiRequiredFieldError propagation.
 func TestDeserializeStructFields_MultiRequiredErrorPropagation(t *testing.T) {
 	type Nested struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 	type Parent struct {
 		Nested Nested `json:"nested"`
@@ -1704,13 +1704,13 @@ func TestDeserializeStructFields_MultiRequiredErrorPropagation(t *testing.T) {
 	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
 		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{
 			StrictMissingFields: true,
-			TagName:             "pedantigo",
+			TagName:             "validate",
 		})
 	}
 
 	err := deserializeStructFields(reflect.ValueOf(&out).Elem(), reflect.TypeOf(out), inputMap, recursiveSet, FieldOptions{
 		StrictMissingFields: true,
-		TagName:             "pedantigo",
+		TagName:             "validate",
 	})
 	require.Error(t, err)
 	var multiErr *MultiRequiredFieldError

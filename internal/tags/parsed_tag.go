@@ -4,10 +4,10 @@ package tags
 // It separates constraints into collection-level, key-level, and element-level.
 //
 // Example tags:
-//   - pedantigo:"min=3"                    -> CollectionConstraints only
-//   - pedantigo:"dive,email"               -> ElementConstraints only (dive present)
-//   - pedantigo:"min=3,dive,min=5"         -> Both collection and element
-//   - pedantigo:"dive,keys,min=2,endkeys,email" -> Map: key + value constraints
+//   - validate:"min=3"                    -> CollectionConstraints only
+//   - validate:"dive,email"               -> ElementConstraints only (dive present)
+//   - validate:"min=3,dive,min=5"         -> Both collection and element
+//   - validate:"dive,keys,min=2,endkeys,email" -> Map: key + value constraints
 type ParsedTag struct {
 	// CollectionConstraints are constraints that apply to the collection itself
 	// (before any dive tag). For slices: min/max = element count.

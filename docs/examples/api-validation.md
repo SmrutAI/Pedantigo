@@ -17,9 +17,9 @@ Pedantigo works with any Go HTTP framework. The pattern is simple:
 
 ```go
 type CreateUserRequest struct {
-    Email    string `json:"email" pedantigo:"required,email"`
-    Username string `json:"username" pedantigo:"required,min=3,max=20"`
-    Age      int    `json:"age" pedantigo:"min=18,max=120"`
+    Email    string `json:"email" validate:"required,email"`
+    Username string `json:"username" validate:"required,min=3,max=20"`
+    Age      int    `json:"age" validate:"min=18,max=120"`
 }
 
 // Works with any HTTP framework
@@ -48,9 +48,9 @@ import (
 )
 
 type CreateUserRequest struct {
-    Email    string `json:"email" pedantigo:"required,email"`
-    Username string `json:"username" pedantigo:"required,min=3,max=20"`
-    Age      int    `json:"age" pedantigo:"required,min=18,max=120"`
+    Email    string `json:"email" validate:"required,email"`
+    Username string `json:"username" validate:"required,min=3,max=20"`
+    Age      int    `json:"age" validate:"required,min=18,max=120"`
 }
 
 type ErrorResponse struct {
@@ -149,9 +149,9 @@ import (
 )
 
 type CreateUserRequest struct {
-    Email    string `json:"email" pedantigo:"required,email"`
-    Username string `json:"username" pedantigo:"required,min=3,max=20"`
-    Age      int    `json:"age" pedantigo:"required,min=18,max=120"`
+    Email    string `json:"email" validate:"required,email"`
+    Username string `json:"username" validate:"required,min=3,max=20"`
+    Age      int    `json:"age" validate:"required,min=18,max=120"`
 }
 
 type ErrorResponse struct {
@@ -224,9 +224,9 @@ import (
 )
 
 type CreateUserRequest struct {
-    Email    string `json:"email" pedantigo:"required,email"`
-    Username string `json:"username" pedantigo:"required,min=3,max=20"`
-    Age      int    `json:"age" pedantigo:"required,min=18,max=120"`
+    Email    string `json:"email" validate:"required,email"`
+    Username string `json:"username" validate:"required,min=3,max=20"`
+    Age      int    `json:"age" validate:"required,min=18,max=120"`
 }
 
 type ErrorResponse struct {
@@ -320,14 +320,14 @@ For nested structs, field paths include the full path:
 
 ```go
 type Address struct {
-    Street string `json:"street" pedantigo:"required,min=5"`
-    City   string `json:"city" pedantigo:"required,min=2"`
-    Zip    string `json:"zip" pedantigo:"required,pattern=^\\d{5}$"`
+    Street string `json:"street" validate:"required,min=5"`
+    City   string `json:"city" validate:"required,min=2"`
+    Zip    string `json:"zip" validate:"required,pattern=^\\d{5}$"`
 }
 
 type CreateUserRequest struct {
-    Email   string  `json:"email" pedantigo:"required,email"`
-    Address Address `json:"address" pedantigo:"required"`
+    Email   string  `json:"email" validate:"required,email"`
+    Address Address `json:"address" validate:"required"`
 }
 
 // Invalid request:
@@ -349,13 +349,13 @@ For validation errors in array elements, the field path includes the index:
 
 ```go
 type CreateOrderRequest struct {
-    Items []OrderItem `json:"items" pedantigo:"required,minItems=1,maxItems=100"`
+    Items []OrderItem `json:"items" validate:"required,minItems=1,maxItems=100"`
 }
 
 type OrderItem struct {
-    ProductID string `json:"product_id" pedantigo:"required,uuid"`
-    Quantity  int    `json:"quantity" pedantigo:"required,min=1,max=999"`
-    Price     float64 `json:"price" pedantigo:"required,gt=0"`
+    ProductID string `json:"product_id" validate:"required,uuid"`
+    Quantity  int    `json:"quantity" validate:"required,min=1,max=999"`
+    Price     float64 `json:"price" validate:"required,gt=0"`
 }
 
 // Error paths:
@@ -381,25 +381,25 @@ import (
 
 // Request types
 type CreateProductRequest struct {
-    Name        string  `json:"name" pedantigo:"required,min=1,max=200"`
-    Description string  `json:"description" pedantigo:"max=2000"`
-    Price       float64 `json:"price" pedantigo:"required,gt=0"`
-    SKU         string  `json:"sku" pedantigo:"required,pattern=^[A-Z0-9-]+$"`
+    Name        string  `json:"name" validate:"required,min=1,max=200"`
+    Description string  `json:"description" validate:"max=2000"`
+    Price       float64 `json:"price" validate:"required,gt=0"`
+    SKU         string  `json:"sku" validate:"required,pattern=^[A-Z0-9-]+$"`
 }
 
 // Response types
 type Product struct {
-    ID          string  `json:"id" pedantigo:"required,uuid"`
-    Name        string  `json:"name" pedantigo:"required"`
+    ID          string  `json:"id" validate:"required,uuid"`
+    Name        string  `json:"name" validate:"required"`
     Description string  `json:"description"`
-    Price       float64 `json:"price" pedantigo:"required,gt=0"`
-    SKU         string  `json:"sku" pedantigo:"required"`
-    CreatedAt   string  `json:"created_at" pedantigo:"required,datetime"`
+    Price       float64 `json:"price" validate:"required,gt=0"`
+    SKU         string  `json:"sku" validate:"required"`
+    CreatedAt   string  `json:"created_at" validate:"required,datetime"`
 }
 
 type CreateProductResponse struct {
-    Success bool    `json:"success" pedantigo:"required"`
-    Product Product `json:"product" pedantigo:"required"`
+    Success bool    `json:"success" validate:"required"`
+    Product Product `json:"product" validate:"required"`
     Message string  `json:"message"`
 }
 
@@ -472,21 +472,21 @@ import (
 )
 
 type CreateUserRequest struct {
-    Email    string `json:"email" pedantigo:"required,email"`
-    Username string `json:"username" pedantigo:"required,min=3,max=20"`
-    Age      int    `json:"age" pedantigo:"required,min=18,max=120"`
+    Email    string `json:"email" validate:"required,email"`
+    Username string `json:"username" validate:"required,min=3,max=20"`
+    Age      int    `json:"age" validate:"required,min=18,max=120"`
 }
 
 type User struct {
-    ID        string `json:"id" pedantigo:"required,uuid"`
-    Email     string `json:"email" pedantigo:"required,email"`
-    Username  string `json:"username" pedantigo:"required"`
-    Age       int    `json:"age" pedantigo:"required"`
-    CreatedAt string `json:"created_at" pedantigo:"required,datetime"`
+    ID        string `json:"id" validate:"required,uuid"`
+    Email     string `json:"email" validate:"required,email"`
+    Username  string `json:"username" validate:"required"`
+    Age       int    `json:"age" validate:"required"`
+    CreatedAt string `json:"created_at" validate:"required,datetime"`
 }
 
 type APIResponse struct {
-    Success bool   `json:"success" pedantigo:"required"`
+    Success bool   `json:"success" validate:"required"`
     Data    *User  `json:"data"`
     Message string `json:"message"`
 }
@@ -658,38 +658,38 @@ import (
 
 // Request DTOs
 type CreateProductRequest struct {
-    Name        string  `json:"name" pedantigo:"required,min=1,max=200"`
-    Description string  `json:"description" pedantigo:"max=2000"`
-    Price       float64 `json:"price" pedantigo:"required,gt=0"`
-    StockQty    int     `json:"stock_qty" pedantigo:"required,min=0"`
+    Name        string  `json:"name" validate:"required,min=1,max=200"`
+    Description string  `json:"description" validate:"max=2000"`
+    Price       float64 `json:"price" validate:"required,gt=0"`
+    StockQty    int     `json:"stock_qty" validate:"required,min=0"`
 }
 
 type UpdateProductRequest struct {
-    Name        *string  `json:"name" pedantigo:"min=1,max=200"`
-    Description *string  `json:"description" pedantigo:"max=2000"`
-    Price       *float64 `json:"price" pedantigo:"gt=0"`
-    StockQty    *int     `json:"stock_qty" pedantigo:"min=0"`
+    Name        *string  `json:"name" validate:"min=1,max=200"`
+    Description *string  `json:"description" validate:"max=2000"`
+    Price       *float64 `json:"price" validate:"gt=0"`
+    StockQty    *int     `json:"stock_qty" validate:"min=0"`
 }
 
 // Response DTOs
 type Product struct {
-    ID          string  `json:"id" pedantigo:"required,uuid"`
-    Name        string  `json:"name" pedantigo:"required"`
+    ID          string  `json:"id" validate:"required,uuid"`
+    Name        string  `json:"name" validate:"required"`
     Description string  `json:"description"`
-    Price       float64 `json:"price" pedantigo:"required,gt=0"`
-    StockQty    int     `json:"stock_qty" pedantigo:"required,min=0"`
-    CreatedAt   string  `json:"created_at" pedantigo:"required"`
+    Price       float64 `json:"price" validate:"required,gt=0"`
+    StockQty    int     `json:"stock_qty" validate:"required,min=0"`
+    CreatedAt   string  `json:"created_at" validate:"required"`
 }
 
 type ListResponse struct {
-    Success bool      `json:"success" pedantigo:"required"`
-    Data    []Product `json:"data" pedantigo:"required"`
-    Count   int       `json:"count" pedantigo:"required,min=0"`
+    Success bool      `json:"success" validate:"required"`
+    Data    []Product `json:"data" validate:"required"`
+    Count   int       `json:"count" validate:"required,min=0"`
 }
 
 type SingleResponse struct {
-    Success bool    `json:"success" pedantigo:"required"`
-    Data    Product `json:"data" pedantigo:"required"`
+    Success bool    `json:"success" validate:"required"`
+    Data    Product `json:"data" validate:"required"`
 }
 
 // Database (simulated)

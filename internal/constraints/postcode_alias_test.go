@@ -13,7 +13,7 @@ func TestPostcodeISO3166Alpha2Alias(t *testing.T) {
 	// Test 1: US postcode via alias - valid
 	t.Run("US postcode via alias valid", func(t *testing.T) {
 		type Form struct {
-			Zip string `json:"zip" pedantigo:"postcode_iso3166_alpha2=US"`
+			Zip string `json:"zip" validate:"postcode_iso3166_alpha2=US"`
 		}
 		validator := pedantigo.New[Form]()
 		err := validator.Validate(&Form{Zip: "90210"})
@@ -23,7 +23,7 @@ func TestPostcodeISO3166Alpha2Alias(t *testing.T) {
 	// Test 2: US postcode via alias - invalid
 	t.Run("US postcode via alias invalid", func(t *testing.T) {
 		type Form struct {
-			Zip string `json:"zip" pedantigo:"postcode_iso3166_alpha2=US"`
+			Zip string `json:"zip" validate:"postcode_iso3166_alpha2=US"`
 		}
 		validator := pedantigo.New[Form]()
 		err := validator.Validate(&Form{Zip: "invalid"})
@@ -33,7 +33,7 @@ func TestPostcodeISO3166Alpha2Alias(t *testing.T) {
 	// Test 3: UK postcode via alias
 	t.Run("UK postcode via alias", func(t *testing.T) {
 		type Form struct {
-			Postcode string `json:"postcode" pedantigo:"postcode_iso3166_alpha2=GB"`
+			Postcode string `json:"postcode" validate:"postcode_iso3166_alpha2=GB"`
 		}
 		validator := pedantigo.New[Form]()
 		err := validator.Validate(&Form{Postcode: "SW1A 1AA"})
@@ -43,10 +43,10 @@ func TestPostcodeISO3166Alpha2Alias(t *testing.T) {
 	// Test 4: Both syntaxes produce same result
 	t.Run("alias identical to original", func(t *testing.T) {
 		type FormOriginal struct {
-			Zip string `json:"zip" pedantigo:"postcode=US"`
+			Zip string `json:"zip" validate:"postcode=US"`
 		}
 		type FormAlias struct {
-			Zip string `json:"zip" pedantigo:"postcode_iso3166_alpha2=US"`
+			Zip string `json:"zip" validate:"postcode_iso3166_alpha2=US"`
 		}
 
 		validatorOrig := pedantigo.New[FormOriginal]()
@@ -68,7 +68,7 @@ func TestPostcodeISO3166Alpha2Alias(t *testing.T) {
 	// Test 5: Empty string passes (not required)
 	t.Run("empty string passes", func(t *testing.T) {
 		type Form struct {
-			Zip string `json:"zip" pedantigo:"postcode_iso3166_alpha2=US"`
+			Zip string `json:"zip" validate:"postcode_iso3166_alpha2=US"`
 		}
 		validator := pedantigo.New[Form]()
 		err := validator.Validate(&Form{Zip: ""})

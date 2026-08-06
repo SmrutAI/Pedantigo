@@ -16,7 +16,7 @@ import (
 type FieldOptions struct {
 	// StrictMissingFields controls whether missing required fields cause errors.
 	StrictMissingFields bool
-	// TagName is the struct tag name to parse (e.g., "pedantigo" or "validate").
+	// TagName is the struct tag name to parse (default "validate"; e.g., "binding" for Gin).
 	TagName string
 	// Path is the current field path for error reporting (e.g., "Items[0]").
 	Path string

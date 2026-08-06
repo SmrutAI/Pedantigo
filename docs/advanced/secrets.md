@@ -60,13 +60,13 @@ func (s *SecretStr) UnmarshalJSON(data []byte) error
 ```go
 type Config struct {
     // Database connection string (sensitive)
-    DatabaseURL SecretStr `json:"database_url" pedantigo:"required"`
+    DatabaseURL SecretStr `json:"database_url" validate:"required"`
 
     // API authentication token
-    APIToken SecretStr `json:"api_token" pedantigo:"required,min=20"`
+    APIToken SecretStr `json:"api_token" validate:"required,min=20"`
 
     // Webhook secret for signature verification
-    WebhookSecret SecretStr `json:"webhook_secret" pedantigo:"required"`
+    WebhookSecret SecretStr `json:"webhook_secret" validate:"required"`
 }
 ```
 
@@ -143,13 +143,13 @@ import (
 
 type AppConfig struct {
     // Database credentials
-    DatabaseURL SecretStr `json:"database_url" pedantigo:"required"`
+    DatabaseURL SecretStr `json:"database_url" validate:"required"`
 
     // External service API key
-    ExternalAPIKey SecretStr `json:"external_api_key" pedantigo:"required,min=20"`
+    ExternalAPIKey SecretStr `json:"external_api_key" validate:"required,min=20"`
 
     // Application name (not sensitive)
-    AppName string `json:"app_name" pedantigo:"required,min=1"`
+    AppName string `json:"app_name" validate:"required,min=1"`
 }
 
 func main() {
@@ -232,7 +232,7 @@ Since JSON cannot represent raw binary data, `SecretBytes` expects **base64-enco
 ```go
 type EncryptionConfig struct {
     // Encryption key as base64-encoded bytes
-    EncryptionKey SecretBytes `json:"encryption_key" pedantigo:"required"`
+    EncryptionKey SecretBytes `json:"encryption_key" validate:"required"`
 }
 
 // JSON must contain base64-encoded value
@@ -265,13 +265,13 @@ import (
 
 type SecurityConfig struct {
     // 32-byte AES-256 encryption key (base64-encoded in JSON)
-    EncryptionKey SecretBytes `json:"encryption_key" pedantigo:"required"`
+    EncryptionKey SecretBytes `json:"encryption_key" validate:"required"`
 
     // HMAC key for signature verification
-    HMACKey SecretBytes `json:"hmac_key" pedantigo:"required"`
+    HMACKey SecretBytes `json:"hmac_key" validate:"required"`
 
     // Security level
-    Level string `json:"level" pedantigo:"required,oneof=low medium high"`
+    Level string `json:"level" validate:"required,oneof=low medium high"`
 }
 
 func main() {
@@ -338,20 +338,20 @@ import (
 
 type ServerConfig struct {
     // Server basics
-    Host string `json:"host" pedantigo:"required"`
-    Port int    `json:"port" pedantigo:"required,min=1,max=65535"`
+    Host string `json:"host" validate:"required"`
+    Port int    `json:"port" validate:"required,min=1,max=65535"`
 
     // Secrets - string-based
-    JWTSecret  SecretStr `json:"jwt_secret" pedantigo:"required,min=32"`
-    APIKey     SecretStr `json:"api_key" pedantigo:"required"`
+    JWTSecret  SecretStr `json:"jwt_secret" validate:"required,min=32"`
+    APIKey     SecretStr `json:"api_key" validate:"required"`
 
     // Secrets - binary (base64-encoded)
-    TLSCert SecretBytes `json:"tls_cert" pedantigo:"required"`
-    TLSKey  SecretBytes `json:"tls_key" pedantigo:"required"`
+    TLSCert SecretBytes `json:"tls_cert" validate:"required"`
+    TLSKey  SecretBytes `json:"tls_key" validate:"required"`
 
     // Non-sensitive fields
-    Environment string `json:"environment" pedantigo:"required,oneof=dev staging prod"`
-    Timeout     int    `json:"timeout" pedantigo:"min=1,max=300"`
+    Environment string `json:"environment" validate:"required,oneof=dev staging prod"`
+    Timeout     int    `json:"timeout" validate:"min=1,max=300"`
 }
 
 func main() {
@@ -479,8 +479,8 @@ type Config struct {
 ```go
 // Good: Add validation constraints
 type Config struct {
-    APIKey SecretStr `json:"api_key" pedantigo:"required,min=20,max=100"`
-    Secret SecretStr `json:"secret" pedantigo:"required"`
+    APIKey SecretStr `json:"api_key" validate:"required,min=20,max=100"`
+    Secret SecretStr `json:"secret" validate:"required"`
 }
 
 // This ensures:
@@ -508,7 +508,7 @@ Both `SecretStr` and `SecretBytes` report validation errors without exposing sec
 
 ```go
 type Config struct {
-    APIKey SecretStr `json:"api_key" pedantigo:"required,min=32"`
+    APIKey SecretStr `json:"api_key" validate:"required,min=32"`
 }
 
 // If validation fails, error message won't contain the actual secret

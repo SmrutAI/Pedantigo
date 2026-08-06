@@ -34,24 +34,24 @@ func checkValidationErrorWithField(t *testing.T, err error, wantErr bool, wantFi
 func TestRequiredIf(t *testing.T) {
 	type FormStringCondition struct {
 		Country string `json:"country"`
-		State   string `json:"state" pedantigo:"required_if=Country US"`
+		State   string `json:"state" validate:"required_if=Country US"`
 	}
 
 	type FormBoolCondition struct {
 		IsPremium      bool   `json:"is_premium"`
-		PremiumFeature string `json:"premium_feature" pedantigo:"required_if=IsPremium true"`
+		PremiumFeature string `json:"premium_feature" validate:"required_if=IsPremium true"`
 	}
 
 	type FormIntCondition struct {
 		Status       int    `json:"status"`
-		TrackingCode string `json:"tracking_code" pedantigo:"required_if=Status 2"`
+		TrackingCode string `json:"tracking_code" validate:"required_if=Status 2"`
 	}
 
 	type FormMultiple struct {
 		Country  string `json:"country"`
 		Domestic bool   `json:"domestic"`
-		State    string `json:"state" pedantigo:"required_if=Country US"`
-		TaxID    string `json:"tax_id" pedantigo:"required_if=Domestic true"`
+		State    string `json:"state" validate:"required_if=Country US"`
+		TaxID    string `json:"tax_id" validate:"required_if=Domestic true"`
 	}
 
 	tests := []struct {
@@ -189,19 +189,19 @@ func TestRequiredIf(t *testing.T) {
 func TestRequiredUnless(t *testing.T) {
 	type FormStringCondition struct {
 		Status   string `json:"status"`
-		Password string `json:"password" pedantigo:"required_unless=Status guest"`
+		Password string `json:"password" validate:"required_unless=Status guest"`
 	}
 
 	type FormBoolCondition struct {
 		Automated   bool   `json:"automated"`
-		CaptchaCode string `json:"captcha_code" pedantigo:"required_unless=Automated true"`
+		CaptchaCode string `json:"captcha_code" validate:"required_unless=Automated true"`
 	}
 
 	type FormMultiple struct {
 		UserType     string `json:"user_type"`
 		IsBot        bool   `json:"is_bot"`
-		Email        string `json:"email" pedantigo:"required_unless=UserType anonymous"`
-		Verification string `json:"verification" pedantigo:"required_unless=IsBot true"`
+		Email        string `json:"email" validate:"required_unless=UserType anonymous"`
+		Verification string `json:"verification" validate:"required_unless=IsBot true"`
 	}
 
 	tests := []struct {
@@ -307,24 +307,24 @@ func TestRequiredUnless(t *testing.T) {
 func TestRequiredWith(t *testing.T) {
 	type FormStringCondition struct {
 		Method string `json:"method"`
-		Token  string `json:"token" pedantigo:"required_with=Method"`
+		Token  string `json:"token" validate:"required_with=Method"`
 	}
 
 	type FormIntCondition struct {
 		Quantity  int    `json:"quantity"`
-		Warehouse string `json:"warehouse" pedantigo:"required_with=Quantity"`
+		Warehouse string `json:"warehouse" validate:"required_with=Quantity"`
 	}
 
 	type FormBoolCondition struct {
 		Enabled bool   `json:"enabled"`
-		Config  string `json:"config" pedantigo:"required_with=Enabled"`
+		Config  string `json:"config" validate:"required_with=Enabled"`
 	}
 
 	type FormMultiple struct {
 		GuestName     string `json:"guest_name"`
 		Phone         string `json:"phone"`
-		Address       string `json:"address" pedantigo:"required_with=GuestName"`
-		EmergencyName string `json:"emergency_name" pedantigo:"required_with=Phone"`
+		Address       string `json:"address" validate:"required_with=GuestName"`
+		EmergencyName string `json:"emergency_name" validate:"required_with=Phone"`
 	}
 
 	tests := []struct {
@@ -440,24 +440,24 @@ func TestRequiredWith(t *testing.T) {
 func TestRequiredWithout(t *testing.T) {
 	type FormStringCondition struct {
 		DefaultAddress string `json:"default_address"`
-		CustomAddress  string `json:"custom_address" pedantigo:"required_without=DefaultAddress"`
+		CustomAddress  string `json:"custom_address" validate:"required_without=DefaultAddress"`
 	}
 
 	type FormIntCondition struct {
 		FixedAmount    int    `json:"fixed_amount"`
-		PercentageCode string `json:"percentage_code" pedantigo:"required_without=FixedAmount"`
+		PercentageCode string `json:"percentage_code" validate:"required_without=FixedAmount"`
 	}
 
 	type FormBoolCondition struct {
 		UseDefault bool   `json:"use_default"`
-		CustomRule string `json:"custom_rule" pedantigo:"required_without=UseDefault"`
+		CustomRule string `json:"custom_rule" validate:"required_without=UseDefault"`
 	}
 
 	type FormMultiple struct {
 		WarehouseLocation string `json:"warehouse_location"`
 		ShippingLabel     string `json:"shipping_label"`
-		StorageBox        string `json:"storage_box" pedantigo:"required_without=WarehouseLocation"`
-		ShippingTracking  string `json:"shipping_tracking" pedantigo:"required_without=ShippingLabel"`
+		StorageBox        string `json:"storage_box" validate:"required_without=WarehouseLocation"`
+		ShippingTracking  string `json:"shipping_tracking" validate:"required_without=ShippingLabel"`
 	}
 
 	tests := []struct {
@@ -584,11 +584,11 @@ func TestCrossFieldConstraints(t *testing.T) {
 		type UserProfile struct {
 			AccountType      string `json:"account_type"`
 			IsVerified       bool   `json:"is_verified"`
-			BusinessName     string `json:"business_name" pedantigo:"required_if=AccountType business"`
-			TaxID            string `json:"tax_id" pedantigo:"required_if=AccountType business"`
-			VerificationDoc  string `json:"verification_doc" pedantigo:"required_if=IsVerified true"`
-			BackupEmail      string `json:"backup_email" pedantigo:"required_unless=AccountType government"`
-			NotificationPref string `json:"notification_pref" pedantigo:"required_with=BackupEmail"`
+			BusinessName     string `json:"business_name" validate:"required_if=AccountType business"`
+			TaxID            string `json:"tax_id" validate:"required_if=AccountType business"`
+			VerificationDoc  string `json:"verification_doc" validate:"required_if=IsVerified true"`
+			BackupEmail      string `json:"backup_email" validate:"required_unless=AccountType government"`
+			NotificationPref string `json:"notification_pref" validate:"required_with=BackupEmail"`
 		}
 		validator := pedantigo.New[UserProfile]()
 		err := validator.Validate(&UserProfile{
@@ -607,11 +607,11 @@ func TestCrossFieldConstraints(t *testing.T) {
 		type UserProfile struct {
 			AccountType      string `json:"account_type"`
 			IsVerified       bool   `json:"is_verified"`
-			BusinessName     string `json:"business_name" pedantigo:"required_if=AccountType business"`
-			TaxID            string `json:"tax_id" pedantigo:"required_if=AccountType business"`
-			VerificationDoc  string `json:"verification_doc" pedantigo:"required_if=IsVerified true"`
-			BackupEmail      string `json:"backup_email" pedantigo:"required_unless=AccountType government"`
-			NotificationPref string `json:"notification_pref" pedantigo:"required_with=BackupEmail"`
+			BusinessName     string `json:"business_name" validate:"required_if=AccountType business"`
+			TaxID            string `json:"tax_id" validate:"required_if=AccountType business"`
+			VerificationDoc  string `json:"verification_doc" validate:"required_if=IsVerified true"`
+			BackupEmail      string `json:"backup_email" validate:"required_unless=AccountType government"`
+			NotificationPref string `json:"notification_pref" validate:"required_with=BackupEmail"`
 		}
 		validator := pedantigo.New[UserProfile]()
 		err := validator.Validate(&UserProfile{
@@ -630,11 +630,11 @@ func TestCrossFieldConstraints(t *testing.T) {
 		type UserProfile struct {
 			AccountType      string `json:"account_type"`
 			IsVerified       bool   `json:"is_verified"`
-			BusinessName     string `json:"business_name" pedantigo:"required_if=AccountType business"`
-			TaxID            string `json:"tax_id" pedantigo:"required_if=AccountType business"`
-			VerificationDoc  string `json:"verification_doc" pedantigo:"required_if=IsVerified true"`
-			BackupEmail      string `json:"backup_email" pedantigo:"required_unless=AccountType government"`
-			NotificationPref string `json:"notification_pref" pedantigo:"required_with=BackupEmail"`
+			BusinessName     string `json:"business_name" validate:"required_if=AccountType business"`
+			TaxID            string `json:"tax_id" validate:"required_if=AccountType business"`
+			VerificationDoc  string `json:"verification_doc" validate:"required_if=IsVerified true"`
+			BackupEmail      string `json:"backup_email" validate:"required_unless=AccountType government"`
+			NotificationPref string `json:"notification_pref" validate:"required_with=BackupEmail"`
 		}
 		validator := pedantigo.New[UserProfile]()
 		err := validator.Validate(&UserProfile{
@@ -653,11 +653,11 @@ func TestCrossFieldConstraints(t *testing.T) {
 		type UserProfile struct {
 			AccountType      string `json:"account_type"`
 			IsVerified       bool   `json:"is_verified"`
-			BusinessName     string `json:"business_name" pedantigo:"required_if=AccountType business"`
-			TaxID            string `json:"tax_id" pedantigo:"required_if=AccountType business"`
-			VerificationDoc  string `json:"verification_doc" pedantigo:"required_if=IsVerified true"`
-			BackupEmail      string `json:"backup_email" pedantigo:"required_unless=AccountType government"`
-			NotificationPref string `json:"notification_pref" pedantigo:"required_with=BackupEmail"`
+			BusinessName     string `json:"business_name" validate:"required_if=AccountType business"`
+			TaxID            string `json:"tax_id" validate:"required_if=AccountType business"`
+			VerificationDoc  string `json:"verification_doc" validate:"required_if=IsVerified true"`
+			BackupEmail      string `json:"backup_email" validate:"required_unless=AccountType government"`
+			NotificationPref string `json:"notification_pref" validate:"required_with=BackupEmail"`
 		}
 		validator := pedantigo.New[UserProfile]()
 		err := validator.Validate(&UserProfile{
@@ -676,8 +676,8 @@ func TestCrossFieldConstraints(t *testing.T) {
 		type Form struct {
 			Field1 string `json:"field1"`
 			Field2 string `json:"field2"`
-			Field3 string `json:"field3" pedantigo:"required_if=Field1 trigger"`
-			Field4 string `json:"field4" pedantigo:"required_unless=Field2 skip"`
+			Field3 string `json:"field3" validate:"required_if=Field1 trigger"`
+			Field4 string `json:"field4" validate:"required_unless=Field2 skip"`
 		}
 		validator := pedantigo.New[Form]()
 		require.NotNil(t, validator, "validator creation failed")
@@ -692,7 +692,7 @@ func TestCrossFieldConstraints(t *testing.T) {
 	t.Run("zero value distinction", func(t *testing.T) {
 		type Form struct {
 			TriggerField string `json:"trigger_field"`
-			TargetField  string `json:"target_field" pedantigo:"required_with=TriggerField"`
+			TargetField  string `json:"target_field" validate:"required_with=TriggerField"`
 		}
 		validator := pedantigo.New[Form]()
 		err := validator.Validate(&Form{
@@ -706,7 +706,7 @@ func TestCrossFieldConstraints(t *testing.T) {
 		type Form struct {
 			privateField string
 			PublicField  string `json:"public_field"`
-			Conditional  string `json:"conditional" pedantigo:"required_if=PublicField trigger"`
+			Conditional  string `json:"conditional" validate:"required_if=PublicField trigger"`
 		}
 		validator := pedantigo.New[Form]()
 		err := validator.Validate(&Form{
@@ -721,7 +721,7 @@ func TestCrossFieldConstraints(t *testing.T) {
 		type Form struct {
 			privateField string
 			PublicField  string `json:"public_field"`
-			Conditional  string `json:"conditional" pedantigo:"required_if=PublicField trigger"`
+			Conditional  string `json:"conditional" validate:"required_if=PublicField trigger"`
 		}
 		validator := pedantigo.New[Form]()
 		err := validator.Validate(&Form{
@@ -735,7 +735,7 @@ func TestCrossFieldConstraints(t *testing.T) {
 	t.Run("reflect value handling", func(t *testing.T) {
 		type Form struct {
 			Status string `json:"status"`
-			Detail string `json:"detail" pedantigo:"required_if=Status complete"`
+			Detail string `json:"detail" validate:"required_if=Status complete"`
 		}
 		validator := pedantigo.New[Form]()
 		form := Form{

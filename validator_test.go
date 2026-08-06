@@ -22,7 +22,7 @@ const testMsgIsRequired = "is required"
 // TestValidator_Required_Present tests Validator required present.
 func TestValidator_Required_Present(t *testing.T) {
 	type User struct {
-		Email string `pedantigo:"required"`
+		Email string `validate:"required"`
 	}
 
 	validator := New[User]()
@@ -34,7 +34,7 @@ func TestValidator_Required_Present(t *testing.T) {
 
 func TestValidator_Min_BelowMinimum(t *testing.T) {
 	type User struct {
-		Age int `pedantigo:"min=18"`
+		Age int `validate:"min=18"`
 	}
 
 	validator := New[User]()
@@ -46,7 +46,7 @@ func TestValidator_Min_BelowMinimum(t *testing.T) {
 
 func TestValidator_Min_AtMinimum(t *testing.T) {
 	type User struct {
-		Age int `pedantigo:"min=18"`
+		Age int `validate:"min=18"`
 	}
 
 	validator := New[User]()
@@ -58,7 +58,7 @@ func TestValidator_Min_AtMinimum(t *testing.T) {
 
 func TestValidator_Max_AboveMaximum(t *testing.T) {
 	type User struct {
-		Age int `pedantigo:"max=120"`
+		Age int `validate:"max=120"`
 	}
 
 	validator := New[User]()
@@ -70,7 +70,7 @@ func TestValidator_Max_AboveMaximum(t *testing.T) {
 
 func TestValidator_Max_AtMaximum(t *testing.T) {
 	type User struct {
-		Age int `pedantigo:"max=120"`
+		Age int `validate:"max=120"`
 	}
 
 	validator := New[User]()
@@ -82,7 +82,7 @@ func TestValidator_Max_AtMaximum(t *testing.T) {
 
 func TestValidator_MinMax_InRange(t *testing.T) {
 	type User struct {
-		Age int `pedantigo:"min=18,max=120"`
+		Age int `validate:"min=18,max=120"`
 	}
 
 	validator := New[User]()
@@ -94,8 +94,8 @@ func TestValidator_MinMax_InRange(t *testing.T) {
 
 // Test type for cross-field validation.
 type testPasswordChange struct {
-	Password string `pedantigo:"required"`
-	Confirm  string `pedantigo:"required"`
+	Password string `validate:"required"`
+	Confirm  string `validate:"required"`
 }
 
 func (vpc *testPasswordChange) Validate() error {
@@ -137,9 +137,9 @@ func TestValidator_CrossField_PasswordConfirmation(t *testing.T) {
 // TestMarshal_Valid verifies that Marshal returns JSON for valid structs.
 func TestMarshal_Valid(t *testing.T) {
 	type User struct {
-		Name  string `json:"name" pedantigo:"min=2"`
-		Email string `json:"email" pedantigo:"email"`
-		Age   int    `json:"age" pedantigo:"min=18,max=120"`
+		Name  string `json:"name" validate:"min=2"`
+		Email string `json:"email" validate:"email"`
+		Age   int    `json:"age" validate:"min=18,max=120"`
 	}
 
 	validator := New[User]()
@@ -164,9 +164,9 @@ func TestMarshal_Valid(t *testing.T) {
 // TestMarshal_Invalid verifies that Marshal returns validation errors for invalid structs.
 func TestMarshal_Invalid(t *testing.T) {
 	type User struct {
-		Name  string `json:"name" pedantigo:"min=2"`
-		Email string `json:"email" pedantigo:"email"`
-		Age   int    `json:"age" pedantigo:"min=18"`
+		Name  string `json:"name" validate:"min=2"`
+		Email string `json:"email" validate:"email"`
+		Age   int    `json:"age" validate:"min=18"`
 	}
 
 	validator := New[User]()
@@ -202,7 +202,7 @@ func TestMarshal_Invalid(t *testing.T) {
 // TestMarshal_Nil verifies that Marshal handles nil pointer appropriately.
 func TestMarshal_Nil(t *testing.T) {
 	type User struct {
-		Name string `json:"name" pedantigo:"min=2"`
+		Name string `json:"name" validate:"min=2"`
 	}
 
 	validator := New[User]()
@@ -226,8 +226,8 @@ func TestMarshal_Nil(t *testing.T) {
 // TestUnmarshal_ValidJSON tests Unmarshal validjson.
 func TestUnmarshal_ValidJSON(t *testing.T) {
 	type User struct {
-		Email string `json:"email" pedantigo:"required"`
-		Age   int    `json:"age" pedantigo:"min=18"`
+		Email string `json:"email" validate:"required"`
+		Age   int    `json:"age" validate:"min=18"`
 	}
 
 	validator := New[User]()
@@ -243,7 +243,7 @@ func TestUnmarshal_ValidJSON(t *testing.T) {
 
 func TestUnmarshal_InvalidJSON(t *testing.T) {
 	type User struct {
-		Email string `json:"email" pedantigo:"required"`
+		Email string `json:"email" validate:"required"`
 	}
 
 	validator := New[User]()
@@ -256,8 +256,8 @@ func TestUnmarshal_InvalidJSON(t *testing.T) {
 
 func TestUnmarshal_ValidationError(t *testing.T) {
 	type User struct {
-		Email string `json:"email" pedantigo:"required,email"`
-		Age   int    `json:"age" pedantigo:"min=18"`
+		Email string `json:"email" validate:"required,email"`
+		Age   int    `json:"age" validate:"min=18"`
 	}
 
 	validator := New[User]()
@@ -297,9 +297,9 @@ func TestUnmarshal_ValidationError(t *testing.T) {
 
 func TestUnmarshal_DefaultValues(t *testing.T) {
 	type User struct {
-		Email  string `json:"email" pedantigo:"required"`
-		Role   string `json:"role" pedantigo:"default=user"`
-		Status string `json:"status" pedantigo:"default=active"`
+		Email  string `json:"email" validate:"required"`
+		Role   string `json:"role" validate:"default=user"`
+		Status string `json:"status" validate:"default=active"`
 	}
 
 	validator := New[User]()
@@ -318,8 +318,8 @@ func TestUnmarshal_DefaultValues(t *testing.T) {
 // fields inside nested structs during Unmarshal. Regression test for #17.
 func TestUnmarshal_NestedStructDefaults(t *testing.T) {
 	type FactConfig struct {
-		MaxPasses int `json:"max_passes" pedantigo:"default=1,gte=0,lte=5"`
-		MaxTokens int `json:"max_tokens" pedantigo:"default=2048,gte=100,lte=16384"`
+		MaxPasses int `json:"max_passes" validate:"default=1,gte=0,lte=5"`
+		MaxTokens int `json:"max_tokens" validate:"default=2048,gte=100,lte=16384"`
 	}
 
 	type ExtractionConfig struct {
@@ -327,8 +327,8 @@ func TestUnmarshal_NestedStructDefaults(t *testing.T) {
 	}
 
 	type CreateAppRequest struct {
-		Name             string            `json:"name" pedantigo:"required,min=1,max=255"`
-		ExtractionConfig *ExtractionConfig `json:"extraction_config,omitempty" pedantigo:"omitempty"`
+		Name             string            `json:"name" validate:"required,min=1,max=255"`
+		ExtractionConfig *ExtractionConfig `json:"extraction_config,omitempty" validate:"omitempty"`
 	}
 
 	t.Run("top-level defaults work", func(t *testing.T) {
@@ -397,14 +397,14 @@ func TestUnmarshal_NestedStructDefaults(t *testing.T) {
 	t.Run("deeply nested struct defaults", func(t *testing.T) {
 		// Non-pointer nested struct (direct embedding)
 		type Inner struct {
-			Timeout int    `json:"timeout" pedantigo:"default=30"`
-			Mode    string `json:"mode" pedantigo:"default=auto"`
+			Timeout int    `json:"timeout" validate:"default=30"`
+			Mode    string `json:"mode" validate:"default=auto"`
 		}
 		type Middle struct {
 			Inner Inner `json:"inner"`
 		}
 		type Outer struct {
-			Name   string `json:"name" pedantigo:"required"`
+			Name   string `json:"name" validate:"required"`
 			Middle Middle `json:"middle"`
 		}
 
@@ -425,11 +425,11 @@ func TestUnmarshal_NestedStructDefaults(t *testing.T) {
 
 func TestUnmarshal_NestedValidation(t *testing.T) {
 	type Address struct {
-		City string `json:"city" pedantigo:"required,min=1"` // min=1 for non-empty string
+		City string `json:"city" validate:"required,min=1"` // min=1 for non-empty string
 	}
 
 	type User struct {
-		Email   string  `json:"email" pedantigo:"required"`
+		Email   string  `json:"email" validate:"required"`
 		Address Address `json:"address"`
 	}
 
@@ -546,7 +546,7 @@ func TestPointer_Missing(t *testing.T) {
 // TestPointer_RequiredWithValue tests Pointer requiredwithvalue.
 func TestPointer_RequiredWithValue(t *testing.T) {
 	type User struct {
-		Name *string `json:"name" pedantigo:"required"`
+		Name *string `json:"name" validate:"required"`
 	}
 
 	validator := New[User]()
@@ -563,7 +563,7 @@ func TestPointer_RequiredWithValue(t *testing.T) {
 // TestPointer_RequiredMissing tests Pointer requiredmissing.
 func TestPointer_RequiredMissing(t *testing.T) {
 	type User struct {
-		Name *string `json:"name" pedantigo:"required"`
+		Name *string `json:"name" validate:"required"`
 	}
 
 	validator := New[User]()
@@ -590,7 +590,7 @@ func TestPointer_RequiredMissing(t *testing.T) {
 // TestPointer_RequiredWithNull tests Pointer requiredwithnull.
 func TestPointer_RequiredWithNull(t *testing.T) {
 	type User struct {
-		Name *string `json:"name" pedantigo:"required"`
+		Name *string `json:"name" validate:"required"`
 	}
 
 	validator := New[User]()
@@ -607,7 +607,7 @@ func TestPointer_RequiredWithNull(t *testing.T) {
 // TestPointer_WithDefault tests Pointer withdefault.
 func TestPointer_WithDefault(t *testing.T) {
 	type Config struct {
-		Port *int `json:"port" pedantigo:"default=8080"`
+		Port *int `json:"port" validate:"default=8080"`
 	}
 
 	validator := New[Config]()
@@ -625,7 +625,7 @@ func TestPointer_WithDefault(t *testing.T) {
 // TestPointer_ExplicitZeroWithDefault tests Pointer explicitzerowithdefault.
 func TestPointer_ExplicitZeroWithDefault(t *testing.T) {
 	type Config struct {
-		Port *int `json:"port" pedantigo:"default=8080"`
+		Port *int `json:"port" validate:"default=8080"`
 	}
 
 	validator := New[Config]()
@@ -672,9 +672,9 @@ func TestPointer_NestedStruct(t *testing.T) {
 // Test type for defaultUsingMethod
 // UserWithTimestamp represents the data structure.
 type UserWithTimestamp struct {
-	Email     string    `json:"email" pedantigo:"required"`
-	Role      string    `json:"role" pedantigo:"default=user"`
-	CreatedAt time.Time `json:"created_at" pedantigo:"defaultUsingMethod=SetCreationTime"`
+	Email     string    `json:"email" validate:"required"`
+	Role      string    `json:"role" validate:"default=user"`
+	CreatedAt time.Time `json:"created_at" validate:"defaultUsingMethod=SetCreationTime"`
 }
 
 // Method that provides dynamic default value
@@ -688,7 +688,7 @@ func (u *UserWithTimestamp) SetCreationTime() (time.Time, error) {
 // InvalidMethodType represents the data structure.
 type InvalidMethodType struct {
 	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at" pedantigo:"defaultUsingMethod=WrongSignature"`
+	CreatedAt time.Time `json:"created_at" validate:"defaultUsingMethod=WrongSignature"`
 }
 
 // Wrong signature: returns only value, no error
@@ -701,7 +701,7 @@ func (i *InvalidMethodType) WrongSignature() time.Time {
 // NonExistentMethodType represents the data structure.
 type NonExistentMethodType struct {
 	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at" pedantigo:"defaultUsingMethod=DoesNotExist"`
+	CreatedAt time.Time `json:"created_at" validate:"defaultUsingMethod=DoesNotExist"`
 }
 
 // TestDeserializer_UnmarshalBehavior validates deserializer behavior across various scenarios:
@@ -709,14 +709,14 @@ type NonExistentMethodType struct {
 // TestDeserializer_UnmarshalBehavior tests Deserializer unmarshalbehavior.
 func TestDeserializer_UnmarshalBehavior(t *testing.T) {
 	type Config struct {
-		Name    string `json:"name" pedantigo:"required"`
-		Port    int    `json:"port" pedantigo:"default=8080"`
-		Timeout int    `json:"timeout" pedantigo:"default=30"`
+		Name    string `json:"name" validate:"required"`
+		Port    int    `json:"port" validate:"default=8080"`
+		Timeout int    `json:"timeout" validate:"default=30"`
 	}
 
 	type Settings struct {
-		Name   string `json:"name" pedantigo:"required"`
-		Active bool   `json:"active" pedantigo:"required"`
+		Name   string `json:"name" validate:"required"`
+		Active bool   `json:"active" validate:"required"`
 	}
 
 	tests := []struct {
@@ -841,8 +841,8 @@ func TestDeserializer_UnmarshalBehavior(t *testing.T) {
 			jsonData: []byte(`{"name":"myapp","age":0}`),
 			validatorFn: func() (any, error) {
 				type Profile struct {
-					Name string `json:"name" pedantigo:"required"`
-					Age  int    `json:"age" pedantigo:"min=1"`
+					Name string `json:"name" validate:"required"`
+					Age  int    `json:"age" validate:"min=1"`
 				}
 				v := New[Profile](ValidatorOptions{StrictMissingFields: false})
 				return v.Unmarshal([]byte(`{"name":"myapp","age":0}`))
@@ -930,9 +930,9 @@ func TestDeserializer_ValidatorSetup(t *testing.T) {
 // TestValidatorOptions_StrictMissingFields tests ValidatorOptions strictmissingfields.
 func TestValidatorOptions_StrictMissingFields(t *testing.T) {
 	type User struct {
-		Name  string `json:"name" pedantigo:"required,min=2"`
-		Email string `json:"email" pedantigo:"required,email"`
-		Age   int    `json:"age" pedantigo:"required,min=18"`
+		Name  string `json:"name" validate:"required,min=2"`
+		Email string `json:"email" validate:"required,email"`
+		Age   int    `json:"age" validate:"required,min=18"`
 	}
 
 	tests := []struct {
@@ -1012,9 +1012,9 @@ func TestValidatorOptions_StrictMissingFields(t *testing.T) {
 // TestValidatorOptions_PointerFields tests ValidatorOptions pointerfields.
 func TestValidatorOptions_PointerFields(t *testing.T) {
 	type Settings struct {
-		Port    *int   `json:"port" pedantigo:"min=1024"`
+		Port    *int   `json:"port" validate:"min=1024"`
 		Enabled *bool  `json:"enabled"`
-		Name    string `json:"name" pedantigo:"min=3"`
+		Name    string `json:"name" validate:"min=3"`
 	}
 
 	tests := []struct {
@@ -1157,7 +1157,7 @@ func TestValidatorOptions_PanicOnIncompatibleTags(t *testing.T) {
 			switch tt.testCase {
 			case "single_default":
 				type Settings struct {
-					Theme    string `json:"theme" pedantigo:"default=dark"`
+					Theme    string `json:"theme" validate:"default=dark"`
 					Language string `json:"language"`
 				}
 				_ = New[Settings](ValidatorOptions{
@@ -1166,9 +1166,9 @@ func TestValidatorOptions_PanicOnIncompatibleTags(t *testing.T) {
 
 			case "multiple_defaults":
 				type Config struct {
-					Name    string `json:"name" pedantigo:"default=unnamed"`
-					Port    int    `json:"port" pedantigo:"default=8080"`
-					Enabled bool   `json:"enabled" pedantigo:"default=true"`
+					Name    string `json:"name" validate:"default=unnamed"`
+					Port    int    `json:"port" validate:"default=8080"`
+					Enabled bool   `json:"enabled" validate:"default=true"`
 				}
 				_ = New[Config](ValidatorOptions{
 					StrictMissingFields: false,
@@ -1176,7 +1176,7 @@ func TestValidatorOptions_PanicOnIncompatibleTags(t *testing.T) {
 
 			case "default_using_method":
 				type Product struct {
-					ID   string `json:"id" pedantigo:"defaultUsingMethod=GenerateID"`
+					ID   string `json:"id" validate:"defaultUsingMethod=GenerateID"`
 					Name string `json:"name"`
 				}
 				_ = New[Product](ValidatorOptions{
@@ -1368,7 +1368,7 @@ func TestValidator_Dict_UnmarshalableType(t *testing.T) {
 // TestExtraFields_DefaultBehavior tests that default behavior ignores unknown fields.
 func TestExtraFields_DefaultBehavior(t *testing.T) {
 	type User struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	// Default options (ExtraIgnore)
@@ -1385,7 +1385,7 @@ func TestExtraFields_DefaultBehavior(t *testing.T) {
 // TestExtraFields_Ignore tests ExtraIgnore explicitly ignores unknown fields.
 func TestExtraFields_Ignore(t *testing.T) {
 	type User struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	validator := New[User](ValidatorOptions{
@@ -1404,7 +1404,7 @@ func TestExtraFields_Ignore(t *testing.T) {
 // TestExtraFields_Forbid tests ExtraForbid rejects unknown fields.
 func TestExtraFields_Forbid(t *testing.T) {
 	type User struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	validator := New[User](ValidatorOptions{
@@ -1465,10 +1465,10 @@ func TestExtraFields_Forbid(t *testing.T) {
 // TestExtraFields_Forbid_NestedStruct tests ExtraForbid with nested structs.
 func TestExtraFields_Forbid_NestedStruct(t *testing.T) {
 	type Address struct {
-		City string `json:"city" pedantigo:"required"`
+		City string `json:"city" validate:"required"`
 	}
 	type User struct {
-		Name    string  `json:"name" pedantigo:"required"`
+		Name    string  `json:"name" validate:"required"`
 		Address Address `json:"address"`
 	}
 
@@ -1551,21 +1551,21 @@ func TestExtraFields_Forbid_WithStrictMissingFieldsFalse(t *testing.T) {
 
 // Test types for marshal options.
 type UserWithSensitiveData struct {
-	ID       int    `json:"id" pedantigo:"min=1"`
-	Name     string `json:"name" pedantigo:"min=2"`
-	Email    string `json:"email" pedantigo:"email"`
-	Password string `json:"password" pedantigo:"exclude:response,log,min=8"`
-	Token    string `json:"token" pedantigo:"exclude:log"`
-	Port     int    `json:"port" pedantigo:"omitzero"`
-	Debug    bool   `json:"debug" pedantigo:"omitzero"`
+	ID       int    `json:"id" validate:"min=1"`
+	Name     string `json:"name" validate:"min=2"`
+	Email    string `json:"email" validate:"email"`
+	Password string `json:"password" validate:"exclude:response,log,min=8"`
+	Token    string `json:"token" validate:"exclude:log"`
+	Port     int    `json:"port" validate:"omitzero"`
+	Debug    bool   `json:"debug" validate:"omitzero"`
 }
 
 func TestValidator_MarshalWithOptions_ExcludeContext(t *testing.T) {
 	type User struct {
 		ID       int    `json:"id"`
 		Name     string `json:"name"`
-		Password string `json:"password" pedantigo:"exclude:response"`
-		Token    string `json:"token" pedantigo:"exclude:log"`
+		Password string `json:"password" validate:"exclude:response"`
+		Token    string `json:"token" validate:"exclude:log"`
 	}
 
 	validator := New[User]()
@@ -1618,9 +1618,9 @@ func TestValidator_MarshalWithOptions_ExcludeContext(t *testing.T) {
 
 func TestValidator_MarshalWithOptions_OmitZero(t *testing.T) {
 	type Config struct {
-		Name    string `json:"name" pedantigo:"min=2"`
-		Port    int    `json:"port" pedantigo:"omitzero"`
-		Timeout int    `json:"timeout" pedantigo:"omitzero"`
+		Name    string `json:"name" validate:"min=2"`
+		Port    int    `json:"port" validate:"omitzero"`
+		Timeout int    `json:"timeout" validate:"omitzero"`
 		Retries int    `json:"retries"`
 	}
 
@@ -1740,9 +1740,9 @@ func TestValidator_MarshalWithOptions_CombinedExcludeAndOmitZero(t *testing.T) {
 
 func TestValidator_MarshalWithOptions_ValidationErrors(t *testing.T) {
 	type User struct {
-		Name  string `json:"name" pedantigo:"min=2"`
-		Email string `json:"email" pedantigo:"email"`
-		Age   int    `json:"age" pedantigo:"min=18"`
+		Name  string `json:"name" validate:"min=2"`
+		Email string `json:"email" validate:"email"`
+		Age   int    `json:"age" validate:"min=18"`
 	}
 
 	validator := New[User]()
@@ -1769,8 +1769,8 @@ func TestValidator_MarshalWithOptions_ValidationErrors(t *testing.T) {
 func TestValidator_MarshalWithOptions_PointerFields(t *testing.T) {
 	type Config struct {
 		Name    string `json:"name"`
-		Port    *int   `json:"port" pedantigo:"omitzero"`
-		Enabled *bool  `json:"enabled" pedantigo:"omitzero"`
+		Port    *int   `json:"port" validate:"omitzero"`
+		Enabled *bool  `json:"enabled" validate:"omitzero"`
 	}
 
 	validator := New[Config]()
@@ -1821,12 +1821,12 @@ func TestValidator_MarshalWithOptions_NestedStructs(t *testing.T) {
 	type Address struct {
 		Street     string `json:"street"`
 		City       string `json:"city"`
-		PostalCode string `json:"postal_code" pedantigo:"exclude:summary"`
+		PostalCode string `json:"postal_code" validate:"exclude:summary"`
 	}
 
 	type User struct {
 		Name     string  `json:"name"`
-		Password string  `json:"password" pedantigo:"exclude:response"`
+		Password string  `json:"password" validate:"exclude:response"`
 		Address  Address `json:"address"`
 	}
 
@@ -1880,9 +1880,9 @@ func TestValidator_MarshalWithOptions_NestedStructs(t *testing.T) {
 
 func TestValidator_Marshal_BackwardCompatible(t *testing.T) {
 	type User struct {
-		ID       int    `json:"id" pedantigo:"min=1"`
-		Name     string `json:"name" pedantigo:"min=2"`
-		Password string `json:"password" pedantigo:"exclude:response"`
+		ID       int    `json:"id" validate:"min=1"`
+		Name     string `json:"name" validate:"min=2"`
+		Password string `json:"password" validate:"exclude:response"`
 	}
 
 	validator := New[User]()
@@ -1928,7 +1928,7 @@ func TestValidator_MarshalWithOptions_MultipleExclusionContexts(t *testing.T) {
 	type User struct {
 		ID       int    `json:"id"`
 		Name     string `json:"name"`
-		Password string `json:"password" pedantigo:"exclude:response|log|audit"`
+		Password string `json:"password" validate:"exclude:response|log|audit"`
 	}
 
 	validator := New[User]()
@@ -1959,8 +1959,8 @@ func TestValidator_MarshalWithOptions_MultipleExclusionContexts(t *testing.T) {
 // TestNewModel_JSON tests NewModel with JSON byte input.
 func TestNewModel_JSON(t *testing.T) {
 	type User struct {
-		Name  string `json:"name" pedantigo:"required"`
-		Email string `json:"email" pedantigo:"required,email"`
+		Name  string `json:"name" validate:"required"`
+		Email string `json:"email" validate:"required,email"`
 	}
 
 	validator := New[User]()
@@ -1974,8 +1974,8 @@ func TestNewModel_JSON(t *testing.T) {
 // TestNewModel_Struct tests NewModel with struct input.
 func TestNewModel_Struct(t *testing.T) {
 	type User struct {
-		Name  string `json:"name" pedantigo:"required,min=2"`
-		Email string `json:"email" pedantigo:"email"`
+		Name  string `json:"name" validate:"required,min=2"`
+		Email string `json:"email" validate:"email"`
 	}
 
 	validator := New[User]()
@@ -1989,8 +1989,8 @@ func TestNewModel_Struct(t *testing.T) {
 // TestNewModel_StructPointer tests NewModel with pointer to struct input.
 func TestNewModel_StructPointer(t *testing.T) {
 	type User struct {
-		Name  string `json:"name" pedantigo:"required,min=2"`
-		Email string `json:"email" pedantigo:"email"`
+		Name  string `json:"name" validate:"required,min=2"`
+		Email string `json:"email" validate:"email"`
 	}
 
 	validator := New[User]()
@@ -2005,9 +2005,9 @@ func TestNewModel_StructPointer(t *testing.T) {
 // TestNewModel_Map tests NewModel with map[string]any input (kwargs).
 func TestNewModel_Map(t *testing.T) {
 	type User struct {
-		Name  string `json:"name" pedantigo:"required"`
-		Email string `json:"email" pedantigo:"required,email"`
-		Age   int    `json:"age" pedantigo:"min=18"`
+		Name  string `json:"name" validate:"required"`
+		Email string `json:"email" validate:"required,email"`
+		Age   int    `json:"age" validate:"min=18"`
 	}
 
 	validator := New[User]()
@@ -2026,8 +2026,8 @@ func TestNewModel_Map(t *testing.T) {
 // TestNewModel_MapWithDefaults tests NewModel with map input using defaults.
 func TestNewModel_MapWithDefaults(t *testing.T) {
 	type Config struct {
-		Host string `json:"host" pedantigo:"default=localhost"`
-		Port int    `json:"port" pedantigo:"default=8080"`
+		Host string `json:"host" validate:"default=localhost"`
+		Port int    `json:"port" validate:"default=8080"`
 	}
 
 	validator := New[Config]()
@@ -2042,8 +2042,8 @@ func TestNewModel_MapWithDefaults(t *testing.T) {
 // TestNewModel_ValidationError tests NewModel returns validation errors.
 func TestNewModel_ValidationError(t *testing.T) {
 	type User struct {
-		Name  string `json:"name" pedantigo:"required,min=2"`
-		Email string `json:"email" pedantigo:"required,email"`
+		Name  string `json:"name" validate:"required,min=2"`
+		Email string `json:"email" validate:"required,email"`
 	}
 
 	validator := New[User]()
@@ -2098,7 +2098,7 @@ func TestNewModel_NilPointer(t *testing.T) {
 // TestStringTransformations_StripWhitespace tests strip_whitespace during Unmarshal.
 func TestStringTransformations_StripWhitespace(t *testing.T) {
 	type User struct {
-		Name string `json:"name" pedantigo:"strip_whitespace"`
+		Name string `json:"name" validate:"strip_whitespace"`
 	}
 
 	validator := New[User]()
@@ -2152,7 +2152,7 @@ func TestStringTransformations_StripWhitespace(t *testing.T) {
 // TestStringTransformations_ToLower tests to_lower during Unmarshal.
 func TestStringTransformations_ToLower(t *testing.T) {
 	type User struct {
-		Email string `json:"email" pedantigo:"to_lower"`
+		Email string `json:"email" validate:"to_lower"`
 	}
 
 	validator := New[User]()
@@ -2191,7 +2191,7 @@ func TestStringTransformations_ToLower(t *testing.T) {
 // TestStringTransformations_ToUpper tests to_upper during Unmarshal.
 func TestStringTransformations_ToUpper(t *testing.T) {
 	type Product struct {
-		Code string `json:"code" pedantigo:"to_upper"`
+		Code string `json:"code" validate:"to_upper"`
 	}
 
 	validator := New[Product]()
@@ -2230,7 +2230,7 @@ func TestStringTransformations_ToUpper(t *testing.T) {
 // TestStringTransformations_Combined tests multiple transformations together.
 func TestStringTransformations_Combined(t *testing.T) {
 	type User struct {
-		Email string `json:"email" pedantigo:"strip_whitespace,to_lower"`
+		Email string `json:"email" validate:"strip_whitespace,to_lower"`
 	}
 
 	validator := New[User]()
@@ -2264,7 +2264,7 @@ func TestStringTransformations_Combined(t *testing.T) {
 // TestStringTransformations_StripAndToUpper tests strip_whitespace with to_upper.
 func TestStringTransformations_StripAndToUpper(t *testing.T) {
 	type Product struct {
-		Code string `json:"code" pedantigo:"strip_whitespace,to_upper"`
+		Code string `json:"code" validate:"strip_whitespace,to_upper"`
 	}
 
 	validator := New[Product]()
@@ -2277,7 +2277,7 @@ func TestStringTransformations_StripAndToUpper(t *testing.T) {
 // TestStringTransformations_WithPointerField tests transformations with pointer fields.
 func TestStringTransformations_WithPointerField(t *testing.T) {
 	type User struct {
-		Email *string `json:"email" pedantigo:"strip_whitespace,to_lower"`
+		Email *string `json:"email" validate:"strip_whitespace,to_lower"`
 	}
 
 	validator := New[User]()
@@ -2297,7 +2297,7 @@ func TestStringTransformations_WithPointerField(t *testing.T) {
 // TestStringTransformations_WithDefaults tests transformations with default values.
 func TestStringTransformations_WithDefaults(t *testing.T) {
 	type Config struct {
-		Mode string `json:"mode" pedantigo:"default=DEBUG,to_lower"`
+		Mode string `json:"mode" validate:"default=DEBUG,to_lower"`
 	}
 
 	validator := New[Config]()
@@ -2317,7 +2317,7 @@ func TestStringTransformations_WithDefaults(t *testing.T) {
 // checks format but does NOT mutate the value.
 func TestStringTransformations_Validate_NoMutation(t *testing.T) {
 	type User struct {
-		Email string `json:"email" pedantigo:"to_lower"`
+		Email string `json:"email" validate:"to_lower"`
 	}
 
 	validator := New[User]()
@@ -2339,7 +2339,7 @@ func TestStringTransformations_Validate_NoMutation(t *testing.T) {
 // TestStringTransformations_Validate_StripWhitespace tests strip_whitespace in Validate mode.
 func TestStringTransformations_Validate_StripWhitespace(t *testing.T) {
 	type User struct {
-		Name string `json:"name" pedantigo:"strip_whitespace"`
+		Name string `json:"name" validate:"strip_whitespace"`
 	}
 
 	validator := New[User]()
@@ -2361,7 +2361,7 @@ func TestStringTransformations_Validate_StripWhitespace(t *testing.T) {
 // TestStringTransformations_NewModel_Map tests transformations with map input.
 func TestStringTransformations_NewModel_Map(t *testing.T) {
 	type User struct {
-		Email string `json:"email" pedantigo:"strip_whitespace,to_lower"`
+		Email string `json:"email" validate:"strip_whitespace,to_lower"`
 	}
 
 	validator := New[User]()
@@ -2376,7 +2376,7 @@ func TestStringTransformations_NewModel_Map(t *testing.T) {
 // TestStringTransformations_WithValidation tests transformations with additional validation.
 func TestStringTransformations_WithValidation(t *testing.T) {
 	type User struct {
-		Email string `json:"email" pedantigo:"strip_whitespace,to_lower,email"`
+		Email string `json:"email" validate:"strip_whitespace,to_lower,email"`
 	}
 
 	validator := New[User]()
@@ -2407,12 +2407,12 @@ func TestStringTransformations_WithValidation(t *testing.T) {
 
 // circularConversation references circularMessage, which references back.
 type circularConversation struct {
-	ID       string            `json:"id" pedantigo:"required"`
-	Messages []circularMessage `json:"messages" pedantigo:"dive"`
+	ID       string            `json:"id" validate:"required"`
+	Messages []circularMessage `json:"messages" validate:"dive"`
 }
 
 type circularMessage struct {
-	ID           string                `json:"id" pedantigo:"required"`
+	ID           string                `json:"id" validate:"required"`
 	Conversation *circularConversation `json:"conversation"`
 }
 
@@ -2480,8 +2480,8 @@ func TestCircularReference_Unmarshal(t *testing.T) {
 
 // Self-referencing type (tree structure).
 type circularTreeNode struct {
-	Name     string              `json:"name" pedantigo:"required"`
-	Children []*circularTreeNode `json:"children" pedantigo:"dive"`
+	Name     string              `json:"name" validate:"required"`
+	Children []*circularTreeNode `json:"children" validate:"dive"`
 }
 
 // TestCircularReference_SelfReferencing tests self-referencing types (trees).
@@ -2506,7 +2506,7 @@ func TestCircularReference_SelfReferencing(t *testing.T) {
 
 // validatableApp is a type that implements Validatable by calling back into pedantigo.
 type validatableApp struct {
-	Name string `json:"name" pedantigo:"required"`
+	Name string `json:"name" validate:"required"`
 }
 
 var (

@@ -15,7 +15,7 @@ func TestCrossFieldComparison_IncompatibleTypes(t *testing.T) {
 	t.Run("eqfield: int vs string incompatible", func(t *testing.T) {
 		type MixedTypes struct {
 			IntField    int    `json:"int_field"`
-			StringField string `json:"string_field" pedantigo:"eqfield=IntField"`
+			StringField string `json:"string_field" validate:"eqfield=IntField"`
 		}
 
 		validator := New[MixedTypes]()
@@ -42,7 +42,7 @@ func TestCrossFieldComparison_IncompatibleTypes(t *testing.T) {
 	t.Run("nefield: float vs string incompatible", func(t *testing.T) {
 		type MixedTypes struct {
 			FloatField  float64 `json:"float_field"`
-			StringField string  `json:"string_field" pedantigo:"nefield=FloatField"`
+			StringField string  `json:"string_field" validate:"nefield=FloatField"`
 		}
 
 		validator := New[MixedTypes]()
@@ -62,7 +62,7 @@ func TestCrossFieldComparison_IncompatibleTypes(t *testing.T) {
 	t.Run("gtfield: bool vs int incompatible", func(t *testing.T) {
 		type MixedTypes struct {
 			IntField  int  `json:"int_field"`
-			BoolField bool `json:"bool_field" pedantigo:"gtfield=IntField"`
+			BoolField bool `json:"bool_field" validate:"gtfield=IntField"`
 		}
 
 		validator := New[MixedTypes]()
@@ -78,7 +78,7 @@ func TestCrossFieldComparison_IncompatibleTypes(t *testing.T) {
 	t.Run("gtefield: string vs float incompatible", func(t *testing.T) {
 		type MixedTypes struct {
 			FloatField  float64 `json:"float_field"`
-			StringField string  `json:"string_field" pedantigo:"gtefield=FloatField"`
+			StringField string  `json:"string_field" validate:"gtefield=FloatField"`
 		}
 
 		validator := New[MixedTypes]()
@@ -94,7 +94,7 @@ func TestCrossFieldComparison_IncompatibleTypes(t *testing.T) {
 	t.Run("ltfield: uint vs string incompatible", func(t *testing.T) {
 		type MixedTypes struct {
 			UintField   uint   `json:"uint_field"`
-			StringField string `json:"string_field" pedantigo:"ltfield=UintField"`
+			StringField string `json:"string_field" validate:"ltfield=UintField"`
 		}
 
 		validator := New[MixedTypes]()
@@ -110,7 +110,7 @@ func TestCrossFieldComparison_IncompatibleTypes(t *testing.T) {
 	t.Run("ltefield: int vs bool incompatible", func(t *testing.T) {
 		type MixedTypes struct {
 			BoolField bool `json:"bool_field"`
-			IntField  int  `json:"int_field" pedantigo:"ltefield=BoolField"`
+			IntField  int  `json:"int_field" validate:"ltefield=BoolField"`
 		}
 
 		validator := New[MixedTypes]()
@@ -126,7 +126,7 @@ func TestCrossFieldComparison_IncompatibleTypes(t *testing.T) {
 	t.Run("eqfield: slice vs string incompatible", func(t *testing.T) {
 		type MixedTypes struct {
 			SliceField  []int  `json:"slice_field"`
-			StringField string `json:"string_field" pedantigo:"eqfield=SliceField"`
+			StringField string `json:"string_field" validate:"eqfield=SliceField"`
 		}
 
 		validator := New[MixedTypes]()
@@ -142,7 +142,7 @@ func TestCrossFieldComparison_IncompatibleTypes(t *testing.T) {
 	t.Run("nefield: map vs string incompatible", func(t *testing.T) {
 		type MixedTypes struct {
 			MapField    map[string]int `json:"map_field"`
-			StringField string         `json:"string_field" pedantigo:"nefield=MapField"`
+			StringField string         `json:"string_field" validate:"nefield=MapField"`
 		}
 
 		validator := New[MixedTypes]()
@@ -164,7 +164,7 @@ func TestCrossFieldComparison_NestedFieldPath(t *testing.T) {
 		}
 		type Outer struct {
 			Inner   Inner  `json:"inner"`
-			Compare string `json:"compare" pedantigo:"eqfield=Inner.Value"`
+			Compare string `json:"compare" validate:"eqfield=Inner.Value"`
 		}
 
 		validator := New[Outer]()
@@ -183,7 +183,7 @@ func TestCrossFieldComparison_NestedFieldPath(t *testing.T) {
 		}
 		type Outer struct {
 			Inner Inner `json:"inner"`
-			Max   int   `json:"max" pedantigo:"gtfield=Inner.Min"`
+			Max   int   `json:"max" validate:"gtfield=Inner.Min"`
 		}
 
 		validator := New[Outer]()
@@ -202,7 +202,7 @@ func TestCrossFieldComparison_NestedFieldPath(t *testing.T) {
 		}
 		type Outer struct {
 			Inner Inner `json:"inner"`
-			Min   int   `json:"min" pedantigo:"ltfield=Inner.Max"`
+			Min   int   `json:"min" validate:"ltfield=Inner.Max"`
 		}
 
 		validator := New[Outer]()
@@ -221,7 +221,7 @@ func TestCrossFieldComparison_PointerTypes(t *testing.T) {
 	t.Run("eqfield: pointer to non-pointer compatible", func(t *testing.T) {
 		type PointerTest struct {
 			IntPtr *int `json:"int_ptr"`
-			IntVal int  `json:"int_val" pedantigo:"eqfield=IntPtr"`
+			IntVal int  `json:"int_val" validate:"eqfield=IntPtr"`
 		}
 
 		validator := New[PointerTest]()
@@ -238,7 +238,7 @@ func TestCrossFieldComparison_PointerTypes(t *testing.T) {
 	t.Run("gtfield: pointer to non-pointer compatible", func(t *testing.T) {
 		type PointerTest struct {
 			MinPtr *int `json:"min_ptr"`
-			MaxVal int  `json:"max_val" pedantigo:"gtfield=MinPtr"`
+			MaxVal int  `json:"max_val" validate:"gtfield=MinPtr"`
 		}
 
 		validator := New[PointerTest]()

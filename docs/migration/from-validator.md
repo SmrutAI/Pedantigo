@@ -1,135 +1,59 @@
 ---
 sidebar_position: 1
 title: From go-playground/validator
-description: Step-by-step guide to migrate from go-playground/validator to Pedantigo
+description: What actually changes when migrating from go-playground/validator to Pedantigo
 ---
 
 # Migrating from go-playground/validator
 
-This guide helps you migrate from [go-playground/validator](https://github.com/go-playground/validator) to Pedantigo.
+Pedantigo's default struct tag is `validate` — the same tag name go-playground/validator uses. If you're migrating, **your existing struct tags need no changes.** Tag syntax is ~127/147 identical (see [API Parity](./api-parity.md)), and any validator-only tag pedantigo doesn't recognize (`omitnil`, `structonly`, etc.) is silently ignored rather than erroring.
+
+Migration is two steps. Step 1 gets you running with a near-rename; step 2 is an optional, later upgrade for high-throughput code paths.
+
+**Caution:** if your codebase already has unrelated `validate:"..."` tags on structs (leftover from another library, or dead annotations), Pedantigo will now read and enforce them by default.
 
 ---
 
-## Quick Migration (One Line)
-
-For most codebases, migration requires only one line:
-
-```go
-func init() {
-    pedantigo.SetTagName("validate")
-}
-```
-
-This tells Pedantigo to read your existing `validate:"..."` struct tags instead of `pedantigo:"..."`.
-
-Your existing structs work unchanged:
-
-```go
-type User struct {
-    Email string `json:"email" validate:"required,email"`
-    Age   int    `json:"age" validate:"min=18,max=120"`
-}
-
-// Works with Pedantigo
-user, err := pedantigo.Unmarshal[User](jsonData)
-```
-
----
-
-## Supported Tags (Zero Changes Needed)
-
-These validator tags work identically in Pedantigo:
-
-### Core Constraints
-`required`, `min`, `max`, `len`, `eq`, `ne`, `gt`, `gte`, `lt`, `lte`
-
-### String Constraints
-`email`, `url`, `uri`, `uuid`, `uuid3`, `uuid4`, `uuid5`, `alpha`, `alphanum`, `alphaunicode`, `alphanumunicode`, `numeric`, `number`, `hexadecimal`, `ascii`, `printascii`, `multibyte`, `lowercase`, `uppercase`, `contains`, `excludes`, `startswith`, `endswith`, `startsnotwith`, `endsnotwith`, `containsany`, `containsrune`, `excludesall`, `excludesrune`, `eq_ignore_case`, `ne_ignore_case`
-
-### Enum/Choice
-`oneof`, `oneofci`
-
-### Field Comparisons
-`eqfield`, `nefield`, `gtfield`, `gtefield`, `ltfield`, `ltefield`, `eqcsfield`, `necsfield`, `gtcsfield`, `gtecsfield`, `ltcsfield`, `ltecsfield`
-
-### Conditional Validation
-`required_if`, `required_unless`, `required_with`, `required_without`, `required_with_all`, `required_without_all`, `excluded_if`, `excluded_unless`, `excluded_with`, `excluded_without`, `excluded_with_all`, `excluded_without_all`, `skip_unless`
-
-### Network
-`ip`, `ipv4`, `ipv6`, `cidr`, `cidrv4`, `cidrv6`, `mac`, `hostname`, `hostname_rfc1123`, `fqdn`, `tcp_addr`, `udp_addr`, `hostname_port`, `http_url`, `https_url`
-
-### Format Validators
-`datetime`, `timezone`, `credit_card`, `isbn`, `isbn10`, `isbn13`, `issn`, `ssn`, `ein`, `e164`, `base64`, `base64url`, `base64rawurl`, `base32`, `datauri`, `urn_rfc2141`, `json`, `jwt`, `html`, `hexcolor`, `rgb`, `rgba`, `hsl`, `hsla`, `latitude`, `longitude`, `md4`, `md5`, `sha256`, `sha384`, `sha512`, `mongodb`, `cron`, `semver`, `ulid`, `luhn_checksum`, `bitcoin_addr`, `bitcoin_addr_bech32`, `ethereum_addr`, `image`
-
-### ISO Codes
-`iso3166_1_alpha2`, `iso3166_1_alpha3`, `iso3166_1_alpha_numeric`, `iso4217`, `bcp47_language_tag`, `postcode_iso3166_alpha2`
-
-### Collections
-`dive`, `unique`
-
-### OR Operator
-`hexcolor|rgb|rgba` (validates if ANY matches)
-
-### Aliases
-`iscolor` (expands to `hexcolor|rgb|rgba|hsl|hsla`)
-
----
-
-## Tags You Can Remove
-
-These validator tags are **not needed** in Pedantigo:
-
-| Tag             | Why Not Needed                                                                        |
-|-----------------|---------------------------------------------------------------------------------------|
-| `omitnil`       | Nil pointers are handled automatically.                                               |
-| `omitzero`      | Zero values skip validation unless `required`.                                        |
-| `-`             | Simply don't add a tag.                                                               |
-| `structonly`    | Not needed - Pedantigo validates all fields by default.                               |
-| `nostructlevel` | Not needed.                                                                           |
-| `isdefault`     | Not needed - check for zero value in code.                                            |
-
-### `omitempty` — Supported Natively with Explicit Semantics
-
-Unlike `go-playground/validator`, where `omitempty` is a special-cased tag name, Pedantigo supports `omitempty` as a first-class **validation constraint** in the `pedantigo` tag. The behaviour is explicit and predictable:
-
-- **Regular constraints** (`min`, `max`, `oneof`, `email`, etc.) are skipped when the field is at its zero value.
-- **Cross-field constraints** (`required_with`, `required_if`, `eqfield`, etc.) always run, even for zero-value fields.
+## Step 1: Switch to the Simple API
 
 ```go
 // go-playground/validator
-Email string `validate:"omitempty,email"`
+validate := validator.New()
+err := validate.Struct(user)
 
-// pedantigo — omitempty is a real constraint with the same effect for this case
-Email string `pedantigo:"omitempty,email"`
-
-// But the behavior is now explicit: if Email is "", email validation is skipped.
-// If Email is "invalid", email validation runs and fails.
+// pedantigo Simple API — drop-in, no setup (internally cached per type via sync.Map)
+err := pedantigo.Validate(user)
+// or, to parse + validate in one step:
+user, err := pedantigo.Unmarshal[User](jsonBytes)
 ```
 
-If a field was previously tagged with `validate:"omitempty,email"` only to suppress errors on empty strings, you can migrate it as-is. If the intent was simply that the field is optional with no format constraint, remove the constraint entirely:
+This is a near-rename: no validator to construct, no cache to manage. Benchmarked cost is a ~200ns `sync.Map` lookup per call, ~2-5µs total with unmarshal — negligible below roughly 100k req/sec. This is the recommended default for 99% of applications ([full benchmarks](/docs/advanced/performance)).
+
+## Step 2 (optional): Upgrade to the Core API for hot paths
 
 ```go
-// No constraint needed — optional field, no format check
-Notes string `json:"notes,omitempty"`
+// Declare once, at package/startup scope
+var userValidator = pedantigo.New[User]()
+
+// Call directly — skips the Simple API's cache lookup
+err := userValidator.Validate(user)
+user, err := userValidator.Unmarshal(jsonBytes)
+```
+
+Benchmarked saving is ~200ns/call (the `sync.Map` lookup Step 1 pays on every call). Only worth it if profiling shows that lookup in a flame graph — the performance guide's own recommendation is "profile first." Everything else (tags, custom validators, `omitempty`, cross-field constraints) behaves identically between the Simple and Core API; only the construction call-site changes.
+
+## Behavior difference: `omitempty` is a real constraint, not a parser special case
+
+- **Regular constraints** (`min`, `max`, `oneof`, `email`, etc.) are skipped when the field is at its zero value — same effect as validator.
+- **Cross-field constraints** (`required_with`, `required_if`, `eqfield`, etc.) always run, even for zero-value fields — this is the one behavioral difference to test for.
+
+```go
+Email string `validate:"omitempty,email"` // identical effect in both libraries
 ```
 
 See [omitempty as a Validation Constraint](/docs/api/initialization#pedantigo-omitempty) for the full reference.
 
----
-
-## Custom Validator Registration
-
-### RegisterAlias
-
-```go
-// validator
-validate.RegisterAlias("is_active", "oneof=active enabled")
-
-// pedantigo (identical)
-pedantigo.RegisterAlias("is_active", "oneof=active enabled")
-```
-
-### Custom Validators
+## API difference: custom validator registration signatures
 
 ```go
 // validator
@@ -140,6 +64,28 @@ pedantigo.RegisterConstraint("custom", func(value string) (constraints.Constrain
     return &myCustomConstraint{}, true
 })
 ```
+
+---
+
+## Tags that are safe no-ops
+
+These validator-only tags are silently ignored by pedantigo — harmless to leave, but fine to delete for clarity:
+
+`omitnil`, `omitzero`, `-`, `structonly`, `nostructlevel`, `isdefault`. (See "Behavior difference" above for `omitempty`, which is not in this list.)
+
+---
+
+## RegisterAlias
+
+```go
+// validator
+validate.RegisterAlias("is_active", "oneof=active enabled")
+
+// pedantigo (identical)
+pedantigo.RegisterAlias("is_active", "oneof=active enabled")
+```
+
+(See "API difference" above for custom validator registration via `RegisterConstraint`.)
 
 ---
 
@@ -220,39 +166,12 @@ Pedantigo provides features not available in validator:
 
 ---
 
-## Step-by-Step Migration
+## Checklist
 
-1. **Add the tag override:**
-   ```go
-   func init() {
-       pedantigo.SetTagName("validate")
-   }
-   ```
-
-2. **Replace validation calls:**
-   ```go
-   // Before (validator)
-   validate := validator.New()
-   err := validate.Struct(user)
-
-   // After (pedantigo)
-   user, err := pedantigo.Unmarshal[User](jsonData)
-   // or
-   err := pedantigo.Validate(&user)
-   ```
-
-3. **Remove unnecessary tags:**
-   - Delete `omitnil`, `omitzero` — handled automatically by Pedantigo
-   - Delete `-` tags (just remove the tag entirely)
-   - For `omitempty`: keep it if you want explicit zero-value skip semantics (see [omitempty as a Validation Constraint](/docs/api/initialization#pedantigo-omitempty)); remove it if the field is simply optional with no format constraint
-
-4. **Test your structs:**
-   ```go
-   go test ./...
-   ```
-
-5. **Optional: Migrate tag name:**
-   Once validated, you can gradually rename `validate` to `pedantigo` tags if desired.
+- [ ] Swap `validator.New()` + `.Struct()` calls for the Simple API (Step 1) — struct tags need no edits
+- [ ] Run `go test ./...` and confirm behavior on zero-value fields with cross-field constraints (the one behavioral difference — see above)
+- [ ] Delete any now-unnecessary validator-only tags for clarity (optional — they're harmless no-ops either way)
+- [ ] Profile before considering Step 2 (Core API) — only relevant at high request volume
 
 ---
 

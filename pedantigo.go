@@ -8,8 +8,8 @@
 // Global functions with automatic caching - no setup needed:
 //
 //	type User struct {
-//	    Email string `json:"email" pedantigo:"required,email"`
-//	    Age   int    `json:"age" pedantigo:"min=18,max=120"`
+//	    Email string `json:"email" validate:"required,email"`
+//	    Age   int    `json:"age" validate:"min=18,max=120"`
 //	}
 //
 //	// Parse JSON and validate
@@ -50,8 +50,8 @@ package pedantigo
 // Example:
 //
 //	type DateRange struct {
-//	    Start time.Time `json:"start" pedantigo:"required"`
-//	    End   time.Time `json:"end" pedantigo:"required"`
+//	    Start time.Time `json:"start" validate:"required"`
+//	    End   time.Time `json:"end" validate:"required"`
 //	}
 //
 //	func (d *DateRange) Validate() error {

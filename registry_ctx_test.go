@@ -111,7 +111,7 @@ func TestValidateCtx_BasicUsage(t *testing.T) {
 	}
 
 	type User struct {
-		Username string `json:"username" pedantigo:"required,ctx_required_db"`
+		Username string `json:"username" validate:"required,ctx_required_db"`
 	}
 
 	tests := []struct {
@@ -174,7 +174,7 @@ func TestValidateCtx_WithTimeout(t *testing.T) {
 	}
 
 	type SlowUser struct {
-		ID string `json:"id" pedantigo:"slow_check"`
+		ID string `json:"id" validate:"slow_check"`
 	}
 
 	t.Run("context timeout triggers", func(t *testing.T) {
@@ -215,7 +215,7 @@ func TestValidateCtx_WithCancellation(t *testing.T) {
 	}
 
 	type CancellableUser struct {
-		Name string `json:"name" pedantigo:"cancellable"`
+		Name string `json:"name" validate:"cancellable"`
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -255,8 +255,8 @@ func TestValidateCtx_MultipleFields(t *testing.T) {
 	}
 
 	type SecureResource struct {
-		TenantID string `json:"tenant_id" pedantigo:"required,check_tenant"`
-		Action   string `json:"action" pedantigo:"required,check_permission"`
+		TenantID string `json:"tenant_id" validate:"required,check_tenant"`
+		Action   string `json:"action" validate:"required,check_permission"`
 	}
 
 	ctx := context.Background()
@@ -292,7 +292,7 @@ func TestValidateCtx_WithParameter(t *testing.T) {
 	}
 
 	type ParamUser struct {
-		Score int `json:"score" pedantigo:"min_ctx=10"`
+		Score int `json:"score" validate:"min_ctx=10"`
 	}
 
 	ctx := context.WithValue(context.Background(), ctxKeyMultiplier, 2)
@@ -317,7 +317,7 @@ func TestValidator_ValidateCtx(t *testing.T) {
 	}
 
 	type TestStruct struct {
-		Field string `json:"field" pedantigo:"ctx_validator_test"`
+		Field string `json:"field" validate:"ctx_validator_test"`
 	}
 
 	v := New[TestStruct]()
@@ -343,7 +343,7 @@ func TestValidator_ValidateCtx(t *testing.T) {
 
 func TestValidateCtx_NilContext(t *testing.T) {
 	type User struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	user := &User{Name: "John"}
@@ -357,7 +357,7 @@ func TestValidateCtx_NilContext(t *testing.T) {
 func TestValidateCtx_NilStruct(t *testing.T) {
 	ctx := context.Background()
 	var user *struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	err := ValidateCtx(ctx, user)
@@ -400,7 +400,7 @@ func TestValidateCtx_ContextValues(t *testing.T) {
 	}
 
 	type EchoStruct struct {
-		Data string `json:"data" pedantigo:"echo_context"`
+		Data string `json:"data" validate:"echo_context"`
 	}
 
 	ctx := context.WithValue(context.Background(), ctxKeyEcho, "echo_value")

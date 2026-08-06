@@ -14,15 +14,15 @@ import (
 
 // UserWithExtras is a top-level struct with extra_fields tag.
 type UserWithExtras struct {
-	Name   string         `json:"name" pedantigo:"required"`
+	Name   string         `json:"name" validate:"required"`
 	Age    int            `json:"age"`
-	Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+	Extras map[string]any `json:"-" validate:"extra_fields"`
 }
 
 // NestedWithExtra is a nested struct with extras.
 type NestedWithExtra struct {
 	Value  string         `json:"value"`
-	Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+	Extras map[string]any `json:"-" validate:"extra_fields"`
 }
 
 // NestedNoExtra is a nested struct without extras.
@@ -34,7 +34,7 @@ type NestedNoExtra struct {
 type TopOnlyExtras struct {
 	Name   string         `json:"name"`
 	Nested NestedNoExtra  `json:"nested"`
-	Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+	Extras map[string]any `json:"-" validate:"extra_fields"`
 }
 
 // TopNoExtras is where nested only has extras.
@@ -47,7 +47,7 @@ type TopNoExtras struct {
 type BothHaveExtras struct {
 	Name   string          `json:"name"`
 	Nested NestedWithExtra `json:"nested"`
-	Extras map[string]any  `json:"-" pedantigo:"extra_fields"`
+	Extras map[string]any  `json:"-" validate:"extra_fields"`
 }
 
 // NoExtraFieldStruct is missing extra_fields field (for panic test).
@@ -60,31 +60,31 @@ type MultipleNestedExtras struct {
 	Name    string          `json:"name"`
 	Primary NestedWithExtra `json:"primary"`
 	Backup  NestedWithExtra `json:"backup"`
-	Extras  map[string]any  `json:"-" pedantigo:"extra_fields"`
+	Extras  map[string]any  `json:"-" validate:"extra_fields"`
 }
 
 // SliceWithExtras is a struct for slice testing.
 type SliceWithExtras struct {
 	Items  []NestedWithExtra `json:"items"`
-	Extras map[string]any    `json:"-" pedantigo:"extra_fields"`
+	Extras map[string]any    `json:"-" validate:"extra_fields"`
 }
 
 // DeepNestingLevel3 represents three levels of nesting (level 3).
 type DeepNestingLevel3 struct {
 	Data   string         `json:"data"`
-	Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+	Extras map[string]any `json:"-" validate:"extra_fields"`
 }
 
 type DeepNestingLevel2 struct {
 	Info   string            `json:"info"`
 	Level3 DeepNestingLevel3 `json:"level3"`
-	Extras map[string]any    `json:"-" pedantigo:"extra_fields"`
+	Extras map[string]any    `json:"-" validate:"extra_fields"`
 }
 
 type DeepNestingLevel1 struct {
 	Title  string            `json:"title"`
 	Level2 DeepNestingLevel2 `json:"level2"`
-	Extras map[string]any    `json:"-" pedantigo:"extra_fields"`
+	Extras map[string]any    `json:"-" validate:"extra_fields"`
 }
 
 // ==================================================
@@ -92,7 +92,7 @@ type DeepNestingLevel1 struct {
 // ==================================================
 
 // TestNew_ExtraAllow_WithField_Success tests that New() succeeds when ExtraAllow
-// is set and the struct has a field with pedantigo:"extra_fields" tag.
+// is set and the struct has a field with validate:"extra_fields" tag.
 func TestNew_ExtraAllow_WithField_Success(t *testing.T) {
 	validator := New[UserWithExtras](ValidatorOptions{
 		ExtraFields: ExtraAllow,
@@ -737,7 +737,7 @@ func TestUnmarshal_ExtraAllow_NullExtraValue(t *testing.T) {
 // BenchmarkUnmarshal_ExtraIgnore_Baseline establishes baseline performance with ExtraIgnore.
 func BenchmarkUnmarshal_ExtraIgnore_Baseline(b *testing.B) {
 	type SimpleUser struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 		Age  int    `json:"age"`
 	}
 

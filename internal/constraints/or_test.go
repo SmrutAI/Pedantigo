@@ -11,7 +11,7 @@ import (
 // TestOrConstraint_FirstMatches tests OR constraint when first option matches.
 func TestOrConstraint_FirstMatches(t *testing.T) {
 	type Form struct {
-		Color string `json:"color" pedantigo:"hexcolor|rgb"`
+		Color string `json:"color" validate:"hexcolor|rgb"`
 	}
 	validator := pedantigo.New[Form]()
 	err := validator.Validate(&Form{Color: "#FF0000"})
@@ -21,7 +21,7 @@ func TestOrConstraint_FirstMatches(t *testing.T) {
 // TestOrConstraint_SecondMatches tests OR constraint when second option matches.
 func TestOrConstraint_SecondMatches(t *testing.T) {
 	type Form struct {
-		Color string `json:"color" pedantigo:"hexcolor|rgb"`
+		Color string `json:"color" validate:"hexcolor|rgb"`
 	}
 	validator := pedantigo.New[Form]()
 	err := validator.Validate(&Form{Color: "rgb(255,0,0)"})
@@ -31,7 +31,7 @@ func TestOrConstraint_SecondMatches(t *testing.T) {
 // TestOrConstraint_NoMatch tests OR constraint when all options fail.
 func TestOrConstraint_NoMatch(t *testing.T) {
 	type Form struct {
-		Color string `json:"color" pedantigo:"hexcolor|rgb"`
+		Color string `json:"color" validate:"hexcolor|rgb"`
 	}
 	validator := pedantigo.New[Form]()
 	err := validator.Validate(&Form{Color: "invalid"})
@@ -41,7 +41,7 @@ func TestOrConstraint_NoMatch(t *testing.T) {
 // TestOrConstraint_TripleOR tests OR constraint with three options (third matches).
 func TestOrConstraint_TripleOR_ThirdMatches(t *testing.T) {
 	type Form struct {
-		Color string `json:"color" pedantigo:"hexcolor|rgb|rgba"`
+		Color string `json:"color" validate:"hexcolor|rgb|rgba"`
 	}
 	validator := pedantigo.New[Form]()
 	err := validator.Validate(&Form{Color: "rgba(255,0,0,0.5)"})
@@ -51,7 +51,7 @@ func TestOrConstraint_TripleOR_ThirdMatches(t *testing.T) {
 // TestOrConstraint_TripleOR_FirstMatches tests OR constraint with three options (first matches).
 func TestOrConstraint_TripleOR_FirstMatches(t *testing.T) {
 	type Form struct {
-		Color string `json:"color" pedantigo:"hexcolor|rgb|rgba"`
+		Color string `json:"color" validate:"hexcolor|rgb|rgba"`
 	}
 	validator := pedantigo.New[Form]()
 	err := validator.Validate(&Form{Color: "#ABC123"})
@@ -61,7 +61,7 @@ func TestOrConstraint_TripleOR_FirstMatches(t *testing.T) {
 // TestOrConstraint_TripleOR_NoMatch tests OR constraint with three options (all fail).
 func TestOrConstraint_TripleOR_NoMatch(t *testing.T) {
 	type Form struct {
-		Color string `json:"color" pedantigo:"hexcolor|rgb|rgba"`
+		Color string `json:"color" validate:"hexcolor|rgb|rgba"`
 	}
 	validator := pedantigo.New[Form]()
 	err := validator.Validate(&Form{Color: "not-a-color"})
@@ -71,7 +71,7 @@ func TestOrConstraint_TripleOR_NoMatch(t *testing.T) {
 // TestOrConstraint_EmptyString tests OR constraint with empty string (should pass, not required).
 func TestOrConstraint_EmptyString(t *testing.T) {
 	type Form struct {
-		Color string `json:"color" pedantigo:"hexcolor|rgb"`
+		Color string `json:"color" validate:"hexcolor|rgb"`
 	}
 	validator := pedantigo.New[Form]()
 	err := validator.Validate(&Form{Color: ""})
@@ -81,7 +81,7 @@ func TestOrConstraint_EmptyString(t *testing.T) {
 // TestOrConstraint_MixedTypes_EmailMatches tests OR with different constraint types (email matches).
 func TestOrConstraint_MixedTypes_EmailMatches(t *testing.T) {
 	type Form struct {
-		Contact string `json:"contact" pedantigo:"email|url"`
+		Contact string `json:"contact" validate:"email|url"`
 	}
 	validator := pedantigo.New[Form]()
 	err := validator.Validate(&Form{Contact: "test@example.com"})
@@ -91,7 +91,7 @@ func TestOrConstraint_MixedTypes_EmailMatches(t *testing.T) {
 // TestOrConstraint_MixedTypes_URLMatches tests OR with different constraint types (url matches).
 func TestOrConstraint_MixedTypes_URLMatches(t *testing.T) {
 	type Form struct {
-		Contact string `json:"contact" pedantigo:"email|url"`
+		Contact string `json:"contact" validate:"email|url"`
 	}
 	validator := pedantigo.New[Form]()
 	err := validator.Validate(&Form{Contact: "https://example.com"})
@@ -101,7 +101,7 @@ func TestOrConstraint_MixedTypes_URLMatches(t *testing.T) {
 // TestOrConstraint_MixedTypes_NoMatch tests OR with different constraint types (both fail).
 func TestOrConstraint_MixedTypes_NoMatch(t *testing.T) {
 	type Form struct {
-		Contact string `json:"contact" pedantigo:"email|url"`
+		Contact string `json:"contact" validate:"email|url"`
 	}
 	validator := pedantigo.New[Form]()
 	err := validator.Validate(&Form{Contact: "not-an-email-or-url"})
@@ -111,7 +111,7 @@ func TestOrConstraint_MixedTypes_NoMatch(t *testing.T) {
 // TestOrConstraint_WithRequired_Valid tests OR combined with required constraint (valid input).
 func TestOrConstraint_WithRequired_Valid(t *testing.T) {
 	type Form struct {
-		Color string `json:"color" pedantigo:"required,hexcolor|rgb"`
+		Color string `json:"color" validate:"required,hexcolor|rgb"`
 	}
 	validator := pedantigo.New[Form]()
 	err := validator.Validate(&Form{Color: "#FF0000"})
@@ -122,7 +122,7 @@ func TestOrConstraint_WithRequired_Valid(t *testing.T) {
 // Note: In pedantigo, 'required' only checks for missing JSON fields, not empty strings.
 func TestOrConstraint_WithRequired_MissingFails(t *testing.T) {
 	type Form struct {
-		Color string `json:"color" pedantigo:"required,hexcolor|rgb"`
+		Color string `json:"color" validate:"required,hexcolor|rgb"`
 	}
 	validator := pedantigo.New[Form]()
 	// Test via Unmarshal - missing field should fail required
@@ -133,7 +133,7 @@ func TestOrConstraint_WithRequired_MissingFails(t *testing.T) {
 // TestOrConstraint_WithRequired_EmptyPasses tests that empty string passes (required only checks for missing).
 func TestOrConstraint_WithRequired_EmptyPasses(t *testing.T) {
 	type Form struct {
-		Color string `json:"color" pedantigo:"required,hexcolor|rgb"`
+		Color string `json:"color" validate:"required,hexcolor|rgb"`
 	}
 	validator := pedantigo.New[Form]()
 	// Empty string passes - 'required' only checks for missing fields, not empty values
@@ -144,7 +144,7 @@ func TestOrConstraint_WithRequired_EmptyPasses(t *testing.T) {
 // TestOrConstraint_WithRequired_InvalidFails tests OR combined with required (invalid value fails OR).
 func TestOrConstraint_WithRequired_InvalidFails(t *testing.T) {
 	type Form struct {
-		Color string `json:"color" pedantigo:"required,hexcolor|rgb"`
+		Color string `json:"color" validate:"required,hexcolor|rgb"`
 	}
 	validator := pedantigo.New[Form]()
 	err := validator.Validate(&Form{Color: "invalid"})
@@ -154,7 +154,7 @@ func TestOrConstraint_WithRequired_InvalidFails(t *testing.T) {
 // TestOrConstraint_NilPointer tests OR constraint with nil pointer (should pass).
 func TestOrConstraint_NilPointer(t *testing.T) {
 	type Form struct {
-		Color *string `json:"color" pedantigo:"hexcolor|rgb"`
+		Color *string `json:"color" validate:"hexcolor|rgb"`
 	}
 	validator := pedantigo.New[Form]()
 	err := validator.Validate(&Form{Color: nil})
@@ -164,7 +164,7 @@ func TestOrConstraint_NilPointer(t *testing.T) {
 // TestOrConstraint_PointerToValidValue tests OR constraint with pointer to valid value.
 func TestOrConstraint_PointerToValidValue(t *testing.T) {
 	type Form struct {
-		Color *string `json:"color" pedantigo:"hexcolor|rgb"`
+		Color *string `json:"color" validate:"hexcolor|rgb"`
 	}
 	validator := pedantigo.New[Form]()
 	validColor := "#FF0000"
@@ -175,7 +175,7 @@ func TestOrConstraint_PointerToValidValue(t *testing.T) {
 // TestOrConstraint_PointerToInvalidValue tests OR constraint with pointer to invalid value.
 func TestOrConstraint_PointerToInvalidValue(t *testing.T) {
 	type Form struct {
-		Color *string `json:"color" pedantigo:"hexcolor|rgb"`
+		Color *string `json:"color" validate:"hexcolor|rgb"`
 	}
 	validator := pedantigo.New[Form]()
 	invalidColor := "not-valid"
@@ -186,9 +186,9 @@ func TestOrConstraint_PointerToInvalidValue(t *testing.T) {
 // TestOrConstraint_MultipleFields tests OR constraint across multiple struct fields.
 func TestOrConstraint_MultipleFields(t *testing.T) {
 	type Form struct {
-		PrimaryColor   string `json:"primary_color" pedantigo:"hexcolor|rgb"`
-		SecondaryColor string `json:"secondary_color" pedantigo:"hexcolor|rgba"`
-		Contact        string `json:"contact" pedantigo:"email|url"`
+		PrimaryColor   string `json:"primary_color" validate:"hexcolor|rgb"`
+		SecondaryColor string `json:"secondary_color" validate:"hexcolor|rgba"`
+		Contact        string `json:"contact" validate:"email|url"`
 	}
 	validator := pedantigo.New[Form]()
 	err := validator.Validate(&Form{
@@ -202,8 +202,8 @@ func TestOrConstraint_MultipleFields(t *testing.T) {
 // TestOrConstraint_MultipleFields_OneFails tests OR constraint with one field failing.
 func TestOrConstraint_MultipleFields_OneFails(t *testing.T) {
 	type Form struct {
-		PrimaryColor   string `json:"primary_color" pedantigo:"hexcolor|rgb"`
-		SecondaryColor string `json:"secondary_color" pedantigo:"hexcolor|rgba"`
+		PrimaryColor   string `json:"primary_color" validate:"hexcolor|rgb"`
+		SecondaryColor string `json:"secondary_color" validate:"hexcolor|rgba"`
 	}
 	validator := pedantigo.New[Form]()
 	err := validator.Validate(&Form{
@@ -216,7 +216,7 @@ func TestOrConstraint_MultipleFields_OneFails(t *testing.T) {
 // TestOrConstraint_WithUnmarshal tests OR constraint via Unmarshal (integration test).
 func TestOrConstraint_WithUnmarshal(t *testing.T) {
 	type Form struct {
-		Color string `json:"color" pedantigo:"hexcolor|rgb|rgba"`
+		Color string `json:"color" validate:"hexcolor|rgb|rgba"`
 	}
 
 	tests := []struct {
@@ -267,7 +267,7 @@ func TestOrConstraint_WithUnmarshal(t *testing.T) {
 // TestOrConstraint_ComplexCombination tests OR with other string constraints.
 func TestOrConstraint_ComplexCombination(t *testing.T) {
 	type Form struct {
-		Identifier string `json:"identifier" pedantigo:"uuid|email"`
+		Identifier string `json:"identifier" validate:"uuid|email"`
 	}
 
 	tests := []struct {
@@ -308,7 +308,7 @@ func TestOrConstraint_ComplexCombination(t *testing.T) {
 // TestOrConstraint_AlphaOrNumeric tests OR with character class constraints.
 func TestOrConstraint_AlphaOrNumeric(t *testing.T) {
 	type Form struct {
-		Code string `json:"code" pedantigo:"alpha|numeric"`
+		Code string `json:"code" validate:"alpha|numeric"`
 	}
 
 	tests := []struct {

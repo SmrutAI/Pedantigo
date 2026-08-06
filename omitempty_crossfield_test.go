@@ -20,8 +20,8 @@ func TestValidate_OmitEmpty_WithCrossFieldConstraints(t *testing.T) {
 	// -------------------------------------------------------------------------
 
 	type omitEmptyScopeStruct struct {
-		ActorID   string `pedantigo:"omitempty,max=64,required_with=ActorType"`
-		ActorType string `pedantigo:"omitempty,oneof=user agent system,required_with=ActorID"`
+		ActorID   string `validate:"omitempty,max=64,required_with=ActorType"`
+		ActorType string `validate:"omitempty,oneof=user agent system,required_with=ActorID"`
 	}
 
 	t.Run("required_with/both_zero_no_error", func(t *testing.T) {
@@ -137,8 +137,8 @@ func TestValidate_OmitEmpty_WithCrossFieldConstraints(t *testing.T) {
 	// -------------------------------------------------------------------------
 
 	type omitEmptyConditionalStruct struct {
-		Mode  string `pedantigo:"oneof=auto manual"`
-		Query string `pedantigo:"omitempty,required_if=Mode manual"`
+		Mode  string `validate:"oneof=auto manual"`
+		Query string `validate:"omitempty,required_if=Mode manual"`
 	}
 
 	t.Run("required_if/condition_not_met_no_error", func(t *testing.T) {
@@ -181,12 +181,12 @@ func TestValidate_OmitEmpty_WithCrossFieldConstraints(t *testing.T) {
 	// -------------------------------------------------------------------------
 
 	type omitEmptyInnerStruct struct {
-		Value string `pedantigo:"min=1"`
+		Value string `validate:"min=1"`
 	}
 
 	type omitEmptyOuterStruct struct {
-		Inner *omitEmptyInnerStruct `pedantigo:"omitempty"`
-		Name  string                `pedantigo:"omitempty,max=10"`
+		Inner *omitEmptyInnerStruct `validate:"omitempty"`
+		Name  string                `validate:"omitempty,max=10"`
 	}
 
 	t.Run("nested_struct/nil_pointer_omitempty_skips_recursion", func(t *testing.T) {

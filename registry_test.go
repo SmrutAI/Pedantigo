@@ -156,7 +156,7 @@ func TestConcurrentRegistration(t *testing.T) {
 // TestRegisterValidation_ConcurrentWithValidation tests concurrent registration and validation.
 func TestRegisterValidation_ConcurrentWithValidation(t *testing.T) {
 	type User struct {
-		Code string `json:"code" pedantigo:"custom_code"`
+		Code string `json:"code" validate:"custom_code"`
 	}
 
 	// First, register the validator
@@ -544,7 +544,7 @@ func TestRegisterAlias_ConcurrentWithValidation(t *testing.T) {
 	require.NoError(t, err)
 
 	type TestStruct struct {
-		Value string `json:"value" pedantigo:"concurrent_val_alias"`
+		Value string `json:"value" validate:"concurrent_val_alias"`
 	}
 
 	var wg sync.WaitGroup

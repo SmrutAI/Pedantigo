@@ -34,9 +34,9 @@ import (
 )
 
 type User struct {
-    Email string `json:"email" pedantigo:"required,email"`
-    Age   int    `json:"age" pedantigo:"min=18,max=120"`
-    Role  string `json:"role" pedantigo:"oneof=admin user guest"`
+    Email string `json:"email" validate:"required,email"`
+    Age   int    `json:"age" validate:"min=18,max=120"`
+    Role  string `json:"role" validate:"oneof=admin user guest"`
 }
 
 func main() {

@@ -12,18 +12,18 @@ import (
 type TestUser struct {
 	ID       int    `json:"id"`
 	Name     string `json:"name"`
-	Password string `json:"password" pedantigo:"exclude:response|log"`
-	Token    string `json:"token" pedantigo:"exclude:log"`
-	Port     int    `json:"port" pedantigo:"omitzero"`
+	Password string `json:"password" validate:"exclude:response|log"`
+	Token    string `json:"token" validate:"exclude:log"`
+	Port     int    `json:"port" validate:"omitzero"`
 	Debug    bool   `json:"debug,omitempty"`
 }
 
 type TestConfig struct {
 	Host     string `json:"host"`
-	Port     int    `json:"port" pedantigo:"omitzero"`
-	APIKey   string `json:"api_key" pedantigo:"exclude:response"`
-	Internal string `json:"internal" pedantigo:"exclude:log|response"`
-	Enabled  *bool  `json:"enabled" pedantigo:"omitzero"`
+	Port     int    `json:"port" validate:"omitzero"`
+	APIKey   string `json:"api_key" validate:"exclude:response"`
+	Internal string `json:"internal" validate:"exclude:log|response"`
+	Enabled  *bool  `json:"enabled" validate:"omitzero"`
 	Count    *int   `json:"count"`
 }
 
@@ -34,7 +34,7 @@ type TestNested struct {
 
 type TestProfile struct {
 	Email    string `json:"email"`
-	Password string `json:"password" pedantigo:"exclude:response"`
+	Password string `json:"password" validate:"exclude:response"`
 }
 
 type TestPrivateFields struct {
@@ -50,7 +50,7 @@ type TestJSONDash struct {
 // ==================== BuildFieldMetadata Tests ====================
 
 func TestBuildFieldMetadata_Basic(t *testing.T) {
-	metadata := BuildFieldMetadata(reflect.TypeOf(TestUser{}), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(TestUser{}), "validate")
 
 	// Should have metadata for all exported fields
 	assert.Contains(t, metadata, "id")
@@ -66,7 +66,7 @@ func TestBuildFieldMetadata_Basic(t *testing.T) {
 }
 
 func TestBuildFieldMetadata_ExcludeContexts(t *testing.T) {
-	metadata := BuildFieldMetadata(reflect.TypeOf(TestUser{}), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(TestUser{}), "validate")
 
 	// Password excluded from "response" and "log" contexts
 	passwordMeta := metadata["password"]
@@ -85,7 +85,7 @@ func TestBuildFieldMetadata_ExcludeContexts(t *testing.T) {
 }
 
 func TestBuildFieldMetadata_MultipleExcludeContexts(t *testing.T) {
-	metadata := BuildFieldMetadata(reflect.TypeOf(TestConfig{}), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(TestConfig{}), "validate")
 
 	// Internal excluded from both "log" and "response"
 	internalMeta := metadata["internal"]
@@ -100,7 +100,7 @@ func TestBuildFieldMetadata_MultipleExcludeContexts(t *testing.T) {
 }
 
 func TestBuildFieldMetadata_OmitZero(t *testing.T) {
-	metadata := BuildFieldMetadata(reflect.TypeOf(TestUser{}), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(TestUser{}), "validate")
 
 	// Port has omitzero tag
 	portMeta := metadata["port"]
@@ -112,7 +112,7 @@ func TestBuildFieldMetadata_OmitZero(t *testing.T) {
 }
 
 func TestBuildFieldMetadata_OmitEmpty(t *testing.T) {
-	metadata := BuildFieldMetadata(reflect.TypeOf(TestUser{}), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(TestUser{}), "validate")
 
 	// Debug has json:",omitempty" tag
 	debugMeta := metadata["debug"]
@@ -124,7 +124,7 @@ func TestBuildFieldMetadata_OmitEmpty(t *testing.T) {
 }
 
 func TestBuildFieldMetadata_JSONDash(t *testing.T) {
-	metadata := BuildFieldMetadata(reflect.TypeOf(TestJSONDash{}), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(TestJSONDash{}), "validate")
 
 	// Should have metadata for "name"
 	assert.Contains(t, metadata, "name")
@@ -135,7 +135,7 @@ func TestBuildFieldMetadata_JSONDash(t *testing.T) {
 }
 
 func TestBuildFieldMetadata_UnexportedFields(t *testing.T) {
-	metadata := BuildFieldMetadata(reflect.TypeOf(TestPrivateFields{}), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(TestPrivateFields{}), "validate")
 
 	// Should have metadata for exported field
 	assert.Contains(t, metadata, "public")
@@ -146,7 +146,7 @@ func TestBuildFieldMetadata_UnexportedFields(t *testing.T) {
 
 func TestBuildFieldMetadata_PointerType(t *testing.T) {
 	// Should handle pointer to struct
-	metadata := BuildFieldMetadata(reflect.TypeOf(&TestUser{}), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(&TestUser{}), "validate")
 
 	// Should still work and extract fields
 	assert.Contains(t, metadata, "id")
@@ -156,13 +156,13 @@ func TestBuildFieldMetadata_PointerType(t *testing.T) {
 
 func TestBuildFieldMetadata_NonStructType(t *testing.T) {
 	// Should return empty map for non-struct types
-	metadata := BuildFieldMetadata(reflect.TypeOf("string"), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf("string"), "validate")
 	assert.Empty(t, metadata)
 
-	metadata = BuildFieldMetadata(reflect.TypeOf(42), "pedantigo")
+	metadata = BuildFieldMetadata(reflect.TypeOf(42), "validate")
 	assert.Empty(t, metadata)
 
-	metadata = BuildFieldMetadata(reflect.TypeOf([]int{1, 2, 3}), "pedantigo")
+	metadata = BuildFieldMetadata(reflect.TypeOf([]int{1, 2, 3}), "validate")
 	assert.Empty(t, metadata)
 }
 
@@ -524,14 +524,14 @@ func TestHasWhitelistContext_EmptyContext(t *testing.T) {
 // ==================== BuildFieldMetadata Include Tests ====================
 
 type TestIncludeUser struct {
-	ID       int    `json:"id" pedantigo:"include:summary|public"`
-	Email    string `json:"email" pedantigo:"include:summary|contact"`
-	Phone    string `json:"phone" pedantigo:"include:contact"`
+	ID       int    `json:"id" validate:"include:summary|public"`
+	Email    string `json:"email" validate:"include:summary|contact"`
+	Phone    string `json:"phone" validate:"include:contact"`
 	Password string `json:"password"` // No include tags
 }
 
 func TestBuildFieldMetadata_IncludeContexts(t *testing.T) {
-	metadata := BuildFieldMetadata(reflect.TypeOf(TestIncludeUser{}), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(TestIncludeUser{}), "validate")
 
 	// ID has include:summary and include:public
 	idMeta := metadata["id"]
@@ -564,13 +564,13 @@ func TestToFilteredMap_IncludeWhitelist(t *testing.T) {
 		Password: "secret",
 	}
 
-	metadata := BuildFieldMetadata(reflect.TypeOf(user), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(user), "validate")
 
 	// Test "summary" context - should only include ID and Email
 	optsSummary := Options{
 		Context:  "summary",
 		OmitZero: false,
-		TagName:  "pedantigo",
+		TagName:  "validate",
 	}
 	resultSummary := ToFilteredMap(reflect.ValueOf(user), metadata, optsSummary)
 
@@ -583,7 +583,7 @@ func TestToFilteredMap_IncludeWhitelist(t *testing.T) {
 	optsContact := Options{
 		Context:  "contact",
 		OmitZero: false,
-		TagName:  "pedantigo",
+		TagName:  "validate",
 	}
 	resultContact := ToFilteredMap(reflect.ValueOf(user), metadata, optsContact)
 
@@ -596,7 +596,7 @@ func TestToFilteredMap_IncludeWhitelist(t *testing.T) {
 	optsNone := Options{
 		Context:  "",
 		OmitZero: false,
-		TagName:  "pedantigo",
+		TagName:  "validate",
 	}
 	resultNone := ToFilteredMap(reflect.ValueOf(user), metadata, optsNone)
 
@@ -621,11 +621,11 @@ func TestToFilteredMap_Basic(t *testing.T) {
 		Age:   25,
 	}
 
-	metadata := BuildFieldMetadata(reflect.TypeOf(obj), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(obj), "validate")
 	opts := Options{
 		Context:  "",
 		OmitZero: false,
-		TagName:  "pedantigo",
+		TagName:  "validate",
 	}
 
 	result := ToFilteredMap(reflect.ValueOf(obj), metadata, opts)
@@ -645,11 +645,11 @@ func TestToFilteredMap_ExcludesPassword(t *testing.T) {
 		Debug:    true,
 	}
 
-	metadata := BuildFieldMetadata(reflect.TypeOf(user), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(user), "validate")
 	opts := Options{
 		Context:  "response",
 		OmitZero: false,
-		TagName:  "pedantigo",
+		TagName:  "validate",
 	}
 
 	result := ToFilteredMap(reflect.ValueOf(user), metadata, opts)
@@ -675,11 +675,11 @@ func TestToFilteredMap_OmitsZeroPort(t *testing.T) {
 		Debug:    false,
 	}
 
-	metadata := BuildFieldMetadata(reflect.TypeOf(user), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(user), "validate")
 	opts := Options{
 		Context:  "",
 		OmitZero: true, // OmitZero enabled
-		TagName:  "pedantigo",
+		TagName:  "validate",
 	}
 
 	result := ToFilteredMap(reflect.ValueOf(user), metadata, opts)
@@ -705,11 +705,11 @@ func TestToFilteredMap_NestedStruct(t *testing.T) {
 		},
 	}
 
-	metadata := BuildFieldMetadata(reflect.TypeOf(nested), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(nested), "validate")
 	opts := Options{
 		Context:  "response",
 		OmitZero: false,
-		TagName:  "pedantigo",
+		TagName:  "validate",
 	}
 
 	result := ToFilteredMap(reflect.ValueOf(nested), metadata, opts)
@@ -745,11 +745,11 @@ func TestToFilteredMap_NestedStructPointer(t *testing.T) {
 		Profile: profile,
 	}
 
-	metadata := BuildFieldMetadata(reflect.TypeOf(nested), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(nested), "validate")
 	opts := Options{
 		Context:  "response",
 		OmitZero: false,
-		TagName:  "pedantigo",
+		TagName:  "validate",
 	}
 
 	result := ToFilteredMap(reflect.ValueOf(nested), metadata, opts)
@@ -769,11 +769,11 @@ func TestToFilteredMap_NestedStructPointer(t *testing.T) {
 func TestToFilteredMap_NilPointer(t *testing.T) {
 	var user *TestUser
 
-	metadata := BuildFieldMetadata(reflect.TypeOf(TestUser{}), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(TestUser{}), "validate")
 	opts := Options{
 		Context:  "",
 		OmitZero: false,
-		TagName:  "pedantigo",
+		TagName:  "validate",
 	}
 
 	result := ToFilteredMap(reflect.ValueOf(user), metadata, opts)
@@ -792,11 +792,11 @@ func TestToFilteredMap_PointerToStruct(t *testing.T) {
 		Debug:    true,
 	}
 
-	metadata := BuildFieldMetadata(reflect.TypeOf(*user), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(*user), "validate")
 	opts := Options{
 		Context:  "",
 		OmitZero: false,
-		TagName:  "pedantigo",
+		TagName:  "validate",
 	}
 
 	result := ToFilteredMap(reflect.ValueOf(user), metadata, opts)
@@ -815,13 +815,13 @@ func TestToFilteredMap_MultipleContexts(t *testing.T) {
 		Count:    nil,
 	}
 
-	metadata := BuildFieldMetadata(reflect.TypeOf(config), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(config), "validate")
 
 	// Test "response" context
 	optsResponse := Options{
 		Context:  "response",
 		OmitZero: false,
-		TagName:  "pedantigo",
+		TagName:  "validate",
 	}
 	resultResponse := ToFilteredMap(reflect.ValueOf(config), metadata, optsResponse)
 
@@ -833,7 +833,7 @@ func TestToFilteredMap_MultipleContexts(t *testing.T) {
 	optsLog := Options{
 		Context:  "log",
 		OmitZero: false,
-		TagName:  "pedantigo",
+		TagName:  "validate",
 	}
 	resultLog := ToFilteredMap(reflect.ValueOf(config), metadata, optsLog)
 
@@ -845,7 +845,7 @@ func TestToFilteredMap_MultipleContexts(t *testing.T) {
 	optsNone := Options{
 		Context:  "",
 		OmitZero: false,
-		TagName:  "pedantigo",
+		TagName:  "validate",
 	}
 	resultNone := ToFilteredMap(reflect.ValueOf(config), metadata, optsNone)
 
@@ -867,11 +867,11 @@ func TestToFilteredMap_PointerFields(t *testing.T) {
 		Count:    &count,
 	}
 
-	metadata := BuildFieldMetadata(reflect.TypeOf(config), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(config), "validate")
 	opts := Options{
 		Context:  "",
 		OmitZero: true,
-		TagName:  "pedantigo",
+		TagName:  "validate",
 	}
 
 	result := ToFilteredMap(reflect.ValueOf(config), metadata, opts)
@@ -896,11 +896,11 @@ func TestToFilteredMap_NilPointerFieldWithOmitZero(t *testing.T) {
 		Count:    nil, // Nil pointer without omitzero tag
 	}
 
-	metadata := BuildFieldMetadata(reflect.TypeOf(config), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(config), "validate")
 	opts := Options{
 		Context:  "",
 		OmitZero: true,
-		TagName:  "pedantigo",
+		TagName:  "validate",
 	}
 
 	result := ToFilteredMap(reflect.ValueOf(config), metadata, opts)
@@ -916,11 +916,11 @@ func TestToFilteredMap_EmptyStruct(t *testing.T) {
 	type EmptyStruct struct{}
 
 	obj := EmptyStruct{}
-	metadata := BuildFieldMetadata(reflect.TypeOf(obj), "pedantigo")
+	metadata := BuildFieldMetadata(reflect.TypeOf(obj), "validate")
 	opts := Options{
 		Context:  "",
 		OmitZero: false,
-		TagName:  "pedantigo",
+		TagName:  "validate",
 	}
 
 	result := ToFilteredMap(reflect.ValueOf(obj), metadata, opts)

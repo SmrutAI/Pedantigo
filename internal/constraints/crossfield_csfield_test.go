@@ -16,7 +16,7 @@ func TestCsFieldConstraints(t *testing.T) {
 		}
 		type Form struct {
 			Inner Inner  `json:"inner"`
-			Match string `json:"match" pedantigo:"eqcsfield=Inner.Value"`
+			Match string `json:"match" validate:"eqcsfield=Inner.Value"`
 		}
 		validator := pedantigo.New[Form]()
 
@@ -42,7 +42,7 @@ func TestCsFieldConstraints(t *testing.T) {
 		}
 		type Form struct {
 			Inner    Inner  `json:"inner"`
-			NotMatch string `json:"not_match" pedantigo:"necsfield=Inner.Value"`
+			NotMatch string `json:"not_match" validate:"necsfield=Inner.Value"`
 		}
 		validator := pedantigo.New[Form]()
 
@@ -68,7 +68,7 @@ func TestCsFieldConstraints(t *testing.T) {
 		}
 		type Form struct {
 			Inner   Inner `json:"inner"`
-			Greater int   `json:"greater" pedantigo:"gtcsfield=Inner.Value"`
+			Greater int   `json:"greater" validate:"gtcsfield=Inner.Value"`
 		}
 		validator := pedantigo.New[Form]()
 
@@ -94,7 +94,7 @@ func TestCsFieldConstraints(t *testing.T) {
 		}
 		type Form struct {
 			Inner       Inner `json:"inner"`
-			GreaterOrEq int   `json:"greater_or_eq" pedantigo:"gtecsfield=Inner.Value"`
+			GreaterOrEq int   `json:"greater_or_eq" validate:"gtecsfield=Inner.Value"`
 		}
 		validator := pedantigo.New[Form]()
 
@@ -127,7 +127,7 @@ func TestCsFieldConstraints(t *testing.T) {
 		}
 		type Form struct {
 			Inner Inner `json:"inner"`
-			Less  int   `json:"less" pedantigo:"ltcsfield=Inner.Value"`
+			Less  int   `json:"less" validate:"ltcsfield=Inner.Value"`
 		}
 		validator := pedantigo.New[Form]()
 
@@ -153,7 +153,7 @@ func TestCsFieldConstraints(t *testing.T) {
 		}
 		type Form struct {
 			Inner    Inner `json:"inner"`
-			LessOrEq int   `json:"less_or_eq" pedantigo:"ltecsfield=Inner.Value"`
+			LessOrEq int   `json:"less_or_eq" validate:"ltecsfield=Inner.Value"`
 		}
 		validator := pedantigo.New[Form]()
 

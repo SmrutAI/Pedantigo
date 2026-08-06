@@ -23,8 +23,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "eqfield: string equality valid",
 			testFunc: func(t *testing.T) {
 				type PasswordChange struct {
-					Password string `pedantigo:"required"`
-					Confirm  string `pedantigo:"required,eqfield=Password"`
+					Password string `validate:"required"`
+					Confirm  string `validate:"required,eqfield=Password"`
 				}
 
 				validator := New[PasswordChange]()
@@ -42,8 +42,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "eqfield: string equality invalid",
 			testFunc: func(t *testing.T) {
 				type PasswordChange struct {
-					Password string `pedantigo:"required"`
-					Confirm  string `pedantigo:"required,eqfield=Password"`
+					Password string `validate:"required"`
+					Confirm  string `validate:"required,eqfield=Password"`
 				}
 
 				validator := New[PasswordChange]()
@@ -72,8 +72,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "eqfield: email equality valid",
 			testFunc: func(t *testing.T) {
 				type SignUp struct {
-					Email      string `pedantigo:"required,email"`
-					EmailCheck string `pedantigo:"required,email,eqfield=Email"`
+					Email      string `validate:"required,email"`
+					EmailCheck string `validate:"required,email,eqfield=Email"`
 				}
 
 				validator := New[SignUp]()
@@ -91,8 +91,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "eqfield: int equality valid",
 			testFunc: func(t *testing.T) {
 				type TransactionVerify struct {
-					Amount  int `pedantigo:"gt=0"`
-					Confirm int `pedantigo:"gt=0,eqfield=Amount"`
+					Amount  int `validate:"gt=0"`
+					Confirm int `validate:"gt=0,eqfield=Amount"`
 				}
 
 				validator := New[TransactionVerify]()
@@ -110,8 +110,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "eqfield: float equality valid",
 			testFunc: func(t *testing.T) {
 				type PriceMatch struct {
-					ExpectedPrice float64 `pedantigo:"gt=0"`
-					ActualPrice   float64 `pedantigo:"gt=0,eqfield=ExpectedPrice"`
+					ExpectedPrice float64 `validate:"gt=0"`
+					ActualPrice   float64 `validate:"gt=0,eqfield=ExpectedPrice"`
 				}
 
 				validator := New[PriceMatch]()
@@ -129,8 +129,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "eqfield: zero values equal valid",
 			testFunc: func(t *testing.T) {
 				type ZeroComparison struct {
-					Field1 int `pedantigo:"eqfield=Field2"`
-					Field2 int `pedantigo:"eqfield=Field1"`
+					Field1 int `validate:"eqfield=Field2"`
+					Field2 int `validate:"eqfield=Field1"`
 				}
 
 				validator := New[ZeroComparison]()
@@ -150,8 +150,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "nefield: float inequality valid",
 			testFunc: func(t *testing.T) {
 				type DiscountCode struct {
-					OriginalPrice   float64 `pedantigo:"gt=0"`
-					DiscountedPrice float64 `pedantigo:"gt=0,nefield=OriginalPrice"`
+					OriginalPrice   float64 `validate:"gt=0"`
+					DiscountedPrice float64 `validate:"gt=0,nefield=OriginalPrice"`
 				}
 
 				validator := New[DiscountCode]()
@@ -169,8 +169,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "nefield: float inequality invalid",
 			testFunc: func(t *testing.T) {
 				type DiscountCode struct {
-					OriginalPrice   float64 `pedantigo:"gt=0"`
-					DiscountedPrice float64 `pedantigo:"gt=0,nefield=OriginalPrice"`
+					OriginalPrice   float64 `validate:"gt=0"`
+					DiscountedPrice float64 `validate:"gt=0,nefield=OriginalPrice"`
 				}
 
 				validator := New[DiscountCode]()
@@ -188,8 +188,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "nefield: string inequality valid",
 			testFunc: func(t *testing.T) {
 				type UniqueLogins struct {
-					Username string `pedantigo:"required,min=3"`
-					Nickname string `pedantigo:"required,min=1,nefield=Username"`
+					Username string `validate:"required,min=3"`
+					Nickname string `validate:"required,min=1,nefield=Username"`
 				}
 
 				validator := New[UniqueLogins]()
@@ -207,8 +207,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "nefield: zero values inequality invalid",
 			testFunc: func(t *testing.T) {
 				type UnequalCheck struct {
-					Field1 int `pedantigo:"nefield=Field2"`
-					Field2 int `pedantigo:"nefield=Field1"`
+					Field1 int `validate:"nefield=Field2"`
+					Field2 int `validate:"nefield=Field1"`
 				}
 
 				validator := New[UnequalCheck]()
@@ -226,8 +226,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "nefield: zero values inequality valid",
 			testFunc: func(t *testing.T) {
 				type UnequalCheck struct {
-					Field1 int `pedantigo:"nefield=Field2"`
-					Field2 int `pedantigo:"nefield=Field1"`
+					Field1 int `validate:"nefield=Field2"`
+					Field2 int `validate:"nefield=Field1"`
 				}
 
 				validator := New[UnequalCheck]()
@@ -247,8 +247,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "gtfield: int greater than valid",
 			testFunc: func(t *testing.T) {
 				type DateRange struct {
-					StartYear int `pedantigo:"min=1900"`
-					EndYear   int `pedantigo:"min=1900,gtfield=StartYear"`
+					StartYear int `validate:"min=1900"`
+					EndYear   int `validate:"min=1900,gtfield=StartYear"`
 				}
 
 				validator := New[DateRange]()
@@ -266,8 +266,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "gtfield: int greater than invalid equal",
 			testFunc: func(t *testing.T) {
 				type DateRange struct {
-					StartYear int `pedantigo:"min=1900"`
-					EndYear   int `pedantigo:"min=1900,gtfield=StartYear"`
+					StartYear int `validate:"min=1900"`
+					EndYear   int `validate:"min=1900,gtfield=StartYear"`
 				}
 
 				validator := New[DateRange]()
@@ -285,8 +285,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "gtfield: float greater than valid",
 			testFunc: func(t *testing.T) {
 				type PriceComparison struct {
-					MinPrice float64 `pedantigo:"gt=0"`
-					MaxPrice float64 `pedantigo:"gt=0,gtfield=MinPrice"`
+					MinPrice float64 `validate:"gt=0"`
+					MaxPrice float64 `validate:"gt=0,gtfield=MinPrice"`
 				}
 
 				validator := New[PriceComparison]()
@@ -304,8 +304,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "gtfield: string greater than valid",
 			testFunc: func(t *testing.T) {
 				type StringComparison struct {
-					FirstName  string `pedantigo:"required"`
-					SecondName string `pedantigo:"required,gtfield=FirstName"`
+					FirstName  string `validate:"required"`
+					SecondName string `validate:"required,gtfield=FirstName"`
 				}
 
 				validator := New[StringComparison]()
@@ -323,7 +323,7 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "gtfield: negative numbers greater than valid",
 			testFunc: func(t *testing.T) {
 				type NegativeComparison struct {
-					Lower int `pedantigo:"gtfield=Upper"`
+					Lower int `validate:"gtfield=Upper"`
 					Upper int
 				}
 
@@ -344,8 +344,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "gtefield: int greater or equal valid greater",
 			testFunc: func(t *testing.T) {
 				type VersionComparison struct {
-					MinVersion int `pedantigo:"gt=0"`
-					MaxVersion int `pedantigo:"gt=0,gtefield=MinVersion"`
+					MinVersion int `validate:"gt=0"`
+					MaxVersion int `validate:"gt=0,gtefield=MinVersion"`
 				}
 
 				validator := New[VersionComparison]()
@@ -363,8 +363,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "gtefield: int greater or equal valid equal",
 			testFunc: func(t *testing.T) {
 				type VersionComparison struct {
-					MinVersion int `pedantigo:"gt=0"`
-					MaxVersion int `pedantigo:"gt=0,gtefield=MinVersion"`
+					MinVersion int `validate:"gt=0"`
+					MaxVersion int `validate:"gt=0,gtefield=MinVersion"`
 				}
 
 				validator := New[VersionComparison]()
@@ -382,8 +382,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "gtefield: int greater or equal invalid",
 			testFunc: func(t *testing.T) {
 				type VersionComparison struct {
-					MinVersion int `pedantigo:"gt=0"`
-					MaxVersion int `pedantigo:"gt=0,gtefield=MinVersion"`
+					MinVersion int `validate:"gt=0"`
+					MaxVersion int `validate:"gt=0,gtefield=MinVersion"`
 				}
 
 				validator := New[VersionComparison]()
@@ -401,8 +401,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "gtefield: float greater or equal valid equal",
 			testFunc: func(t *testing.T) {
 				type ScoreComparison struct {
-					MinScore float64 `pedantigo:"gte=0"`
-					MaxScore float64 `pedantigo:"gte=0,gtefield=MinScore"`
+					MinScore float64 `validate:"gte=0"`
+					MaxScore float64 `validate:"gte=0,gtefield=MinScore"`
 				}
 
 				validator := New[ScoreComparison]()
@@ -420,8 +420,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "gtefield: string greater or equal valid equal",
 			testFunc: func(t *testing.T) {
 				type StringComparison struct {
-					StartStr string `pedantigo:"required"`
-					EndStr   string `pedantigo:"required,gtefield=StartStr"`
+					StartStr string `validate:"required"`
+					EndStr   string `validate:"required,gtefield=StartStr"`
 				}
 
 				validator := New[StringComparison]()
@@ -439,7 +439,7 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "gtefield: zero values greater or equal valid",
 			testFunc: func(t *testing.T) {
 				type ZeroGreaterOrEqualCheck struct {
-					Field1 int `pedantigo:"gtefield=Field2"`
+					Field1 int `validate:"gtefield=Field2"`
 					Field2 int
 				}
 
@@ -460,8 +460,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "ltfield: int less than valid",
 			testFunc: func(t *testing.T) {
 				type AgeRange struct {
-					MinAge int `pedantigo:"gt=0,ltfield=MaxAge"`
-					MaxAge int `pedantigo:"gt=0"`
+					MinAge int `validate:"gt=0,ltfield=MaxAge"`
+					MaxAge int `validate:"gt=0"`
 				}
 
 				validator := New[AgeRange]()
@@ -479,8 +479,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "ltfield: int less than invalid equal",
 			testFunc: func(t *testing.T) {
 				type AgeRangeWithLt struct {
-					MinAge int `pedantigo:"gt=0,ltfield=MaxAge"`
-					MaxAge int `pedantigo:"gt=0"`
+					MinAge int `validate:"gt=0,ltfield=MaxAge"`
+					MaxAge int `validate:"gt=0"`
 				}
 
 				validator := New[AgeRangeWithLt]()
@@ -498,7 +498,7 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "ltfield: float less than valid",
 			testFunc: func(t *testing.T) {
 				type TemperatureRange struct {
-					MinTemp float64 `pedantigo:"ltfield=MaxTemp"`
+					MinTemp float64 `validate:"ltfield=MaxTemp"`
 					MaxTemp float64
 				}
 
@@ -517,8 +517,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "ltfield: string less than valid",
 			testFunc: func(t *testing.T) {
 				type StringOrder struct {
-					First  string `pedantigo:"required,ltfield=Second"`
-					Second string `pedantigo:"required"`
+					First  string `validate:"required,ltfield=Second"`
+					Second string `validate:"required"`
 				}
 
 				validator := New[StringOrder]()
@@ -536,7 +536,7 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "ltfield: negative numbers less than valid",
 			testFunc: func(t *testing.T) {
 				type NegativeComparison struct {
-					Lower int `pedantigo:"ltfield=Upper"`
+					Lower int `validate:"ltfield=Upper"`
 					Upper int
 				}
 
@@ -557,8 +557,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "ltefield: int less or equal valid less",
 			testFunc: func(t *testing.T) {
 				type RankRange struct {
-					StartRank int `pedantigo:"gt=0,ltefield=EndRank"`
-					EndRank   int `pedantigo:"gt=0"`
+					StartRank int `validate:"gt=0,ltefield=EndRank"`
+					EndRank   int `validate:"gt=0"`
 				}
 
 				validator := New[RankRange]()
@@ -576,8 +576,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "ltefield: int less or equal valid equal",
 			testFunc: func(t *testing.T) {
 				type RankRange struct {
-					StartRank int `pedantigo:"gt=0,ltefield=EndRank"`
-					EndRank   int `pedantigo:"gt=0"`
+					StartRank int `validate:"gt=0,ltefield=EndRank"`
+					EndRank   int `validate:"gt=0"`
 				}
 
 				validator := New[RankRange]()
@@ -595,8 +595,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "ltefield: float less or equal valid equal",
 			testFunc: func(t *testing.T) {
 				type PriceRange struct {
-					MinPrice float64 `pedantigo:"gt=0,ltefield=MaxPrice"`
-					MaxPrice float64 `pedantigo:"gt=0"`
+					MinPrice float64 `validate:"gt=0,ltefield=MaxPrice"`
+					MaxPrice float64 `validate:"gt=0"`
 				}
 
 				validator := New[PriceRange]()
@@ -614,8 +614,8 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "ltefield: string less or equal valid equal",
 			testFunc: func(t *testing.T) {
 				type StringBoundary struct {
-					Start string `pedantigo:"required,ltefield=End"`
-					End   string `pedantigo:"required"`
+					Start string `validate:"required,ltefield=End"`
+					End   string `validate:"required"`
 				}
 
 				validator := New[StringBoundary]()
@@ -633,7 +633,7 @@ func TestCrossFieldComparison_BasicOperators(t *testing.T) {
 			name: "ltefield: zero values less or equal valid",
 			testFunc: func(t *testing.T) {
 				type ZeroLessOrEqualCheck struct {
-					Field1 int `pedantigo:"ltefield=Field2"`
+					Field1 int `validate:"ltefield=Field2"`
 					Field2 int
 				}
 
@@ -672,9 +672,9 @@ func TestCrossFieldComparison(t *testing.T) {
 			name: "multiple constraints valid",
 			testFunc: func(t *testing.T) {
 				type TransactionBounds struct {
-					MinAmount    float64 `pedantigo:"gt=0"`
-					MaxAmount    float64 `pedantigo:"gt=0,gtfield=MinAmount"`
-					ActualAmount float64 `pedantigo:"gt=0,gtefield=MinAmount,ltefield=MaxAmount"`
+					MinAmount    float64 `validate:"gt=0"`
+					MaxAmount    float64 `validate:"gt=0,gtfield=MinAmount"`
+					ActualAmount float64 `validate:"gt=0,gtefield=MinAmount,ltefield=MaxAmount"`
 				}
 
 				validator := New[TransactionBounds]()
@@ -693,9 +693,9 @@ func TestCrossFieldComparison(t *testing.T) {
 			name: "multiple constraints invalid",
 			testFunc: func(t *testing.T) {
 				type TransactionBounds struct {
-					MinAmount    float64 `pedantigo:"gt=0"`
-					MaxAmount    float64 `pedantigo:"gt=0,gtfield=MinAmount"`
-					ActualAmount float64 `pedantigo:"gt=0,gtefield=MinAmount,ltefield=MaxAmount"`
+					MinAmount    float64 `validate:"gt=0"`
+					MaxAmount    float64 `validate:"gt=0,gtfield=MinAmount"`
+					ActualAmount float64 `validate:"gt=0,gtefield=MinAmount,ltefield=MaxAmount"`
 				}
 
 				validator := New[TransactionBounds]()
@@ -714,9 +714,9 @@ func TestCrossFieldComparison(t *testing.T) {
 			name: "three way dependency valid",
 			testFunc: func(t *testing.T) {
 				type OrderValidation struct {
-					OrderTotal     float64 `pedantigo:"gt=0"`
-					DiscountAmount float64 `pedantigo:"gte=0,ltefield=OrderTotal"`
-					FinalAmount    float64 `pedantigo:"gt=0,ltfield=OrderTotal,gtfield=DiscountAmount"`
+					OrderTotal     float64 `validate:"gt=0"`
+					DiscountAmount float64 `validate:"gte=0,ltefield=OrderTotal"`
+					FinalAmount    float64 `validate:"gt=0,ltfield=OrderTotal,gtfield=DiscountAmount"`
 				}
 
 				validator := New[OrderValidation]()
@@ -758,8 +758,8 @@ func TestCrossFieldComparison(t *testing.T) {
 			name: "uint comparison valid",
 			testFunc: func(t *testing.T) {
 				type PortRange struct {
-					MinPort uint `pedantigo:"gt=0,ltfield=MaxPort"`
-					MaxPort uint `pedantigo:"gt=0"`
+					MinPort uint `validate:"gt=0,ltfield=MaxPort"`
+					MaxPort uint `validate:"gt=0"`
 				}
 
 				validator := New[PortRange]()
@@ -777,8 +777,8 @@ func TestCrossFieldComparison(t *testing.T) {
 			name: "uint comparison invalid",
 			testFunc: func(t *testing.T) {
 				type PortRange struct {
-					MinPort uint `pedantigo:"gt=0,ltfield=MaxPort"`
-					MaxPort uint `pedantigo:"gt=0"`
+					MinPort uint `validate:"gt=0,ltfield=MaxPort"`
+					MaxPort uint `validate:"gt=0"`
 				}
 
 				validator := New[PortRange]()
@@ -796,7 +796,7 @@ func TestCrossFieldComparison(t *testing.T) {
 			name: "int32 comparison valid",
 			testFunc: func(t *testing.T) {
 				type Int32Range struct {
-					Start int32 `pedantigo:"ltfield=End"`
+					Start int32 `validate:"ltfield=End"`
 					End   int32
 				}
 
@@ -815,7 +815,7 @@ func TestCrossFieldComparison(t *testing.T) {
 			name: "float32 comparison valid",
 			testFunc: func(t *testing.T) {
 				type Float32Range struct {
-					MinVal float32 `pedantigo:"ltfield=MaxVal"`
+					MinVal float32 `validate:"ltfield=MaxVal"`
 					MaxVal float32
 				}
 

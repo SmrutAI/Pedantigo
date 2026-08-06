@@ -30,8 +30,8 @@ The Validator API creates reusable validator instances with custom configuration
 import "github.com/SmrutAI/pedantigo"
 
 type User struct {
-    Email string `pedantigo:"required,email"`
-    Age   int    `pedantigo:"required,min=18"`
+    Email string `validate:"required,email"`
+    Age   int    `validate:"required,min=18"`
 }
 
 // Create validator with default options
@@ -453,9 +453,9 @@ import (
 )
 
 type User struct {
-    Email    string `pedantigo:"required,email"`
-    Age      int    `pedantigo:"required,min=18,max=120"`
-    Username string `pedantigo:"required,min=3,max=50"`
+    Email    string `validate:"required,email"`
+    Age      int    `validate:"required,min=18,max=120"`
+    Username string `validate:"required,min=3,max=50"`
 }
 
 func main() {

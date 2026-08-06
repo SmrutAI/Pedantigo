@@ -4,10 +4,10 @@ import "sync/atomic"
 
 // DefaultTagName is the default struct tag name used by Pedantigo.
 // This is exported for reference but users should use GetTagName() for the current value.
-const DefaultTagName = "pedantigo"
+const DefaultTagName = "validate"
 
 var (
-	// globalTagName stores the current struct tag name (default: "pedantigo").
+	// globalTagName stores the current struct tag name (default: "validate").
 	globalTagName atomic.Value
 
 	// validatorCreated tracks if any validator has been created.
@@ -50,7 +50,7 @@ func SetTagName(name string) {
 }
 
 // GetTagName returns the current global tag name.
-// By default, this is "pedantigo".
+// By default, this is "validate".
 func GetTagName() string {
 	return globalTagName.Load().(string)
 }

@@ -133,7 +133,7 @@ func GenerateBaseSchema[T any]() *jsonschema.Schema {
 	}
 
 	// Clear the required fields set by jsonschema library
-	// We'll add our own based on pedantigo:"required" tags
+	// We'll add our own based on validate:"required" tags
 	actualSchema.Required = nil
 
 	return actualSchema

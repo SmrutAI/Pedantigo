@@ -16,7 +16,7 @@ func TestSkipUnless(t *testing.T) {
 	t.Run("condition met - validation proceeds", func(t *testing.T) {
 		type Form struct {
 			Status string `json:"status"`
-			Data   string `json:"data" pedantigo:"skip_unless=Status active"`
+			Data   string `json:"data" validate:"skip_unless=Status active"`
 		}
 
 		validator := New[Form]()
@@ -34,7 +34,7 @@ func TestSkipUnless(t *testing.T) {
 	t.Run("condition not met - validation skipped", func(t *testing.T) {
 		type Form struct {
 			Status string `json:"status"`
-			Data   string `json:"data" pedantigo:"skip_unless=Status active"`
+			Data   string `json:"data" validate:"skip_unless=Status active"`
 		}
 
 		validator := New[Form]()
@@ -52,7 +52,7 @@ func TestSkipUnless(t *testing.T) {
 	t.Run("boolean condition - true", func(t *testing.T) {
 		type Form struct {
 			Enabled bool   `json:"enabled"`
-			APIKey  string `json:"api_key" pedantigo:"skip_unless=Enabled true"`
+			APIKey  string `json:"api_key" validate:"skip_unless=Enabled true"`
 		}
 
 		validator := New[Form]()
@@ -70,7 +70,7 @@ func TestSkipUnless(t *testing.T) {
 	t.Run("boolean condition - false skips", func(t *testing.T) {
 		type Form struct {
 			Enabled bool   `json:"enabled"`
-			APIKey  string `json:"api_key" pedantigo:"skip_unless=Enabled true"`
+			APIKey  string `json:"api_key" validate:"skip_unless=Enabled true"`
 		}
 
 		validator := New[Form]()
@@ -88,7 +88,7 @@ func TestSkipUnless(t *testing.T) {
 	t.Run("integer condition", func(t *testing.T) {
 		type Form struct {
 			Level  int    `json:"level"`
-			Reward string `json:"reward" pedantigo:"skip_unless=Level 5"`
+			Reward string `json:"reward" validate:"skip_unless=Level 5"`
 		}
 
 		validator := New[Form]()
@@ -106,7 +106,7 @@ func TestSkipUnless(t *testing.T) {
 	t.Run("integer condition not met", func(t *testing.T) {
 		type Form struct {
 			Level  int    `json:"level"`
-			Reward string `json:"reward" pedantigo:"skip_unless=Level 5"`
+			Reward string `json:"reward" validate:"skip_unless=Level 5"`
 		}
 
 		validator := New[Form]()
@@ -124,7 +124,7 @@ func TestSkipUnless(t *testing.T) {
 	t.Run("case sensitive match", func(t *testing.T) {
 		type Form struct {
 			Type string `json:"type"`
-			Data string `json:"data" pedantigo:"skip_unless=Type Active"`
+			Data string `json:"data" validate:"skip_unless=Type Active"`
 		}
 
 		validator := New[Form]()
@@ -143,7 +143,7 @@ func TestSkipUnless(t *testing.T) {
 func TestSkipUnlessErrorCases(t *testing.T) {
 	t.Run("target field missing - panics at validator creation", func(t *testing.T) {
 		type Form struct {
-			Data string `json:"data" pedantigo:"skip_unless=NonExistentField value"`
+			Data string `json:"data" validate:"skip_unless=NonExistentField value"`
 		}
 
 		// ParseFieldPath panics when field doesn't exist
@@ -160,7 +160,7 @@ func TestSkipUnless_SkipsAllConstraints(t *testing.T) {
 	t.Run("skip_unless skips required when condition not met", func(t *testing.T) {
 		type Form struct {
 			Status string `json:"status"`
-			Data   string `json:"data" pedantigo:"skip_unless=Status active,required,min=5"`
+			Data   string `json:"data" validate:"skip_unless=Status active,required,min=5"`
 		}
 
 		validator := New[Form]()
@@ -180,7 +180,7 @@ func TestSkipUnless_SkipsAllConstraints(t *testing.T) {
 	t.Run("skip_unless validates when condition is met", func(t *testing.T) {
 		type Form struct {
 			Status string `json:"status"`
-			Data   string `json:"data" pedantigo:"skip_unless=Status active,required,min=5"`
+			Data   string `json:"data" validate:"skip_unless=Status active,required,min=5"`
 		}
 
 		validator := New[Form]()
@@ -199,7 +199,7 @@ func TestSkipUnless_SkipsAllConstraints(t *testing.T) {
 	t.Run("skip_unless skips email validation when condition not met", func(t *testing.T) {
 		type Form struct {
 			ContactMethod string `json:"contact_method"`
-			Email         string `json:"email" pedantigo:"skip_unless=ContactMethod email,required,email"`
+			Email         string `json:"email" validate:"skip_unless=ContactMethod email,required,email"`
 		}
 
 		validator := New[Form]()
@@ -217,7 +217,7 @@ func TestSkipUnless_SkipsAllConstraints(t *testing.T) {
 	t.Run("skip_unless validates email when condition is met", func(t *testing.T) {
 		type Form struct {
 			ContactMethod string `json:"contact_method"`
-			Email         string `json:"email" pedantigo:"skip_unless=ContactMethod email,required,email"`
+			Email         string `json:"email" validate:"skip_unless=ContactMethod email,required,email"`
 		}
 
 		validator := New[Form]()
@@ -237,15 +237,15 @@ func TestSkipUnless_SkipsAllConstraints(t *testing.T) {
 // This is the primary use case for skip_unless.
 func TestSkipUnless_DiscriminatedUnion(t *testing.T) {
 	type TV struct {
-		Channel int `json:"channel" pedantigo:"required,min=1,max=999"`
+		Channel int `json:"channel" validate:"required,min=1,max=999"`
 	}
 	type Fan struct {
-		Speed int `json:"speed" pedantigo:"required,min=1,max=5"`
+		Speed int `json:"speed" validate:"required,min=1,max=5"`
 	}
 	type Suite struct {
-		SuiteType string `json:"suite_type" pedantigo:"required,oneof=tv fan"`
-		TV        TV     `json:"tv" pedantigo:"skip_unless=SuiteType tv"`
-		Fan       Fan    `json:"fan" pedantigo:"skip_unless=SuiteType fan"`
+		SuiteType string `json:"suite_type" validate:"required,oneof=tv fan"`
+		TV        TV     `json:"tv" validate:"skip_unless=SuiteType tv"`
+		Fan       Fan    `json:"fan" validate:"skip_unless=SuiteType fan"`
 	}
 
 	validator := New[Suite]()
@@ -299,7 +299,7 @@ func TestSkipUnless_DiscriminatedUnion(t *testing.T) {
 func TestSkipUnless_MultipleConstraints(t *testing.T) {
 	type Form struct {
 		Type     string `json:"type"`
-		Username string `json:"username" pedantigo:"skip_unless=Type user,required,min=3,max=20,alphanum"`
+		Username string `json:"username" validate:"skip_unless=Type user,required,min=3,max=20,alphanum"`
 	}
 
 	validator := New[Form]()
@@ -330,7 +330,7 @@ func TestSkipUnless_TypeComparisons(t *testing.T) {
 	t.Run("uint comparison", func(t *testing.T) {
 		type Form struct {
 			Level uint   `json:"level"`
-			Badge string `json:"badge" pedantigo:"skip_unless=Level 10,required,min=1"`
+			Badge string `json:"badge" validate:"skip_unless=Level 10,required,min=1"`
 		}
 
 		validator := New[Form]()
@@ -349,7 +349,7 @@ func TestSkipUnless_TypeComparisons(t *testing.T) {
 	t.Run("bool comparison false", func(t *testing.T) {
 		type Form struct {
 			Disabled bool   `json:"disabled"`
-			Reason   string `json:"reason" pedantigo:"skip_unless=Disabled true,required,min=5"`
+			Reason   string `json:"reason" validate:"skip_unless=Disabled true,required,min=5"`
 		}
 
 		validator := New[Form]()
