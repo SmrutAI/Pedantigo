@@ -246,7 +246,7 @@ func TestBuildFieldDeserializers_Defaults(t *testing.T) {
 		{
 			name: "string default in strict mode",
 			structType: struct {
-				Name string `pedantigo:"default=guest"`
+				Name string `validate:"default=guest"`
 			}{},
 			strictMissingFields: true,
 			shouldPanic:         false,
@@ -254,7 +254,7 @@ func TestBuildFieldDeserializers_Defaults(t *testing.T) {
 		{
 			name: "int default in strict mode",
 			structType: struct {
-				Port int `pedantigo:"default=8080"`
+				Port int `validate:"default=8080"`
 			}{},
 			strictMissingFields: true,
 			shouldPanic:         false,
@@ -262,7 +262,7 @@ func TestBuildFieldDeserializers_Defaults(t *testing.T) {
 		{
 			name: "bool default in strict mode",
 			structType: struct {
-				Enabled bool `pedantigo:"default=true"`
+				Enabled bool `validate:"default=true"`
 			}{},
 			strictMissingFields: true,
 			shouldPanic:         false,
@@ -270,7 +270,7 @@ func TestBuildFieldDeserializers_Defaults(t *testing.T) {
 		{
 			name: "float64 default in strict mode",
 			structType: struct {
-				Timeout float64 `pedantigo:"default=30.5"`
+				Timeout float64 `validate:"default=30.5"`
 			}{},
 			strictMissingFields: true,
 			shouldPanic:         false,
@@ -278,7 +278,7 @@ func TestBuildFieldDeserializers_Defaults(t *testing.T) {
 		{
 			name: "empty string default",
 			structType: struct {
-				Name string `pedantigo:"default="`
+				Name string `validate:"default="`
 			}{},
 			strictMissingFields: true,
 			shouldPanic:         false,
@@ -286,7 +286,7 @@ func TestBuildFieldDeserializers_Defaults(t *testing.T) {
 		{
 			name: "default tag in non-strict mode panics",
 			structType: struct {
-				Name string `pedantigo:"default=guest"`
+				Name string `validate:"default=guest"`
 			}{},
 			strictMissingFields:  false,
 			shouldPanic:          true,
@@ -295,9 +295,9 @@ func TestBuildFieldDeserializers_Defaults(t *testing.T) {
 		{
 			name: "multiple defaults",
 			structType: struct {
-				Name    string `pedantigo:"default=guest"`
-				Port    int    `pedantigo:"default=8080"`
-				Enabled bool   `pedantigo:"default=true"`
+				Name    string `validate:"default=guest"`
+				Port    int    `validate:"default=8080"`
+				Enabled bool   `validate:"default=true"`
 			}{},
 			strictMissingFields: true,
 			shouldPanic:         false,
@@ -334,7 +334,7 @@ func TestBuildFieldDeserializers_DefaultUsingMethod(t *testing.T) {
 		{
 			name: "defaultUsingMethod with non-strict mode panics",
 			structType: struct {
-				Port int `pedantigo:"defaultUsingMethod=GetPort"`
+				Port int `validate:"defaultUsingMethod=GetPort"`
 			}{},
 			strictMissingFields:  false,
 			shouldPanic:          true,
@@ -343,7 +343,7 @@ func TestBuildFieldDeserializers_DefaultUsingMethod(t *testing.T) {
 		{
 			name: "defaultUsingMethod with missing method panics",
 			structType: struct {
-				Age int `pedantigo:"defaultUsingMethod=NonExistentMethod"`
+				Age int `validate:"defaultUsingMethod=NonExistentMethod"`
 			}{},
 			strictMissingFields:  true,
 			shouldPanic:          true,
@@ -540,7 +540,7 @@ func TestBuildFieldDeserializers_FieldDeserializerCallable(t *testing.T) {
 // TestBuildFieldDeserializers_RequiredFieldValidation tests required field tag validation.
 func TestBuildFieldDeserializers_RequiredFieldValidation(t *testing.T) {
 	type TestStruct struct {
-		Name string `pedantigo:"required"`
+		Name string `validate:"required"`
 		Age  int
 	}
 
@@ -606,21 +606,21 @@ func TestBuildFieldDeserializers_ConstraintsParsed(t *testing.T) {
 		{
 			name: "field with email constraint",
 			structType: struct {
-				Email string `pedantigo:"email"`
+				Email string `validate:"email"`
 			}{},
 			expectedFields: []string{"Email"},
 		},
 		{
 			name: "field with min constraint",
 			structType: struct {
-				Age int `pedantigo:"min=18"`
+				Age int `validate:"min=18"`
 			}{},
 			expectedFields: []string{"Age"},
 		},
 		{
 			name: "field with multiple constraints",
 			structType: struct {
-				Email string `pedantigo:"required,email,min=5,max=100"`
+				Email string `validate:"required,email,min=5,max=100"`
 			}{},
 			expectedFields: []string{"Email"},
 		},
@@ -998,11 +998,11 @@ func getMapKeys(m map[string]FieldDeserializer) []string {
 // TestBuildFieldDeserializers_ExtraFieldsTagSkip tests that fields with extra_fields tag are skipped.
 func TestBuildFieldDeserializers_ExtraFieldsTagSkip(t *testing.T) {
 	type ExtraCapture struct {
-		Name   string         `json:"name" pedantigo:"required"`
-		Extras map[string]any `json:"extras" pedantigo:"extra_fields"`
+		Name   string         `json:"name" validate:"required"`
+		Extras map[string]any `json:"extras" validate:"extra_fields"`
 	}
 
-	opts := BuilderOptions{TagName: "pedantigo", StrictMissingFields: true}
+	opts := BuilderOptions{TagName: "validate", StrictMissingFields: true}
 	deserializers := BuildFieldDeserializers(
 		reflect.TypeOf(ExtraCapture{}),
 		opts,
@@ -1020,10 +1020,10 @@ func TestBuildFieldDeserializers_ExtraFieldsTagSkip(t *testing.T) {
 // TestBuildFieldDeserializers_StaticDefaultApplied tests that static defaults are applied for missing fields.
 func TestBuildFieldDeserializers_StaticDefaultApplied(t *testing.T) {
 	type WithDefault struct {
-		Name string `json:"name" pedantigo:"default=DefaultName"`
+		Name string `json:"name" validate:"default=DefaultName"`
 	}
 
-	opts := BuilderOptions{TagName: "pedantigo", StrictMissingFields: true}
+	opts := BuilderOptions{TagName: "validate", StrictMissingFields: true}
 
 	var setDefaultCalled bool
 	var setDefaultValue string
@@ -1056,10 +1056,10 @@ func TestBuildFieldDeserializers_StaticDefaultApplied(t *testing.T) {
 // TestBuildFieldDeserializers_StaticDefaultWithTransform tests default with string transformation.
 func TestBuildFieldDeserializers_StaticDefaultWithTransform(t *testing.T) {
 	type WithDefaultAndTransform struct {
-		Name string `json:"name" pedantigo:"default=  hello  ,strip_whitespace,to_upper"`
+		Name string `json:"name" validate:"default=  hello  ,strip_whitespace,to_upper"`
 	}
 
-	opts := BuilderOptions{TagName: "pedantigo", StrictMissingFields: true}
+	opts := BuilderOptions{TagName: "validate", StrictMissingFields: true}
 
 	deserializers := BuildFieldDeserializers(
 		reflect.TypeOf(WithDefaultAndTransform{}),
@@ -1091,7 +1091,7 @@ func TestBuildFieldDeserializers_SetFieldValueError(t *testing.T) {
 		Name string `json:"name"`
 	}
 
-	opts := BuilderOptions{TagName: "pedantigo", StrictMissingFields: true}
+	opts := BuilderOptions{TagName: "validate", StrictMissingFields: true}
 
 	deserializers := BuildFieldDeserializers(
 		reflect.TypeOf(Simple{}),
@@ -1116,7 +1116,7 @@ func TestBuildFieldDeserializers_SetFieldValueError(t *testing.T) {
 
 // MethodDefaultStruct is a struct with defaultUsingMethod.
 type MethodDefaultStruct struct {
-	Port int `json:"port" pedantigo:"defaultUsingMethod=GetDefaultPort"`
+	Port int `json:"port" validate:"defaultUsingMethod=GetDefaultPort"`
 }
 
 // GetDefaultPort returns the default port.
@@ -1126,7 +1126,7 @@ func (m *MethodDefaultStruct) GetDefaultPort() (int, error) {
 
 // TestBuildFieldDeserializers_MethodDefaultApplied tests defaultUsingMethod execution.
 func TestBuildFieldDeserializers_MethodDefaultApplied(t *testing.T) {
-	opts := BuilderOptions{TagName: "pedantigo", StrictMissingFields: true}
+	opts := BuilderOptions{TagName: "validate", StrictMissingFields: true}
 
 	deserializers := BuildFieldDeserializers(
 		reflect.TypeOf(MethodDefaultStruct{}),
@@ -1151,7 +1151,7 @@ func TestBuildFieldDeserializers_MethodDefaultApplied(t *testing.T) {
 
 // MethodDefaultErrorStruct is a struct with defaultUsingMethod that returns an error.
 type MethodDefaultErrorStruct struct {
-	Port int `json:"port" pedantigo:"defaultUsingMethod=GetDefaultPortWithError"`
+	Port int `json:"port" validate:"defaultUsingMethod=GetDefaultPortWithError"`
 }
 
 // GetDefaultPortWithError returns an error.
@@ -1161,7 +1161,7 @@ func (m *MethodDefaultErrorStruct) GetDefaultPortWithError() (int, error) {
 
 // TestBuildFieldDeserializers_MethodDefaultError tests error from defaultUsingMethod.
 func TestBuildFieldDeserializers_MethodDefaultError(t *testing.T) {
-	opts := BuilderOptions{TagName: "pedantigo", StrictMissingFields: true}
+	opts := BuilderOptions{TagName: "validate", StrictMissingFields: true}
 
 	deserializers := BuildFieldDeserializers(
 		reflect.TypeOf(MethodDefaultErrorStruct{}),
@@ -1186,7 +1186,7 @@ func TestBuildFieldDeserializers_MethodDefaultError(t *testing.T) {
 
 // MethodDefaultStringStruct has a method default for string field with transformations.
 type MethodDefaultStringStruct struct {
-	Name string `json:"name" pedantigo:"defaultUsingMethod=GetDefaultName,to_upper"`
+	Name string `json:"name" validate:"defaultUsingMethod=GetDefaultName,to_upper"`
 }
 
 // GetDefaultName returns default name.
@@ -1196,7 +1196,7 @@ func (m *MethodDefaultStringStruct) GetDefaultName() (string, error) {
 
 // TestBuildFieldDeserializers_MethodDefaultWithTransform tests method default with transformations.
 func TestBuildFieldDeserializers_MethodDefaultWithTransform(t *testing.T) {
-	opts := BuilderOptions{TagName: "pedantigo", StrictMissingFields: true}
+	opts := BuilderOptions{TagName: "validate", StrictMissingFields: true}
 
 	deserializers := BuildFieldDeserializers(
 		reflect.TypeOf(MethodDefaultStringStruct{}),

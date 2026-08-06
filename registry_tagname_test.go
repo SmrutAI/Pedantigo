@@ -19,7 +19,7 @@ func TestRegisterTagNameFunc(t *testing.T) {
 		})
 
 		type FormUser struct {
-			Email string `form:"user_email" pedantigo:"email"`
+			Email string `form:"user_email" validate:"email"`
 		}
 
 		user := &FormUser{Email: "invalid"}
@@ -48,7 +48,7 @@ func TestRegisterTagNameFunc(t *testing.T) {
 		})
 
 		type YamlConfig struct {
-			APIKey string `yaml:"api_key" pedantigo:"required,min=10"`
+			APIKey string `yaml:"api_key" validate:"required,min=10"`
 		}
 
 		config := &YamlConfig{APIKey: "short"}
@@ -73,8 +73,8 @@ func TestRegisterTagNameFunc(t *testing.T) {
 		})
 
 		type MixedStruct struct {
-			Field1 string `custom:"custom_name" pedantigo:"email"`
-			Field2 string `pedantigo:"email"` // No custom tag
+			Field1 string `custom:"custom_name" validate:"email"`
+			Field2 string `validate:"email"` // No custom tag
 		}
 
 		// Use invalid emails to trigger validation errors
@@ -92,7 +92,7 @@ func TestRegisterTagNameFunc_Default(t *testing.T) {
 	RegisterTagNameFunc(nil) // Assuming nil resets to default
 
 	type User struct {
-		Email string `json:"email_address" pedantigo:"email"`
+		Email string `json:"email_address" validate:"email"`
 	}
 
 	user := &User{Email: "invalid"}
@@ -124,8 +124,8 @@ func TestRegisterTagNameFunc_ComplexTags(t *testing.T) {
 	})
 
 	type ComplexUser struct {
-		Name  string `json:"user_name,omitempty" pedantigo:"required,min=2"`
-		Email string `json:"email_addr,omitempty" pedantigo:"email"`
+		Name  string `json:"user_name,omitempty" validate:"required,min=2"`
+		Email string `json:"email_addr,omitempty" validate:"email"`
 	}
 
 	user := &ComplexUser{Name: "J", Email: "invalid"}
@@ -151,7 +151,7 @@ func TestRegisterTagNameFunc_WithValidator(t *testing.T) {
 	})
 
 	type DBModel struct {
-		UserID string `db:"user_id" pedantigo:"required,uuid"`
+		UserID string `db:"user_id" validate:"required,uuid"`
 	}
 
 	v := New[DBModel]()
@@ -176,7 +176,7 @@ func TestRegisterTagNameFunc_MultipleRegistrations(t *testing.T) {
 	})
 
 	type TestStruct struct {
-		Value string `pedantigo:"email"`
+		Value string `validate:"email"`
 	}
 
 	data1 := &TestStruct{Value: "invalid"}
@@ -215,7 +215,7 @@ func TestRegisterTagNameFunc_EmptyString(t *testing.T) {
 	})
 
 	type EmptyNameStruct struct {
-		Field string `pedantigo:"email"`
+		Field string `validate:"email"`
 	}
 
 	data := &EmptyNameStruct{Field: "invalid"}
@@ -237,7 +237,7 @@ func TestRegisterTagNameFunc_SpecialCharacters(t *testing.T) {
 	})
 
 	type SpecialStruct struct {
-		Field string `special:"field.name.with.dots" pedantigo:"email"`
+		Field string `special:"field.name.with.dots" validate:"email"`
 	}
 
 	data := &SpecialStruct{Field: "invalid"}
@@ -267,8 +267,8 @@ func TestRegisterTagNameFunc_IgnoredTag(t *testing.T) {
 	})
 
 	type IgnoredFieldStruct struct {
-		Visible string `json:"visible" pedantigo:"email"`
-		Hidden  string `json:"-" pedantigo:"email"`
+		Visible string `json:"visible" validate:"email"`
+		Hidden  string `json:"-" validate:"email"`
 	}
 
 	data := &IgnoredFieldStruct{Visible: "invalid", Hidden: "invalid"}
@@ -289,11 +289,11 @@ func TestRegisterTagNameFunc_NestedStructs(t *testing.T) {
 	})
 
 	type Address struct {
-		City string `custom:"city_name" pedantigo:"email"`
+		City string `custom:"city_name" validate:"email"`
 	}
 
 	type Person struct {
-		Name    string  `custom:"person_name" pedantigo:"email"`
+		Name    string  `custom:"person_name" validate:"email"`
 		Address Address `custom:"person_address"`
 	}
 
@@ -323,7 +323,7 @@ func TestRegisterTagNameFunc_WithUnmarshal(t *testing.T) {
 	})
 
 	type APIRequest struct {
-		UserEmail string `json:"email" api:"user_email_address" pedantigo:"required,email"`
+		UserEmail string `json:"email" api:"user_email_address" validate:"required,email"`
 	}
 
 	jsonData := []byte(`{"email": "invalid"}`)
@@ -368,7 +368,7 @@ func TestRegisterTagNameFunc_ReflectStructField(t *testing.T) {
 	})
 
 	type TestStruct struct {
-		TestField string `json:"test_field" pedantigo:"email"`
+		TestField string `json:"test_field" validate:"email"`
 	}
 
 	data := &TestStruct{TestField: "invalid"}
@@ -394,7 +394,7 @@ func TestRegisterTagNameFunc_ValidationErrorFormat(t *testing.T) {
 	})
 
 	type ErrorTestStruct struct {
-		Field string `error_name:"CustomFieldName" pedantigo:"email,min=5"`
+		Field string `error_name:"CustomFieldName" validate:"email,min=5"`
 	}
 
 	tests := []struct {

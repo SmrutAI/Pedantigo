@@ -16,11 +16,11 @@ import (
 func TestRequiredZeroValueInNestedDiveStruct(t *testing.T) {
 	// Test struct matching the bug report
 	type Fact struct {
-		Content    string  `json:"content" pedantigo:"required"`
-		Importance float32 `json:"importance" pedantigo:"required"`
+		Content    string  `json:"content" validate:"required"`
+		Importance float32 `json:"importance" validate:"required"`
 	}
 	type Schema struct {
-		Facts []Fact `json:"facts" pedantigo:"required,dive"`
+		Facts []Fact `json:"facts" validate:"required,dive"`
 	}
 
 	validator := New[Schema]()
@@ -59,11 +59,11 @@ func TestRequiredZeroValueInNestedDiveStruct(t *testing.T) {
 // TestRequiredZeroValueIntInNestedDiveStruct tests zero int values.
 func TestRequiredZeroValueIntInNestedDiveStruct(t *testing.T) {
 	type Item struct {
-		Name  string `json:"name" pedantigo:"required"`
-		Count int    `json:"count" pedantigo:"required"`
+		Name  string `json:"name" validate:"required"`
+		Count int    `json:"count" validate:"required"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"required,dive"`
+		Items []Item `json:"items" validate:"required,dive"`
 	}
 
 	validator := New[Container]()
@@ -87,11 +87,11 @@ func TestRequiredZeroValueIntInNestedDiveStruct(t *testing.T) {
 // TestRequiredZeroValueBoolInNestedDiveStruct tests false bool values.
 func TestRequiredZeroValueBoolInNestedDiveStruct(t *testing.T) {
 	type Setting struct {
-		Name   string `json:"name" pedantigo:"required"`
-		Active bool   `json:"active" pedantigo:"required"`
+		Name   string `json:"name" validate:"required"`
+		Active bool   `json:"active" validate:"required"`
 	}
 	type Config struct {
-		Settings []Setting `json:"settings" pedantigo:"required,dive"`
+		Settings []Setting `json:"settings" validate:"required,dive"`
 	}
 
 	validator := New[Config]()
@@ -116,11 +116,11 @@ func TestRequiredZeroValueBoolInNestedDiveStruct(t *testing.T) {
 // Note: Empty string with key present should pass required validation.
 func TestRequiredEmptyStringInNestedDiveStruct(t *testing.T) {
 	type Note struct {
-		Title   string `json:"title" pedantigo:"required"`
-		Content string `json:"content" pedantigo:"required"`
+		Title   string `json:"title" validate:"required"`
+		Content string `json:"content" validate:"required"`
 	}
 	type Notebook struct {
-		Notes []Note `json:"notes" pedantigo:"required,dive"`
+		Notes []Note `json:"notes" validate:"required,dive"`
 	}
 
 	validator := New[Notebook]()
@@ -145,10 +145,10 @@ func TestRequiredEmptyStringInNestedDiveStruct(t *testing.T) {
 // TestRequiredZeroValueInNestedMapStruct tests required in map values.
 func TestRequiredZeroValueInNestedMapStruct(t *testing.T) {
 	type Data struct {
-		Value int `json:"value" pedantigo:"required"`
+		Value int `json:"value" validate:"required"`
 	}
 	type Registry struct {
-		Items map[string]Data `json:"items" pedantigo:"dive"`
+		Items map[string]Data `json:"items" validate:"dive"`
 	}
 
 	validator := New[Registry]()

@@ -29,16 +29,16 @@ Validation is controlled with the `pedantigo` struct tag:
 
 ```go
 type User struct {
-    Name     string `json:"name" pedantigo:"required,min=2,max=50"`
-    Email    string `json:"email" pedantigo:"required,email"`
-    Age      int    `json:"age" pedantigo:"min=0,max=150"`
-    Status   string `json:"status" pedantigo:"required,enum=active|inactive|pending"`
-    Verified bool   `json:"verified" pedantigo:"default=false"`
+    Name     string `json:"name" validate:"required,min=2,max=50"`
+    Email    string `json:"email" validate:"required,email"`
+    Age      int    `json:"age" validate:"min=0,max=150"`
+    Status   string `json:"status" validate:"required,enum=active|inactive|pending"`
+    Verified bool   `json:"verified" validate:"default=false"`
 }
 ```
 
 **Key syntax rules:**
-- Constraints are comma-separated: `pedantigo:"constraint1,constraint2=value"`
+- Constraints are comma-separated: `validate:"constraint1,constraint2=value"`
 - Constraints with values use `=`: `min=2`, `max=50`, `default=false`
 - Enum values are pipe-separated: `enum=active|inactive|pending`
 - Multiple constraints stack: `required,email,max=100`
@@ -53,8 +53,8 @@ The Simple API uses automatic caching for best performance:
 
 ```go
 type User struct {
-    Email string `json:"email" pedantigo:"required,email"`
-    Age   int    `json:"age" pedantigo:"min=18"`
+    Email string `json:"email" validate:"required,email"`
+    Age   int    `json:"age" validate:"min=18"`
 }
 
 jsonData := []byte(`{"email":"alice@example.com","age":25}`)
@@ -142,7 +142,7 @@ Example:
 
 ```go
 type Config struct {
-    APIKey string `pedantigo:"required,min=10"`
+    APIKey string `validate:"required,min=10"`
 }
 
 // This passes (Unmarshal): JSON key is present
@@ -165,9 +165,9 @@ Each field is validated independently using constraints:
 
 ```go
 type Product struct {
-    Name  string `pedantigo:"required,max=100"`
-    Price float64 `pedantigo:"gt=0,lt=1000000"`
-    Stock int `pedantigo:"min=0,max=1000"`
+    Name  string `validate:"required,max=100"`
+    Price float64 `validate:"gt=0,lt=1000000"`
+    Stock int `validate:"min=0,max=1000"`
 }
 ```
 
@@ -179,8 +179,8 @@ For validation that involves multiple fields, implement the `Validatable` interf
 
 ```go
 type DateRange struct {
-    StartDate time.Time `json:"start_date" pedantigo:"required"`
-    EndDate   time.Time `json:"end_date" pedantigo:"required"`
+    StartDate time.Time `json:"start_date" validate:"required"`
+    EndDate   time.Time `json:"end_date" validate:"required"`
 }
 
 func (d *DateRange) Validate() error {
@@ -206,9 +206,9 @@ Pedantigo collects all validation errors in one pass, not stopping at the first 
 
 ```go
 type User struct {
-    Email string `json:"email" pedantigo:"required,email,max=100"`
-    Age   int    `json:"age" pedantigo:"required,min=18,max=120"`
-    Name  string `json:"name" pedantigo:"required,min=2"`
+    Email string `json:"email" validate:"required,email,max=100"`
+    Age   int    `json:"age" validate:"required,min=18,max=120"`
+    Name  string `json:"name" validate:"required,min=2"`
 }
 
 jsonData := []byte(`{
@@ -241,10 +241,10 @@ Example:
 
 ```go
 type User struct {
-    FirstName string `json:"first_name" pedantigo:"required"`
-    LastName  string `json:"last_name" pedantigo:"required"`
-    Email     string `json:"email" pedantigo:"required,email"`
-    Age       int    `json:"age" pedantigo:"min=0,max=150"`
+    FirstName string `json:"first_name" validate:"required"`
+    LastName  string `json:"last_name" validate:"required"`
+    Email     string `json:"email" validate:"required,email"`
+    Age       int    `json:"age" validate:"min=0,max=150"`
 }
 
 func (u *User) Validate() error {
@@ -265,9 +265,9 @@ Fields can have default values:
 
 ```go
 type Config struct {
-    Port      int    `json:"port" pedantigo:"default=8080"`
-    Debug     bool   `json:"debug" pedantigo:"default=false"`
-    Environment string `json:"env" pedantigo:"default=development"`
+    Port      int    `json:"port" validate:"default=8080"`
+    Debug     bool   `json:"debug" validate:"default=false"`
+    Environment string `json:"env" validate:"default=development"`
 }
 ```
 
@@ -275,7 +275,7 @@ For slice fields, use **space-separated values** (consistent with `oneof` syntax
 
 ```go
 type APIKeyRequest struct {
-    Scopes []string `json:"scopes" pedantigo:"default=read write,dive,oneof=read write admin"`
+    Scopes []string `json:"scopes" validate:"default=read write,dive,oneof=read write admin"`
 }
 // Missing "scopes" field → defaults to ["read", "write"]
 ```
@@ -284,8 +284,8 @@ Defaults are applied only for missing fields during `Unmarshal`. For dynamic def
 
 ```go
 type Session struct {
-    Token   string    `json:"token" pedantigo:"required,defaultFactory=generateToken"`
-    Created time.Time `json:"created" pedantigo:"defaultFactory=now"`
+    Token   string    `json:"token" validate:"required,defaultFactory=generateToken"`
+    Created time.Time `json:"created" validate:"defaultFactory=now"`
 }
 
 func generateToken() string {
@@ -305,8 +305,8 @@ The factory function is called only if the field is missing in the JSON.
 
 ```go
 type LoginRequest struct {
-    Username string `json:"username" pedantigo:"required,min=3"`
-    Password string `json:"password" pedantigo:"required,min=8"`
+    Username string `json:"username" validate:"required,min=3"`
+    Password string `json:"password" validate:"required,min=8"`
 }
 ```
 
@@ -314,7 +314,7 @@ type LoginRequest struct {
 
 ```go
 type User struct {
-    Email string `json:"email" pedantigo:"required,email"`
+    Email string `json:"email" validate:"required,email"`
 }
 ```
 
@@ -322,8 +322,8 @@ type User struct {
 
 ```go
 type Product struct {
-    Price float64 `json:"price" pedantigo:"gt=0,lt=1000000"`
-    Stock int `json:"stock" pedantigo:"min=0,max=10000"`
+    Price float64 `json:"price" validate:"gt=0,lt=1000000"`
+    Stock int `json:"stock" validate:"min=0,max=10000"`
 }
 ```
 
@@ -331,8 +331,8 @@ type Product struct {
 
 ```go
 type Post struct {
-    Title   string `json:"title" pedantigo:"required,min=5,max=200"`
-    Content string `json:"content" pedantigo:"required,min=10,max=10000"`
+    Title   string `json:"title" validate:"required,min=5,max=200"`
+    Content string `json:"content" validate:"required,min=10,max=10000"`
 }
 ```
 
@@ -340,7 +340,7 @@ type Post struct {
 
 ```go
 type Order struct {
-    Status string `json:"status" pedantigo:"required,enum=pending|processing|shipped|delivered"`
+    Status string `json:"status" validate:"required,enum=pending|processing|shipped|delivered"`
 }
 ```
 
@@ -348,10 +348,10 @@ type Order struct {
 
 ```go
 type Website struct {
-    URL      string `json:"url" pedantigo:"required,url"`
-    IPv4     string `json:"ipv4" pedantigo:"ipv4"`
-    IPv6     string `json:"ipv6" pedantigo:"ipv6"`
-    UUID     string `json:"uuid" pedantigo:"uuid"`
+    URL      string `json:"url" validate:"required,url"`
+    IPv4     string `json:"ipv4" validate:"ipv4"`
+    IPv6     string `json:"ipv6" validate:"ipv6"`
+    UUID     string `json:"uuid" validate:"uuid"`
 }
 ```
 

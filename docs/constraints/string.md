@@ -15,9 +15,9 @@ Validates the **number of characters** (runes) in the string.
 ```go
 type Post struct {
     // Username must be 3-20 characters
-    Username string `json:"username" pedantigo:"required,min=3,max=20"`
+    Username string `json:"username" validate:"required,min=3,max=20"`
     // Bio can be empty or up to 500 characters
-    Bio      string `json:"bio" pedantigo:"max=500"`
+    Bio      string `json:"bio" validate:"max=500"`
 }
 ```
 
@@ -32,7 +32,7 @@ Validates that a string has an **exact number of characters**.
 ```go
 type License struct {
     // License key must be exactly 32 characters
-    Key string `json:"key" pedantigo:"len=32"`
+    Key string `json:"key" validate:"len=32"`
 }
 ```
 
@@ -50,8 +50,8 @@ Validates that a string contains **only alphabetic characters** (A-Z, a-z).
 ```go
 type Person struct {
     // FirstName must be letters only
-    FirstName string `json:"first_name" pedantigo:"required,alpha"`
-    LastName  string `json:"last_name" pedantigo:"required,alpha"`
+    FirstName string `json:"first_name" validate:"required,alpha"`
+    LastName  string `json:"last_name" validate:"required,alpha"`
 }
 ```
 
@@ -65,7 +65,7 @@ Validates that a string contains **only alphabetic characters and digits** (A-Z,
 ```go
 type Username struct {
     // Username can contain letters and numbers only
-    Handle string `json:"handle" pedantigo:"required,alphanum,min=3,max=20"`
+    Handle string `json:"handle" validate:"required,alphanum,min=3,max=20"`
 }
 ```
 
@@ -79,7 +79,7 @@ Validates that a string contains **only ASCII characters** (character codes 0-12
 ```go
 type APIKey struct {
     // API key must be ASCII-compatible
-    Token string `json:"token" pedantigo:"required,ascii"`
+    Token string `json:"token" validate:"required,ascii"`
 }
 ```
 
@@ -95,7 +95,7 @@ Validates that a string **contains a specific substring**.
 ```go
 type DocumentTag struct {
     // Tag must contain the word "archive"
-    Label string `json:"label" pedantigo:"required,contains=archive"`
+    Label string `json:"label" validate:"required,contains=archive"`
 }
 ```
 
@@ -109,12 +109,12 @@ Validates that a string **contains a specific Unicode character (rune)**.
 ```go
 type Email struct {
     // Email must contain @ symbol
-    Address string `json:"address" pedantigo:"required,containsrune=@"`
+    Address string `json:"address" validate:"required,containsrune=@"`
 }
 
 type Cafe struct {
     // Name must contain é
-    Name string `json:"name" pedantigo:"containsrune=é"`
+    Name string `json:"name" validate:"containsrune=é"`
 }
 ```
 
@@ -130,7 +130,7 @@ Validates that a string **does NOT contain a specific substring**.
 ```go
 type Comment struct {
     // Comment must not contain profanity
-    Text string `json:"text" pedantigo:"required,excludes=badword"`
+    Text string `json:"text" validate:"required,excludes=badword"`
 }
 ```
 
@@ -144,7 +144,7 @@ Validates that a string **starts with a specific prefix**.
 ```go
 type OrderID struct {
     // Order ID must start with "ORD-"
-    ID string `json:"id" pedantigo:"required,startswith=ORD-"`
+    ID string `json:"id" validate:"required,startswith=ORD-"`
 }
 ```
 
@@ -158,7 +158,7 @@ Validates that a string **ends with a specific suffix**.
 ```go
 type EmailAddress struct {
     // Email must end with company domain
-    Email string `json:"email" pedantigo:"required,endswith=@company.com"`
+    Email string `json:"email" validate:"required,endswith=@company.com"`
 }
 ```
 
@@ -174,7 +174,7 @@ Validates that a string is **entirely lowercase**.
 ```go
 type Hostname struct {
     // Hostname must be lowercase
-    Domain string `json:"domain" pedantigo:"required,lowercase"`
+    Domain string `json:"domain" validate:"required,lowercase"`
 }
 ```
 
@@ -188,7 +188,7 @@ Validates that a string is **entirely uppercase**.
 ```go
 type CountryCode struct {
     // Country code must be uppercase
-    Code string `json:"code" pedantigo:"required,uppercase,len=2"`
+    Code string `json:"code" validate:"required,uppercase,len=2"`
 }
 ```
 
@@ -204,7 +204,7 @@ Validates that a string has **no leading or trailing whitespace** in validation 
 ```go
 type TagName struct {
     // Tag must not have leading/trailing whitespace
-    Tag string `json:"tag" pedantigo:"required,strip_whitespace"`
+    Tag string `json:"tag" validate:"required,strip_whitespace"`
 }
 ```
 
@@ -222,17 +222,17 @@ Validates that a string matches a **custom regular expression pattern**.
 ```go
 type PhoneNumber struct {
     // Phone must match pattern (flexible for various formats)
-    Phone string `json:"phone" pedantigo:"regexp=^\\+?[0-9\\s\\-\\(\\)]+$"`
+    Phone string `json:"phone" validate:"regexp=^\\+?[0-9\\s\\-\\(\\)]+$"`
 }
 
 type Username struct {
     // Username: letters, numbers, hyphens, underscores, 3-20 chars
-    Username string `json:"username" pedantigo:"regexp=^[a-zA-Z0-9_-]{3,20}$"`
+    Username string `json:"username" validate:"regexp=^[a-zA-Z0-9_-]{3,20}$"`
 }
 
 type Zipcode struct {
     // US Zipcode: 5 or 9 digits
-    Zipcode string `json:"zipcode" pedantigo:"regexp=^\\d{5}(-\\d{4})?$"`
+    Zipcode string `json:"zipcode" validate:"regexp=^\\d{5}(-\\d{4})?$"`
 }
 ```
 
@@ -273,34 +273,34 @@ import (
 
 type UserProfile struct {
     // Username: lowercase alphanumeric, 3-20 chars, no leading spaces
-    Username string `json:"username" pedantigo:"required,lowercase,alphanum,min=3,max=20"`
+    Username string `json:"username" validate:"required,lowercase,alphanum,min=3,max=20"`
 
     // Email: valid format
-    Email string `json:"email" pedantigo:"required,email"`
+    Email string `json:"email" validate:"required,email"`
 
     // Bio: optional, max 500 chars
-    Bio string `json:"bio,omitempty" pedantigo:"max=500"`
+    Bio string `json:"bio,omitempty" validate:"max=500"`
 
     // Country: exactly 2 uppercase letters
-    Country string `json:"country" pedantigo:"required,uppercase,len=2,alpha"`
+    Country string `json:"country" validate:"required,uppercase,len=2,alpha"`
 
     // Website: optional URL starting with https
-    Website string `json:"website,omitempty" pedantigo:"url,startswith=https://"`
+    Website string `json:"website,omitempty" validate:"url,startswith=https://"`
 
     // Nickname: letters only, 2-50 chars
-    Nickname string `json:"nickname" pedantigo:"alpha,min=2,max=50"`
+    Nickname string `json:"nickname" validate:"alpha,min=2,max=50"`
 
     // Status: one of specific values
-    Status string `json:"status" pedantigo:"required,oneof=active inactive suspended"`
+    Status string `json:"status" validate:"required,oneof=active inactive suspended"`
 
     // ApiKey: 32 ASCII characters
-    ApiKey string `json:"api_key" pedantigo:"required,len=32,ascii"`
+    ApiKey string `json:"api_key" validate:"required,len=32,ascii"`
 
     // AccountID: exactly 10 digits
-    AccountID string `json:"account_id" pedantigo:"required,regexp=^\\d{10}$"`
+    AccountID string `json:"account_id" validate:"required,regexp=^\\d{10}$"`
 
     // Preferences: no leading/trailing whitespace
-    Preferences string `json:"preferences,omitempty" pedantigo:"strip_whitespace"`
+    Preferences string `json:"preferences,omitempty" validate:"strip_whitespace"`
 }
 
 func main() {
@@ -358,22 +358,22 @@ String constraints can be combined to create powerful validation rules:
 ```go
 type SecurePassword struct {
     // Must be 12+ chars, contain uppercase, numbers, special chars
-    Password string `json:"password" pedantigo:"required,min=12,regexp=^(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%])`
+    Password string `json:"password" validate:"required,min=12,regexp=^(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%])`
 }
 
 type EuropeanPhoneNumber struct {
     // Format: +CC-XXX-XXX-XXXX where CC is country code
-    Phone string `json:"phone" pedantigo:"required,regexp=^\\+\\d{1,3}-\\d{3}-\\d{3}-\\d{4}$"`
+    Phone string `json:"phone" validate:"required,regexp=^\\+\\d{1,3}-\\d{3}-\\d{3}-\\d{4}$"`
 }
 
 type FileExtension struct {
     // Must be exactly 3 chars, lowercase, representing file type
-    Extension string `json:"ext" pedantigo:"required,len=3,lowercase,alpha"`
+    Extension string `json:"ext" validate:"required,len=3,lowercase,alpha"`
 }
 
 type SlugURL struct {
     // URL-friendly slug: lowercase, hyphens, no spaces or special chars
-    Slug string `json:"slug" pedantigo:"required,lowercase,regexp=^[a-z0-9-]+$"`
+    Slug string `json:"slug" validate:"required,lowercase,regexp=^[a-z0-9-]+$"`
 }
 ```
 

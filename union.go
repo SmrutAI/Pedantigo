@@ -38,7 +38,7 @@ type UnionOptions struct {
 // Stub: not yet implemented.
 type UnionValidator[T any] struct {
 	options  UnionOptions
-	tagName  string                  // Resolved tag name (global or "pedantigo")
+	tagName  string                  // Resolved tag name (global or "validate")
 	variants map[string]reflect.Type // discriminator value -> variant type
 }
 

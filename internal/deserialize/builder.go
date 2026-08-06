@@ -30,7 +30,7 @@ type FieldDeserializer func(outPtr *reflect.Value, inValue any) error
 // BuilderOptions configures the deserializer builder.
 type BuilderOptions struct {
 	StrictMissingFields bool
-	TagName             string // Custom struct tag name (default: "pedantigo")
+	TagName             string // Custom struct tag name (default: "validate")
 }
 
 // BuildFieldDeserializers creates field deserializer closures for each struct field.

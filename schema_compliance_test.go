@@ -47,8 +47,8 @@ func TestSchemaCompliance_BasicTypes(t *testing.T) {
 			name: "string fields",
 			setup: func() ([]byte, error) {
 				type User struct {
-					Name  string `json:"name" pedantigo:"required"`
-					Email string `json:"email" pedantigo:"email"`
+					Name  string `json:"name" validate:"required"`
+					Email string `json:"email" validate:"email"`
 				}
 				return New[User]().SchemaJSON()
 			},
@@ -57,9 +57,9 @@ func TestSchemaCompliance_BasicTypes(t *testing.T) {
 			name: "numeric fields",
 			setup: func() ([]byte, error) {
 				type Product struct {
-					Price    float64 `json:"price" pedantigo:"gt=0"`
-					Quantity int     `json:"quantity" pedantigo:"gte=0"`
-					Discount float32 `json:"discount" pedantigo:"min=0,max=100"`
+					Price    float64 `json:"price" validate:"gt=0"`
+					Quantity int     `json:"quantity" validate:"gte=0"`
+					Discount float32 `json:"discount" validate:"min=0,max=100"`
 				}
 				return New[Product]().SchemaJSON()
 			},
@@ -68,7 +68,7 @@ func TestSchemaCompliance_BasicTypes(t *testing.T) {
 			name: "boolean fields",
 			setup: func() ([]byte, error) {
 				type Config struct {
-					Enabled bool `json:"enabled" pedantigo:"required"`
+					Enabled bool `json:"enabled" validate:"required"`
 					Debug   bool `json:"debug"`
 				}
 				return New[Config]().SchemaJSON()
@@ -78,8 +78,8 @@ func TestSchemaCompliance_BasicTypes(t *testing.T) {
 			name: "array fields",
 			setup: func() ([]byte, error) {
 				type Tags struct {
-					Items []string `json:"items" pedantigo:"min=1"`
-					IDs   []int    `json:"ids" pedantigo:"required"`
+					Items []string `json:"items" validate:"min=1"`
+					IDs   []int    `json:"ids" validate:"required"`
 				}
 				return New[Tags]().SchemaJSON()
 			},
@@ -117,9 +117,9 @@ func TestSchemaCompliance_Constraints(t *testing.T) {
 			name: "string length constraints (minLength, maxLength)",
 			setup: func() ([]byte, error) {
 				type User struct {
-					Username string `json:"username" pedantigo:"min=3,max=20"`
-					Bio      string `json:"bio" pedantigo:"max=500"`
-					Code     string `json:"code" pedantigo:"len=6"`
+					Username string `json:"username" validate:"min=3,max=20"`
+					Bio      string `json:"bio" validate:"max=500"`
+					Code     string `json:"code" validate:"len=6"`
 				}
 				return New[User]().SchemaJSON()
 			},
@@ -128,8 +128,8 @@ func TestSchemaCompliance_Constraints(t *testing.T) {
 			name: "numeric range constraints (minimum, maximum)",
 			setup: func() ([]byte, error) {
 				type Product struct {
-					Price float64 `json:"price" pedantigo:"min=0,max=10000"`
-					Stock int     `json:"stock" pedantigo:"gte=0,lte=1000"`
+					Price float64 `json:"price" validate:"min=0,max=10000"`
+					Stock int     `json:"stock" validate:"gte=0,lte=1000"`
 				}
 				return New[Product]().SchemaJSON()
 			},
@@ -138,7 +138,7 @@ func TestSchemaCompliance_Constraints(t *testing.T) {
 			name: "exclusive range constraints (exclusiveMinimum, exclusiveMaximum)",
 			setup: func() ([]byte, error) {
 				type Range struct {
-					Value float64 `json:"value" pedantigo:"gt=0,lt=100"`
+					Value float64 `json:"value" validate:"gt=0,lt=100"`
 				}
 				return New[Range]().SchemaJSON()
 			},
@@ -147,11 +147,11 @@ func TestSchemaCompliance_Constraints(t *testing.T) {
 			name: "format constraints",
 			setup: func() ([]byte, error) {
 				type Contact struct {
-					Email    string `json:"email" pedantigo:"email"`
-					Website  string `json:"website" pedantigo:"url"`
-					ID       string `json:"id" pedantigo:"uuid"`
-					IPv4Addr string `json:"ipv4" pedantigo:"ipv4"`
-					IPv6Addr string `json:"ipv6" pedantigo:"ipv6"`
+					Email    string `json:"email" validate:"email"`
+					Website  string `json:"website" validate:"url"`
+					ID       string `json:"id" validate:"uuid"`
+					IPv4Addr string `json:"ipv4" validate:"ipv4"`
+					IPv6Addr string `json:"ipv6" validate:"ipv6"`
 				}
 				return New[Contact]().SchemaJSON()
 			},
@@ -160,8 +160,8 @@ func TestSchemaCompliance_Constraints(t *testing.T) {
 			name: "pattern constraint",
 			setup: func() ([]byte, error) {
 				type Code struct {
-					ZipCode string `json:"zipCode" pedantigo:"regexp=^[0-9]{5}$"`
-					SKU     string `json:"sku" pedantigo:"regexp=^[A-Z]{3}-[0-9]{4}$"`
+					ZipCode string `json:"zipCode" validate:"regexp=^[0-9]{5}$"`
+					SKU     string `json:"sku" validate:"regexp=^[A-Z]{3}-[0-9]{4}$"`
 				}
 				return New[Code]().SchemaJSON()
 			},
@@ -170,8 +170,8 @@ func TestSchemaCompliance_Constraints(t *testing.T) {
 			name: "enum constraint (oneof)",
 			setup: func() ([]byte, error) {
 				type Status struct {
-					State string `json:"state" pedantigo:"oneof=pending active completed"`
-					Role  string `json:"role" pedantigo:"oneof=admin user guest"`
+					State string `json:"state" validate:"oneof=pending active completed"`
+					Role  string `json:"role" validate:"oneof=admin user guest"`
 				}
 				return New[Status]().SchemaJSON()
 			},
@@ -180,8 +180,8 @@ func TestSchemaCompliance_Constraints(t *testing.T) {
 			name: "const constraint (eq)",
 			setup: func() ([]byte, error) {
 				type Fixed struct {
-					Type    string `json:"type" pedantigo:"eq=user"`
-					Version string `json:"version" pedantigo:"eq=1.0"`
+					Type    string `json:"type" validate:"eq=user"`
+					Version string `json:"version" validate:"eq=1.0"`
 				}
 				return New[Fixed]().SchemaJSON()
 			},
@@ -190,7 +190,7 @@ func TestSchemaCompliance_Constraints(t *testing.T) {
 			name: "not constraint (ne)",
 			setup: func() ([]byte, error) {
 				type Exclusion struct {
-					Status string `json:"status" pedantigo:"ne=deleted"`
+					Status string `json:"status" validate:"ne=deleted"`
 				}
 				return New[Exclusion]().SchemaJSON()
 			},
@@ -199,7 +199,7 @@ func TestSchemaCompliance_Constraints(t *testing.T) {
 			name: "multipleOf constraint",
 			setup: func() ([]byte, error) {
 				type Quantity struct {
-					Count int `json:"count" pedantigo:"multiple_of=5"`
+					Count int `json:"count" validate:"multiple_of=5"`
 				}
 				return New[Quantity]().SchemaJSON()
 			},
@@ -208,9 +208,9 @@ func TestSchemaCompliance_Constraints(t *testing.T) {
 			name: "default values",
 			setup: func() ([]byte, error) {
 				type Config struct {
-					Port    int    `json:"port" pedantigo:"default=8080"`
-					Host    string `json:"host" pedantigo:"default=localhost"`
-					Enabled bool   `json:"enabled" pedantigo:"default=true"`
+					Port    int    `json:"port" validate:"default=8080"`
+					Host    string `json:"host" validate:"default=localhost"`
+					Enabled bool   `json:"enabled" validate:"default=true"`
 				}
 				return New[Config]().SchemaJSON()
 			},
@@ -238,11 +238,11 @@ func TestSchemaCompliance_NestedStructs(t *testing.T) {
 			name: "simple nested struct",
 			setup: func() ([]byte, error) {
 				type Address struct {
-					City string `json:"city" pedantigo:"required"`
-					Zip  string `json:"zip" pedantigo:"min=5"`
+					City string `json:"city" validate:"required"`
+					Zip  string `json:"zip" validate:"min=5"`
 				}
 				type User struct {
-					Name    string  `json:"name" pedantigo:"required"`
+					Name    string  `json:"name" validate:"required"`
 					Address Address `json:"address"`
 				}
 				return New[User]().SchemaJSON()
@@ -252,7 +252,7 @@ func TestSchemaCompliance_NestedStructs(t *testing.T) {
 			name: "deeply nested structs",
 			setup: func() ([]byte, error) {
 				type Level3 struct {
-					Data string `json:"data" pedantigo:"required"`
+					Data string `json:"data" validate:"required"`
 				}
 				type Level2 struct {
 					Nested Level3 `json:"nested"`
@@ -267,7 +267,7 @@ func TestSchemaCompliance_NestedStructs(t *testing.T) {
 			name: "pointer to struct",
 			setup: func() ([]byte, error) {
 				type Config struct {
-					Key   string `json:"key" pedantigo:"required"`
+					Key   string `json:"key" validate:"required"`
 					Value string `json:"value"`
 				}
 				type Service struct {
@@ -281,7 +281,7 @@ func TestSchemaCompliance_NestedStructs(t *testing.T) {
 			name: "slice of structs",
 			setup: func() ([]byte, error) {
 				type Item struct {
-					ID   string `json:"id" pedantigo:"required"`
+					ID   string `json:"id" validate:"required"`
 					Name string `json:"name"`
 				}
 				type Order struct {
@@ -326,11 +326,11 @@ func TestSchemaCompliance_OpenAPI(t *testing.T) {
 			name: "schema with $defs (nested struct)",
 			setup: func() ([]byte, error) {
 				type Address struct {
-					City string `json:"city" pedantigo:"required"`
-					Zip  string `json:"zip" pedantigo:"min=5"`
+					City string `json:"city" validate:"required"`
+					Zip  string `json:"zip" validate:"min=5"`
 				}
 				type User struct {
-					Name    string  `json:"name" pedantigo:"required"`
+					Name    string  `json:"name" validate:"required"`
 					Address Address `json:"address"`
 				}
 				return New[User]().SchemaJSONOpenAPI()
@@ -340,13 +340,13 @@ func TestSchemaCompliance_OpenAPI(t *testing.T) {
 			name: "schema with multiple $defs",
 			setup: func() ([]byte, error) {
 				type Tag struct {
-					Name string `json:"name" pedantigo:"required"`
+					Name string `json:"name" validate:"required"`
 				}
 				type Author struct {
-					Email string `json:"email" pedantigo:"email"`
+					Email string `json:"email" validate:"email"`
 				}
 				type Article struct {
-					Title  string `json:"title" pedantigo:"required"`
+					Title  string `json:"title" validate:"required"`
 					Tags   []Tag  `json:"tags"`
 					Author Author `json:"author"`
 				}
@@ -357,14 +357,14 @@ func TestSchemaCompliance_OpenAPI(t *testing.T) {
 			name: "deeply nested with $defs",
 			setup: func() ([]byte, error) {
 				type Permission struct {
-					Name string `json:"name" pedantigo:"required"`
+					Name string `json:"name" validate:"required"`
 				}
 				type Role struct {
-					Title       string       `json:"title" pedantigo:"required"`
+					Title       string       `json:"title" validate:"required"`
 					Permissions []Permission `json:"permissions"`
 				}
 				type User struct {
-					Username string `json:"username" pedantigo:"required"`
+					Username string `json:"username" validate:"required"`
 					Roles    []Role `json:"roles"`
 				}
 				return New[User]().SchemaJSONOpenAPI()
@@ -401,7 +401,7 @@ func TestSchemaCompliance_Metadata(t *testing.T) {
 			name: "title and description",
 			setup: func() ([]byte, error) {
 				type User struct {
-					Name string `json:"name" pedantigo:"title=User Name,description=The user's full name"`
+					Name string `json:"name" validate:"title=User Name,description=The user's full name"`
 				}
 				return New[User]().SchemaJSON()
 			},
@@ -410,7 +410,7 @@ func TestSchemaCompliance_Metadata(t *testing.T) {
 			name: "examples",
 			setup: func() ([]byte, error) {
 				type Email struct {
-					Address string `json:"address" pedantigo:"email,examples=[\"user@example.com\",\"admin@test.org\"]"`
+					Address string `json:"address" validate:"email,examples=[\"user@example.com\",\"admin@test.org\"]"`
 				}
 				return New[Email]().SchemaJSON()
 			},
@@ -419,7 +419,7 @@ func TestSchemaCompliance_Metadata(t *testing.T) {
 			name: "deprecated",
 			setup: func() ([]byte, error) {
 				type Legacy struct {
-					OldField string `json:"old_field" pedantigo:"deprecated=Use newField instead"`
+					OldField string `json:"old_field" validate:"deprecated=Use newField instead"`
 				}
 				return New[Legacy]().SchemaJSON()
 			},
@@ -447,14 +447,14 @@ func TestSchemaCompliance_ComplexTypes(t *testing.T) {
 			name: "all constraint types combined",
 			setup: func() ([]byte, error) {
 				type ComplexUser struct {
-					ID        string   `json:"id" pedantigo:"required,uuid"`
-					Email     string   `json:"email" pedantigo:"required,email"`
-					Username  string   `json:"username" pedantigo:"required,min=3,max=20,alpha"`
-					Age       int      `json:"age" pedantigo:"gte=18,lte=120"`
-					Score     float64  `json:"score" pedantigo:"gt=0,lt=100"`
-					Status    string   `json:"status" pedantigo:"oneof=active inactive pending"`
-					Tags      []string `json:"tags" pedantigo:"min=1"`
-					CreatedAt string   `json:"created_at" pedantigo:"required"`
+					ID        string   `json:"id" validate:"required,uuid"`
+					Email     string   `json:"email" validate:"required,email"`
+					Username  string   `json:"username" validate:"required,min=3,max=20,alpha"`
+					Age       int      `json:"age" validate:"gte=18,lte=120"`
+					Score     float64  `json:"score" validate:"gt=0,lt=100"`
+					Status    string   `json:"status" validate:"oneof=active inactive pending"`
+					Tags      []string `json:"tags" validate:"min=1"`
+					CreatedAt string   `json:"created_at" validate:"required"`
 				}
 				return New[ComplexUser]().SchemaJSON()
 			},
@@ -463,23 +463,23 @@ func TestSchemaCompliance_ComplexTypes(t *testing.T) {
 			name: "nested with all features",
 			setup: func() ([]byte, error) {
 				type Address struct {
-					Street  string `json:"street" pedantigo:"required,min=5"`
-					City    string `json:"city" pedantigo:"required,min=2"`
-					ZipCode string `json:"zip_code" pedantigo:"regexp=^[0-9]{5}$"`
-					Country string `json:"country" pedantigo:"oneof=US CA UK"`
+					Street  string `json:"street" validate:"required,min=5"`
+					City    string `json:"city" validate:"required,min=2"`
+					ZipCode string `json:"zip_code" validate:"regexp=^[0-9]{5}$"`
+					Country string `json:"country" validate:"oneof=US CA UK"`
 				}
 				type Company struct {
-					Name    string `json:"name" pedantigo:"required,min=1,max=100"`
-					Website string `json:"website" pedantigo:"url"`
-					Size    int    `json:"size" pedantigo:"gte=1"`
+					Name    string `json:"name" validate:"required,min=1,max=100"`
+					Website string `json:"website" validate:"url"`
+					Size    int    `json:"size" validate:"gte=1"`
 				}
 				type Employee struct {
-					ID      string   `json:"id" pedantigo:"required,uuid"`
-					Name    string   `json:"name" pedantigo:"required,min=2"`
-					Email   string   `json:"email" pedantigo:"required,email"`
-					Address Address  `json:"address" pedantigo:"required"`
+					ID      string   `json:"id" validate:"required,uuid"`
+					Name    string   `json:"name" validate:"required,min=2"`
+					Email   string   `json:"email" validate:"required,email"`
+					Address Address  `json:"address" validate:"required"`
 					Company Company  `json:"company"`
-					Skills  []string `json:"skills" pedantigo:"min=1"`
+					Skills  []string `json:"skills" validate:"min=1"`
 				}
 				return New[Employee]().SchemaJSON()
 			},
@@ -500,9 +500,9 @@ func TestSchemaCompliance_ComplexTypes(t *testing.T) {
 // TestSchemaCompliance_ValidationWorks verifies the compiled schema can validate data.
 func TestSchemaCompliance_ValidationWorks(t *testing.T) {
 	type User struct {
-		Name  string `json:"name" pedantigo:"required,min=3"`
-		Email string `json:"email" pedantigo:"required,email"`
-		Age   int    `json:"age" pedantigo:"gte=18"`
+		Name  string `json:"name" validate:"required,min=3"`
+		Email string `json:"email" validate:"required,email"`
+		Age   int    `json:"age" validate:"gte=18"`
 	}
 
 	schemaBytes, err := New[User]().SchemaJSON()

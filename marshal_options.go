@@ -3,7 +3,7 @@ package pedantigo
 // MarshalOptions configures Marshal behavior.
 type MarshalOptions struct {
 	// Context specifies which exclusion context to apply.
-	// Fields tagged with pedantigo:"exclude:context" will be omitted.
+	// Fields tagged with validate:"exclude:context" will be omitted.
 	// Empty string means no context-based exclusion.
 	Context string
 

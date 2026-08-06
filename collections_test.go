@@ -27,7 +27,7 @@ const (
 // TestSlice_ValidEmails tests slice element email validation with dive.
 func TestSlice_ValidEmails(t *testing.T) {
 	type Config struct {
-		Admins []string `json:"admins" pedantigo:"dive,email"`
+		Admins []string `json:"admins" validate:"dive,email"`
 	}
 
 	validator := New[Config]()
@@ -40,7 +40,7 @@ func TestSlice_ValidEmails(t *testing.T) {
 
 func TestSlice_InvalidEmail_SingleElement(t *testing.T) {
 	type Config struct {
-		Admins []string `json:"admins" pedantigo:"dive,email"`
+		Admins []string `json:"admins" validate:"dive,email"`
 	}
 
 	validator := New[Config]()
@@ -64,7 +64,7 @@ func TestSlice_InvalidEmail_SingleElement(t *testing.T) {
 
 func TestSlice_InvalidEmail_MultipleElements(t *testing.T) {
 	type Config struct {
-		Admins []string `json:"admins" pedantigo:"dive,email"`
+		Admins []string `json:"admins" validate:"dive,email"`
 	}
 
 	validator := New[Config]()
@@ -100,7 +100,7 @@ func TestSlice_ElementMinLength(t *testing.T) {
 	// WITH dive: min=3 applies to each element's length (must be >= 3 chars)
 	t.Run("with_dive_element_length", func(t *testing.T) {
 		type User struct {
-			Tags []string `json:"tags" pedantigo:"dive,min=3"`
+			Tags []string `json:"tags" validate:"dive,min=3"`
 		}
 
 		validator := New[User]()
@@ -119,7 +119,7 @@ func TestSlice_ElementMinLength(t *testing.T) {
 	// WITHOUT dive: min=3 applies to slice length (must have >= 3 elements)
 	t.Run("without_dive_collection_length", func(t *testing.T) {
 		type User struct {
-			Tags []string `json:"tags" pedantigo:"min=3"`
+			Tags []string `json:"tags" validate:"min=3"`
 		}
 
 		validator := New[User]()
@@ -142,12 +142,12 @@ func TestSlice_ElementMinLength(t *testing.T) {
 
 func TestSlice_NestedStructValidation(t *testing.T) {
 	type Address struct {
-		City string `json:"city" pedantigo:"required"`
-		Zip  string `json:"zip" pedantigo:"min=5"`
+		City string `json:"city" validate:"required"`
+		Zip  string `json:"zip" validate:"min=5"`
 	}
 
 	type User struct {
-		Addresses []Address `json:"addresses" pedantigo:"dive"` // dive required to recurse into elements (like playground)
+		Addresses []Address `json:"addresses" validate:"dive"` // dive required to recurse into elements (like playground)
 	}
 
 	validator := New[User]()
@@ -183,7 +183,7 @@ func TestSlice_EmptySlice(t *testing.T) {
 	// WITH dive: empty slice passes (no elements to validate)
 	t.Run("with_dive_passes", func(t *testing.T) {
 		type Config struct {
-			Admins []string `json:"admins" pedantigo:"dive,email"`
+			Admins []string `json:"admins" validate:"dive,email"`
 		}
 
 		validator := New[Config]()
@@ -195,7 +195,7 @@ func TestSlice_EmptySlice(t *testing.T) {
 	// WITHOUT dive with min constraint: empty slice FAILS collection constraint
 	t.Run("without_dive_fails_min", func(t *testing.T) {
 		type Config struct {
-			Admins []string `json:"admins" pedantigo:"min=1"`
+			Admins []string `json:"admins" validate:"min=1"`
 		}
 
 		validator := New[Config]()
@@ -212,7 +212,7 @@ func TestSlice_NilSlice(t *testing.T) {
 	// WITH dive: nil slice passes (no elements to validate)
 	t.Run("with_dive_passes", func(t *testing.T) {
 		type Config struct {
-			Admins []string `json:"admins" pedantigo:"dive,email"`
+			Admins []string `json:"admins" validate:"dive,email"`
 		}
 
 		validator := New[Config]()
@@ -224,7 +224,7 @@ func TestSlice_NilSlice(t *testing.T) {
 	// WITHOUT dive with min constraint: nil slice has length 0, FAILS min constraint
 	t.Run("without_dive_fails_min", func(t *testing.T) {
 		type Config struct {
-			Admins []string `json:"admins" pedantigo:"min=1"`
+			Admins []string `json:"admins" validate:"min=1"`
 		}
 
 		validator := New[Config]()
@@ -245,7 +245,7 @@ func TestSlice_NilSlice(t *testing.T) {
 // TestMap_ValidEmails tests map value email validation with dive.
 func TestMap_ValidEmails(t *testing.T) {
 	type Config struct {
-		Contacts map[string]string `json:"contacts" pedantigo:"dive,email"`
+		Contacts map[string]string `json:"contacts" validate:"dive,email"`
 	}
 
 	validator := New[Config]()
@@ -258,7 +258,7 @@ func TestMap_ValidEmails(t *testing.T) {
 
 func TestMap_InvalidEmail_SingleValue(t *testing.T) {
 	type Config struct {
-		Contacts map[string]string `json:"contacts" pedantigo:"dive,email"`
+		Contacts map[string]string `json:"contacts" validate:"dive,email"`
 	}
 
 	validator := New[Config]()
@@ -282,7 +282,7 @@ func TestMap_InvalidEmail_SingleValue(t *testing.T) {
 
 func TestMap_InvalidEmail_MultipleValues(t *testing.T) {
 	type Config struct {
-		Contacts map[string]string `json:"contacts" pedantigo:"dive,email"`
+		Contacts map[string]string `json:"contacts" validate:"dive,email"`
 	}
 
 	validator := New[Config]()
@@ -316,7 +316,7 @@ func TestMap_ElementMinLength(t *testing.T) {
 	// WITH dive: min=3 applies to each value's length (must be >= 3 chars)
 	t.Run("with_dive_value_length", func(t *testing.T) {
 		type Config struct {
-			Tags map[string]string `json:"tags" pedantigo:"dive,min=3"`
+			Tags map[string]string `json:"tags" validate:"dive,min=3"`
 		}
 
 		validator := New[Config]()
@@ -335,7 +335,7 @@ func TestMap_ElementMinLength(t *testing.T) {
 	// WITHOUT dive: min=3 applies to map entry count (must have >= 3 entries)
 	t.Run("without_dive_entry_count", func(t *testing.T) {
 		type Config struct {
-			Tags map[string]string `json:"tags" pedantigo:"min=3"`
+			Tags map[string]string `json:"tags" validate:"min=3"`
 		}
 
 		validator := New[Config]()
@@ -358,12 +358,12 @@ func TestMap_ElementMinLength(t *testing.T) {
 
 func TestMap_NestedStructValidation(t *testing.T) {
 	type Address struct {
-		City string `json:"city" pedantigo:"required"`
-		Zip  string `json:"zip" pedantigo:"min=5"`
+		City string `json:"city" validate:"required"`
+		Zip  string `json:"zip" validate:"min=5"`
 	}
 
 	type Company struct {
-		Offices map[string]Address `json:"offices" pedantigo:"dive"` // dive required to recurse into elements (like playground)
+		Offices map[string]Address `json:"offices" validate:"dive"` // dive required to recurse into elements (like playground)
 	}
 
 	validator := New[Company]()
@@ -399,7 +399,7 @@ func TestMap_EmptyMap(t *testing.T) {
 	// WITH dive: empty map passes (no entries to validate)
 	t.Run("with_dive_passes", func(t *testing.T) {
 		type Config struct {
-			Contacts map[string]string `json:"contacts" pedantigo:"dive,email"`
+			Contacts map[string]string `json:"contacts" validate:"dive,email"`
 		}
 
 		validator := New[Config]()
@@ -411,7 +411,7 @@ func TestMap_EmptyMap(t *testing.T) {
 	// WITHOUT dive with min constraint: empty map FAILS collection constraint
 	t.Run("without_dive_fails_min", func(t *testing.T) {
 		type Config struct {
-			Contacts map[string]string `json:"contacts" pedantigo:"min=1"`
+			Contacts map[string]string `json:"contacts" validate:"min=1"`
 		}
 
 		validator := New[Config]()
@@ -428,7 +428,7 @@ func TestMap_NilMap(t *testing.T) {
 	// WITH dive: nil map passes (no entries to validate)
 	t.Run("with_dive_passes", func(t *testing.T) {
 		type Config struct {
-			Contacts map[string]string `json:"contacts" pedantigo:"dive,email"`
+			Contacts map[string]string `json:"contacts" validate:"dive,email"`
 		}
 
 		validator := New[Config]()
@@ -440,7 +440,7 @@ func TestMap_NilMap(t *testing.T) {
 	// WITHOUT dive with min constraint: nil map has length 0, FAILS min constraint
 	t.Run("without_dive_fails_min", func(t *testing.T) {
 		type Config struct {
-			Contacts map[string]string `json:"contacts" pedantigo:"min=1"`
+			Contacts map[string]string `json:"contacts" validate:"min=1"`
 		}
 
 		validator := New[Config]()
@@ -457,7 +457,7 @@ func TestMap_NilMap(t *testing.T) {
 // TestSlice_CollectionMinElements tests that without dive, min applies to slice length.
 func TestSlice_CollectionMinElements(t *testing.T) {
 	type Config struct {
-		Tags []string `json:"tags" pedantigo:"min=3"` // NO dive = collection constraint
+		Tags []string `json:"tags" validate:"min=3"` // NO dive = collection constraint
 	}
 	validator := New[Config]()
 
@@ -479,7 +479,7 @@ func TestSlice_CollectionMinElements(t *testing.T) {
 // TestSlice_CollectionMaxElements tests that without dive, max applies to slice length.
 func TestSlice_CollectionMaxElements(t *testing.T) {
 	type Config struct {
-		Tags []string `json:"tags" pedantigo:"max=2"` // NO dive = collection constraint
+		Tags []string `json:"tags" validate:"max=2"` // NO dive = collection constraint
 	}
 	validator := New[Config]()
 
@@ -501,7 +501,7 @@ func TestSlice_CollectionMaxElements(t *testing.T) {
 func TestSlice_MixedConstraints(t *testing.T) {
 	type Config struct {
 		// Collection: min 2 elements; Elements: each min 5 chars
-		Tags []string `json:"tags" pedantigo:"min=2,dive,min=5"`
+		Tags []string `json:"tags" validate:"min=2,dive,min=5"`
 	}
 	validator := New[Config]()
 
@@ -527,7 +527,7 @@ func TestSlice_MixedConstraints(t *testing.T) {
 // TestMap_CollectionMinEntries tests that without dive, min applies to entry count.
 func TestMap_CollectionMinEntries(t *testing.T) {
 	type Config struct {
-		Tags map[string]string `json:"tags" pedantigo:"min=2"` // NO dive = entry count
+		Tags map[string]string `json:"tags" validate:"min=2"` // NO dive = entry count
 	}
 	validator := New[Config]()
 
@@ -551,7 +551,7 @@ func TestMap_CollectionMinEntries(t *testing.T) {
 func TestMap_KeyValidation(t *testing.T) {
 	type Config struct {
 		// Keys: min 3 chars; Values: must be emails
-		Contacts map[string]string `json:"contacts" pedantigo:"dive,keys,min=3,endkeys,email"`
+		Contacts map[string]string `json:"contacts" validate:"dive,keys,min=3,endkeys,email"`
 	}
 	validator := New[Config]()
 
@@ -580,7 +580,7 @@ func TestMap_KeyValidation(t *testing.T) {
 func TestMap_KeyOnlyValidation(t *testing.T) {
 	type Config struct {
 		// Only key constraints, no value constraints
-		Data map[string]int `json:"data" pedantigo:"dive,keys,min=2,endkeys"`
+		Data map[string]int `json:"data" validate:"dive,keys,min=2,endkeys"`
 	}
 	validator := New[Config]()
 
@@ -599,7 +599,7 @@ func TestMap_KeyOnlyValidation(t *testing.T) {
 // TestDive_PanicOnNonCollection tests that dive on a non-collection field panics.
 func TestDive_PanicOnNonCollection(t *testing.T) {
 	type Config struct {
-		Name string `json:"name" pedantigo:"dive,min=3"` // ERROR: dive on string
+		Name string `json:"name" validate:"dive,min=3"` // ERROR: dive on string
 	}
 
 	// Should panic at validator creation time
@@ -612,7 +612,7 @@ func TestDive_PanicOnNonCollection(t *testing.T) {
 func TestKeys_RequiresDive(t *testing.T) {
 	type Config struct {
 		// ERROR: keys without dive
-		Contacts map[string]string `json:"contacts" pedantigo:"keys,min=3,endkeys,email"`
+		Contacts map[string]string `json:"contacts" validate:"keys,min=3,endkeys,email"`
 	}
 
 	// Should panic at validator creation time
@@ -625,7 +625,7 @@ func TestKeys_RequiresDive(t *testing.T) {
 func TestEndKeys_RequiresKeys(t *testing.T) {
 	type Config struct {
 		// ERROR: endkeys without keys
-		Contacts map[string]string `json:"contacts" pedantigo:"dive,endkeys,email"`
+		Contacts map[string]string `json:"contacts" validate:"dive,endkeys,email"`
 	}
 
 	// Should panic at validator creation time
@@ -638,7 +638,7 @@ func TestEndKeys_RequiresKeys(t *testing.T) {
 func TestKeys_OnlyValidForMaps(t *testing.T) {
 	type Config struct {
 		// ERROR: keys on slice
-		Tags []string `json:"tags" pedantigo:"dive,keys,min=3,endkeys,email"`
+		Tags []string `json:"tags" validate:"dive,keys,min=3,endkeys,email"`
 	}
 
 	// Should panic at validator creation time
@@ -653,7 +653,7 @@ func TestKeys_OnlyValidForMaps(t *testing.T) {
 func TestSlice_Unique(t *testing.T) {
 	t.Run("unique_strings", func(t *testing.T) {
 		type Config struct {
-			Tags []string `json:"tags" pedantigo:"unique"`
+			Tags []string `json:"tags" validate:"unique"`
 		}
 		validator := New[Config]()
 
@@ -673,7 +673,7 @@ func TestSlice_Unique(t *testing.T) {
 
 	t.Run("unique_ints", func(t *testing.T) {
 		type Config struct {
-			IDs []int `json:"ids" pedantigo:"unique"`
+			IDs []int `json:"ids" validate:"unique"`
 		}
 		validator := New[Config]()
 
@@ -688,7 +688,7 @@ func TestSlice_Unique(t *testing.T) {
 
 	t.Run("empty_slice_passes", func(t *testing.T) {
 		type Config struct {
-			Tags []string `json:"tags" pedantigo:"unique"`
+			Tags []string `json:"tags" validate:"unique"`
 		}
 		validator := New[Config]()
 
@@ -699,7 +699,7 @@ func TestSlice_Unique(t *testing.T) {
 
 	t.Run("nil_slice_passes", func(t *testing.T) {
 		type Config struct {
-			Tags []string `json:"tags" pedantigo:"unique"`
+			Tags []string `json:"tags" validate:"unique"`
 		}
 		validator := New[Config]()
 
@@ -710,7 +710,7 @@ func TestSlice_Unique(t *testing.T) {
 
 	t.Run("single_element_passes", func(t *testing.T) {
 		type Config struct {
-			Tags []string `json:"tags" pedantigo:"unique"`
+			Tags []string `json:"tags" validate:"unique"`
 		}
 		validator := New[Config]()
 
@@ -724,7 +724,7 @@ func TestSlice_Unique(t *testing.T) {
 func TestMap_UniqueValues(t *testing.T) {
 	t.Run("unique_values", func(t *testing.T) {
 		type Config struct {
-			Scores map[string]int `json:"scores" pedantigo:"unique"`
+			Scores map[string]int `json:"scores" validate:"unique"`
 		}
 		validator := New[Config]()
 
@@ -744,7 +744,7 @@ func TestMap_UniqueValues(t *testing.T) {
 
 	t.Run("empty_map_passes", func(t *testing.T) {
 		type Config struct {
-			Scores map[string]int `json:"scores" pedantigo:"unique"`
+			Scores map[string]int `json:"scores" validate:"unique"`
 		}
 		validator := New[Config]()
 
@@ -763,7 +763,7 @@ func TestSlice_UniqueByField(t *testing.T) {
 
 	t.Run("unique_by_id", func(t *testing.T) {
 		type Config struct {
-			Users []User `json:"users" pedantigo:"unique=ID"`
+			Users []User `json:"users" validate:"unique=ID"`
 		}
 		validator := New[Config]()
 
@@ -783,7 +783,7 @@ func TestSlice_UniqueByField(t *testing.T) {
 
 	t.Run("unique_by_name", func(t *testing.T) {
 		type Config struct {
-			Users []User `json:"users" pedantigo:"unique=Name"`
+			Users []User `json:"users" validate:"unique=Name"`
 		}
 		validator := New[Config]()
 
@@ -798,7 +798,7 @@ func TestSlice_UniqueByField(t *testing.T) {
 
 	t.Run("empty_struct_slice_passes", func(t *testing.T) {
 		type Config struct {
-			Users []User `json:"users" pedantigo:"unique=ID"`
+			Users []User `json:"users" validate:"unique=ID"`
 		}
 		validator := New[Config]()
 
@@ -811,7 +811,7 @@ func TestSlice_UniqueByField(t *testing.T) {
 // TestUnique_PanicOnNonCollection tests that unique on non-collection panics.
 func TestUnique_PanicOnNonCollection(t *testing.T) {
 	type Config struct {
-		Name string `json:"name" pedantigo:"unique"`
+		Name string `json:"name" validate:"unique"`
 	}
 
 	assert.Panics(t, func() {
@@ -823,7 +823,7 @@ func TestUnique_PanicOnNonCollection(t *testing.T) {
 func TestSlice_UniqueWithOtherConstraints(t *testing.T) {
 	t.Run("unique_and_min", func(t *testing.T) {
 		type Config struct {
-			Tags []string `json:"tags" pedantigo:"unique,min=2"`
+			Tags []string `json:"tags" validate:"unique,min=2"`
 		}
 		validator := New[Config]()
 
@@ -851,10 +851,10 @@ func TestSlice_UniqueWithOtherConstraints(t *testing.T) {
 // TestDive_GT tests greater than constraint in nested structs via dive.
 func TestDive_GT(t *testing.T) {
 	type Item struct {
-		Value int `json:"value" pedantigo:"gt=10"`
+		Value int `json:"value" validate:"gt=10"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -895,10 +895,10 @@ func TestDive_GT(t *testing.T) {
 // TestDive_GT_Map tests greater than constraint in map values via dive.
 func TestDive_GT_Map(t *testing.T) {
 	type Item struct {
-		Score int `json:"score" pedantigo:"gt=50"`
+		Score int `json:"score" validate:"gt=50"`
 	}
 	type Container struct {
-		Scores map[string]Item `json:"scores" pedantigo:"dive"`
+		Scores map[string]Item `json:"scores" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -930,10 +930,10 @@ func TestDive_GT_Map(t *testing.T) {
 // TestDive_GTE tests greater than or equal constraint in nested structs via dive.
 func TestDive_GTE(t *testing.T) {
 	type Item struct {
-		Age int `json:"age" pedantigo:"gte=18"`
+		Age int `json:"age" validate:"gte=18"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -974,10 +974,10 @@ func TestDive_GTE(t *testing.T) {
 // TestDive_GTE_Map tests greater than or equal constraint in map values via dive.
 func TestDive_GTE_Map(t *testing.T) {
 	type Item struct {
-		Rating float64 `json:"rating" pedantigo:"gte=0.0"`
+		Rating float64 `json:"rating" validate:"gte=0.0"`
 	}
 	type Container struct {
-		Ratings map[string]Item `json:"ratings" pedantigo:"dive"`
+		Ratings map[string]Item `json:"ratings" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1006,10 +1006,10 @@ func TestDive_GTE_Map(t *testing.T) {
 // TestDive_LT tests less than constraint in nested structs via dive.
 func TestDive_LT(t *testing.T) {
 	type Item struct {
-		Discount int `json:"discount" pedantigo:"lt=100"`
+		Discount int `json:"discount" validate:"lt=100"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1050,10 +1050,10 @@ func TestDive_LT(t *testing.T) {
 // TestDive_LT_Map tests less than constraint in map values via dive.
 func TestDive_LT_Map(t *testing.T) {
 	type Item struct {
-		Temperature float64 `json:"temp" pedantigo:"lt=100.0"`
+		Temperature float64 `json:"temp" validate:"lt=100.0"`
 	}
 	type Container struct {
-		Readings map[string]Item `json:"readings" pedantigo:"dive"`
+		Readings map[string]Item `json:"readings" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1082,10 +1082,10 @@ func TestDive_LT_Map(t *testing.T) {
 // TestDive_LTE tests less than or equal constraint in nested structs via dive.
 func TestDive_LTE(t *testing.T) {
 	type Item struct {
-		Capacity int `json:"capacity" pedantigo:"lte=1000"`
+		Capacity int `json:"capacity" validate:"lte=1000"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1126,10 +1126,10 @@ func TestDive_LTE(t *testing.T) {
 // TestDive_LTE_Map tests less than or equal constraint in map values via dive.
 func TestDive_LTE_Map(t *testing.T) {
 	type Item struct {
-		Percentage float64 `json:"pct" pedantigo:"lte=100.0"`
+		Percentage float64 `json:"pct" validate:"lte=100.0"`
 	}
 	type Container struct {
-		Stats map[string]Item `json:"stats" pedantigo:"dive"`
+		Stats map[string]Item `json:"stats" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1158,10 +1158,10 @@ func TestDive_LTE_Map(t *testing.T) {
 // TestDive_Positive tests positive constraint in nested structs via dive.
 func TestDive_Positive(t *testing.T) {
 	type Item struct {
-		Amount int `json:"amount" pedantigo:"positive"`
+		Amount int `json:"amount" validate:"positive"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1205,10 +1205,10 @@ func TestDive_Positive(t *testing.T) {
 // TestDive_Positive_Map tests positive constraint in map values via dive.
 func TestDive_Positive_Map(t *testing.T) {
 	type Item struct {
-		Price float64 `json:"price" pedantigo:"positive"`
+		Price float64 `json:"price" validate:"positive"`
 	}
 	type Container struct {
-		Products map[string]Item `json:"products" pedantigo:"dive"`
+		Products map[string]Item `json:"products" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1237,10 +1237,10 @@ func TestDive_Positive_Map(t *testing.T) {
 // TestDive_Negative tests negative constraint in nested structs via dive.
 func TestDive_Negative(t *testing.T) {
 	type Item struct {
-		Delta int `json:"delta" pedantigo:"negative"`
+		Delta int `json:"delta" validate:"negative"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1284,10 +1284,10 @@ func TestDive_Negative(t *testing.T) {
 // TestDive_Negative_Map tests negative constraint in map values via dive.
 func TestDive_Negative_Map(t *testing.T) {
 	type Item struct {
-		Adjustment float64 `json:"adj" pedantigo:"negative"`
+		Adjustment float64 `json:"adj" validate:"negative"`
 	}
 	type Container struct {
-		Adjustments map[string]Item `json:"adjustments" pedantigo:"dive"`
+		Adjustments map[string]Item `json:"adjustments" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1316,10 +1316,10 @@ func TestDive_Negative_Map(t *testing.T) {
 // TestDive_MultipleOf tests multiple_of constraint in nested structs via dive.
 func TestDive_MultipleOf(t *testing.T) {
 	type Item struct {
-		Quantity int `json:"quantity" pedantigo:"multiple_of=5"`
+		Quantity int `json:"quantity" validate:"multiple_of=5"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1360,10 +1360,10 @@ func TestDive_MultipleOf(t *testing.T) {
 // TestDive_MultipleOf_Map tests multiple_of constraint in map values via dive.
 func TestDive_MultipleOf_Map(t *testing.T) {
 	type Item struct {
-		Price float64 `json:"price" pedantigo:"multiple_of=0.25"`
+		Price float64 `json:"price" validate:"multiple_of=0.25"`
 	}
 	type Container struct {
-		Products map[string]Item `json:"products" pedantigo:"dive"`
+		Products map[string]Item `json:"products" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1387,10 +1387,10 @@ func TestDive_MultipleOf_Map(t *testing.T) {
 // TestDive_MaxDigits tests max_digits constraint in nested structs via dive.
 func TestDive_MaxDigits(t *testing.T) {
 	type Item struct {
-		Code int `json:"code" pedantigo:"max_digits=4"`
+		Code int `json:"code" validate:"max_digits=4"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1432,10 +1432,10 @@ func TestDive_MaxDigits(t *testing.T) {
 // TestDive_MaxDigits_Map tests max_digits constraint in map values via dive.
 func TestDive_MaxDigits_Map(t *testing.T) {
 	type Item struct {
-		PIN int `json:"pin" pedantigo:"max_digits=6"`
+		PIN int `json:"pin" validate:"max_digits=6"`
 	}
 	type Container struct {
-		Users map[string]Item `json:"users" pedantigo:"dive"`
+		Users map[string]Item `json:"users" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1459,10 +1459,10 @@ func TestDive_MaxDigits_Map(t *testing.T) {
 // TestDive_DecimalPlaces tests decimal_places constraint in nested structs via dive.
 func TestDive_DecimalPlaces(t *testing.T) {
 	type Item struct {
-		Price float64 `json:"price" pedantigo:"decimal_places=2"`
+		Price float64 `json:"price" validate:"decimal_places=2"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1503,10 +1503,10 @@ func TestDive_DecimalPlaces(t *testing.T) {
 // TestDive_DecimalPlaces_Map tests decimal_places constraint in map values via dive.
 func TestDive_DecimalPlaces_Map(t *testing.T) {
 	type Item struct {
-		Rate float64 `json:"rate" pedantigo:"decimal_places=3"`
+		Rate float64 `json:"rate" validate:"decimal_places=3"`
 	}
 	type Container struct {
-		Rates map[string]Item `json:"rates" pedantigo:"dive"`
+		Rates map[string]Item `json:"rates" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1530,10 +1530,10 @@ func TestDive_DecimalPlaces_Map(t *testing.T) {
 // TestDive_DisallowInfNan tests disallow_inf_nan constraint in nested structs via dive.
 func TestDive_DisallowInfNan(t *testing.T) {
 	type Item struct {
-		Value float64 `json:"value" pedantigo:"disallow_inf_nan"`
+		Value float64 `json:"value" validate:"disallow_inf_nan"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1587,10 +1587,10 @@ func TestDive_DisallowInfNan(t *testing.T) {
 // TestDive_DisallowInfNan_Map tests disallow_inf_nan constraint in map values via dive.
 func TestDive_DisallowInfNan_Map(t *testing.T) {
 	type Item struct {
-		Measurement float64 `json:"measurement" pedantigo:"disallow_inf_nan"`
+		Measurement float64 `json:"measurement" validate:"disallow_inf_nan"`
 	}
 	type Container struct {
-		Readings map[string]Item `json:"readings" pedantigo:"dive"`
+		Readings map[string]Item `json:"readings" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1622,10 +1622,10 @@ func TestDive_DisallowInfNan_Map(t *testing.T) {
 // TestDive_Oneof tests oneof constraint in nested structs via dive.
 func TestDive_Oneof(t *testing.T) {
 	type Item struct {
-		Status string `json:"status" pedantigo:"oneof=pending approved rejected"`
+		Status string `json:"status" validate:"oneof=pending approved rejected"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1667,10 +1667,10 @@ func TestDive_Oneof(t *testing.T) {
 // TestDive_Oneof_Map tests oneof constraint in map values via dive.
 func TestDive_Oneof_Map(t *testing.T) {
 	type Item struct {
-		Priority string `json:"priority" pedantigo:"oneof=low medium high"`
+		Priority string `json:"priority" validate:"oneof=low medium high"`
 	}
 	type Container struct {
-		Tasks map[string]Item `json:"tasks" pedantigo:"dive"`
+		Tasks map[string]Item `json:"tasks" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1699,10 +1699,10 @@ func TestDive_Oneof_Map(t *testing.T) {
 // TestDive_Oneof_Numeric tests oneof constraint with numeric values via dive.
 func TestDive_Oneof_Numeric(t *testing.T) {
 	type Item struct {
-		Level int `json:"level" pedantigo:"oneof=1 2 3 5 8"`
+		Level int `json:"level" validate:"oneof=1 2 3 5 8"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1729,10 +1729,10 @@ func TestDive_Oneof_Numeric(t *testing.T) {
 // TestDive_OneofCI tests oneofci (case-insensitive) constraint in nested structs via dive.
 func TestDive_OneofCI(t *testing.T) {
 	type Item struct {
-		Role string `json:"role" pedantigo:"oneofci=admin user guest"`
+		Role string `json:"role" validate:"oneofci=admin user guest"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1778,10 +1778,10 @@ func TestDive_OneofCI(t *testing.T) {
 // TestDive_OneofCI_Map tests oneofci constraint in map values via dive.
 func TestDive_OneofCI_Map(t *testing.T) {
 	type Item struct {
-		Permission string `json:"permission" pedantigo:"oneofci=read write execute"`
+		Permission string `json:"permission" validate:"oneofci=read write execute"`
 	}
 	type Container struct {
-		Files map[string]Item `json:"files" pedantigo:"dive"`
+		Files map[string]Item `json:"files" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1815,10 +1815,10 @@ func TestDive_OneofCI_Map(t *testing.T) {
 // TestDive_CombinedNumericConstraints tests multiple numeric constraints on same field via dive.
 func TestDive_CombinedNumericConstraints(t *testing.T) {
 	type Item struct {
-		Price float64 `json:"price" pedantigo:"positive,lte=9999.99,decimal_places=2"`
+		Price float64 `json:"price" validate:"positive,lte=9999.99,decimal_places=2"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1852,14 +1852,14 @@ func TestDive_CombinedNumericConstraints(t *testing.T) {
 // TestDive_NumericConstraintsOnIntTypes tests numeric constraints work across different int types.
 func TestDive_NumericConstraintsOnIntTypes(t *testing.T) {
 	type Item struct {
-		Int8Val  int8  `json:"int8" pedantigo:"gt=-100,lt=100"`
-		Int16Val int16 `json:"int16" pedantigo:"gte=0"`
-		Int32Val int32 `json:"int32" pedantigo:"positive"`
-		Int64Val int64 `json:"int64" pedantigo:"multiple_of=10"`
-		UintVal  uint  `json:"uint" pedantigo:"lte=1000"`
+		Int8Val  int8  `json:"int8" validate:"gt=-100,lt=100"`
+		Int16Val int16 `json:"int16" validate:"gte=0"`
+		Int32Val int32 `json:"int32" validate:"positive"`
+		Int64Val int64 `json:"int64" validate:"multiple_of=10"`
+		UintVal  uint  `json:"uint" validate:"lte=1000"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1897,11 +1897,11 @@ func TestDive_NumericConstraintsOnIntTypes(t *testing.T) {
 // TestDive_NumericConstraintsOnFloatTypes tests numeric constraints work across different float types.
 func TestDive_NumericConstraintsOnFloatTypes(t *testing.T) {
 	type Item struct {
-		Float32Val float32 `json:"float32" pedantigo:"gt=0.0,lt=100.0"`
-		Float64Val float64 `json:"float64" pedantigo:"gte=0.0,lte=1.0,decimal_places=3"`
+		Float32Val float32 `json:"float32" validate:"gt=0.0,lt=100.0"`
+		Float64Val float64 `json:"float64" validate:"gte=0.0,lte=1.0,decimal_places=3"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -1945,10 +1945,10 @@ func TestDive_NumericConstraintsOnFloatTypes(t *testing.T) {
 // url accepts any scheme (http, https, ftp, file, mailto, etc.)
 func TestDive_URL(t *testing.T) {
 	type Link struct {
-		URL string `json:"url" pedantigo:"url"`
+		URL string `json:"url" validate:"url"`
 	}
 	type Container struct {
-		Links []Link `json:"links" pedantigo:"dive"`
+		Links []Link `json:"links" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -2002,10 +2002,10 @@ func TestDive_URL(t *testing.T) {
 // TestDive_URLMap tests URL constraint in map values via dive.
 func TestDive_URLMap(t *testing.T) {
 	type Link struct {
-		URL string `json:"url" pedantigo:"url"`
+		URL string `json:"url" validate:"url"`
 	}
 	type Registry struct {
-		Links map[string]Link `json:"links" pedantigo:"dive"`
+		Links map[string]Link `json:"links" validate:"dive"`
 	}
 
 	validator := New[Registry]()
@@ -2044,10 +2044,10 @@ func TestDive_URLMap(t *testing.T) {
 // uri accepts any scheme, similar to url but slightly different validation.
 func TestDive_URI(t *testing.T) {
 	type Resource struct {
-		URI string `json:"uri" pedantigo:"uri"`
+		URI string `json:"uri" validate:"uri"`
 	}
 	type Container struct {
-		Resources []Resource `json:"resources" pedantigo:"dive"`
+		Resources []Resource `json:"resources" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -2092,10 +2092,10 @@ func TestDive_URI(t *testing.T) {
 // TestDive_URIMap tests URI constraint in map values via dive.
 func TestDive_URIMap(t *testing.T) {
 	type Resource struct {
-		URI string `json:"uri" pedantigo:"uri"`
+		URI string `json:"uri" validate:"uri"`
 	}
 	type Registry struct {
-		Resources map[string]Resource `json:"resources" pedantigo:"dive"`
+		Resources map[string]Resource `json:"resources" validate:"dive"`
 	}
 
 	validator := New[Registry]()
@@ -2123,10 +2123,10 @@ func TestDive_URIMap(t *testing.T) {
 // http_url only accepts http:// or https:// schemes.
 func TestDive_HTTPURL(t *testing.T) {
 	type Endpoint struct {
-		URL string `json:"url" pedantigo:"http_url"`
+		URL string `json:"url" validate:"http_url"`
 	}
 	type Container struct {
-		Endpoints []Endpoint `json:"endpoints" pedantigo:"dive"`
+		Endpoints []Endpoint `json:"endpoints" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -2183,10 +2183,10 @@ func TestDive_HTTPURL(t *testing.T) {
 // TestDive_HTTPURLMap tests HTTP/HTTPS URL constraint in map values via dive.
 func TestDive_HTTPURLMap(t *testing.T) {
 	type Endpoint struct {
-		URL string `json:"url" pedantigo:"http_url"`
+		URL string `json:"url" validate:"http_url"`
 	}
 	type Registry struct {
-		Endpoints map[string]Endpoint `json:"endpoints" pedantigo:"dive"`
+		Endpoints map[string]Endpoint `json:"endpoints" validate:"dive"`
 	}
 
 	validator := New[Registry]()
@@ -2214,10 +2214,10 @@ func TestDive_HTTPURLMap(t *testing.T) {
 // https_url only accepts https:// scheme (rejects http://).
 func TestDive_HTTPSURL(t *testing.T) {
 	type SecureEndpoint struct {
-		URL string `json:"url" pedantigo:"https_url"`
+		URL string `json:"url" validate:"https_url"`
 	}
 	type Container struct {
-		Endpoints []SecureEndpoint `json:"endpoints" pedantigo:"dive"`
+		Endpoints []SecureEndpoint `json:"endpoints" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -2261,10 +2261,10 @@ func TestDive_HTTPSURL(t *testing.T) {
 // TestDive_HTTPSURLMap tests HTTPS-only URL constraint in map values via dive.
 func TestDive_HTTPSURLMap(t *testing.T) {
 	type SecureEndpoint struct {
-		URL string `json:"url" pedantigo:"https_url"`
+		URL string `json:"url" validate:"https_url"`
 	}
 	type Registry struct {
-		Endpoints map[string]SecureEndpoint `json:"endpoints" pedantigo:"dive"`
+		Endpoints map[string]SecureEndpoint `json:"endpoints" validate:"dive"`
 	}
 
 	validator := New[Registry]()
@@ -2291,10 +2291,10 @@ func TestDive_HTTPSURLMap(t *testing.T) {
 // TestDive_UUID tests UUID constraint (any version) in nested structs via dive.
 func TestDive_UUID(t *testing.T) {
 	type Entity struct {
-		ID string `json:"id" pedantigo:"uuid"`
+		ID string `json:"id" validate:"uuid"`
 	}
 	type Container struct {
-		Entities []Entity `json:"entities" pedantigo:"dive"`
+		Entities []Entity `json:"entities" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -2351,10 +2351,10 @@ func TestDive_UUID(t *testing.T) {
 // TestDive_UUIDMap tests UUID constraint in map values via dive.
 func TestDive_UUIDMap(t *testing.T) {
 	type Entity struct {
-		ID string `json:"id" pedantigo:"uuid"`
+		ID string `json:"id" validate:"uuid"`
 	}
 	type Registry struct {
-		Entities map[string]Entity `json:"entities" pedantigo:"dive"`
+		Entities map[string]Entity `json:"entities" validate:"dive"`
 	}
 
 	validator := New[Registry]()
@@ -2382,10 +2382,10 @@ func TestDive_UUIDMap(t *testing.T) {
 // uuid3 requires version byte (position 14) to be '3'.
 func TestDive_UUID3(t *testing.T) {
 	type Entity struct {
-		ID string `json:"id" pedantigo:"uuid3"`
+		ID string `json:"id" validate:"uuid3"`
 	}
 	type Container struct {
-		Entities []Entity `json:"entities" pedantigo:"dive"`
+		Entities []Entity `json:"entities" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -2435,10 +2435,10 @@ func TestDive_UUID3(t *testing.T) {
 // TestDive_UUID3Map tests UUID version 3 constraint in map values via dive.
 func TestDive_UUID3Map(t *testing.T) {
 	type Entity struct {
-		ID string `json:"id" pedantigo:"uuid3"`
+		ID string `json:"id" validate:"uuid3"`
 	}
 	type Registry struct {
-		Entities map[string]Entity `json:"entities" pedantigo:"dive"`
+		Entities map[string]Entity `json:"entities" validate:"dive"`
 	}
 
 	validator := New[Registry]()
@@ -2466,10 +2466,10 @@ func TestDive_UUID3Map(t *testing.T) {
 // uuid4 requires version byte (position 14) to be '4'.
 func TestDive_UUID4(t *testing.T) {
 	type Entity struct {
-		ID string `json:"id" pedantigo:"uuid4"`
+		ID string `json:"id" validate:"uuid4"`
 	}
 	type Container struct {
-		Entities []Entity `json:"entities" pedantigo:"dive"`
+		Entities []Entity `json:"entities" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -2524,10 +2524,10 @@ func TestDive_UUID4(t *testing.T) {
 // TestDive_UUID4Map tests UUID version 4 constraint in map values via dive.
 func TestDive_UUID4Map(t *testing.T) {
 	type Entity struct {
-		ID string `json:"id" pedantigo:"uuid4"`
+		ID string `json:"id" validate:"uuid4"`
 	}
 	type Registry struct {
-		Entities map[string]Entity `json:"entities" pedantigo:"dive"`
+		Entities map[string]Entity `json:"entities" validate:"dive"`
 	}
 
 	validator := New[Registry]()
@@ -2555,10 +2555,10 @@ func TestDive_UUID4Map(t *testing.T) {
 // uuid5 requires version byte (position 14) to be '5'.
 func TestDive_UUID5(t *testing.T) {
 	type Entity struct {
-		ID string `json:"id" pedantigo:"uuid5"`
+		ID string `json:"id" validate:"uuid5"`
 	}
 	type Container struct {
-		Entities []Entity `json:"entities" pedantigo:"dive"`
+		Entities []Entity `json:"entities" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -2608,10 +2608,10 @@ func TestDive_UUID5(t *testing.T) {
 // TestDive_UUID5Map tests UUID version 5 constraint in map values via dive.
 func TestDive_UUID5Map(t *testing.T) {
 	type Entity struct {
-		ID string `json:"id" pedantigo:"uuid5"`
+		ID string `json:"id" validate:"uuid5"`
 	}
 	type Registry struct {
-		Entities map[string]Entity `json:"entities" pedantigo:"dive"`
+		Entities map[string]Entity `json:"entities" validate:"dive"`
 	}
 
 	validator := New[Registry]()
@@ -2638,17 +2638,17 @@ func TestDive_UUID5Map(t *testing.T) {
 // TestDive_AllFormatsSlice tests all format constraints in a single slice dive scenario.
 func TestDive_AllFormatsSlice(t *testing.T) {
 	type Resource struct {
-		URL      string `json:"url" pedantigo:"url"`
-		URI      string `json:"uri" pedantigo:"uri"`
-		HTTPURL  string `json:"http_url" pedantigo:"http_url"`
-		HTTPSURL string `json:"https_url" pedantigo:"https_url"`
-		UUID     string `json:"uuid" pedantigo:"uuid"`
-		UUID3    string `json:"uuid3" pedantigo:"uuid3"`
-		UUID4    string `json:"uuid4" pedantigo:"uuid4"`
-		UUID5    string `json:"uuid5" pedantigo:"uuid5"`
+		URL      string `json:"url" validate:"url"`
+		URI      string `json:"uri" validate:"uri"`
+		HTTPURL  string `json:"http_url" validate:"http_url"`
+		HTTPSURL string `json:"https_url" validate:"https_url"`
+		UUID     string `json:"uuid" validate:"uuid"`
+		UUID3    string `json:"uuid3" validate:"uuid3"`
+		UUID4    string `json:"uuid4" validate:"uuid4"`
+		UUID5    string `json:"uuid5" validate:"uuid5"`
 	}
 	type Container struct {
-		Resources []Resource `json:"resources" pedantigo:"dive"`
+		Resources []Resource `json:"resources" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -2714,12 +2714,12 @@ func TestDive_AllFormatsSlice(t *testing.T) {
 // TestDive_AllFormatsMap tests all format constraints in a single map dive scenario.
 func TestDive_AllFormatsMap(t *testing.T) {
 	type Resource struct {
-		URL      string `json:"url" pedantigo:"url"`
-		UUID     string `json:"uuid" pedantigo:"uuid"`
-		HTTPSURL string `json:"https_url" pedantigo:"https_url"`
+		URL      string `json:"url" validate:"url"`
+		UUID     string `json:"uuid" validate:"uuid"`
+		HTTPSURL string `json:"https_url" validate:"https_url"`
 	}
 	type Registry struct {
-		Resources map[string]Resource `json:"resources" pedantigo:"dive"`
+		Resources map[string]Resource `json:"resources" validate:"dive"`
 	}
 
 	validator := New[Registry]()
@@ -2762,10 +2762,10 @@ func TestDive_AllFormatsMap(t *testing.T) {
 // TestDive_IP tests IP constraint in nested structs via dive.
 func TestDive_IP(t *testing.T) {
 	type Server struct {
-		Address string `json:"address" pedantigo:"ip"`
+		Address string `json:"address" validate:"ip"`
 	}
 	type Container struct {
-		Servers []Server `json:"servers" pedantigo:"dive"`
+		Servers []Server `json:"servers" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -2808,7 +2808,7 @@ func TestDive_IP(t *testing.T) {
 
 	t.Run("map_valid_ipv4", func(t *testing.T) {
 		type MapContainer struct {
-			Servers map[string]Server `json:"servers" pedantigo:"dive"`
+			Servers map[string]Server `json:"servers" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"servers":{"primary":{"address":"192.168.1.1"},"secondary":{"address":"10.0.0.1"}}}`))
@@ -2817,7 +2817,7 @@ func TestDive_IP(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Servers map[string]Server `json:"servers" pedantigo:"dive"`
+			Servers map[string]Server `json:"servers" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"servers":{"primary":{"address":"invalid-ip"}}}`))
@@ -2831,10 +2831,10 @@ func TestDive_IP(t *testing.T) {
 // TestDive_IPv4 tests IPv4 constraint in nested structs via dive.
 func TestDive_IPv4(t *testing.T) {
 	type Server struct {
-		Address string `json:"address" pedantigo:"ipv4"`
+		Address string `json:"address" validate:"ipv4"`
 	}
 	type Container struct {
-		Servers []Server `json:"servers" pedantigo:"dive"`
+		Servers []Server `json:"servers" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -2880,7 +2880,7 @@ func TestDive_IPv4(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Servers map[string]Server `json:"servers" pedantigo:"dive"`
+			Servers map[string]Server `json:"servers" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"servers":{"primary":{"address":"192.168.1.1"},"secondary":{"address":"10.0.0.1"}}}`))
@@ -2889,7 +2889,7 @@ func TestDive_IPv4(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Servers map[string]Server `json:"servers" pedantigo:"dive"`
+			Servers map[string]Server `json:"servers" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"servers":{"primary":{"address":"2001:db8::1"}}}`))
@@ -2903,10 +2903,10 @@ func TestDive_IPv4(t *testing.T) {
 // TestDive_IPv6 tests IPv6 constraint in nested structs via dive.
 func TestDive_IPv6(t *testing.T) {
 	type Server struct {
-		Address string `json:"address" pedantigo:"ipv6"`
+		Address string `json:"address" validate:"ipv6"`
 	}
 	type Container struct {
-		Servers []Server `json:"servers" pedantigo:"dive"`
+		Servers []Server `json:"servers" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -2957,7 +2957,7 @@ func TestDive_IPv6(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Servers map[string]Server `json:"servers" pedantigo:"dive"`
+			Servers map[string]Server `json:"servers" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"servers":{"primary":{"address":"2001:db8::1"},"secondary":{"address":"::1"}}}`))
@@ -2966,7 +2966,7 @@ func TestDive_IPv6(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Servers map[string]Server `json:"servers" pedantigo:"dive"`
+			Servers map[string]Server `json:"servers" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"servers":{"primary":{"address":"192.168.1.1"}}}`))
@@ -2980,10 +2980,10 @@ func TestDive_IPv6(t *testing.T) {
 // TestDive_CIDR tests CIDR constraint in nested structs via dive.
 func TestDive_CIDR(t *testing.T) {
 	type Network struct {
-		Subnet string `json:"subnet" pedantigo:"cidr"`
+		Subnet string `json:"subnet" validate:"cidr"`
 	}
 	type Container struct {
-		Networks []Network `json:"networks" pedantigo:"dive"`
+		Networks []Network `json:"networks" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -3034,7 +3034,7 @@ func TestDive_CIDR(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Networks map[string]Network `json:"networks" pedantigo:"dive"`
+			Networks map[string]Network `json:"networks" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"networks":{"lan":{"subnet":"192.168.1.0/24"},"wan":{"subnet":"2001:db8::/32"}}}`))
@@ -3043,7 +3043,7 @@ func TestDive_CIDR(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Networks map[string]Network `json:"networks" pedantigo:"dive"`
+			Networks map[string]Network `json:"networks" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"networks":{"lan":{"subnet":"invalid-cidr"}}}`))
@@ -3057,10 +3057,10 @@ func TestDive_CIDR(t *testing.T) {
 // TestDive_CIDRv4 tests CIDRv4 constraint in nested structs via dive.
 func TestDive_CIDRv4(t *testing.T) {
 	type Network struct {
-		Subnet string `json:"subnet" pedantigo:"cidrv4"`
+		Subnet string `json:"subnet" validate:"cidrv4"`
 	}
 	type Container struct {
-		Networks []Network `json:"networks" pedantigo:"dive"`
+		Networks []Network `json:"networks" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -3106,7 +3106,7 @@ func TestDive_CIDRv4(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Networks map[string]Network `json:"networks" pedantigo:"dive"`
+			Networks map[string]Network `json:"networks" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"networks":{"lan":{"subnet":"192.168.1.0/24"},"wan":{"subnet":"10.0.0.0/8"}}}`))
@@ -3115,7 +3115,7 @@ func TestDive_CIDRv4(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Networks map[string]Network `json:"networks" pedantigo:"dive"`
+			Networks map[string]Network `json:"networks" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"networks":{"lan":{"subnet":"2001:db8::/32"}}}`))
@@ -3129,10 +3129,10 @@ func TestDive_CIDRv4(t *testing.T) {
 // TestDive_CIDRv6 tests CIDRv6 constraint in nested structs via dive.
 func TestDive_CIDRv6(t *testing.T) {
 	type Network struct {
-		Subnet string `json:"subnet" pedantigo:"cidrv6"`
+		Subnet string `json:"subnet" validate:"cidrv6"`
 	}
 	type Container struct {
-		Networks []Network `json:"networks" pedantigo:"dive"`
+		Networks []Network `json:"networks" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -3178,7 +3178,7 @@ func TestDive_CIDRv6(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Networks map[string]Network `json:"networks" pedantigo:"dive"`
+			Networks map[string]Network `json:"networks" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"networks":{"lan":{"subnet":"2001:db8::/32"},"wan":{"subnet":"fe80::/10"}}}`))
@@ -3187,7 +3187,7 @@ func TestDive_CIDRv6(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Networks map[string]Network `json:"networks" pedantigo:"dive"`
+			Networks map[string]Network `json:"networks" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"networks":{"lan":{"subnet":"192.168.1.0/24"}}}`))
@@ -3201,10 +3201,10 @@ func TestDive_CIDRv6(t *testing.T) {
 // TestDive_MAC tests MAC constraint in nested structs via dive.
 func TestDive_MAC(t *testing.T) {
 	type Device struct {
-		MACAddress string `json:"mac_address" pedantigo:"mac"`
+		MACAddress string `json:"mac_address" validate:"mac"`
 	}
 	type Container struct {
-		Devices []Device `json:"devices" pedantigo:"dive"`
+		Devices []Device `json:"devices" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -3255,7 +3255,7 @@ func TestDive_MAC(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Devices map[string]Device `json:"devices" pedantigo:"dive"`
+			Devices map[string]Device `json:"devices" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"devices":{"eth0":{"mac_address":"00:1B:44:11:3A:B7"},"eth1":{"mac_address":"AA-BB-CC-DD-EE-FF"}}}`))
@@ -3264,7 +3264,7 @@ func TestDive_MAC(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Devices map[string]Device `json:"devices" pedantigo:"dive"`
+			Devices map[string]Device `json:"devices" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"devices":{"eth0":{"mac_address":"invalid-mac"}}}`))
@@ -3278,10 +3278,10 @@ func TestDive_MAC(t *testing.T) {
 // TestDive_Hostname tests hostname constraint in nested structs via dive.
 func TestDive_Hostname(t *testing.T) {
 	type Host struct {
-		Name string `json:"name" pedantigo:"hostname"`
+		Name string `json:"name" validate:"hostname"`
 	}
 	type Container struct {
-		Hosts []Host `json:"hosts" pedantigo:"dive"`
+		Hosts []Host `json:"hosts" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -3333,7 +3333,7 @@ func TestDive_Hostname(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Hosts map[string]Host `json:"hosts" pedantigo:"dive"`
+			Hosts map[string]Host `json:"hosts" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"hosts":{"primary":{"name":"server1"},"secondary":{"name":"server2"}}}`))
@@ -3342,7 +3342,7 @@ func TestDive_Hostname(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Hosts map[string]Host `json:"hosts" pedantigo:"dive"`
+			Hosts map[string]Host `json:"hosts" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"hosts":{"primary":{"name":"server.example.com"}}}`))
@@ -3356,10 +3356,10 @@ func TestDive_Hostname(t *testing.T) {
 // TestDive_HostnameRFC1123 tests hostname_rfc1123 constraint in nested structs via dive.
 func TestDive_HostnameRFC1123(t *testing.T) {
 	type Host struct {
-		Name string `json:"name" pedantigo:"hostname_rfc1123"`
+		Name string `json:"name" validate:"hostname_rfc1123"`
 	}
 	type Container struct {
-		Hosts []Host `json:"hosts" pedantigo:"dive"`
+		Hosts []Host `json:"hosts" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -3403,7 +3403,7 @@ func TestDive_HostnameRFC1123(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Hosts map[string]Host `json:"hosts" pedantigo:"dive"`
+			Hosts map[string]Host `json:"hosts" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"hosts":{"primary":{"name":"1server"},"secondary":{"name":"server-01"}}}`))
@@ -3412,7 +3412,7 @@ func TestDive_HostnameRFC1123(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Hosts map[string]Host `json:"hosts" pedantigo:"dive"`
+			Hosts map[string]Host `json:"hosts" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"hosts":{"primary":{"name":"server.example.com"}}}`))
@@ -3426,10 +3426,10 @@ func TestDive_HostnameRFC1123(t *testing.T) {
 // TestDive_FQDN tests fqdn constraint in nested structs via dive.
 func TestDive_FQDN(t *testing.T) {
 	type Domain struct {
-		Name string `json:"name" pedantigo:"fqdn"`
+		Name string `json:"name" validate:"fqdn"`
 	}
 	type Container struct {
-		Domains []Domain `json:"domains" pedantigo:"dive"`
+		Domains []Domain `json:"domains" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -3480,7 +3480,7 @@ func TestDive_FQDN(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Domains map[string]Domain `json:"domains" pedantigo:"dive"`
+			Domains map[string]Domain `json:"domains" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"domains":{"web":{"name":"www.example.com"},"mail":{"name":"mail.example.com"}}}`))
@@ -3489,7 +3489,7 @@ func TestDive_FQDN(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Domains map[string]Domain `json:"domains" pedantigo:"dive"`
+			Domains map[string]Domain `json:"domains" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"domains":{"web":{"name":"localhost"}}}`))
@@ -3503,10 +3503,10 @@ func TestDive_FQDN(t *testing.T) {
 // TestDive_Port tests port constraint in nested structs via dive.
 func TestDive_Port(t *testing.T) {
 	type Service struct {
-		Port int `json:"port" pedantigo:"port"`
+		Port int `json:"port" validate:"port"`
 	}
 	type Container struct {
-		Services []Service `json:"services" pedantigo:"dive"`
+		Services []Service `json:"services" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -3562,7 +3562,7 @@ func TestDive_Port(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Services map[string]Service `json:"services" pedantigo:"dive"`
+			Services map[string]Service `json:"services" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"services":{"http":{"port":80},"https":{"port":443}}}`))
@@ -3571,7 +3571,7 @@ func TestDive_Port(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Services map[string]Service `json:"services" pedantigo:"dive"`
+			Services map[string]Service `json:"services" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"services":{"http":{"port":70000}}}`))
@@ -3585,10 +3585,10 @@ func TestDive_Port(t *testing.T) {
 // TestDive_TCPAddr tests tcp_addr constraint in nested structs via dive.
 func TestDive_TCPAddr(t *testing.T) {
 	type Endpoint struct {
-		Address string `json:"address" pedantigo:"tcp_addr"`
+		Address string `json:"address" validate:"tcp_addr"`
 	}
 	type Container struct {
-		Endpoints []Endpoint `json:"endpoints" pedantigo:"dive"`
+		Endpoints []Endpoint `json:"endpoints" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -3644,7 +3644,7 @@ func TestDive_TCPAddr(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Endpoints map[string]Endpoint `json:"endpoints" pedantigo:"dive"`
+			Endpoints map[string]Endpoint `json:"endpoints" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"endpoints":{"primary":{"address":"192.168.1.1:8080"},"secondary":{"address":"localhost:443"}}}`))
@@ -3653,7 +3653,7 @@ func TestDive_TCPAddr(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Endpoints map[string]Endpoint `json:"endpoints" pedantigo:"dive"`
+			Endpoints map[string]Endpoint `json:"endpoints" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"endpoints":{"primary":{"address":"192.168.1.1"}}}`))
@@ -3667,10 +3667,10 @@ func TestDive_TCPAddr(t *testing.T) {
 // TestDive_TCP4Addr tests tcp4_addr constraint in nested structs via dive.
 func TestDive_TCP4Addr(t *testing.T) {
 	type Endpoint struct {
-		Address string `json:"address" pedantigo:"tcp4_addr"`
+		Address string `json:"address" validate:"tcp4_addr"`
 	}
 	type Container struct {
-		Endpoints []Endpoint `json:"endpoints" pedantigo:"dive"`
+		Endpoints []Endpoint `json:"endpoints" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -3724,7 +3724,7 @@ func TestDive_TCP4Addr(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Endpoints map[string]Endpoint `json:"endpoints" pedantigo:"dive"`
+			Endpoints map[string]Endpoint `json:"endpoints" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"endpoints":{"primary":{"address":"192.168.1.1:8080"},"secondary":{"address":"10.0.0.1:443"}}}`))
@@ -3733,7 +3733,7 @@ func TestDive_TCP4Addr(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Endpoints map[string]Endpoint `json:"endpoints" pedantigo:"dive"`
+			Endpoints map[string]Endpoint `json:"endpoints" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"endpoints":{"primary":{"address":"localhost:8080"}}}`))
@@ -3747,10 +3747,10 @@ func TestDive_TCP4Addr(t *testing.T) {
 // TestDive_UDPAddr tests udp_addr constraint in nested structs via dive.
 func TestDive_UDPAddr(t *testing.T) {
 	type Endpoint struct {
-		Address string `json:"address" pedantigo:"udp_addr"`
+		Address string `json:"address" validate:"udp_addr"`
 	}
 	type Container struct {
-		Endpoints []Endpoint `json:"endpoints" pedantigo:"dive"`
+		Endpoints []Endpoint `json:"endpoints" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -3806,7 +3806,7 @@ func TestDive_UDPAddr(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Endpoints map[string]Endpoint `json:"endpoints" pedantigo:"dive"`
+			Endpoints map[string]Endpoint `json:"endpoints" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"endpoints":{"dns":{"address":"192.168.1.1:53"},"ntp":{"address":"localhost:123"}}}`))
@@ -3815,7 +3815,7 @@ func TestDive_UDPAddr(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Endpoints map[string]Endpoint `json:"endpoints" pedantigo:"dive"`
+			Endpoints map[string]Endpoint `json:"endpoints" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"endpoints":{"dns":{"address":"192.168.1.1"}}}`))
@@ -3829,10 +3829,10 @@ func TestDive_UDPAddr(t *testing.T) {
 // TestDive_HostnamePort tests hostname_port constraint in nested structs via dive.
 func TestDive_HostnamePort(t *testing.T) {
 	type Endpoint struct {
-		Address string `json:"address" pedantigo:"hostname_port"`
+		Address string `json:"address" validate:"hostname_port"`
 	}
 	type Container struct {
-		Endpoints []Endpoint `json:"endpoints" pedantigo:"dive"`
+		Endpoints []Endpoint `json:"endpoints" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -3897,7 +3897,7 @@ func TestDive_HostnamePort(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Endpoints map[string]Endpoint `json:"endpoints" pedantigo:"dive"`
+			Endpoints map[string]Endpoint `json:"endpoints" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"endpoints":{"web":{"address":"localhost:8080"},"api":{"address":"example.com:443"}}}`))
@@ -3906,7 +3906,7 @@ func TestDive_HostnamePort(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Endpoints map[string]Endpoint `json:"endpoints" pedantigo:"dive"`
+			Endpoints map[string]Endpoint `json:"endpoints" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"endpoints":{"web":{"address":"localhost"}}}`))
@@ -3925,10 +3925,10 @@ func TestDive_HostnamePort(t *testing.T) {
 // on fields inside nested structs accessed via dive.
 func TestOneOf_NestedDive(t *testing.T) {
 	type Item struct {
-		Status string `json:"status" pedantigo:"oneof=pending active completed"`
+		Status string `json:"status" validate:"oneof=pending active completed"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -4023,10 +4023,10 @@ func TestOneOf_NestedDive(t *testing.T) {
 // on fields inside nested structs accessed via dive.
 func TestOneOfCI_NestedDive(t *testing.T) {
 	type Item struct {
-		Role string `json:"role" pedantigo:"oneofci=admin user guest"`
+		Role string `json:"role" validate:"oneofci=admin user guest"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -4118,10 +4118,10 @@ func TestOneOfCI_NestedDive(t *testing.T) {
 // in map value structs accessed via dive.
 func TestOneOf_NestedMapDive(t *testing.T) {
 	type Config struct {
-		Environment string `json:"environment" pedantigo:"oneof=dev staging production"`
+		Environment string `json:"environment" validate:"oneof=dev staging production"`
 	}
 	type Configs struct {
-		ByRegion map[string]Config `json:"by_region" pedantigo:"dive"`
+		ByRegion map[string]Config `json:"by_region" validate:"dive"`
 	}
 
 	validator := New[Configs]()
@@ -4182,10 +4182,10 @@ func TestOneOf_NestedMapDive(t *testing.T) {
 // in map value structs accessed via dive.
 func TestOneOfCI_NestedMapDive(t *testing.T) {
 	type Permission struct {
-		Level string `json:"level" pedantigo:"oneofci=read write admin"`
+		Level string `json:"level" validate:"oneofci=read write admin"`
 	}
 	type Permissions struct {
-		ByUser map[string]Permission `json:"by_user" pedantigo:"dive"`
+		ByUser map[string]Permission `json:"by_user" validate:"dive"`
 	}
 
 	validator := New[Permissions]()
@@ -4252,10 +4252,10 @@ func TestOneOfCI_NestedMapDive(t *testing.T) {
 // TestDive_Alpha tests alpha constraint in nested structs via dive.
 func TestDive_Alpha(t *testing.T) {
 	type Item struct {
-		Code string `json:"code" pedantigo:"alpha"`
+		Code string `json:"code" validate:"alpha"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -4285,7 +4285,7 @@ func TestDive_Alpha(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"ABC"},"b":{"code":"XYZ"}}}`))
@@ -4294,7 +4294,7 @@ func TestDive_Alpha(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"ABC123"}}}`))
@@ -4305,10 +4305,10 @@ func TestDive_Alpha(t *testing.T) {
 // TestDive_Alphanum tests alphanum constraint in nested structs via dive.
 func TestDive_Alphanum(t *testing.T) {
 	type Item struct {
-		Code string `json:"code" pedantigo:"alphanum"`
+		Code string `json:"code" validate:"alphanum"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -4333,7 +4333,7 @@ func TestDive_Alphanum(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"ABC123"}}}`))
@@ -4342,7 +4342,7 @@ func TestDive_Alphanum(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"ABC-123"}}}`))
@@ -4353,10 +4353,10 @@ func TestDive_Alphanum(t *testing.T) {
 // TestDive_ASCII tests ascii constraint in nested structs via dive.
 func TestDive_ASCII(t *testing.T) {
 	type Item struct {
-		Text string `json:"text" pedantigo:"ascii"`
+		Text string `json:"text" validate:"ascii"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -4381,7 +4381,7 @@ func TestDive_ASCII(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"ASCII only"}}}`))
@@ -4390,7 +4390,7 @@ func TestDive_ASCII(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"café"}}}`))
@@ -4401,10 +4401,10 @@ func TestDive_ASCII(t *testing.T) {
 // TestDive_Contains tests contains constraint in nested structs via dive.
 func TestDive_Contains(t *testing.T) {
 	type Item struct {
-		Text string `json:"text" pedantigo:"contains=@"`
+		Text string `json:"text" validate:"contains=@"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -4429,7 +4429,7 @@ func TestDive_Contains(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"test@test"}}}`))
@@ -4438,7 +4438,7 @@ func TestDive_Contains(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"no at symbol"}}}`))
@@ -4449,10 +4449,10 @@ func TestDive_Contains(t *testing.T) {
 // TestDive_StartsWith tests startswith constraint in nested structs via dive.
 func TestDive_StartsWith(t *testing.T) {
 	type Item struct {
-		Path string `json:"path" pedantigo:"startswith=/api/"`
+		Path string `json:"path" validate:"startswith=/api/"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -4477,7 +4477,7 @@ func TestDive_StartsWith(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"path":"/api/test"}}}`))
@@ -4486,7 +4486,7 @@ func TestDive_StartsWith(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"path":"/v1/test"}}}`))
@@ -4497,10 +4497,10 @@ func TestDive_StartsWith(t *testing.T) {
 // TestDive_EndsWith tests endswith constraint in nested structs via dive.
 func TestDive_EndsWith(t *testing.T) {
 	type Item struct {
-		Filename string `json:"filename" pedantigo:"endswith=.json"`
+		Filename string `json:"filename" validate:"endswith=.json"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -4525,7 +4525,7 @@ func TestDive_EndsWith(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"filename":"test.json"}}}`))
@@ -4534,7 +4534,7 @@ func TestDive_EndsWith(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"filename":"test.xml"}}}`))
@@ -4545,10 +4545,10 @@ func TestDive_EndsWith(t *testing.T) {
 // TestDive_Lowercase tests lowercase constraint in nested structs via dive.
 func TestDive_Lowercase(t *testing.T) {
 	type Item struct {
-		Tag string `json:"tag" pedantigo:"lowercase"`
+		Tag string `json:"tag" validate:"lowercase"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -4573,7 +4573,7 @@ func TestDive_Lowercase(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"tag":"lowercase"}}}`))
@@ -4582,7 +4582,7 @@ func TestDive_Lowercase(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"tag":"UPPERCASE"}}}`))
@@ -4593,10 +4593,10 @@ func TestDive_Lowercase(t *testing.T) {
 // TestDive_Uppercase tests uppercase constraint in nested structs via dive.
 func TestDive_Uppercase(t *testing.T) {
 	type Item struct {
-		Code string `json:"code" pedantigo:"uppercase"`
+		Code string `json:"code" validate:"uppercase"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -4621,7 +4621,7 @@ func TestDive_Uppercase(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"UPPERCASE"}}}`))
@@ -4630,7 +4630,7 @@ func TestDive_Uppercase(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"lowercase"}}}`))
@@ -4641,10 +4641,10 @@ func TestDive_Uppercase(t *testing.T) {
 // TestDive_Len tests len constraint in nested structs via dive.
 func TestDive_Len(t *testing.T) {
 	type Item struct {
-		Code string `json:"code" pedantigo:"len=5"`
+		Code string `json:"code" validate:"len=5"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -4674,7 +4674,7 @@ func TestDive_Len(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"ABCDE"}}}`))
@@ -4683,7 +4683,7 @@ func TestDive_Len(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"AB"}}}`))
@@ -4694,10 +4694,10 @@ func TestDive_Len(t *testing.T) {
 // TestDive_MinLen tests min constraint on strings in nested structs via dive.
 func TestDive_MinLen(t *testing.T) {
 	type Item struct {
-		Name string `json:"name" pedantigo:"min=3"`
+		Name string `json:"name" validate:"min=3"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -4727,7 +4727,7 @@ func TestDive_MinLen(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"name":"John"}}}`))
@@ -4736,7 +4736,7 @@ func TestDive_MinLen(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"name":"Jo"}}}`))
@@ -4747,10 +4747,10 @@ func TestDive_MinLen(t *testing.T) {
 // TestDive_MaxLen tests max constraint on strings in nested structs via dive.
 func TestDive_MaxLen(t *testing.T) {
 	type Item struct {
-		Code string `json:"code" pedantigo:"max=5"`
+		Code string `json:"code" validate:"max=5"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -4780,7 +4780,7 @@ func TestDive_MaxLen(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"ABC"}}}`))
@@ -4789,7 +4789,7 @@ func TestDive_MaxLen(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"code":"TOOLONGCODE"}}}`))
@@ -4800,10 +4800,10 @@ func TestDive_MaxLen(t *testing.T) {
 // TestDive_Regexp tests regexp constraint in nested structs via dive.
 func TestDive_Regexp(t *testing.T) {
 	type Item struct {
-		SKU string `json:"sku" pedantigo:"regexp=^[A-Z]{3}-[0-9]{4}$"`
+		SKU string `json:"sku" validate:"regexp=^[A-Z]{3}-[0-9]{4}$"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -4833,7 +4833,7 @@ func TestDive_Regexp(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"sku":"ABC-1234"}}}`))
@@ -4842,7 +4842,7 @@ func TestDive_Regexp(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"sku":"invalid"}}}`))
@@ -4853,10 +4853,10 @@ func TestDive_Regexp(t *testing.T) {
 // TestDive_Excludes tests excludes constraint in nested structs via dive.
 func TestDive_Excludes(t *testing.T) {
 	type Item struct {
-		Text string `json:"text" pedantigo:"excludes=<script>"`
+		Text string `json:"text" validate:"excludes=<script>"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -4881,7 +4881,7 @@ func TestDive_Excludes(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"safe text"}}}`))
@@ -4890,7 +4890,7 @@ func TestDive_Excludes(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"has <script> tag"}}}`))
@@ -4901,10 +4901,10 @@ func TestDive_Excludes(t *testing.T) {
 // TestDive_PrintASCII tests printascii constraint in nested structs via dive.
 func TestDive_PrintASCII(t *testing.T) {
 	type Item struct {
-		Text string `json:"text" pedantigo:"printascii"`
+		Text string `json:"text" validate:"printascii"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -4921,7 +4921,7 @@ func TestDive_PrintASCII(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"Printable ASCII"}}}`))
@@ -4932,10 +4932,10 @@ func TestDive_PrintASCII(t *testing.T) {
 // TestDive_Numeric tests numeric constraint in nested structs via dive.
 func TestDive_Numeric(t *testing.T) {
 	type Item struct {
-		Value string `json:"value" pedantigo:"numeric"`
+		Value string `json:"value" validate:"numeric"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -4965,7 +4965,7 @@ func TestDive_Numeric(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"12345"}}}`))
@@ -4974,7 +4974,7 @@ func TestDive_Numeric(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"abc"}}}`))
@@ -4987,10 +4987,10 @@ func TestDive_Numeric(t *testing.T) {
 // Use "numeric" constraint for signed decimals.
 func TestDive_Number(t *testing.T) {
 	type Item struct {
-		Value string `json:"value" pedantigo:"number"`
+		Value string `json:"value" validate:"number"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5030,7 +5030,7 @@ func TestDive_Number(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"12345"}}}`))
@@ -5039,7 +5039,7 @@ func TestDive_Number(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"not a number"}}}`))
@@ -5054,10 +5054,10 @@ func TestDive_Number(t *testing.T) {
 // TestDive_Base64 tests base64 constraint in nested structs via dive.
 func TestDive_Base64(t *testing.T) {
 	type Item struct {
-		Data string `json:"data" pedantigo:"base64"`
+		Data string `json:"data" validate:"base64"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5082,7 +5082,7 @@ func TestDive_Base64(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"data":"SGVsbG8="}}}`))
@@ -5091,7 +5091,7 @@ func TestDive_Base64(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"data":"###invalid###"}}}`))
@@ -5102,10 +5102,10 @@ func TestDive_Base64(t *testing.T) {
 // TestDive_Base64URL tests base64url constraint in nested structs via dive.
 func TestDive_Base64URL(t *testing.T) {
 	type Item struct {
-		Data string `json:"data" pedantigo:"base64url"`
+		Data string `json:"data" validate:"base64url"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5130,7 +5130,7 @@ func TestDive_Base64URL(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"data":"SGVsbG8="}}}`))
@@ -5139,7 +5139,7 @@ func TestDive_Base64URL(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"data":"+++invalid+++"}}}`))
@@ -5150,10 +5150,10 @@ func TestDive_Base64URL(t *testing.T) {
 // TestDive_Hexadecimal tests hexadecimal constraint in nested structs via dive.
 func TestDive_Hexadecimal(t *testing.T) {
 	type Item struct {
-		Hex string `json:"hex" pedantigo:"hexadecimal"`
+		Hex string `json:"hex" validate:"hexadecimal"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5178,7 +5178,7 @@ func TestDive_Hexadecimal(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"hex":"CAFE"}}}`))
@@ -5187,7 +5187,7 @@ func TestDive_Hexadecimal(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"hex":"ZZZZ"}}}`))
@@ -5198,10 +5198,10 @@ func TestDive_Hexadecimal(t *testing.T) {
 // TestDive_HexColor tests hexcolor constraint in nested structs via dive.
 func TestDive_HexColor(t *testing.T) {
 	type Item struct {
-		Color string `json:"color" pedantigo:"hexcolor"`
+		Color string `json:"color" validate:"hexcolor"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5231,7 +5231,7 @@ func TestDive_HexColor(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"color":"#123ABC"}}}`))
@@ -5240,7 +5240,7 @@ func TestDive_HexColor(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"color":"red"}}}`))
@@ -5251,10 +5251,10 @@ func TestDive_HexColor(t *testing.T) {
 // TestDive_JSON tests json constraint in nested structs via dive.
 func TestDive_JSON(t *testing.T) {
 	type Item struct {
-		Data string `json:"data" pedantigo:"json"`
+		Data string `json:"data" validate:"json"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5284,7 +5284,7 @@ func TestDive_JSON(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"data":"{\"valid\":true}"}}}`))
@@ -5293,7 +5293,7 @@ func TestDive_JSON(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"data":"not json"}}}`))
@@ -5304,10 +5304,10 @@ func TestDive_JSON(t *testing.T) {
 // TestDive_JWT tests jwt constraint in nested structs via dive.
 func TestDive_JWT(t *testing.T) {
 	type Item struct {
-		Token string `json:"token" pedantigo:"jwt"`
+		Token string `json:"token" validate:"jwt"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5339,7 +5339,7 @@ func TestDive_JWT(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		// Test token with valid JWT structure (header.payload.signature)
@@ -5349,7 +5349,7 @@ func TestDive_JWT(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"token":"invalid"}}}`))
@@ -5360,10 +5360,10 @@ func TestDive_JWT(t *testing.T) {
 // TestDive_Alphaspace tests alphaspace constraint in nested structs via dive.
 func TestDive_Alphaspace(t *testing.T) {
 	type Item struct {
-		Value string `json:"value" pedantigo:"alphaspace"`
+		Value string `json:"value" validate:"alphaspace"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5393,7 +5393,7 @@ func TestDive_Alphaspace(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"hello world"},"b":{"value":"ABC XYZ"}}}`))
@@ -5402,7 +5402,7 @@ func TestDive_Alphaspace(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"hello123"}}}`))
@@ -5413,10 +5413,10 @@ func TestDive_Alphaspace(t *testing.T) {
 // TestDive_Alphanumspace tests alphanumspace constraint in nested structs via dive.
 func TestDive_Alphanumspace(t *testing.T) {
 	type Item struct {
-		Value string `json:"value" pedantigo:"alphanumspace"`
+		Value string `json:"value" validate:"alphanumspace"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5446,7 +5446,7 @@ func TestDive_Alphanumspace(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"hello world 123"},"b":{"value":"ABC XYZ 789"}}}`))
@@ -5455,7 +5455,7 @@ func TestDive_Alphanumspace(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"hello!world"}}}`))
@@ -5466,10 +5466,10 @@ func TestDive_Alphanumspace(t *testing.T) {
 // TestDive_Alphaunicode tests alphaunicode constraint in nested structs via dive.
 func TestDive_Alphaunicode(t *testing.T) {
 	type Item struct {
-		Value string `json:"value" pedantigo:"alphaunicode"`
+		Value string `json:"value" validate:"alphaunicode"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5499,7 +5499,7 @@ func TestDive_Alphaunicode(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"héllo"},"b":{"value":"世界"}}}`))
@@ -5508,7 +5508,7 @@ func TestDive_Alphaunicode(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"hello123"}}}`))
@@ -5519,10 +5519,10 @@ func TestDive_Alphaunicode(t *testing.T) {
 // TestDive_Alphanumunicode tests alphanumunicode constraint in nested structs via dive.
 func TestDive_Alphanumunicode(t *testing.T) {
 	type Item struct {
-		Value string `json:"value" pedantigo:"alphanumunicode"`
+		Value string `json:"value" validate:"alphanumunicode"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5552,7 +5552,7 @@ func TestDive_Alphanumunicode(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"héllo123"},"b":{"value":"世界789"}}}`))
@@ -5561,7 +5561,7 @@ func TestDive_Alphanumunicode(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"hello!world"}}}`))
@@ -5576,10 +5576,10 @@ func TestDive_Alphanumunicode(t *testing.T) {
 // TestDive_Email tests email constraint in nested structs via dive.
 func TestDive_Email(t *testing.T) {
 	type Item struct {
-		Email string `json:"email" pedantigo:"email"`
+		Email string `json:"email" validate:"email"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5609,7 +5609,7 @@ func TestDive_Email(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"email":"test@test.com"}}}`))
@@ -5618,7 +5618,7 @@ func TestDive_Email(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"email":"invalid-email"}}}`))
@@ -5629,10 +5629,10 @@ func TestDive_Email(t *testing.T) {
 // TestDive_E164 tests e164 constraint in nested structs via dive.
 func TestDive_E164(t *testing.T) {
 	type Item struct {
-		Phone string `json:"phone" pedantigo:"e164"`
+		Phone string `json:"phone" validate:"e164"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5662,7 +5662,7 @@ func TestDive_E164(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"phone":"+14155552671"}}}`))
@@ -5671,7 +5671,7 @@ func TestDive_E164(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"phone":"555-1234"}}}`))
@@ -5682,10 +5682,10 @@ func TestDive_E164(t *testing.T) {
 // TestDive_ISBN tests isbn constraint in nested structs via dive.
 func TestDive_ISBN(t *testing.T) {
 	type Item struct {
-		ISBN string `json:"isbn" pedantigo:"isbn"`
+		ISBN string `json:"isbn" validate:"isbn"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5715,7 +5715,7 @@ func TestDive_ISBN(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"isbn":"978-3-16-148410-0"}}}`))
@@ -5724,7 +5724,7 @@ func TestDive_ISBN(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"isbn":"not-an-isbn"}}}`))
@@ -5735,10 +5735,10 @@ func TestDive_ISBN(t *testing.T) {
 // TestDive_ISBN10 tests isbn10 constraint in nested structs via dive.
 func TestDive_ISBN10(t *testing.T) {
 	type Item struct {
-		ISBN string `json:"isbn" pedantigo:"isbn10"`
+		ISBN string `json:"isbn" validate:"isbn10"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5760,7 +5760,7 @@ func TestDive_ISBN10(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"isbn":"0306406152"}}}`))
@@ -5771,10 +5771,10 @@ func TestDive_ISBN10(t *testing.T) {
 // TestDive_ISBN13 tests isbn13 constraint in nested structs via dive.
 func TestDive_ISBN13(t *testing.T) {
 	type Item struct {
-		ISBN string `json:"isbn" pedantigo:"isbn13"`
+		ISBN string `json:"isbn" validate:"isbn13"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5796,7 +5796,7 @@ func TestDive_ISBN13(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"isbn":"9783161484100"}}}`))
@@ -5807,10 +5807,10 @@ func TestDive_ISBN13(t *testing.T) {
 // TestDive_ULID tests ulid constraint in nested structs via dive.
 func TestDive_ULID(t *testing.T) {
 	type Item struct {
-		ID string `json:"id" pedantigo:"ulid"`
+		ID string `json:"id" validate:"ulid"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5840,7 +5840,7 @@ func TestDive_ULID(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"id":"01ARZ3NDEKTSV4RRFFQ69G5FAV"}}}`))
@@ -5849,7 +5849,7 @@ func TestDive_ULID(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"id":"not-a-ulid"}}}`))
@@ -5864,10 +5864,10 @@ func TestDive_ULID(t *testing.T) {
 // TestDive_CreditCard tests credit_card constraint in nested structs via dive.
 func TestDive_CreditCard(t *testing.T) {
 	type Item struct {
-		Card string `json:"card" pedantigo:"credit_card"`
+		Card string `json:"card" validate:"credit_card"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5902,7 +5902,7 @@ func TestDive_CreditCard(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"card":"4111111111111111"}}}`))
@@ -5911,7 +5911,7 @@ func TestDive_CreditCard(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"card":"1234567890123456"}}}`))
@@ -5922,10 +5922,10 @@ func TestDive_CreditCard(t *testing.T) {
 // TestDive_SSN tests ssn constraint in nested structs via dive.
 func TestDive_SSN(t *testing.T) {
 	type Item struct {
-		SSN string `json:"ssn" pedantigo:"ssn"`
+		SSN string `json:"ssn" validate:"ssn"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -5955,7 +5955,7 @@ func TestDive_SSN(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"ssn":"123-45-6789"}}}`))
@@ -5964,7 +5964,7 @@ func TestDive_SSN(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"ssn":"invalid"}}}`))
@@ -5975,10 +5975,10 @@ func TestDive_SSN(t *testing.T) {
 // TestDive_BtcAddr tests btc_addr constraint in nested structs via dive.
 func TestDive_BtcAddr(t *testing.T) {
 	type Item struct {
-		Address string `json:"address" pedantigo:"btc_addr"`
+		Address string `json:"address" validate:"btc_addr"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6013,7 +6013,7 @@ func TestDive_BtcAddr(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"address":"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"}}}`))
@@ -6022,7 +6022,7 @@ func TestDive_BtcAddr(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"address":"invalid-btc-address"}}}`))
@@ -6033,10 +6033,10 @@ func TestDive_BtcAddr(t *testing.T) {
 // TestDive_BtcAddrBech32 tests btc_addr_bech32 constraint in nested structs via dive.
 func TestDive_BtcAddrBech32(t *testing.T) {
 	type Item struct {
-		Address string `json:"address" pedantigo:"btc_addr_bech32"`
+		Address string `json:"address" validate:"btc_addr_bech32"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6076,7 +6076,7 @@ func TestDive_BtcAddrBech32(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"address":"bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"}}}`))
@@ -6085,7 +6085,7 @@ func TestDive_BtcAddrBech32(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"address":"bc1invalid"}}}`))
@@ -6096,10 +6096,10 @@ func TestDive_BtcAddrBech32(t *testing.T) {
 // TestDive_EthAddr tests eth_addr constraint in nested structs via dive.
 func TestDive_EthAddr(t *testing.T) {
 	type Item struct {
-		Address string `json:"address" pedantigo:"eth_addr"`
+		Address string `json:"address" validate:"eth_addr"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6144,7 +6144,7 @@ func TestDive_EthAddr(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"address":"0xffffffffffffffffffffffffffffffffffffffff"}}}`))
@@ -6153,7 +6153,7 @@ func TestDive_EthAddr(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"address":"0xinvalid"}}}`))
@@ -6164,10 +6164,10 @@ func TestDive_EthAddr(t *testing.T) {
 // TestDive_LuhnChecksum tests luhn_checksum constraint in nested structs via dive.
 func TestDive_LuhnChecksum(t *testing.T) {
 	type Item struct {
-		CardNumber string `json:"card_number" pedantigo:"luhn_checksum"`
+		CardNumber string `json:"card_number" validate:"luhn_checksum"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6217,7 +6217,7 @@ func TestDive_LuhnChecksum(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"card_number":"79927398713"}}}`))
@@ -6226,7 +6226,7 @@ func TestDive_LuhnChecksum(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"card_number":"1234567890"}}}`))
@@ -6241,10 +6241,10 @@ func TestDive_LuhnChecksum(t *testing.T) {
 // TestDive_MD5 tests md5 constraint in nested structs via dive.
 func TestDive_MD5(t *testing.T) {
 	type Item struct {
-		Hash string `json:"hash" pedantigo:"md5"`
+		Hash string `json:"hash" validate:"md5"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6274,7 +6274,7 @@ func TestDive_MD5(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"hash":"d41d8cd98f00b204e9800998ecf8427e"}}}`))
@@ -6285,10 +6285,10 @@ func TestDive_MD5(t *testing.T) {
 // TestDive_SHA256 tests sha256 constraint in nested structs via dive.
 func TestDive_SHA256(t *testing.T) {
 	type Item struct {
-		Hash string `json:"hash" pedantigo:"sha256"`
+		Hash string `json:"hash" validate:"sha256"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6313,7 +6313,7 @@ func TestDive_SHA256(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"hash":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}}}`))
@@ -6324,10 +6324,10 @@ func TestDive_SHA256(t *testing.T) {
 // TestDive_SHA512 tests sha512 constraint in nested structs via dive.
 func TestDive_SHA512(t *testing.T) {
 	type Item struct {
-		Hash string `json:"hash" pedantigo:"sha512"`
+		Hash string `json:"hash" validate:"sha512"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6352,7 +6352,7 @@ func TestDive_SHA512(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"hash":"cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"}}}`))
@@ -6367,10 +6367,10 @@ func TestDive_SHA512(t *testing.T) {
 // TestDive_Datetime tests datetime constraint in nested structs via dive.
 func TestDive_Datetime(t *testing.T) {
 	type Item struct {
-		Date string `json:"date" pedantigo:"datetime=2006-01-02"`
+		Date string `json:"date" validate:"datetime=2006-01-02"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6400,7 +6400,7 @@ func TestDive_Datetime(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"date":"2024-06-15"}}}`))
@@ -6409,7 +6409,7 @@ func TestDive_Datetime(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"date":"invalid"}}}`))
@@ -6420,10 +6420,10 @@ func TestDive_Datetime(t *testing.T) {
 // TestDive_Timezone tests timezone constraint in nested structs via dive.
 func TestDive_Timezone(t *testing.T) {
 	type Item struct {
-		TZ string `json:"tz" pedantigo:"timezone"`
+		TZ string `json:"tz" validate:"timezone"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6448,7 +6448,7 @@ func TestDive_Timezone(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"tz":"America/Los_Angeles"}}}`))
@@ -6457,7 +6457,7 @@ func TestDive_Timezone(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"tz":"Not/Real"}}}`))
@@ -6472,10 +6472,10 @@ func TestDive_Timezone(t *testing.T) {
 // TestDive_Latitude tests latitude constraint in nested structs via dive.
 func TestDive_Latitude(t *testing.T) {
 	type Item struct {
-		Lat float64 `json:"lat" pedantigo:"latitude"`
+		Lat float64 `json:"lat" validate:"latitude"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6505,7 +6505,7 @@ func TestDive_Latitude(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"lat":51.5074}}}`))
@@ -6514,7 +6514,7 @@ func TestDive_Latitude(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"lat":200.0}}}`))
@@ -6525,10 +6525,10 @@ func TestDive_Latitude(t *testing.T) {
 // TestDive_Longitude tests longitude constraint in nested structs via dive.
 func TestDive_Longitude(t *testing.T) {
 	type Item struct {
-		Lng float64 `json:"lng" pedantigo:"longitude"`
+		Lng float64 `json:"lng" validate:"longitude"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6558,7 +6558,7 @@ func TestDive_Longitude(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"lng":-0.1278}}}`))
@@ -6567,7 +6567,7 @@ func TestDive_Longitude(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"lng":200.0}}}`))
@@ -6582,10 +6582,10 @@ func TestDive_Longitude(t *testing.T) {
 // TestDive_RGB tests rgb constraint in nested structs via dive.
 func TestDive_RGB(t *testing.T) {
 	type Item struct {
-		Color string `json:"color" pedantigo:"rgb"`
+		Color string `json:"color" validate:"rgb"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6610,7 +6610,7 @@ func TestDive_RGB(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"color":"rgb(0, 0, 0)"}}}`))
@@ -6621,10 +6621,10 @@ func TestDive_RGB(t *testing.T) {
 // TestDive_RGBA tests rgba constraint in nested structs via dive.
 func TestDive_RGBA(t *testing.T) {
 	type Item struct {
-		Color string `json:"color" pedantigo:"rgba"`
+		Color string `json:"color" validate:"rgba"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6649,7 +6649,7 @@ func TestDive_RGBA(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"color":"rgba(0, 0, 0, 0)"}}}`))
@@ -6660,10 +6660,10 @@ func TestDive_RGBA(t *testing.T) {
 // TestDive_HSL tests hsl constraint in nested structs via dive.
 func TestDive_HSL(t *testing.T) {
 	type Item struct {
-		Color string `json:"color" pedantigo:"hsl"`
+		Color string `json:"color" validate:"hsl"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6688,7 +6688,7 @@ func TestDive_HSL(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"color":"hsl(120, 100%, 50%)"}}}`))
@@ -6699,10 +6699,10 @@ func TestDive_HSL(t *testing.T) {
 // TestDive_HSLA tests hsla constraint in nested structs via dive.
 func TestDive_HSLA(t *testing.T) {
 	type Item struct {
-		Color string `json:"color" pedantigo:"hsla"`
+		Color string `json:"color" validate:"hsla"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6727,7 +6727,7 @@ func TestDive_HSLA(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"color":"hsla(120, 100%, 50%, 0.5)"}}}`))
@@ -6742,10 +6742,10 @@ func TestDive_HSLA(t *testing.T) {
 // TestDive_Eq tests eq constraint in nested structs via dive.
 func TestDive_Eq(t *testing.T) {
 	type Item struct {
-		Status string `json:"status" pedantigo:"eq=active"`
+		Status string `json:"status" validate:"eq=active"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6770,7 +6770,7 @@ func TestDive_Eq(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"status":"active"}}}`))
@@ -6779,7 +6779,7 @@ func TestDive_Eq(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"status":"disabled"}}}`))
@@ -6790,10 +6790,10 @@ func TestDive_Eq(t *testing.T) {
 // TestDive_Ne tests ne constraint in nested structs via dive.
 func TestDive_Ne(t *testing.T) {
 	type Item struct {
-		Status string `json:"status" pedantigo:"ne=deleted"`
+		Status string `json:"status" validate:"ne=deleted"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6818,7 +6818,7 @@ func TestDive_Ne(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"status":"active"}}}`))
@@ -6827,7 +6827,7 @@ func TestDive_Ne(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"status":"deleted"}}}`))
@@ -6838,10 +6838,10 @@ func TestDive_Ne(t *testing.T) {
 // TestDive_EqIgnoreCase tests eq_ignore_case constraint in nested structs via dive.
 func TestDive_EqIgnoreCase(t *testing.T) {
 	type Item struct {
-		Type string `json:"type" pedantigo:"eq_ignore_case=premium"`
+		Type string `json:"type" validate:"eq_ignore_case=premium"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6876,7 +6876,7 @@ func TestDive_EqIgnoreCase(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"type":"PREMIUM"}}}`))
@@ -6887,10 +6887,10 @@ func TestDive_EqIgnoreCase(t *testing.T) {
 // TestDive_NeIgnoreCase tests ne_ignore_case constraint in nested structs via dive.
 func TestDive_NeIgnoreCase(t *testing.T) {
 	type Item struct {
-		Status string `json:"status" pedantigo:"ne_ignore_case=deleted"`
+		Status string `json:"status" validate:"ne_ignore_case=deleted"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6925,7 +6925,7 @@ func TestDive_NeIgnoreCase(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"status":"active"}}}`))
@@ -6934,7 +6934,7 @@ func TestDive_NeIgnoreCase(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"status":"DeLeTed"}}}`))
@@ -6945,10 +6945,10 @@ func TestDive_NeIgnoreCase(t *testing.T) {
 // TestDive_ContainsRune tests containsrune constraint in nested structs via dive.
 func TestDive_ContainsRune(t *testing.T) {
 	type Item struct {
-		Value string `json:"value" pedantigo:"containsrune=@"`
+		Value string `json:"value" validate:"containsrune=@"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -6973,7 +6973,7 @@ func TestDive_ContainsRune(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"user@domain"}}}`))
@@ -6982,7 +6982,7 @@ func TestDive_ContainsRune(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":"nodomain"}}}`))
@@ -6997,10 +6997,10 @@ func TestDive_ContainsRune(t *testing.T) {
 // TestDive_Semver tests semver constraint in nested structs via dive.
 func TestDive_Semver(t *testing.T) {
 	type Item struct {
-		Version string `json:"version" pedantigo:"semver"`
+		Version string `json:"version" validate:"semver"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -7030,7 +7030,7 @@ func TestDive_Semver(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"version":"1.2.3"}}}`))
@@ -7039,7 +7039,7 @@ func TestDive_Semver(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"version":"v1"}}}`))
@@ -7072,10 +7072,10 @@ func TestDive_Image(t *testing.T) {
 	require.NoError(t, os.WriteFile(invalidFilePath, []byte("not an image"), 0o600))
 
 	type Item struct {
-		Path string `json:"path" pedantigo:"image"`
+		Path string `json:"path" validate:"image"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -7111,7 +7111,7 @@ func TestDive_Image(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		jsonData := []byte(`{"items":{"a":{"path":"` + validImagePath + `"}}}`)
@@ -7121,7 +7121,7 @@ func TestDive_Image(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		jsonData := []byte(`{"items":{"a":{"path":"` + invalidFilePath + `"}}}`)
@@ -7133,10 +7133,10 @@ func TestDive_Image(t *testing.T) {
 // TestDive_Md4 tests md4 constraint in nested structs via dive.
 func TestDive_Md4(t *testing.T) {
 	type Item struct {
-		Hash string `json:"hash" pedantigo:"md4"`
+		Hash string `json:"hash" validate:"md4"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -7170,7 +7170,7 @@ func TestDive_Md4(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"hash":"d41d8cd98f00b204e9800998ecf8427e"}}}`))
@@ -7179,7 +7179,7 @@ func TestDive_Md4(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"hash":"not-a-valid-md4"}}}`))
@@ -7190,10 +7190,10 @@ func TestDive_Md4(t *testing.T) {
 // TestDive_Sha384 tests sha384 constraint in nested structs via dive.
 func TestDive_Sha384(t *testing.T) {
 	type Item struct {
-		Hash string `json:"hash" pedantigo:"sha384"`
+		Hash string `json:"hash" validate:"sha384"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -7227,7 +7227,7 @@ func TestDive_Sha384(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"hash":"38b060a751ac96384cd9327eb1b1e36a21fdb71114be07434c0cc7bf63f6e1da274edebfe76f65fbd51ad2f14898b95b"}}}`))
@@ -7236,7 +7236,7 @@ func TestDive_Sha384(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"hash":"not-a-valid-sha384"}}}`))
@@ -7248,10 +7248,10 @@ func TestDive_Sha384(t *testing.T) {
 // strip_whitespace validates that a string has no leading/trailing whitespace.
 func TestDive_StripWhitespace(t *testing.T) {
 	type Item struct {
-		Text string `json:"text" pedantigo:"strip_whitespace"`
+		Text string `json:"text" validate:"strip_whitespace"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -7281,7 +7281,7 @@ func TestDive_StripWhitespace(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"trimmed"}}}`))
@@ -7290,7 +7290,7 @@ func TestDive_StripWhitespace(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"  untrimmed  "}}}`))
@@ -7302,10 +7302,10 @@ func TestDive_StripWhitespace(t *testing.T) {
 // to_lower validates that a string is all lowercase.
 func TestDive_ToLower(t *testing.T) {
 	type Item struct {
-		Text string `json:"text" pedantigo:"to_lower"`
+		Text string `json:"text" validate:"to_lower"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -7335,7 +7335,7 @@ func TestDive_ToLower(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"lowercase"}}}`))
@@ -7344,7 +7344,7 @@ func TestDive_ToLower(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"UPPERCASE"}}}`))
@@ -7356,10 +7356,10 @@ func TestDive_ToLower(t *testing.T) {
 // to_upper validates that a string is all uppercase.
 func TestDive_ToUpper(t *testing.T) {
 	type Item struct {
-		Text string `json:"text" pedantigo:"to_upper"`
+		Text string `json:"text" validate:"to_upper"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -7389,7 +7389,7 @@ func TestDive_ToUpper(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"UPPERCASE"}}}`))
@@ -7398,7 +7398,7 @@ func TestDive_ToUpper(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"lowercase"}}}`))
@@ -7409,10 +7409,10 @@ func TestDive_ToUpper(t *testing.T) {
 // TestDive_Base32 tests base32 constraint in nested structs via dive.
 func TestDive_Base32(t *testing.T) {
 	type Item struct {
-		Data string `json:"data" pedantigo:"base32"`
+		Data string `json:"data" validate:"base32"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -7437,7 +7437,7 @@ func TestDive_Base32(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"data":"JBSWY3DPEHPK3PXP"}}}`))
@@ -7446,7 +7446,7 @@ func TestDive_Base32(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"data":"###invalid###"}}}`))
@@ -7457,10 +7457,10 @@ func TestDive_Base32(t *testing.T) {
 // TestDive_Base64rawurl tests base64rawurl constraint in nested structs via dive.
 func TestDive_Base64rawurl(t *testing.T) {
 	type Item struct {
-		Data string `json:"data" pedantigo:"base64rawurl"`
+		Data string `json:"data" validate:"base64rawurl"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -7485,7 +7485,7 @@ func TestDive_Base64rawurl(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"data":"SGVsbG8"}}}`))
@@ -7494,7 +7494,7 @@ func TestDive_Base64rawurl(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"data":"###invalid###"}}}`))
@@ -7505,10 +7505,10 @@ func TestDive_Base64rawurl(t *testing.T) {
 // TestDive_Datauri tests datauri constraint in nested structs via dive.
 func TestDive_Datauri(t *testing.T) {
 	type Item struct {
-		Data string `json:"data" pedantigo:"datauri"`
+		Data string `json:"data" validate:"datauri"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -7533,7 +7533,7 @@ func TestDive_Datauri(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"data":"data:text/plain;base64,SGVsbG8="}}}`))
@@ -7542,7 +7542,7 @@ func TestDive_Datauri(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"data":"invalid-data-uri"}}}`))
@@ -7554,10 +7554,10 @@ func TestDive_Datauri(t *testing.T) {
 // nested structs accessed via dive. Validates presence of multibyte characters.
 func TestDive_Multibyte(t *testing.T) {
 	type Item struct {
-		Text string `json:"text" pedantigo:"multibyte"`
+		Text string `json:"text" validate:"multibyte"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -7592,7 +7592,7 @@ func TestDive_Multibyte(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"привет"}}}`))
@@ -7601,7 +7601,7 @@ func TestDive_Multibyte(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"text":"plain"}}}`))
@@ -7613,10 +7613,10 @@ func TestDive_Multibyte(t *testing.T) {
 // nested structs accessed via dive. Validates URN format per RFC 2141.
 func TestDive_UrnRfc2141(t *testing.T) {
 	type Item struct {
-		URN string `json:"urn" pedantigo:"urn_rfc2141"`
+		URN string `json:"urn" validate:"urn_rfc2141"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -7651,7 +7651,7 @@ func TestDive_UrnRfc2141(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"urn":"urn:ietf:rfc:2141"}}}`))
@@ -7660,7 +7660,7 @@ func TestDive_UrnRfc2141(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"urn":"not-a-urn"}}}`))
@@ -7672,10 +7672,10 @@ func TestDive_UrnRfc2141(t *testing.T) {
 // nested structs accessed via dive. Validates MongoDB ObjectId (24 hex chars).
 func TestDive_Mongodb(t *testing.T) {
 	type Item struct {
-		ObjectID string `json:"object_id" pedantigo:"mongodb"`
+		ObjectID string `json:"object_id" validate:"mongodb"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -7715,7 +7715,7 @@ func TestDive_Mongodb(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"object_id":"000000000000000000000000"}}}`))
@@ -7724,7 +7724,7 @@ func TestDive_Mongodb(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"object_id":"invalid"}}}`))
@@ -7736,10 +7736,10 @@ func TestDive_Mongodb(t *testing.T) {
 // nested structs accessed via dive. Validates presence of HTML tags.
 func TestDive_Html(t *testing.T) {
 	type Item struct {
-		Content string `json:"content" pedantigo:"html"`
+		Content string `json:"content" validate:"html"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -7779,7 +7779,7 @@ func TestDive_Html(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"content":"<p>test</p>"}}}`))
@@ -7788,7 +7788,7 @@ func TestDive_Html(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"content":"no html here"}}}`))
@@ -7800,10 +7800,10 @@ func TestDive_Html(t *testing.T) {
 // nested structs accessed via dive. Validates cron expressions (5 fields).
 func TestDive_Cron(t *testing.T) {
 	type Item struct {
-		Schedule string `json:"schedule" pedantigo:"cron"`
+		Schedule string `json:"schedule" validate:"cron"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -7848,7 +7848,7 @@ func TestDive_Cron(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"schedule":"0 0 1 * *"}}}`))
@@ -7857,7 +7857,7 @@ func TestDive_Cron(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"schedule":"invalid"}}}`))
@@ -7869,10 +7869,10 @@ func TestDive_Cron(t *testing.T) {
 // nested structs accessed via dive. Validates U.S. EIN format (XX-XXXXXXX).
 func TestDive_Ein(t *testing.T) {
 	type Item struct {
-		EIN string `json:"ein" pedantigo:"ein"`
+		EIN string `json:"ein" validate:"ein"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -7912,7 +7912,7 @@ func TestDive_Ein(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"ein":"12-3456789"}}}`))
@@ -7921,7 +7921,7 @@ func TestDive_Ein(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"ein":"invalid"}}}`))
@@ -7933,10 +7933,10 @@ func TestDive_Ein(t *testing.T) {
 // nested structs accessed via dive. Validates ISSN format (ISO 3297).
 func TestDive_Issn(t *testing.T) {
 	type Item struct {
-		ISSN string `json:"issn" pedantigo:"issn"`
+		ISSN string `json:"issn" validate:"issn"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -7976,7 +7976,7 @@ func TestDive_Issn(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"issn":"0317-8471"}}}`))
@@ -7985,7 +7985,7 @@ func TestDive_Issn(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"issn":"1234567890"}}}`))
@@ -7996,10 +7996,10 @@ func TestDive_Issn(t *testing.T) {
 // TestDive_Min tests min constraint in nested structs via dive.
 func TestDive_Min(t *testing.T) {
 	type Item struct {
-		Value int `json:"value" pedantigo:"min=5"`
+		Value int `json:"value" validate:"min=5"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -8025,7 +8025,7 @@ func TestDive_Min(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":10}}}`))
@@ -8034,7 +8034,7 @@ func TestDive_Min(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":2}}}`))
@@ -8045,10 +8045,10 @@ func TestDive_Min(t *testing.T) {
 // TestDive_Max tests max constraint in nested structs via dive.
 func TestDive_Max(t *testing.T) {
 	type Item struct {
-		Value int `json:"value" pedantigo:"max=100"`
+		Value int `json:"value" validate:"max=100"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -8074,7 +8074,7 @@ func TestDive_Max(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":50}}}`))
@@ -8083,7 +8083,7 @@ func TestDive_Max(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"a":{"value":200}}}`))
@@ -8094,10 +8094,10 @@ func TestDive_Max(t *testing.T) {
 // TestDive_ContainsAny tests containsany constraint in nested structs via dive.
 func TestDive_ContainsAny(t *testing.T) {
 	type Item struct {
-		Text string `json:"text" pedantigo:"containsany=abc"`
+		Text string `json:"text" validate:"containsany=abc"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -8127,7 +8127,7 @@ func TestDive_ContainsAny(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"key":{"text":"apple"}}}`))
@@ -8138,10 +8138,10 @@ func TestDive_ContainsAny(t *testing.T) {
 // TestDive_ExcludesAll tests excludesall constraint in nested structs via dive.
 func TestDive_ExcludesAll(t *testing.T) {
 	type Item struct {
-		Text string `json:"text" pedantigo:"excludesall=xyz"`
+		Text string `json:"text" validate:"excludesall=xyz"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -8171,7 +8171,7 @@ func TestDive_ExcludesAll(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"key":{"text":"abc"}}}`))
@@ -8182,10 +8182,10 @@ func TestDive_ExcludesAll(t *testing.T) {
 // TestDive_ExcludesRune tests excludesrune constraint in nested structs via dive.
 func TestDive_ExcludesRune(t *testing.T) {
 	type Item struct {
-		Text string `json:"text" pedantigo:"excludesrune=@"`
+		Text string `json:"text" validate:"excludesrune=@"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -8205,7 +8205,7 @@ func TestDive_ExcludesRune(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"key":{"text":"no at here"}}}`))
@@ -8214,7 +8214,7 @@ func TestDive_ExcludesRune(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"key":{"text":"has@sign"}}}`))
@@ -8225,10 +8225,10 @@ func TestDive_ExcludesRune(t *testing.T) {
 // TestDive_EndsNotWith tests endsnotwith constraint in nested structs via dive.
 func TestDive_EndsNotWith(t *testing.T) {
 	type Item struct {
-		Text string `json:"text" pedantigo:"endsnotwith=.tmp"`
+		Text string `json:"text" validate:"endsnotwith=.tmp"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -8248,7 +8248,7 @@ func TestDive_EndsNotWith(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"key":{"text":"document.pdf"}}}`))
@@ -8257,7 +8257,7 @@ func TestDive_EndsNotWith(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"key":{"text":"cache.tmp"}}}`))
@@ -8268,10 +8268,10 @@ func TestDive_EndsNotWith(t *testing.T) {
 // TestDive_StartsNotWith tests startsnotwith constraint in nested structs via dive.
 func TestDive_StartsNotWith(t *testing.T) {
 	type Item struct {
-		Text string `json:"text" pedantigo:"startsnotwith=_"`
+		Text string `json:"text" validate:"startsnotwith=_"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -8291,7 +8291,7 @@ func TestDive_StartsNotWith(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"key":{"text":"public"}}}`))
@@ -8300,7 +8300,7 @@ func TestDive_StartsNotWith(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"key":{"text":"_hidden"}}}`))
@@ -8311,10 +8311,10 @@ func TestDive_StartsNotWith(t *testing.T) {
 // TestDive_Unique tests unique constraint in nested structs via dive.
 func TestDive_Unique(t *testing.T) {
 	type Item struct {
-		Tags []string `json:"tags" pedantigo:"unique"`
+		Tags []string `json:"tags" validate:"unique"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	validator := New[Container]()
@@ -8339,7 +8339,7 @@ func TestDive_Unique(t *testing.T) {
 
 	t.Run("map_valid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"key":{"tags":["x","y","z"]}}}`))
@@ -8348,7 +8348,7 @@ func TestDive_Unique(t *testing.T) {
 
 	t.Run("map_invalid", func(t *testing.T) {
 		type MapContainer struct {
-			Items map[string]Item `json:"items" pedantigo:"dive"`
+			Items map[string]Item `json:"items" validate:"dive"`
 		}
 		mapValidator := New[MapContainer]()
 		_, err := mapValidator.Unmarshal([]byte(`{"items":{"key":{"tags":["x","x"]}}}`))

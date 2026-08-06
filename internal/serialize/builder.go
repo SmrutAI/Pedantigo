@@ -18,7 +18,7 @@ type FieldMetadata struct {
 }
 
 // BuildFieldMetadata creates serialization metadata for each struct field.
-// It uses the provided tagName to parse validation constraints (e.g., "pedantigo", "validate", "binding").
+// It uses the provided tagName to parse validation constraints (default "validate"; e.g., "binding" for Gin).
 func BuildFieldMetadata(typ reflect.Type, tagName string) map[string]FieldMetadata {
 	metadata := make(map[string]FieldMetadata)
 

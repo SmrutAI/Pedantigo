@@ -27,7 +27,7 @@ import (
 )
 
 type User struct {
-    Email string `json:"email" pedantigo:"required,email"`
+    Email string `json:"email" validate:"required,email"`
 }
 
 func main() {

@@ -13,7 +13,7 @@ type ExtraFieldInfo struct {
 	FieldName  string // Go field name (for error messages)
 }
 
-// DetectExtraField finds the field tagged with `pedantigo:"extra_fields"`.
+// DetectExtraField finds the field tagged with `validate:"extra_fields"`.
 // Returns nil if no such field exists.
 // Panics if:
 //   - Multiple fields have extra_fields tag

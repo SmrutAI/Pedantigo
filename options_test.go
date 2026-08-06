@@ -15,8 +15,8 @@ func TestResolveTagName_InstanceOverridesGlobal(t *testing.T) {
 	resetTagNameForTesting()
 	resetValidatorCreatedForTesting()
 
-	// Set global to "validate"
-	SetTagName("validate")
+	// Set global to "custom_validate"
+	SetTagName("custom_validate")
 
 	// Instance with TagName should override global
 	opts := ValidatorOptions{TagName: "binding"}
@@ -33,29 +33,29 @@ func TestResolveTagName_EmptyInstanceUsesGlobal(t *testing.T) {
 	resetTagNameForTesting()
 	resetValidatorCreatedForTesting()
 
-	// Set global to "validate"
-	SetTagName("validate")
+	// Set global to "custom_validate"
+	SetTagName("custom_validate")
 
 	// Instance without TagName should use global
 	opts := ValidatorOptions{} // TagName is empty string
 	resolved := resolveTagName(opts)
 
-	assert.Equal(t, "validate", resolved, "empty instance TagName should use global")
+	assert.Equal(t, "custom_validate", resolved, "empty instance TagName should use global")
 
 	resetTagNameForTesting()
 	resetValidatorCreatedForTesting()
 }
 
-// TestResolveTagName_DefaultGlobal verifies default global is "pedantigo".
+// TestResolveTagName_DefaultGlobal verifies default global is "validate".
 func TestResolveTagName_DefaultGlobal(t *testing.T) {
 	resetTagNameForTesting()
 	resetValidatorCreatedForTesting()
 
-	// Global should be default "pedantigo"
+	// Global should be default "validate"
 	opts := ValidatorOptions{}
 	resolved := resolveTagName(opts)
 
-	assert.Equal(t, "pedantigo", resolved, "default global should be 'pedantigo'")
+	assert.Equal(t, "validate", resolved, "default global should be 'pedantigo'")
 }
 
 // TestDefaultValidatorOptions_TagNameEmpty verifies default options has empty TagName.

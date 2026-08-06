@@ -22,10 +22,10 @@ import (
 )
 
 type User struct {
-    Username            string `json:"username" pedantigo:"required,alphanum,min=3,max=20"`
-    Email               string `json:"email" pedantigo:"required,email"`
-    Password            string `json:"password" pedantigo:"required,min=8"`
-    PasswordConfirm     string `json:"password_confirm" pedantigo:"required"`
+    Username            string `json:"username" validate:"required,alphanum,min=3,max=20"`
+    Email               string `json:"email" validate:"required,email"`
+    Password            string `json:"password" validate:"required,min=8"`
+    PasswordConfirm     string `json:"password_confirm" validate:"required"`
 }
 
 func main() {
@@ -103,11 +103,11 @@ import (
 )
 
 type Product struct {
-    Name     string  `json:"name" pedantigo:"required,max=200"`
-    Price    float64 `json:"price" pedantigo:"required,positive"`
-    Quantity int     `json:"quantity" pedantigo:"required,gte=0"`
-    Category string  `json:"category" pedantigo:"required,oneof=electronics|clothing|books|home"`
-    SKU      string  `json:"sku" pedantigo:"required,pattern=^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{4}$"`
+    Name     string  `json:"name" validate:"required,max=200"`
+    Price    float64 `json:"price" validate:"required,positive"`
+    Quantity int     `json:"quantity" validate:"required,gte=0"`
+    Category string  `json:"category" validate:"required,oneof=electronics|clothing|books|home"`
+    SKU      string  `json:"sku" validate:"required,pattern=^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{4}$"`
 }
 
 func main() {
@@ -205,19 +205,19 @@ import (
 )
 
 type Config struct {
-    Server  ServerConfig  `json:"server" pedantigo:"required"`
-    API     APIConfig     `json:"api" pedantigo:"required"`
-    Timeout time.Duration `json:"timeout" pedantigo:"required,positive"`
+    Server  ServerConfig  `json:"server" validate:"required"`
+    API     APIConfig     `json:"api" validate:"required"`
+    Timeout time.Duration `json:"timeout" validate:"required,positive"`
 }
 
 type ServerConfig struct {
-    Host string `json:"host" pedantigo:"required,hostname"`
-    Port int    `json:"port" pedantigo:"required,port"`
+    Host string `json:"host" validate:"required,hostname"`
+    Port int    `json:"port" validate:"required,port"`
 }
 
 type APIConfig struct {
-    Key         string `json:"key" pedantigo:"required,min=32"`
-    Environment string `json:"env" pedantigo:"required,oneof=development|staging|production"`
+    Key         string `json:"key" validate:"required,min=32"`
+    Environment string `json:"env" validate:"required,oneof=development|staging|production"`
 }
 
 func main() {
@@ -309,11 +309,11 @@ import (
 )
 
 type BlogPost struct {
-    Title       string    `json:"title" pedantigo:"required,min=5,max=200"`
-    Content     string    `json:"content" pedantigo:"required,min=100"`
-    Author      string    `json:"author" pedantigo:"required,email"`
-    Tags        []string  `json:"tags" pedantigo:"required,min=1,max=10,unique"`
-    PublishedAt *time.Time `json:"published_at,omitempty" pedantigo:""`
+    Title       string    `json:"title" validate:"required,min=5,max=200"`
+    Content     string    `json:"content" validate:"required,min=100"`
+    Author      string    `json:"author" validate:"required,email"`
+    Tags        []string  `json:"tags" validate:"required,min=1,max=10,unique"`
+    PublishedAt *time.Time `json:"published_at,omitempty"`
 }
 
 func main() {
@@ -414,11 +414,11 @@ import (
 )
 
 type Address struct {
-    Street  string `json:"street" pedantigo:"required,min=5,max=100"`
-    City    string `json:"city" pedantigo:"required,alpha,min=2"`
-    State   string `json:"state" pedantigo:"required,len=2,alpha"`
-    ZipCode string `json:"zip_code" pedantigo:"required,pattern=^[0-9]{5}(-[0-9]{4})?$"`
-    Country string `json:"country" pedantigo:"required,iso3166_alpha2"`
+    Street  string `json:"street" validate:"required,min=5,max=100"`
+    City    string `json:"city" validate:"required,alpha,min=2"`
+    State   string `json:"state" validate:"required,len=2,alpha"`
+    ZipCode string `json:"zip_code" validate:"required,pattern=^[0-9]{5}(-[0-9]{4})?$"`
+    Country string `json:"country" validate:"required,iso3166_alpha2"`
 }
 
 func main() {
@@ -546,11 +546,11 @@ import (
 )
 
 type Payment struct {
-    Amount      float64 `json:"amount" pedantigo:"required,positive"`
-    Currency    string  `json:"currency" pedantigo:"required,iso4217"`
-    CardNumber  string  `json:"card_number" pedantigo:"required,credit_card"`
-    CVV         string  `json:"cvv" pedantigo:"required,oneof=len:3|len:4"`
-    CardHolder  string  `json:"card_holder" pedantigo:"required,alpha"`
+    Amount      float64 `json:"amount" validate:"required,positive"`
+    Currency    string  `json:"currency" validate:"required,iso4217"`
+    CardNumber  string  `json:"card_number" validate:"required,credit_card"`
+    CVV         string  `json:"cvv" validate:"required,oneof=len:3|len:4"`
+    CardHolder  string  `json:"card_holder" validate:"required,alpha"`
 }
 
 func main() {

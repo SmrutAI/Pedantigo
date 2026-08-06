@@ -70,7 +70,7 @@ Here's exactly what you'll see when validation fails:
 
 ```go
 type User struct {
-    Email string `json:"email" pedantigo:"required,email"`
+    Email string `json:"email" validate:"required,email"`
 }
 
 _, err := pedantigo.Unmarshal[User]([]byte(`{"email": "not-valid"}`))
@@ -82,8 +82,8 @@ fmt.Println(err)
 
 ```go
 type User struct {
-    Email string `json:"email" pedantigo:"required,email"`
-    Age   int    `json:"age" pedantigo:"min=18"`
+    Email string `json:"email" validate:"required,email"`
+    Age   int    `json:"age" validate:"min=18"`
 }
 
 _, err := pedantigo.Unmarshal[User]([]byte(`{"email": "bad", "age": 5}`))
@@ -200,9 +200,9 @@ if err != nil {
 
 ```go
 type User struct {
-    Email    string `json:"email" pedantigo:"required,email"`
-    Age      int    `json:"age" pedantigo:"required,min=18,max=120"`
-    Username string `json:"username" pedantigo:"required,min=3,max=20"`
+    Email    string `json:"email" validate:"required,email"`
+    Age      int    `json:"age" validate:"required,min=18,max=120"`
+    Username string `json:"username" validate:"required,min=3,max=20"`
 }
 
 user, err := pedantigo.Unmarshal[User](jsonData)
@@ -293,15 +293,15 @@ import (
 )
 
 type Address struct {
-    Street string `json:"street" pedantigo:"required,min=5"`
-    City   string `json:"city" pedantigo:"required,min=2"`
-    Zip    string `json:"zip" pedantigo:"required,regexp=^\\d{5}$"`
+    Street string `json:"street" validate:"required,min=5"`
+    City   string `json:"city" validate:"required,min=2"`
+    Zip    string `json:"zip" validate:"required,regexp=^\\d{5}$"`
 }
 
 type User struct {
-    Email   string  `json:"email" pedantigo:"required,email"`
-    Age     int     `json:"age" pedantigo:"required,min=18,max=120"`
-    Address Address `json:"address" pedantigo:"required"`
+    Email   string  `json:"email" validate:"required,email"`
+    Age     int     `json:"age" validate:"required,min=18,max=120"`
+    Address Address `json:"address" validate:"required"`
 }
 
 func handleValidationError(err error) {

@@ -15,9 +15,9 @@ Validates the **numeric value** is within the specified range (inclusive).
 ```go
 type Product struct {
     // Price must be at least 0.01 and at most 999,999.99
-    Price float64 `json:"price" pedantigo:"required,min=0.01,max=999999.99"`
+    Price float64 `json:"price" validate:"required,min=0.01,max=999999.99"`
     // Quantity must be between 1 and 1000
-    Quantity int `json:"quantity" pedantigo:"required,min=1,max=1000"`
+    Quantity int `json:"quantity" validate:"required,min=1,max=1000"`
 }
 ```
 
@@ -39,13 +39,13 @@ Validates numeric values with exclusive or inclusive comparison bounds.
 ```go
 type SurveyRating struct {
     // Rating must be strictly greater than 0
-    Score int `json:"score" pedantigo:"required,gt=0"`
+    Score int `json:"score" validate:"required,gt=0"`
     // Confidence must be at least 0.5
-    Confidence float64 `json:"confidence" pedantigo:"required,gte=0.5"`
+    Confidence float64 `json:"confidence" validate:"required,gte=0.5"`
     // Days until expiration must be less than 365
-    DaysUntilExpiry int `json:"days_until_expiry" pedantigo:"required,lt=365"`
+    DaysUntilExpiry int `json:"days_until_expiry" validate:"required,lt=365"`
     // Discount percentage must be at most 50
-    DiscountPercent int `json:"discount_percent" pedantigo:"required,lte=50"`
+    DiscountPercent int `json:"discount_percent" validate:"required,lte=50"`
 }
 ```
 
@@ -64,9 +64,9 @@ Validates that a numeric value is **strictly greater than zero** (> 0).
 ```go
 type BankAccount struct {
     // Balance can be positive (credits) or zero, but not negative
-    Balance float64 `json:"balance" pedantigo:"required,positive"`
+    Balance float64 `json:"balance" validate:"required,positive"`
     // Withdrawal amount must be positive
-    WithdrawalAmount float64 `json:"withdrawal_amount" pedantigo:"required,positive"`
+    WithdrawalAmount float64 `json:"withdrawal_amount" validate:"required,positive"`
 }
 ```
 
@@ -82,9 +82,9 @@ Validates that a numeric value is **strictly less than zero** (< 0).
 ```go
 type TemperatureReading struct {
     // Temperature below freezing point
-    BelowFreezing float64 `json:"below_freezing" pedantigo:"negative"`
+    BelowFreezing float64 `json:"below_freezing" validate:"negative"`
     // Temperature change (decrease)
-    TemperatureChange float64 `json:"temperature_change" pedantigo:"negative"`
+    TemperatureChange float64 `json:"temperature_change" validate:"negative"`
 }
 ```
 
@@ -102,17 +102,17 @@ Validates that a numeric value is **evenly divisible** by the specified number.
 ```go
 type TimeSlot struct {
     // Meeting duration in minutes must be divisible by 15
-    DurationMinutes int `json:"duration_minutes" pedantigo:"required,multiple_of=15"`
+    DurationMinutes int `json:"duration_minutes" validate:"required,multiple_of=15"`
 }
 
 type ShoppingCart struct {
     // Pack size: items must be divisible by 6 (half-dozen)
-    Quantity int `json:"quantity" pedantigo:"required,min=6,multiple_of=6"`
+    Quantity int `json:"quantity" validate:"required,min=6,multiple_of=6"`
 }
 
 type PercentageDiscount struct {
     // Discount must be in 5% increments
-    DiscountPercent float64 `json:"discount_percent" pedantigo:"required,min=0,max=100,multiple_of=5"`
+    DiscountPercent float64 `json:"discount_percent" validate:"required,min=0,max=100,multiple_of=5"`
 }
 ```
 
@@ -133,12 +133,12 @@ Validates that a numeric value has **at most N total digits** (excluding the dec
 ```go
 type ProductSKU struct {
     // Product code: maximum 8 digits
-    Code int64 `json:"code" pedantigo:"required,max_digits=8"`
+    Code int64 `json:"code" validate:"required,max_digits=8"`
 }
 
 type BudgetAmount struct {
     // Budget: at most 10 total digits (e.g., 9,999,999,999.99)
-    Amount float64 `json:"amount" pedantigo:"required,max_digits=10"`
+    Amount float64 `json:"amount" validate:"required,max_digits=10"`
 }
 ```
 
@@ -158,17 +158,17 @@ Validates that a numeric value has **at most N decimal places** (digits after de
 ```go
 type MoneyAmount struct {
     // Price in USD: maximum 2 decimal places
-    Price float64 `json:"price" pedantigo:"required,decimal_places=2"`
+    Price float64 `json:"price" validate:"required,decimal_places=2"`
 }
 
 type ExchangeRate struct {
     // Exchange rate: at most 6 decimal places
-    Rate float64 `json:"rate" pedantigo:"required,min=0,decimal_places=6"`
+    Rate float64 `json:"rate" validate:"required,min=0,decimal_places=6"`
 }
 
 type MeasurementValue struct {
     // Measurement: at most 4 decimal places
-    Meters float64 `json:"meters" pedantigo:"required,decimal_places=4"`
+    Meters float64 `json:"meters" validate:"required,decimal_places=4"`
 }
 ```
 
@@ -191,14 +191,14 @@ Validates that a floating-point value is **neither infinity nor NaN** (Not a Num
 ```go
 type SensorData struct {
     // Sensor reading must be a valid number
-    Temperature float64 `json:"temperature" pedantigo:"required,disallow_inf_nan"`
+    Temperature float64 `json:"temperature" validate:"required,disallow_inf_nan"`
     // Altitude must be finite
-    Altitude float64 `json:"altitude" pedantigo:"required,disallow_inf_nan"`
+    Altitude float64 `json:"altitude" validate:"required,disallow_inf_nan"`
 }
 
 type CalculationResult struct {
     // Result of division must be a valid number
-    Result float64 `json:"result" pedantigo:"required,disallow_inf_nan"`
+    Result float64 `json:"result" validate:"required,disallow_inf_nan"`
 }
 ```
 
@@ -218,32 +218,32 @@ Numeric constraints can be combined to create powerful validation rules:
 ```go
 type BankAccount struct {
     // Account balance: must be at least 0, at most 999 billion
-    Balance float64 `json:"balance" pedantigo:"required,min=0,max=999000000000,decimal_places=2"`
+    Balance float64 `json:"balance" validate:"required,min=0,max=999000000000,decimal_places=2"`
 }
 
 type AgeVerification struct {
     // Age: must be between 18 and 150
-    Age int `json:"age" pedantigo:"required,min=18,max=150"`
+    Age int `json:"age" validate:"required,min=18,max=150"`
 }
 
 type PercentageScore struct {
     // Score: 0-100 with one decimal place
-    Score float64 `json:"score" pedantigo:"required,min=0,max=100,decimal_places=1"`
+    Score float64 `json:"score" validate:"required,min=0,max=100,decimal_places=1"`
 }
 
 type RatingScale struct {
     // 5-star rating: 1 to 5, in increments of 0.5
-    Rating float64 `json:"rating" pedantigo:"required,min=1,max=5,multiple_of=0.5"`
+    Rating float64 `json:"rating" validate:"required,min=1,max=5,multiple_of=0.5"`
 }
 
 type PaymentAmount struct {
     // Payment: at least 0.01, at most 999,999.99, exactly 2 decimal places
-    Amount float64 `json:"amount" pedantigo:"required,min=0.01,max=999999.99,decimal_places=2"`
+    Amount float64 `json:"amount" validate:"required,min=0.01,max=999999.99,decimal_places=2"`
 }
 
 type ApiKeyID struct {
     // API key ID: exactly 32 digits, no sign
-    KeyID int64 `json:"key_id" pedantigo:"required,max_digits=32"`
+    KeyID int64 `json:"key_id" validate:"required,max_digits=32"`
 }
 ```
 
@@ -261,39 +261,39 @@ import (
 
 type ECommerceProduct struct {
     // Product ID: positive integer, at most 10 digits
-    ID int64 `json:"id" pedantigo:"required,positive,max_digits=10"`
+    ID int64 `json:"id" validate:"required,positive,max_digits=10"`
 
     // Product name: required, 3-100 characters
-    Name string `json:"name" pedantigo:"required,min=3,max=100"`
+    Name string `json:"name" validate:"required,min=3,max=100"`
 
     // Price in USD: required, at least 0.01, exactly 2 decimal places
-    Price float64 `json:"price" pedantigo:"required,min=0.01,decimal_places=2"`
+    Price float64 `json:"price" validate:"required,min=0.01,decimal_places=2"`
 
     // Cost basis: optional, for internal tracking
-    CostBasis float64 `json:"cost_basis,omitempty" pedantigo:"min=0,decimal_places=2"`
+    CostBasis float64 `json:"cost_basis,omitempty" validate:"min=0,decimal_places=2"`
 
     // Stock quantity: non-negative, less than 1 million
-    StockQuantity int `json:"stock_quantity" pedantigo:"required,min=0,max=999999"`
+    StockQuantity int `json:"stock_quantity" validate:"required,min=0,max=999999"`
 
     // Rating: 0-5 stars, one decimal place
-    Rating float64 `json:"rating,omitempty" pedantigo:"min=0,max=5,decimal_places=1"`
+    Rating float64 `json:"rating,omitempty" validate:"min=0,max=5,decimal_places=1"`
 
     // Review count: non-negative
-    ReviewCount int `json:"review_count,omitempty" pedantigo:"min=0"`
+    ReviewCount int `json:"review_count,omitempty" validate:"min=0"`
 
     // Discount percentage: 0-100, whole numbers only
-    DiscountPercent int `json:"discount_percent,omitempty" pedantigo:"min=0,max=100"`
+    DiscountPercent int `json:"discount_percent,omitempty" validate:"min=0,max=100"`
 
     // Weight in kilograms: positive, 4 decimal places
-    WeightKg float64 `json:"weight_kg,omitempty" pedantigo:"positive,decimal_places=4"`
+    WeightKg float64 `json:"weight_kg,omitempty" validate:"positive,decimal_places=4"`
 
     // Dimensions in centimeters: all positive
-    WidthCm  float64 `json:"width_cm,omitempty" pedantigo:"positive,decimal_places=1"`
-    HeightCm float64 `json:"height_cm,omitempty" pedantigo:"positive,decimal_places=1"`
-    DepthCm  float64 `json:"depth_cm,omitempty" pedantigo:"positive,decimal_places=1"`
+    WidthCm  float64 `json:"width_cm,omitempty" validate:"positive,decimal_places=1"`
+    HeightCm float64 `json:"height_cm,omitempty" validate:"positive,decimal_places=1"`
+    DepthCm  float64 `json:"depth_cm,omitempty" validate:"positive,decimal_places=1"`
 
     // Warranty period in months: 0 to 36, multiple of 3
-    WarrantyMonths int `json:"warranty_months,omitempty" pedantigo:"min=0,max=36,multiple_of=3"`
+    WarrantyMonths int `json:"warranty_months,omitempty" validate:"min=0,max=36,multiple_of=3"`
 }
 
 func main() {
@@ -393,27 +393,27 @@ func main() {
 
 **E-commerce:**
 ```go
-Price float64 `json:"price" pedantigo:"required,min=0.01,decimal_places=2"`
-Quantity int `json:"quantity" pedantigo:"required,min=1,max=1000"`
-DiscountPercent int `json:"discount" pedantigo:"min=0,max=100"`
+Price float64 `json:"price" validate:"required,min=0.01,decimal_places=2"`
+Quantity int `json:"quantity" validate:"required,min=1,max=1000"`
+DiscountPercent int `json:"discount" validate:"min=0,max=100"`
 ```
 
 **Banking:**
 ```go
-Balance float64 `json:"balance" pedantigo:"required,decimal_places=2,max_digits=15"`
-WithdrawalAmount float64 `json:"amount" pedantigo:"required,positive,decimal_places=2"`
-InterestRate float64 `json:"rate" pedantigo:"required,min=0,decimal_places=4"`
+Balance float64 `json:"balance" validate:"required,decimal_places=2,max_digits=15"`
+WithdrawalAmount float64 `json:"amount" validate:"required,positive,decimal_places=2"`
+InterestRate float64 `json:"rate" validate:"required,min=0,decimal_places=4"`
 ```
 
 **Scientific/Measurements:**
 ```go
-Temperature float64 `json:"temp_celsius" pedantigo:"disallow_inf_nan"`
-PressurePa float64 `json:"pressure" pedantigo:"required,positive"`
-PH float64 `json:"ph" pedantigo:"required,min=0,max=14,decimal_places=2"`
+Temperature float64 `json:"temp_celsius" validate:"disallow_inf_nan"`
+PressurePa float64 `json:"pressure" validate:"required,positive"`
+PH float64 `json:"ph" validate:"required,min=0,max=14,decimal_places=2"`
 ```
 
 **Rating Systems:**
 ```go
-Stars float64 `json:"stars" pedantigo:"min=0,max=5,multiple_of=0.5"`
-Percentage int `json:"percentage" pedantigo:"required,min=0,max=100"`
+Stars float64 `json:"stars" validate:"min=0,max=5,multiple_of=0.5"`
+Percentage int `json:"percentage" validate:"required,min=0,max=100"`
 ```

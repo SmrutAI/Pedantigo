@@ -156,7 +156,7 @@ StrictMissingFields bool
 ExtraFields ExtraFieldsMode
 
 // TagName overrides the global struct tag name for this validator instance
-// Default: "" (uses global default "pedantigo")
+// Default: "" (uses global default "validate")
 TagName string
 }
 ```
@@ -176,7 +176,7 @@ pedantigo.DefaultValidatorOptions()
 // Returns: ValidatorOptions{
 //     StrictMissingFields: true,
 //     ExtraFields:         ExtraIgnore,
-//     TagName:             "",  // Uses global default "pedantigo"
+//     TagName:             "",  // Uses global default "validate"
 // }
 ```
 
@@ -192,7 +192,7 @@ Missing fields without defaults are validation errors:
 
 ```go
 type Config struct {
-Host string `json:"host" pedantigo:"required"`
+Host string `json:"host" validate:"required"`
 Port int    `json:"port"` // No default
 }
 
@@ -217,7 +217,7 @@ Missing fields without defaults are left as zero values:
 
 ```go
 type Config struct {
-Host string `json:"host" pedantigo:"required"`
+Host string `json:"host" validate:"required"`
 Port int    `json:"port"` // Zero value: 0
 }
 
@@ -243,7 +243,7 @@ Understanding how Go's `json:",omitempty"` marshaling tag interacts with Pedanti
 
 | Struct Tags                     | In JSON Schema `required` | Unmarshal Behavior               |
 |---------------------------------|---------------------------|----------------------------------|
-| `pedantigo:"required"`          | Yes                       | Error if field missing from JSON |
+| `validate:"required"`          | Yes                       | Error if field missing from JSON |
 | `json:",omitempty"` only        | No                        | Zero value if missing (valid)    |
 | Both `required` + `omitempty`   | Yes                       | Error if missing (required wins) |
 | Pointer `*T` + `required`       | Yes                       | Error if missing or null         |
@@ -261,7 +261,7 @@ Understanding how Go's `json:",omitempty"` marshaling tag interacts with Pedanti
 ```go
 type Config struct {
 // Required: must be in JSON, appears in schema required array
-Host string `json:"host" pedantigo:"required"`
+Host string `json:"host" validate:"required"`
 
 // Optional with omitempty: omitted from output if zero, NOT in required array
 Port int `json:"port,omitempty"`
@@ -270,7 +270,7 @@ Port int `json:"port,omitempty"`
 Timeout *int `json:"timeout,omitempty"`
 
 // Required + omitempty: must be in JSON input, omitted from output if zero
-Name string `json:"name,omitempty" pedantigo:"required"`
+Name string `json:"name,omitempty" validate:"required"`
 }
 ```
 
@@ -287,14 +287,14 @@ the pedantigo struct tag itself.
 
 ```go
 type SearchRequest struct {
-ActorID   string `pedantigo:"omitempty,max=64,required_with=ActorType"`
-ActorType string `pedantigo:"omitempty,oneof=user agent system,required_with=ActorID"`
+ActorID   string `validate:"omitempty,max=64,required_with=ActorType"`
+ActorType string `validate:"omitempty,oneof=user agent system,required_with=ActorID"`
 }
 ```
 
 **Semantics:**
 
-When a field is tagged with `pedantigo:"omitempty,..."` and its value is the **zero value** for its type (empty string,
+When a field is tagged with `validate:"omitempty,..."` and its value is the **zero value** for its type (empty string,
 `0`, `false`, nil pointer, etc.):
 
 - Regular constraints (`min`, `max`, `oneof`, `email`, `url`, etc.) are **skipped** — the field is treated as
@@ -309,8 +309,8 @@ When the field has a non-zero value, all constraints run normally.
 ```go
 type Actor struct {
 // Both are optional. If one is provided, the other must be too.
-ActorID   string `pedantigo:"omitempty,max=64,required_with=ActorType"`
-ActorType string `pedantigo:"omitempty,oneof=user agent system,required_with=ActorID"`
+ActorID   string `validate:"omitempty,max=64,required_with=ActorType"`
+ActorType string `validate:"omitempty,oneof=user agent system,required_with=ActorID"`
 }
 ```
 
@@ -327,13 +327,13 @@ ActorType string `pedantigo:"omitempty,oneof=user agent system,required_with=Act
 | Tag                     | Where it appears     | Effect                                                                      |
 |-------------------------|----------------------|-----------------------------------------------------------------------------|
 | `json:",omitempty"`     | JSON struct tag      | Controls marshaling output: omits the field from JSON if its value is zero  |
-| `pedantigo:"omitempty"` | Pedantigo constraint | Controls validation: skips regular constraints when the field value is zero |
+| `validate:"omitempty"` | Pedantigo constraint | Controls validation: skips regular constraints when the field value is zero |
 
 Both can be combined:
 
 ```go
 // Omitted from JSON output when zero AND skips validation when zero
-Region string `json:"region,omitempty" pedantigo:"omitempty,oneof=us-east-1 us-west-2 eu-west-1"`
+Region string `json:"region,omitempty" validate:"omitempty,oneof=us-east-1 us-west-2 eu-west-1"`
 ```
 
 ---
@@ -416,7 +416,7 @@ Unknown JSON fields are captured and stored in a designated `map[string]any` fie
 type User struct {
 Name   string         `json:"name"`
 Email  string         `json:"email"`
-Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+Extras map[string]any `json:"-" validate:"extra_fields"`
 }
 
 jsonData := []byte(`{
@@ -440,7 +440,7 @@ fmt.Println(user.Extras["phone"]) // Output: 555-1234
 
 1. **Struct must have an extra_fields tagged field:**
    ```go
-   Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+   Extras map[string]any `json:"-" validate:"extra_fields"`
    ```
 
 2. **The field type must be `map[string]any`** (or `map[string]interface{}`)
@@ -455,13 +455,13 @@ extras at that level:
 ```go
 type Address struct {
 City   string         `json:"city"`
-Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+Extras map[string]any `json:"-" validate:"extra_fields"`
 }
 
 type User struct {
 Name    string         `json:"name"`
 Address Address        `json:"address"`
-Extras  map[string]any `json:"-" pedantigo:"extra_fields"`
+Extras  map[string]any `json:"-" validate:"extra_fields"`
 }
 
 jsonData := []byte(`{
@@ -507,9 +507,9 @@ fields for:
 
 ```go
 type UserV1 struct {
-Name   string         `json:"name" pedantigo:"required"`
-Email  string         `json:"email" pedantigo:"required,email"`
-Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+Name   string         `json:"name" validate:"required"`
+Email  string         `json:"email" validate:"required,email"`
+Extras map[string]any `json:"-" validate:"extra_fields"`
 }
 
 // Accept requests from V2 clients that include "profile_picture", "preferences", etc.
@@ -540,9 +540,9 @@ When using LLMs with structured output (JSON mode), models may include unexpecte
 
 ```go
 type LLMResponse struct {
-Answer     string         `json:"answer" pedantigo:"required"`
+Answer     string         `json:"answer" validate:"required"`
 Confidence float64        `json:"confidence"`
-Extras     map[string]any `json:"-" pedantigo:"extra_fields"`
+Extras     map[string]any `json:"-" validate:"extra_fields"`
 }
 
 validator := pedantigo.New[LLMResponse](pedantigo.ValidatorOptions{
@@ -576,7 +576,7 @@ metrics.RecordExtraFields(modelName, promptID, response.Extras)
 
 Override the struct tag name for a specific validator instance.
 
-**Default**: Uses global tag name (`"pedantigo"` or set via `SetTagName()`)
+**Default**: Uses global tag name (`"validate"` by default, or whatever was set via `SetTagName()`)
 
 | Value        | Behavior                          |
 |--------------|-----------------------------------|
@@ -678,9 +678,9 @@ import (
 )
 
 type CreateUserRequest struct {
-	Username string `json:"username" pedantigo:"required,min=3,max=20"`
-	Email    string `json:"email" pedantigo:"required,email"`
-	Password string `json:"password" pedantigo:"required,min=8"`
+	Username string `json:"username" validate:"required,min=3,max=20"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=8"`
 }
 
 // API validator: strict about extra fields, requires all fields
@@ -709,13 +709,13 @@ func handleCreateUser(jsonData []byte) (*CreateUserRequest, error) {
 ```go
 type AppConfig struct {
 Database struct {
-Host     string `json:"host" pedantigo:"required"`
-Port     int    `json:"port" pedantigo:"default=5432"`
-Username string `json:"username" pedantigo:"required"`
-Password string `json:"password" pedantigo:"required"`
+Host     string `json:"host" validate:"required"`
+Port     int    `json:"port" validate:"default=5432"`
+Username string `json:"username" validate:"required"`
+Password string `json:"password" validate:"required"`
 } `json:"database"`
 Server struct {
-Addr string `json:"addr" pedantigo:"default=0.0.0.0:8080"`
+Addr string `json:"addr" validate:"default=0.0.0.0:8080"`
 } `json:"server"`
 }
 
@@ -732,10 +732,10 @@ ExtraFields:         pedantigo.ExtraIgnore,
 
 ```go
 type UserV2 struct {
-ID       string `json:"id" pedantigo:"required,uuid"`
-Username string `json:"username" pedantigo:"required"`
-Email    string `json:"email" pedantigo:"required,email"`
-Status   string `json:"status" pedantigo:"default=active"`
+ID       string `json:"id" validate:"required,uuid"`
+Username string `json:"username" validate:"required"`
+Email    string `json:"email" validate:"required,email"`
+Status   string `json:"status" validate:"default=active"`
 }
 
 // Migration validator: accept both old and new client requests

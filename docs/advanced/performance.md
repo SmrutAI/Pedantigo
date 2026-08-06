@@ -33,8 +33,8 @@ The cache uses `sync.RWMutex` for thread-safe concurrent access. Type hash detec
 **Example**:
 ```go
 type User struct {
-    Email string `json:"email" pedantigo:"required,email"`
-    Age   int    `json:"age" pedantigo:"min=18"`
+    Email string `json:"email" validate:"required,email"`
+    Age   int    `json:"age" validate:"min=18"`
 }
 
 // First call: ~10ms (generates schema)
@@ -64,8 +64,8 @@ The Simple API uses `sync.Map` to cache validators per type:
 **Example**:
 ```go
 type Product struct {
-    Name  string `json:"name" pedantigo:"required,min=1"`
-    Price float64 `json:"price" pedantigo:"gt=0"`
+    Name  string `json:"name" validate:"required,min=1"`
+    Price float64 `json:"price" validate:"gt=0"`
 }
 
 // First call: ~1-2ms (creates and caches validator)
@@ -191,9 +191,9 @@ import (
 )
 
 type User struct {
-    Email string `json:"email" pedantigo:"required,email"`
-    Age   int    `json:"age" pedantigo:"min=18,max=120"`
-    Name  string `json:"name" pedantigo:"required,min=1"`
+    Email string `json:"email" validate:"required,email"`
+    Age   int    `json:"age" validate:"min=18,max=120"`
+    Name  string `json:"name" validate:"required,min=1"`
 }
 
 // Benchmark Simple API Unmarshal
@@ -409,8 +409,8 @@ import (
 )
 
 type User struct {
-    Email string `json:"email" pedantigo:"required,email"`
-    Name  string `json:"name" pedantigo:"required,min=1"`
+    Email string `json:"email" validate:"required,email"`
+    Name  string `json:"name" validate:"required,min=1"`
 }
 
 // Pre-create validator at startup (done once)
@@ -450,8 +450,8 @@ import (
 )
 
 type Item struct {
-    ID   string `json:"id" pedantigo:"required"`
-    Data string `json:"data" pedantigo:"required"`
+    ID   string `json:"id" validate:"required"`
+    Data string `json:"data" validate:"required"`
 }
 
 // Create validator once

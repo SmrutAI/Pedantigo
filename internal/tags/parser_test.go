@@ -20,93 +20,93 @@ func TestParseTag_ValidConstraints(t *testing.T) {
 	}{
 		{
 			name:       "single_simple_constraint_required",
-			tag:        reflect.StructTag(`pedantigo:"required"`),
+			tag:        reflect.StructTag(`validate:"required"`),
 			wantKeys:   map[string]string{"required": ""},
 			wantLength: 1,
 		},
 		{
 			name:       "single_simple_constraint_email",
-			tag:        reflect.StructTag(`pedantigo:"email"`),
+			tag:        reflect.StructTag(`validate:"email"`),
 			wantKeys:   map[string]string{"email": ""},
 			wantLength: 1,
 		},
 		{
 			name:       "multiple_simple_constraints",
-			tag:        reflect.StructTag(`pedantigo:"required,email"`),
+			tag:        reflect.StructTag(`validate:"required,email"`),
 			wantKeys:   map[string]string{"required": "", "email": ""},
 			wantLength: 2,
 		},
 		{
 			name:       "single_constraint_with_value_min",
-			tag:        reflect.StructTag(`pedantigo:"min=18"`),
+			tag:        reflect.StructTag(`validate:"min=18"`),
 			wantKeys:   map[string]string{"min": "18"},
 			wantLength: 1,
 		},
 		{
 			name:       "single_constraint_with_value_default",
-			tag:        reflect.StructTag(`pedantigo:"default=active"`),
+			tag:        reflect.StructTag(`validate:"default=active"`),
 			wantKeys:   map[string]string{"default": "active"},
 			wantLength: 1,
 		},
 		{
 			name:       "multiple_constraints_with_values",
-			tag:        reflect.StructTag(`pedantigo:"min=18,max=120"`),
+			tag:        reflect.StructTag(`validate:"min=18,max=120"`),
 			wantKeys:   map[string]string{"min": "18", "max": "120"},
 			wantLength: 2,
 		},
 		{
 			name:       "mixed_simple_and_valued_constraints",
-			tag:        reflect.StructTag(`pedantigo:"required,email,min=18"`),
+			tag:        reflect.StructTag(`validate:"required,email,min=18"`),
 			wantKeys:   map[string]string{"required": "", "email": "", "min": "18"},
 			wantLength: 3,
 		},
 		{
 			name:       "constraint_value_with_alphanumeric",
-			tag:        reflect.StructTag(`pedantigo:"pattern=[a-z]+"`),
+			tag:        reflect.StructTag(`validate:"pattern=[a-z]+"`),
 			wantKeys:   map[string]string{"pattern": "[a-z]+"},
 			wantLength: 1,
 		},
 		{
 			name:       "constraint_with_whitespace_around_equals",
-			tag:        reflect.StructTag(`pedantigo:"min = 5 , max = 10"`),
+			tag:        reflect.StructTag(`validate:"min = 5 , max = 10"`),
 			wantKeys:   map[string]string{"min": "5", "max": "10"},
 			wantLength: 2,
 		},
 		{
 			name:       "constraints_with_trailing_comma",
-			tag:        reflect.StructTag(`pedantigo:"required,email,"`),
+			tag:        reflect.StructTag(`validate:"required,email,"`),
 			wantKeys:   map[string]string{"required": "", "email": ""},
 			wantLength: 2,
 		},
 		{
 			name:       "complex_combination_all_types",
-			tag:        reflect.StructTag(`pedantigo:"required,email,min=3,max=100,default=user@example.com"`),
+			tag:        reflect.StructTag(`validate:"required,email,min=3,max=100,default=user@example.com"`),
 			wantKeys:   map[string]string{"required": "", "email": "", "min": "3", "max": "100", "default": "user@example.com"},
 			wantLength: 5,
 		},
 		// Colon syntax tests (key:value)
 		{
 			name:       "colon_syntax_single",
-			tag:        reflect.StructTag(`pedantigo:"exclude:response"`),
+			tag:        reflect.StructTag(`validate:"exclude:response"`),
 			wantKeys:   map[string]string{"exclude": "response"},
 			wantLength: 1,
 		},
 		{
 			name:       "colon_syntax_with_pipe_value",
-			tag:        reflect.StructTag(`pedantigo:"exclude:response|log"`),
+			tag:        reflect.StructTag(`validate:"exclude:response|log"`),
 			wantKeys:   map[string]string{"exclude": "response|log"},
 			wantLength: 1,
 		},
 		{
 			name:       "colon_syntax_mixed_with_equals",
-			tag:        reflect.StructTag(`pedantigo:"min=5,exclude:internal,max=100"`),
+			tag:        reflect.StructTag(`validate:"min=5,exclude:internal,max=100"`),
 			wantKeys:   map[string]string{"min": "5", "exclude": "internal", "max": "100"},
 			wantLength: 3,
 		},
 		// JSON array examples tests
 		{
 			name: "examples_json_array_of_strings",
-			tag:  reflect.StructTag(`pedantigo:"required,examples=[\"a\",\"b\",\"c\"]"`),
+			tag:  reflect.StructTag(`validate:"required,examples=[\"a\",\"b\",\"c\"]"`),
 			wantKeys: map[string]string{
 				"required": "",
 				"examples": `["a","b","c"]`,
@@ -115,7 +115,7 @@ func TestParseTag_ValidConstraints(t *testing.T) {
 		},
 		{
 			name: "examples_json_array_of_ints",
-			tag:  reflect.StructTag(`pedantigo:"required,examples=[0,1,2,3]"`),
+			tag:  reflect.StructTag(`validate:"required,examples=[0,1,2,3]"`),
 			wantKeys: map[string]string{
 				"required": "",
 				"examples": "[0,1,2,3]",
@@ -124,7 +124,7 @@ func TestParseTag_ValidConstraints(t *testing.T) {
 		},
 		{
 			name: "examples_json_array_of_arrays",
-			tag:  reflect.StructTag(`pedantigo:"required,examples=[[0,2],[1,3,5],[]]"`),
+			tag:  reflect.StructTag(`validate:"required,examples=[[0,2],[1,3,5],[]]"`),
 			wantKeys: map[string]string{
 				"required": "",
 				"examples": "[[0,2],[1,3,5],[]]",
@@ -133,7 +133,7 @@ func TestParseTag_ValidConstraints(t *testing.T) {
 		},
 		{
 			name: "examples_json_with_constraints_before_and_after",
-			tag:  reflect.StructTag(`pedantigo:"gte=0,examples=[[0,2],[1,3,5]],description=test desc"`),
+			tag:  reflect.StructTag(`validate:"gte=0,examples=[[0,2],[1,3,5]],description=test desc"`),
 			wantKeys: map[string]string{
 				"gte":         "0",
 				"examples":    "[[0,2],[1,3,5]]",
@@ -144,19 +144,19 @@ func TestParseTag_ValidConstraints(t *testing.T) {
 		// OR operator tests
 		{
 			name:       "or_operator_simple",
-			tag:        reflect.StructTag(`pedantigo:"hexcolor|rgb"`),
+			tag:        reflect.StructTag(`validate:"hexcolor|rgb"`),
 			wantKeys:   map[string]string{"__or__hexcolor|rgb": ""},
 			wantLength: 1,
 		},
 		{
 			name:       "or_operator_multiple_options",
-			tag:        reflect.StructTag(`pedantigo:"hexcolor|rgb|rgba|hsl|hsla"`),
+			tag:        reflect.StructTag(`validate:"hexcolor|rgb|rgba|hsl|hsla"`),
 			wantKeys:   map[string]string{"__or__hexcolor|rgb|rgba|hsl|hsla": ""},
 			wantLength: 1,
 		},
 		{
 			name:       "or_operator_with_other_constraints",
-			tag:        reflect.StructTag(`pedantigo:"required,hexcolor|rgb,min=3"`),
+			tag:        reflect.StructTag(`validate:"required,hexcolor|rgb,min=3"`),
 			wantKeys:   map[string]string{"required": "", "__or__hexcolor|rgb": "", "min": "3"},
 			wantLength: 3,
 		},
@@ -192,21 +192,21 @@ func TestParseTagWithDive_CollectionConstraintsOnly(t *testing.T) {
 	}{
 		{
 			name:        "single_min_constraint",
-			tag:         reflect.StructTag(`pedantigo:"min=3"`),
+			tag:         reflect.StructTag(`validate:"min=3"`),
 			constraints: map[string]string{"min": "3"},
 		},
 		{
 			name:        "multiple_collection_constraints",
-			tag:         reflect.StructTag(`pedantigo:"min=3,max=10"`),
+			tag:         reflect.StructTag(`validate:"min=3,max=10"`),
 			constraints: map[string]string{"min": "3", "max": "10"},
 		},
 		{
 			name:    "empty_tag",
-			tag:     reflect.StructTag(`pedantigo:""`),
+			tag:     reflect.StructTag(`validate:""`),
 			wantNil: true,
 		},
 		{
-			name:    "no_pedantigo_tag",
+			name:    "no_validate_tag",
 			tag:     reflect.StructTag(`json:"field"`),
 			wantNil: true,
 		},
@@ -241,28 +241,28 @@ func TestParseTagWithDive_ElementConstraints(t *testing.T) {
 	}{
 		{
 			name:                  "dive_only_with_element_constraint",
-			tag:                   reflect.StructTag(`pedantigo:"dive,email"`),
+			tag:                   reflect.StructTag(`validate:"dive,email"`),
 			wantDivePresent:       true,
 			collectionConstraints: map[string]string{},
 			elementConstraints:    map[string]string{"email": ""},
 		},
 		{
 			name:                  "dive_with_multiple_element_constraints",
-			tag:                   reflect.StructTag(`pedantigo:"dive,email,min=5"`),
+			tag:                   reflect.StructTag(`validate:"dive,email,min=5"`),
 			wantDivePresent:       true,
 			collectionConstraints: map[string]string{},
 			elementConstraints:    map[string]string{"email": "", "min": "5"},
 		},
 		{
 			name:                  "collection_and_element_constraints",
-			tag:                   reflect.StructTag(`pedantigo:"min=3,dive,min=5"`),
+			tag:                   reflect.StructTag(`validate:"min=3,dive,min=5"`),
 			wantDivePresent:       true,
 			collectionConstraints: map[string]string{"min": "3"},
 			elementConstraints:    map[string]string{"min": "5"},
 		},
 		{
 			name:                  "collection_max_and_element_email",
-			tag:                   reflect.StructTag(`pedantigo:"max=100,dive,email,required"`),
+			tag:                   reflect.StructTag(`validate:"max=100,dive,email,required"`),
 			wantDivePresent:       true,
 			collectionConstraints: map[string]string{"max": "100"},
 			elementConstraints:    map[string]string{"email": "", "required": ""},
@@ -292,19 +292,19 @@ func TestParseTagWithDive_MapKeyConstraints(t *testing.T) {
 	}{
 		{
 			name:               "keys_with_min_constraint",
-			tag:                reflect.StructTag(`pedantigo:"dive,keys,min=2,endkeys,email"`),
+			tag:                reflect.StructTag(`validate:"dive,keys,min=2,endkeys,email"`),
 			keyConstraints:     map[string]string{"min": "2"},
 			elementConstraints: map[string]string{"email": ""},
 		},
 		{
 			name:               "keys_with_multiple_constraints",
-			tag:                reflect.StructTag(`pedantigo:"dive,keys,min=2,max=10,endkeys,required"`),
+			tag:                reflect.StructTag(`validate:"dive,keys,min=2,max=10,endkeys,required"`),
 			keyConstraints:     map[string]string{"min": "2", "max": "10"},
 			elementConstraints: map[string]string{"required": ""},
 		},
 		{
 			name:               "keys_with_pattern",
-			tag:                reflect.StructTag(`pedantigo:"dive,keys,pattern=^[a-z]+$,endkeys,min=1"`),
+			tag:                reflect.StructTag(`validate:"dive,keys,pattern=^[a-z]+$,endkeys,min=1"`),
 			keyConstraints:     map[string]string{"pattern": "^[a-z]+$"},
 			elementConstraints: map[string]string{"min": "1"},
 		},
@@ -331,17 +331,17 @@ func TestParseTagWithDive_Panics(t *testing.T) {
 	}{
 		{
 			name:          "keys_without_dive",
-			tag:           reflect.StructTag(`pedantigo:"keys,min=2,endkeys"`),
+			tag:           reflect.StructTag(`validate:"keys,min=2,endkeys"`),
 			expectedPanic: "'keys' can only appear after 'dive'",
 		},
 		{
 			name:          "endkeys_without_keys",
-			tag:           reflect.StructTag(`pedantigo:"dive,endkeys"`),
+			tag:           reflect.StructTag(`validate:"dive,endkeys"`),
 			expectedPanic: "'endkeys' without preceding 'keys'",
 		},
 		{
 			name:          "keys_without_endkeys",
-			tag:           reflect.StructTag(`pedantigo:"dive,keys,min=2"`),
+			tag:           reflect.StructTag(`validate:"dive,keys,min=2"`),
 			expectedPanic: "'keys' without closing 'endkeys'",
 		},
 	}
@@ -357,7 +357,7 @@ func TestParseTagWithDive_Panics(t *testing.T) {
 
 // TestParseTagWithDive_WhitespaceHandling tests that whitespace is properly trimmed.
 func TestParseTagWithDive_WhitespaceHandling(t *testing.T) {
-	parsed := ParseTagWithDive(reflect.StructTag(`pedantigo:"  min = 3 , dive , email  "`))
+	parsed := ParseTagWithDive(reflect.StructTag(`validate:"  min = 3 , dive , email  "`))
 
 	require.NotNil(t, parsed)
 	assert.True(t, parsed.DivePresent)
@@ -400,9 +400,9 @@ func TestParseTagWithName_CustomTag(t *testing.T) {
 			wantLength: 2,
 		},
 		{
-			name:       "pedantigo_tag_still_works",
-			tag:        reflect.StructTag(`pedantigo:"required,min=3"`),
-			tagName:    "pedantigo",
+			name:       "non_default_tag_name_still_works",
+			tag:        reflect.StructTag(`legacy_tag:"required,min=3"`),
+			tagName:    "legacy_tag",
 			wantKeys:   map[string]string{"required": "", "min": "3"},
 			wantLength: 2,
 		},
@@ -432,8 +432,8 @@ func TestParseTagWithName_WrongTag_ReturnsNil(t *testing.T) {
 		tagName string
 	}{
 		{
-			name:    "looking_for_validate_but_has_pedantigo",
-			tag:     reflect.StructTag(`pedantigo:"required"`),
+			name:    "looking_for_validate_but_has_legacy_tag",
+			tag:     reflect.StructTag(`legacy_tag:"required"`),
 			tagName: "validate",
 		},
 		{
@@ -517,8 +517,8 @@ func TestParseTagWithDiveAndName_WrongTag_ReturnsNil(t *testing.T) {
 		tagName string
 	}{
 		{
-			name:    "looking_for_validate_but_has_pedantigo",
-			tag:     reflect.StructTag(`pedantigo:"dive,email"`),
+			name:    "looking_for_validate_but_has_legacy_tag",
+			tag:     reflect.StructTag(`legacy_tag:"dive,email"`),
 			tagName: "validate",
 		},
 		{
@@ -536,24 +536,24 @@ func TestParseTagWithDiveAndName_WrongTag_ReturnsNil(t *testing.T) {
 	}
 }
 
-// TestParseTag_DelegatestoParseTagWithName verifies ParseTag uses default "pedantigo" tag.
+// TestParseTag_DelegatestoParseTagWithName verifies ParseTag uses DefaultTagName.
 func TestParseTag_DelegatesToParseTagWithName(t *testing.T) {
-	tag := reflect.StructTag(`pedantigo:"required,email"`)
+	tag := reflect.StructTag(`validate:"required,email"`)
 
 	// Both should return identical results
 	fromParseTag := ParseTag(tag)
-	fromParseTagWithName := ParseTagWithName(tag, "pedantigo")
+	fromParseTagWithName := ParseTagWithName(tag, DefaultTagName)
 
 	assert.Equal(t, fromParseTag, fromParseTagWithName)
 }
 
 // TestParseTagWithDive_DelegatesToParseTagWithDiveAndName verifies delegation.
 func TestParseTagWithDive_DelegatesToParseTagWithDiveAndName(t *testing.T) {
-	tag := reflect.StructTag(`pedantigo:"min=3,dive,email"`)
+	tag := reflect.StructTag(`validate:"min=3,dive,email"`)
 
 	// Both should return identical results
 	fromParseTagWithDive := ParseTagWithDive(tag)
-	fromParseTagWithDiveAndName := ParseTagWithDiveAndName(tag, "pedantigo")
+	fromParseTagWithDiveAndName := ParseTagWithDiveAndName(tag, DefaultTagName)
 
 	assert.Equal(t, fromParseTagWithDive.DivePresent, fromParseTagWithDiveAndName.DivePresent)
 	assert.Equal(t, fromParseTagWithDive.CollectionConstraints, fromParseTagWithDiveAndName.CollectionConstraints)
@@ -587,49 +587,49 @@ func TestParseTag_AliasExpansion(t *testing.T) {
 	}{
 		{
 			name:       "alias_expands_to_or_expression",
-			tag:        reflect.StructTag(`pedantigo:"iscolor"`),
+			tag:        reflect.StructTag(`validate:"iscolor"`),
 			wantKeys:   map[string]string{"__or__hexcolor|rgb|rgba|hsl|hsla": ""},
 			wantLength: 1,
 		},
 		{
 			name:       "alias_expands_to_simple_constraint",
-			tag:        reflect.StructTag(`pedantigo:"isuri"`),
+			tag:        reflect.StructTag(`validate:"isuri"`),
 			wantKeys:   map[string]string{"uri": ""},
 			wantLength: 1,
 		},
 		{
 			name:       "alias_with_other_constraints",
-			tag:        reflect.StructTag(`pedantigo:"required,iscolor,min=3"`),
+			tag:        reflect.StructTag(`validate:"required,iscolor,min=3"`),
 			wantKeys:   map[string]string{"required": "", "__or__hexcolor|rgb|rgba|hsl|hsla": "", "min": "3"},
 			wantLength: 3,
 		},
 		{
 			name:       "unknown_alias_not_expanded",
-			tag:        reflect.StructTag(`pedantigo:"unknown_alias"`),
+			tag:        reflect.StructTag(`validate:"unknown_alias"`),
 			wantKeys:   map[string]string{"unknown_alias": ""},
 			wantLength: 1,
 		},
 		{
 			name:       "postcode_alias",
-			tag:        reflect.StructTag(`pedantigo:"postcode_iso3166_alpha2"`),
+			tag:        reflect.StructTag(`validate:"postcode_iso3166_alpha2"`),
 			wantKeys:   map[string]string{"postcode": ""},
 			wantLength: 1,
 		},
 		{
 			name:       "alias_expands_to_key_value",
-			tag:        reflect.StructTag(`pedantigo:"shortstring"`),
+			tag:        reflect.StructTag(`validate:"shortstring"`),
 			wantKeys:   map[string]string{"min": "1", "max": "50"},
 			wantLength: 2,
 		},
 		{
 			name:       "alias_with_empty_part_skipped",
-			tag:        reflect.StructTag(`pedantigo:"complexalias"`),
+			tag:        reflect.StructTag(`validate:"complexalias"`),
 			wantKeys:   map[string]string{"required": "", "min": "5", "email": ""},
 			wantLength: 3,
 		},
 		{
 			name:       "alias_with_mixed_types",
-			tag:        reflect.StructTag(`pedantigo:"mixedalias"`),
+			tag:        reflect.StructTag(`validate:"mixedalias"`),
 			wantKeys:   map[string]string{"min": "10", "__or__hexcolor|rgb": "", "max": "100"},
 			wantLength: 3,
 		},
@@ -676,49 +676,49 @@ func TestParseTagWithDive_OrOperatorAndAlias(t *testing.T) {
 	}{
 		{
 			name:                  "or_in_collection",
-			tag:                   reflect.StructTag(`pedantigo:"hexcolor|rgb,dive,email"`),
+			tag:                   reflect.StructTag(`validate:"hexcolor|rgb,dive,email"`),
 			collectionConstraints: map[string]string{"__or__hexcolor|rgb": ""},
 			elementConstraints:    map[string]string{"email": ""},
 		},
 		{
 			name:                  "or_in_element",
-			tag:                   reflect.StructTag(`pedantigo:"min=3,dive,hexcolor|rgb"`),
+			tag:                   reflect.StructTag(`validate:"min=3,dive,hexcolor|rgb"`),
 			collectionConstraints: map[string]string{"min": "3"},
 			elementConstraints:    map[string]string{"__or__hexcolor|rgb": ""},
 		},
 		{
 			name:                  "alias_in_element",
-			tag:                   reflect.StructTag(`pedantigo:"dive,iscolor"`),
+			tag:                   reflect.StructTag(`validate:"dive,iscolor"`),
 			collectionConstraints: map[string]string{},
 			elementConstraints:    map[string]string{"__or__hexcolor|rgb|rgba|hsl|hsla": ""},
 		},
 		{
 			name:                  "colon_syntax_in_collection",
-			tag:                   reflect.StructTag(`pedantigo:"exclude:response,dive,email"`),
+			tag:                   reflect.StructTag(`validate:"exclude:response,dive,email"`),
 			collectionConstraints: map[string]string{"exclude": "response"},
 			elementConstraints:    map[string]string{"email": ""},
 		},
 		{
 			name:                  "colon_syntax_in_element",
-			tag:                   reflect.StructTag(`pedantigo:"dive,exclude:internal"`),
+			tag:                   reflect.StructTag(`validate:"dive,exclude:internal"`),
 			collectionConstraints: map[string]string{},
 			elementConstraints:    map[string]string{"exclude": "internal"},
 		},
 		{
 			name:                  "alias_with_key_value_in_element",
-			tag:                   reflect.StructTag(`pedantigo:"dive,shortstring"`),
+			tag:                   reflect.StructTag(`validate:"dive,shortstring"`),
 			collectionConstraints: map[string]string{},
 			elementConstraints:    map[string]string{"min": "1", "max": "50"},
 		},
 		{
 			name:                  "alias_with_empty_part_in_element",
-			tag:                   reflect.StructTag(`pedantigo:"dive,complexalias"`),
+			tag:                   reflect.StructTag(`validate:"dive,complexalias"`),
 			collectionConstraints: map[string]string{},
 			elementConstraints:    map[string]string{"required": "", "min": "5", "email": ""},
 		},
 		{
 			name:                  "alias_with_mixed_types_in_element",
-			tag:                   reflect.StructTag(`pedantigo:"dive,mixedalias"`),
+			tag:                   reflect.StructTag(`validate:"dive,mixedalias"`),
 			collectionConstraints: map[string]string{},
 			elementConstraints:    map[string]string{"min": "10", "__or__hexcolor|rgb": "", "max": "100"},
 		},
@@ -758,14 +758,14 @@ func TestParseTag_InvalidInputs(t *testing.T) {
 			wantEmpty: false,
 		},
 		{
-			name:      "pedantigo_with_empty_value",
-			tag:       reflect.StructTag(`pedantigo:""`),
+			name:      "validate_with_empty_value",
+			tag:       reflect.StructTag(`validate:""`),
 			wantNil:   true,
 			wantEmpty: false,
 		},
 		{
 			name:      "only_whitespace_in_tag",
-			tag:       reflect.StructTag(`pedantigo:"   "`),
+			tag:       reflect.StructTag(`validate:"   "`),
 			wantNil:   false,
 			wantEmpty: true,
 			wantKeys:  map[string]string{},

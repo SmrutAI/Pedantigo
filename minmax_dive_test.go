@@ -11,11 +11,11 @@ import (
 // on numeric fields inside nested structs accessed via dive.
 func TestMinMaxNumericInNestedDiveStruct(t *testing.T) {
 	type Fact struct {
-		Content    string  `json:"content" pedantigo:"required"`
-		Importance float32 `json:"importance" pedantigo:"required,min=0,max=1"`
+		Content    string  `json:"content" validate:"required"`
+		Importance float32 `json:"importance" validate:"required,min=0,max=1"`
 	}
 	type Schema struct {
-		Facts []Fact `json:"facts" pedantigo:"required,dive"`
+		Facts []Fact `json:"facts" validate:"required,dive"`
 	}
 
 	validator := New[Schema]()
@@ -106,11 +106,11 @@ func TestMinMaxNumericInNestedDiveStruct(t *testing.T) {
 // TestMinMaxIntInNestedDiveStruct tests min/max on int fields in nested structs.
 func TestMinMaxIntInNestedDiveStruct(t *testing.T) {
 	type Item struct {
-		Name     string `json:"name" pedantigo:"required"`
-		Quantity int    `json:"quantity" pedantigo:"required,min=0,max=100"`
+		Name     string `json:"name" validate:"required"`
+		Quantity int    `json:"quantity" validate:"required,min=0,max=100"`
 	}
 	type Order struct {
-		Items []Item `json:"items" pedantigo:"required,dive"`
+		Items []Item `json:"items" validate:"required,dive"`
 	}
 
 	validator := New[Order]()
@@ -153,10 +153,10 @@ func TestMinMaxIntInNestedDiveStruct(t *testing.T) {
 // TestMinMaxInNestedMapStruct tests min/max on fields in map value structs.
 func TestMinMaxInNestedMapStruct(t *testing.T) {
 	type Score struct {
-		Value float64 `json:"value" pedantigo:"required,min=0,max=100"`
+		Value float64 `json:"value" validate:"required,min=0,max=100"`
 	}
 	type Scores struct {
-		BySubject map[string]Score `json:"by_subject" pedantigo:"dive"`
+		BySubject map[string]Score `json:"by_subject" validate:"dive"`
 	}
 
 	validator := New[Scores]()

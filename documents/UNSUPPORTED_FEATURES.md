@@ -230,9 +230,9 @@ In Go, struct tags allow ONE type to serve multiple purposes:
 ```go
 // GORM, JSON, and Pedantigo use the SAME struct
 type User struct {
-    ID    uint   `gorm:"primaryKey" json:"id" pedantigo:"required"`
-    Name  string `gorm:"column:name" json:"name" pedantigo:"min=1,max=100"`
-    Email string `gorm:"uniqueIndex" json:"email" pedantigo:"required,email"`
+    ID    uint   `gorm:"primaryKey" json:"id" validate:"required"`
+    Name  string `gorm:"column:name" json:"name" validate:"min=1,max=100"`
+    Email string `gorm:"uniqueIndex" json:"email" validate:"required,email"`
 }
 
 // Query from database
@@ -367,8 +367,8 @@ validator := pedantigo.New[[]User]()
 ```go
 type Outer struct {
     Inner Inner
-    Max   int `pedantigo:"gtfield=Inner.Value"`  // Compare across nested structs
-    Check int `pedantigo:"eqfield=Inner.MinValue"` // Works with deep nesting too
+    Max   int `validate:"gtfield=Inner.Value"`  // Compare across nested structs
+    Check int `validate:"eqfield=Inner.MinValue"` // Works with deep nesting too
 }
 ```
 
@@ -401,7 +401,7 @@ validate.RegisterValidationCtx("custom", func(ctx context.Context, fl validator.
 ```go
 type Request struct {
     UserID string  // Include context as field
-    Data   string `pedantigo:"required"`
+    Data   string `validate:"required"`
 }
 
 func (r *Request) Validate() error {

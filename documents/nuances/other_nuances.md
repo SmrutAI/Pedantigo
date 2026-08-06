@@ -30,8 +30,8 @@ class User(BaseModel):
 
 ```go
 type User struct {
-    Role      string    `pedantigo:"default=user"`              // Static
-    CreatedAt time.Time `pedantigo:"defaultFactory=Now"`        // Dynamic
+    Role      string    `validate:"default=user"`              // Static
+    CreatedAt time.Time `validate:"defaultFactory=Now"`        // Dynamic
 }
 
 // Method must have signature: func (t *T) MethodName() (FieldType, error)
@@ -68,8 +68,8 @@ class User(BaseModel):
 
 ```go
 type User struct {
-    Email string `pedantigo:"required,email"`
-    Age   int    `pedantigo:"required,min=0,max=120"`
+    Email string `validate:"required,email"`
+    Age   int    `validate:"required,min=0,max=120"`
 }
 ```
 
@@ -102,8 +102,8 @@ class DateRange(BaseModel):
 ```go
 // Simple field comparison - use declarative tags
 type DateRange struct {
-    StartDate time.Time `pedantigo:"required"`
-    EndDate   time.Time `pedantigo:"required,gtfield=StartDate"`
+    StartDate time.Time `validate:"required"`
+    EndDate   time.Time `validate:"required,gtfield=StartDate"`
 }
 
 // Complex conditional logic - implement Validate()
@@ -416,7 +416,7 @@ type BaseUser struct {
 
 type AdminUser struct {
     BaseUser  // Embedded - fields are "promoted" to outer struct
-    Role string `json:"role" pedantigo:"default=admin"`
+    Role string `json:"role" validate:"default=admin"`
 }
 ```
 
@@ -428,8 +428,8 @@ Embedded fields are promoted to the outer struct, achieving similar ergonomics w
 
 | Feature | Pydantic v2 | Pedantigo |
 |---------|-------------|-----------|
-| **Defaults** | `Field(default=...)`, `Field(default_factory=...)` | `pedantigo:"default=..."`, `pedantigo:"defaultFactory=Method"` |
-| **Validators** | `@field_validator` decorator | `pedantigo:"email,min=5,max=100"` tags |
+| **Defaults** | `Field(default=...)`, `Field(default_factory=...)` | `validate:"default=..."`, `validate:"defaultFactory=Method"` |
+| **Validators** | `@field_validator` decorator | `validate:"email,min=5,max=100"` tags |
 | **Cross-field** | `@model_validator` decorator | Cross-field tags or `Validate() error` method |
 | **Type Coercion** | Automatic | Strict (no coercion) |
 | **Optional** | `Optional[T]` or `T \| None` | `*T` (pointer types) |

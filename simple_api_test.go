@@ -19,9 +19,9 @@ import (
 func TestUnmarshal_Basic(t *testing.T) {
 	// Local struct to avoid cross-test pollution
 	type User struct {
-		Name  string `json:"name" pedantigo:"required"`
-		Email string `json:"email" pedantigo:"email"`
-		Age   int    `json:"age" pedantigo:"min=0"`
+		Name  string `json:"name" validate:"required"`
+		Email string `json:"email" validate:"email"`
+		Age   int    `json:"age" validate:"min=0"`
 	}
 
 	data := []byte(`{"name":"John Doe","email":"john@example.com","age":30}`)
@@ -37,8 +37,8 @@ func TestUnmarshal_Basic(t *testing.T) {
 
 func TestSimpleAPI_Unmarshal_ValidationError(t *testing.T) {
 	type User struct {
-		Email string `json:"email" pedantigo:"required"`
-		Age   int    `json:"age" pedantigo:"min=18"`
+		Email string `json:"email" validate:"required"`
+		Age   int    `json:"age" validate:"min=18"`
 	}
 
 	// Missing required email field and age below minimum
@@ -57,8 +57,8 @@ func TestSimpleAPI_Unmarshal_ValidationError(t *testing.T) {
 
 func TestValidate_Valid(t *testing.T) {
 	type Config struct {
-		Host string `pedantigo:"required"`
-		Port int    `pedantigo:"min=1,max=65535"`
+		Host string `validate:"required"`
+		Port int    `validate:"min=1,max=65535"`
 	}
 
 	config := &Config{
@@ -74,7 +74,7 @@ func TestValidate_Invalid(t *testing.T) {
 	// NOTE: 'required' is only checked during Unmarshal (missing JSON keys), not Validate()
 	// Validate() only checks value constraints (min, max, etc.)
 	type Config struct {
-		Port int `pedantigo:"min=1,max=65535"`
+		Port int `validate:"min=1,max=65535"`
 	}
 
 	config := &Config{
@@ -91,9 +91,9 @@ func TestValidate_Invalid(t *testing.T) {
 
 func TestNewModel_AllInputTypes(t *testing.T) {
 	type Person struct {
-		Name  string `json:"name" pedantigo:"required"`
-		Email string `json:"email" pedantigo:"email"`
-		Age   int    `json:"age" pedantigo:"min=0"`
+		Name  string `json:"name" validate:"required"`
+		Email string `json:"email" validate:"email"`
+		Age   int    `json:"age" validate:"min=0"`
 	}
 
 	tests := []struct {
@@ -164,9 +164,9 @@ func TestNewModel_AllInputTypes(t *testing.T) {
 
 func TestSchema_ReturnsCachedInstance(t *testing.T) {
 	type Product struct {
-		ID    string  `json:"id" pedantigo:"required"`
-		Name  string  `json:"name" pedantigo:"required"`
-		Price float64 `json:"price" pedantigo:"min=0"`
+		ID    string  `json:"id" validate:"required"`
+		Name  string  `json:"name" validate:"required"`
+		Price float64 `json:"price" validate:"min=0"`
 	}
 
 	// First call
@@ -182,9 +182,9 @@ func TestSchema_ReturnsCachedInstance(t *testing.T) {
 
 func TestSchemaJSON_ValidJSON(t *testing.T) {
 	type Article struct {
-		Title   string `json:"title" pedantigo:"required"`
-		Content string `json:"content" pedantigo:"required"`
-		Author  string `json:"author" pedantigo:"required"`
+		Title   string `json:"title" validate:"required"`
+		Content string `json:"content" validate:"required"`
+		Author  string `json:"author" validate:"required"`
 	}
 
 	schemaBytes, err := SchemaJSON[Article]()
@@ -203,9 +203,9 @@ func TestSchemaJSON_ValidJSON(t *testing.T) {
 
 func TestMarshal_Basic(t *testing.T) {
 	type Book struct {
-		ISBN   string `json:"isbn" pedantigo:"required"`
-		Title  string `json:"title" pedantigo:"required"`
-		Author string `json:"author" pedantigo:"required"`
+		ISBN   string `json:"isbn" validate:"required"`
+		Title  string `json:"title" validate:"required"`
+		Author string `json:"author" validate:"required"`
 	}
 
 	book := &Book{
@@ -229,11 +229,11 @@ func TestMarshal_Basic(t *testing.T) {
 }
 
 func TestMarshalWithOptions_ExcludeContext(t *testing.T) {
-	// Note: The library uses pedantigo:"exclude:context" format
+	// Note: The library uses validate:"exclude:context" format
 	type Account struct {
-		Username string `json:"username" pedantigo:"required"`
-		Email    string `json:"email" pedantigo:"email"`
-		Password string `json:"password" pedantigo:"exclude:response"`
+		Username string `json:"username" validate:"required"`
+		Email    string `json:"email" validate:"email"`
+		Password string `json:"password" validate:"exclude:response"`
 	}
 
 	account := &Account{
@@ -260,9 +260,9 @@ func TestMarshalWithOptions_ExcludeContext(t *testing.T) {
 
 func TestDict_Basic(t *testing.T) {
 	type Address struct {
-		Street  string `json:"street" pedantigo:"required"`
-		City    string `json:"city" pedantigo:"required"`
-		ZipCode string `json:"zip_code" pedantigo:"required"`
+		Street  string `json:"street" validate:"required"`
+		City    string `json:"city" validate:"required"`
+		ZipCode string `json:"zip_code" validate:"required"`
 	}
 
 	address := &Address{
@@ -286,8 +286,8 @@ func TestDict_Basic(t *testing.T) {
 
 func TestConcurrentUnmarshal(t *testing.T) {
 	type User struct {
-		Name  string `json:"name" pedantigo:"required"`
-		Email string `json:"email" pedantigo:"email"`
+		Name  string `json:"name" validate:"required"`
+		Email string `json:"email" validate:"email"`
 	}
 
 	data := []byte(`{"name":"John","email":"john@example.com"}`)
@@ -320,8 +320,8 @@ func TestConcurrentUnmarshal(t *testing.T) {
 
 func TestConcurrentValidate(t *testing.T) {
 	type Config struct {
-		Host string `pedantigo:"required"`
-		Port int    `pedantigo:"min=1,max=65535"`
+		Host string `validate:"required"`
+		Port int    `validate:"min=1,max=65535"`
 	}
 
 	config := &Config{
@@ -352,9 +352,9 @@ func TestConcurrentValidate(t *testing.T) {
 
 func TestConcurrentSchema(t *testing.T) {
 	type Product struct {
-		ID    string  `json:"id" pedantigo:"required"`
-		Name  string  `json:"name" pedantigo:"required"`
-		Price float64 `json:"price" pedantigo:"min=0"`
+		ID    string  `json:"id" validate:"required"`
+		Name  string  `json:"name" validate:"required"`
+		Price float64 `json:"price" validate:"min=0"`
 	}
 
 	var wg sync.WaitGroup
@@ -396,9 +396,9 @@ func TestConcurrentSchema(t *testing.T) {
 
 func TestConcurrentMixedOperations(t *testing.T) {
 	type Order struct {
-		OrderID  string  `json:"order_id" pedantigo:"required"`
-		Total    float64 `json:"total" pedantigo:"min=0"`
-		Customer string  `json:"customer" pedantigo:"required"`
+		OrderID  string  `json:"order_id" validate:"required"`
+		Total    float64 `json:"total" validate:"min=0"`
+		Customer string  `json:"customer" validate:"required"`
 	}
 
 	data := []byte(`{"order_id":"ORD123","total":99.99,"customer":"Alice"}`)
@@ -463,10 +463,10 @@ func TestConcurrentMixedOperations(t *testing.T) {
 
 func TestConcurrentCacheAccess(t *testing.T) {
 	type TypeA struct {
-		FieldA string `json:"field_a" pedantigo:"required"`
+		FieldA string `json:"field_a" validate:"required"`
 	}
 	type TypeB struct {
-		FieldB int `json:"field_b" pedantigo:"min=0"`
+		FieldB int `json:"field_b" validate:"min=0"`
 	}
 	type TypeC struct {
 		FieldC bool `json:"field_c"`
@@ -520,8 +520,8 @@ func TestSimpleAPI_ConcurrentCacheCreation(t *testing.T) {
 	// This test verifies that getOrCreateValidator is thread-safe
 	// when multiple goroutines try to create validators for the same type
 	type Service struct {
-		Name string `json:"name" pedantigo:"required"`
-		URL  string `json:"url" pedantigo:"url"`
+		Name string `json:"name" validate:"required"`
+		URL  string `json:"url" validate:"url"`
 	}
 
 	var wg sync.WaitGroup
@@ -568,8 +568,8 @@ func TestSimpleAPI_ConcurrentCacheCreation(t *testing.T) {
 
 func TestSchemaOpenAPI_SimpleAPI(t *testing.T) {
 	type OpenAPIModel struct {
-		ID     int    `json:"id" pedantigo:"required"`
-		Name   string `json:"name" pedantigo:"required,min=1,max=100"`
+		ID     int    `json:"id" validate:"required"`
+		Name   string `json:"name" validate:"required,min=1,max=100"`
 		Active bool   `json:"active"`
 	}
 
@@ -585,8 +585,8 @@ func TestSchemaOpenAPI_SimpleAPI(t *testing.T) {
 
 func TestSchemaJSONOpenAPI_SimpleAPI(t *testing.T) {
 	type OpenAPIJSONModel struct {
-		Email   string `json:"email" pedantigo:"required,email"`
-		Website string `json:"website" pedantigo:"url"`
+		Email   string `json:"email" validate:"required,email"`
+		Website string `json:"website" validate:"url"`
 	}
 
 	schemaBytes, err := SchemaJSONOpenAPI[OpenAPIJSONModel]()
@@ -605,7 +605,7 @@ func TestSchemaJSONOpenAPI_SimpleAPI(t *testing.T) {
 
 func TestUnmarshalCtx_SimpleAPI(t *testing.T) {
 	type CtxModel struct {
-		Name  string `json:"name" pedantigo:"required"`
+		Name  string `json:"name" validate:"required"`
 		Value int    `json:"value"`
 	}
 
@@ -621,7 +621,7 @@ func TestUnmarshalCtx_SimpleAPI(t *testing.T) {
 
 func TestUnmarshalCtx_ValidationError(t *testing.T) {
 	type CtxModelWithEmail struct {
-		Email string `json:"email" pedantigo:"required,email"`
+		Email string `json:"email" validate:"required,email"`
 	}
 
 	ctx := context.Background()
@@ -714,7 +714,7 @@ func TestAppendMapKey_AllKeyTypes(t *testing.T) {
 // TestValidate_MapValidationWithErrors tests map validation which exercises captureExtrasInField.
 func TestValidate_MapValidationWithErrors(t *testing.T) {
 	type Config struct {
-		Settings map[string]int `json:"settings" pedantigo:"dive,min=0,max=100"`
+		Settings map[string]int `json:"settings" validate:"dive,min=0,max=100"`
 	}
 
 	config := &Config{
@@ -734,12 +734,12 @@ func TestValidate_MapValidationWithErrors(t *testing.T) {
 // TestNewModel_MapInput tests the unmarshalFromMap path.
 func TestNewModel_MapInput_Comprehensive(t *testing.T) {
 	type Address struct {
-		Street string `json:"street" pedantigo:"required"`
+		Street string `json:"street" validate:"required"`
 		City   string `json:"city"`
 	}
 	type User struct {
-		Name    string   `json:"name" pedantigo:"required"`
-		Age     int      `json:"age" pedantigo:"min=0"`
+		Name    string   `json:"name" validate:"required"`
+		Age     int      `json:"age" validate:"min=0"`
 		Address *Address `json:"address"`
 	}
 
@@ -764,8 +764,8 @@ func TestNewModel_MapInput_Comprehensive(t *testing.T) {
 // TestValidateWithCache tests that cached validation works correctly.
 func TestValidate_CachedValidation(t *testing.T) {
 	type Product struct {
-		Name  string  `json:"name" pedantigo:"required"`
-		Price float64 `json:"price" pedantigo:"min=0"`
+		Name  string  `json:"name" validate:"required"`
+		Price float64 `json:"price" validate:"min=0"`
 	}
 
 	// First validation
@@ -901,9 +901,9 @@ func TestStructPartial_Coverage(t *testing.T) {
 	RegisterTagNameFunc(nil)
 
 	type Form struct {
-		Name  string `json:"name" pedantigo:"required,min=1"`
-		Email string `json:"email" pedantigo:"required,email"`
-		Age   int    `json:"age" pedantigo:"min=18"`
+		Name  string `json:"name" validate:"required,min=1"`
+		Email string `json:"email" validate:"required,email"`
+		Age   int    `json:"age" validate:"min=18"`
 	}
 
 	v := New[Form](DefaultValidatorOptions())
@@ -927,9 +927,9 @@ func TestStructExcept_Coverage(t *testing.T) {
 	RegisterTagNameFunc(nil)
 
 	type Form struct {
-		Name  string `json:"name" pedantigo:"required,min=1"`
-		Email string `json:"email" pedantigo:"required,email"`
-		Age   int    `json:"age" pedantigo:"min=18"`
+		Name  string `json:"name" validate:"required,min=1"`
+		Email string `json:"email" validate:"required,email"`
+		Age   int    `json:"age" validate:"min=18"`
 	}
 
 	v := New[Form](DefaultValidatorOptions())
@@ -950,14 +950,14 @@ func TestStructExcept_Coverage(t *testing.T) {
 // PtrNestedWithExtra has pointer struct fields with extras.
 type PtrNestedWithExtra struct {
 	Value  string         `json:"value"`
-	Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+	Extras map[string]any `json:"-" validate:"extra_fields"`
 }
 
 // PtrStructWithExtras has a pointer to nested struct with extras.
 type PtrStructWithExtras struct {
 	Name   string              `json:"name"`
 	Nested *PtrNestedWithExtra `json:"nested"`
-	Extras map[string]any      `json:"-" pedantigo:"extra_fields"`
+	Extras map[string]any      `json:"-" validate:"extra_fields"`
 }
 
 // TestExtraAllow_PointerStructField tests extra fields with pointer struct fields.
@@ -1010,7 +1010,7 @@ func TestExtraAllow_NilPointerStructField(t *testing.T) {
 // SlicePtrStructWithExtras has a slice of pointer structs with extras.
 type SlicePtrStructWithExtras struct {
 	Items  []*PtrNestedWithExtra `json:"items"`
-	Extras map[string]any        `json:"-" pedantigo:"extra_fields"`
+	Extras map[string]any        `json:"-" validate:"extra_fields"`
 }
 
 // TestExtraAllow_SlicePointerStruct tests extras with slice of pointer structs.
@@ -1097,13 +1097,13 @@ func TestMarshal_SlicePointerStructWithExtras(t *testing.T) {
 
 // NestedRequiredForNewModel has nested required fields.
 type NestedRequiredForNewModel struct {
-	Field1 string `json:"field1" pedantigo:"required"`
-	Field2 string `json:"field2" pedantigo:"required"`
+	Field1 string `json:"field1" validate:"required"`
+	Field2 string `json:"field2" validate:"required"`
 }
 
 // NewModelMultiRequired has nested struct with multiple required fields.
 type NewModelMultiRequired struct {
-	Name   string                    `json:"name" pedantigo:"required"`
+	Name   string                    `json:"name" validate:"required"`
 	Nested NestedRequiredForNewModel `json:"nested"`
 }
 
@@ -1147,7 +1147,7 @@ func TestNewModel_SingleRequiredError(t *testing.T) {
 // TestNewModel_OtherError tests NewModel with non-required errors.
 func TestNewModel_OtherError(t *testing.T) {
 	type EmailModel struct {
-		Email string `json:"email" pedantigo:"required,email"`
+		Email string `json:"email" validate:"required,email"`
 	}
 
 	v := New[EmailModel](DefaultValidatorOptions())
@@ -1199,7 +1199,7 @@ func TestValidate_SkipUnless_Coverage(t *testing.T) {
 	// This test ensures the HasSkipConstraints branch is covered
 	type SkipTest struct {
 		Type    string `json:"type"`
-		OtherID string `json:"other_id" pedantigo:"skip_unless=Type:other,required"`
+		OtherID string `json:"other_id" validate:"skip_unless=Type:other,required"`
 	}
 
 	v := New[SkipTest](DefaultValidatorOptions())
@@ -1242,8 +1242,8 @@ func TestMarshalWithOptions_Coverage(t *testing.T) {
 
 // DictModelWithExtras is for testing Dict with extras enabled.
 type DictModelWithExtras struct {
-	Name   string         `json:"name" pedantigo:"required,min=3"`
-	Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+	Name   string         `json:"name" validate:"required,min=3"`
+	Extras map[string]any `json:"-" validate:"extra_fields"`
 }
 
 // TestDict_ValidationError tests Dict with validation errors.
@@ -1340,7 +1340,7 @@ func TestSecretBytes_NewSecretBytes(t *testing.T) {
 // TestUnmarshalCtx_Context_Error tests UnmarshalCtx with context validation error.
 func TestUnmarshalCtx_Context_Error(t *testing.T) {
 	type CtxModel struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[CtxModel](DefaultValidatorOptions())
@@ -1357,7 +1357,7 @@ func TestUnmarshalCtx_Context_Error(t *testing.T) {
 func TestStructPartial_NilPointer(t *testing.T) {
 	RegisterTagNameFunc(nil)
 	type PartialModel struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[PartialModel](DefaultValidatorOptions())
@@ -1371,7 +1371,7 @@ func TestStructPartial_NilPointer(t *testing.T) {
 func TestStructExcept_NilPointer(t *testing.T) {
 	RegisterTagNameFunc(nil)
 	type ExceptModel struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[ExceptModel](DefaultValidatorOptions())
@@ -1387,7 +1387,7 @@ func TestStructExcept_NilPointer(t *testing.T) {
 type ExtraModelWithIgnored struct {
 	Name       string         `json:"name"`
 	Ignored    string         `json:"-"`
-	Extras     map[string]any `json:"-" pedantigo:"extra_fields"`
+	Extras     map[string]any `json:"-" validate:"extra_fields"`
 	unexported string         //nolint:unused
 }
 
@@ -1408,14 +1408,14 @@ func TestExtraAllow_WithIgnoredField(t *testing.T) {
 // NestedExtraForMerge has nested struct with extras for merge testing.
 type NestedExtraForMerge struct {
 	Value  string         `json:"value"`
-	Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+	Extras map[string]any `json:"-" validate:"extra_fields"`
 }
 
 // ParentExtraForMerge has nested struct and extras.
 type ParentExtraForMerge struct {
 	Name   string              `json:"name"`
 	Nested NestedExtraForMerge `json:"nested"`
-	Extras map[string]any      `json:"-" pedantigo:"extra_fields"`
+	Extras map[string]any      `json:"-" validate:"extra_fields"`
 }
 
 // TestMarshal_MergeExtras_Nested tests merging extras in nested structs.
@@ -1566,7 +1566,7 @@ func TestUnion_UnknownDiscriminator(t *testing.T) {
 func TestUnion_ValidationFailure(t *testing.T) {
 	type ValidatedCat struct {
 		Type string `json:"type"`
-		Name string `json:"name" pedantigo:"required,min=3"`
+		Name string `json:"name" validate:"required,min=3"`
 	}
 
 	u, err := NewUnion[any](UnionOptions{
@@ -1586,7 +1586,7 @@ func TestUnion_ValidationFailure(t *testing.T) {
 func TestUnion_WithValidation(t *testing.T) {
 	type WithEmail struct {
 		Type  string `json:"type"`
-		Email string `json:"email" pedantigo:"email"`
+		Email string `json:"email" validate:"email"`
 	}
 
 	u, err := NewUnion[any](UnionOptions{
@@ -1608,7 +1608,7 @@ func TestUnion_WithValidation(t *testing.T) {
 // TestValidate_NilPointer tests validation with nil pointer field.
 func TestValidate_NilPointer(t *testing.T) {
 	type Inner struct {
-		Value string `json:"value" pedantigo:"required"`
+		Value string `json:"value" validate:"required"`
 	}
 	type Outer struct {
 		Inner *Inner `json:"inner"`
@@ -1625,7 +1625,7 @@ func TestValidate_NilPointer(t *testing.T) {
 // TestValidate_NonStructField tests validation skips non-struct type.
 func TestValidate_NonStructField(t *testing.T) {
 	type Model struct {
-		Name  string `json:"name" pedantigo:"required"`
+		Name  string `json:"name" validate:"required"`
 		Count int    `json:"count"`
 	}
 
@@ -1642,10 +1642,10 @@ func TestStructPartial_NestedField(t *testing.T) {
 	RegisterTagNameFunc(nil) // Reset to use JSON tags
 
 	type Address struct {
-		City string `json:"city" pedantigo:"required"`
+		City string `json:"city" validate:"required"`
 	}
 	type Person struct {
-		Name    string  `json:"name" pedantigo:"required"`
+		Name    string  `json:"name" validate:"required"`
 		Address Address `json:"address"`
 	}
 
@@ -1662,10 +1662,10 @@ func TestStructExcept_NestedField(t *testing.T) {
 	RegisterTagNameFunc(nil) // Reset to use JSON tags
 
 	type Address struct {
-		City string `json:"city" pedantigo:"required"`
+		City string `json:"city" validate:"required"`
 	}
 	type Person struct {
-		Name    string  `json:"name" pedantigo:"required"`
+		Name    string  `json:"name" validate:"required"`
 		Address Address `json:"address"`
 	}
 
@@ -1683,11 +1683,11 @@ func TestStructExcept_NestedField(t *testing.T) {
 func TestMarshal_SliceWithExtras(t *testing.T) {
 	type Item struct {
 		Name   string         `json:"name"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 	type Container struct {
 		Items  []Item         `json:"items"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 
 	v := New[Container](ValidatorOptions{ExtraFields: ExtraAllow})
@@ -1725,7 +1725,7 @@ func TestMarshal_MapField(t *testing.T) {
 // TestUnmarshalCtx_Valid tests UnmarshalCtx with valid data.
 func TestUnmarshalCtx_Valid(t *testing.T) {
 	type Model struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -1741,8 +1741,8 @@ func TestUnmarshalCtx_Valid(t *testing.T) {
 // TestValidate_CrossFieldValidationError tests cross-field constraint returning ValidationError.
 func TestValidate_CrossFieldValidationError(t *testing.T) {
 	type DateRange struct {
-		StartDate string `json:"start_date" pedantigo:"required"`
-		EndDate   string `json:"end_date" pedantigo:"required,gtfield=StartDate"`
+		StartDate string `json:"start_date" validate:"required"`
+		EndDate   string `json:"end_date" validate:"required,gtfield=StartDate"`
 	}
 
 	v := New[DateRange](DefaultValidatorOptions())
@@ -1803,8 +1803,8 @@ func TestStructPartial_ConstraintError(t *testing.T) {
 	RegisterTagNameFunc(nil) // Reset to use JSON tags
 
 	type Model struct {
-		Email string `json:"email" pedantigo:"email"`
-		Age   int    `json:"age" pedantigo:"min=18"`
+		Email string `json:"email" validate:"email"`
+		Age   int    `json:"age" validate:"min=18"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -1824,8 +1824,8 @@ func TestStructPartial_CrossFieldValidationError(t *testing.T) {
 	RegisterTagNameFunc(nil) // Reset to use JSON tags
 
 	type DateRange struct {
-		Start string `json:"start" pedantigo:"required"`
-		End   string `json:"end" pedantigo:"required,gtfield=Start"`
+		Start string `json:"start" validate:"required"`
+		End   string `json:"end" validate:"required,gtfield=Start"`
 	}
 
 	v := New[DateRange](DefaultValidatorOptions())
@@ -1841,8 +1841,8 @@ func TestStructExcept_ConstraintError(t *testing.T) {
 	RegisterTagNameFunc(nil) // Reset to use JSON tags
 
 	type Model struct {
-		Email string `json:"email" pedantigo:"email"`
-		Age   int    `json:"age" pedantigo:"min=18"`
+		Email string `json:"email" validate:"email"`
+		Age   int    `json:"age" validate:"min=18"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -1861,8 +1861,8 @@ func TestStructExcept_CrossFieldValidationError(t *testing.T) {
 	RegisterTagNameFunc(nil) // Reset to use JSON tags
 
 	type DateRange struct {
-		Start string `json:"start" pedantigo:"required"`
-		End   string `json:"end" pedantigo:"required,gtfield=Start"`
+		Start string `json:"start" validate:"required"`
+		End   string `json:"end" validate:"required,gtfield=Start"`
 	}
 
 	v := New[DateRange](DefaultValidatorOptions())
@@ -1878,7 +1878,7 @@ func TestStructExcept_CrossFieldValidationError(t *testing.T) {
 // TestValidate_MapWithDive tests map validation with dive.
 func TestValidate_MapWithDive(t *testing.T) {
 	type Model struct {
-		Tags map[string]string `json:"tags" pedantigo:"dive,keys,min=1,endkeys,min=1"`
+		Tags map[string]string `json:"tags" validate:"dive,keys,min=1,endkeys,min=1"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -1900,11 +1900,11 @@ func TestValidate_MapWithDive(t *testing.T) {
 func TestMarshal_SlicePointerWithExtras(t *testing.T) {
 	type Item struct {
 		Name   string         `json:"name"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 	type Container struct {
 		Items  []*Item        `json:"items"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 
 	v := New[Container](ValidatorOptions{ExtraFields: ExtraAllow})
@@ -1931,7 +1931,7 @@ func TestMarshal_SlicePointerWithExtras(t *testing.T) {
 func TestUnion_TagsWithComma(t *testing.T) {
 	type WithOneof struct {
 		Type   string `json:"type"`
-		Status string `json:"status" pedantigo:"oneof=active,inactive,pending"`
+		Status string `json:"status" validate:"oneof=active,inactive,pending"`
 	}
 
 	u, err := NewUnion[any](UnionOptions{
@@ -1975,7 +1975,7 @@ func TestUnion_PointerVariant(t *testing.T) {
 // TestUnmarshalCtx_MissingRequired tests UnmarshalCtx with missing required field.
 func TestUnmarshalCtx_MissingRequired(t *testing.T) {
 	type Model struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -1993,7 +1993,7 @@ func TestValidate_SkipConstraints(t *testing.T) {
 	// Test that HasSkipConstraints returns true for fields with skip_unless
 	type Model struct {
 		Active  bool   `json:"active"`
-		Details string `json:"details" pedantigo:"skip_unless=Active,min=3"`
+		Details string `json:"details" validate:"skip_unless=Active,min=3"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2013,10 +2013,10 @@ func TestValidate_SkipConstraints(t *testing.T) {
 // TestValidate_NestedStruct tests validation with nested struct.
 func TestValidate_NestedStruct(t *testing.T) {
 	type Inner struct {
-		Value string `json:"value" pedantigo:"min=3"`
+		Value string `json:"value" validate:"min=3"`
 	}
 	type Outer struct {
-		Name  string `json:"name" pedantigo:"required"`
+		Name  string `json:"name" validate:"required"`
 		Inner Inner  `json:"inner"`
 	}
 
@@ -2061,9 +2061,9 @@ func TestSecretBytes_UnmarshalJSON_InvalidJSON(t *testing.T) {
 // TestMarshal_ExtraFieldsCapture tests marshal with extra fields capture at top level.
 func TestMarshal_ExtraFieldsCapture(t *testing.T) {
 	type Model struct {
-		Name   string         `json:"name" pedantigo:"required"`
+		Name   string         `json:"name" validate:"required"`
 		Val    string         `json:"val"`
-		Extras map[string]any `json:"extras" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"extras" validate:"extra_fields"`
 	}
 
 	opts := DefaultValidatorOptions()
@@ -2114,7 +2114,7 @@ func TestMarshal_SliceOfPointersWithNil(t *testing.T) {
 // TestSchemaJSON_CachingSimple tests that SchemaJSON uses caching correctly.
 func TestSchemaJSON_CachingSimple(t *testing.T) {
 	type SimpleModel struct {
-		Value string `json:"value" pedantigo:"required"`
+		Value string `json:"value" validate:"required"`
 	}
 
 	v := New[SimpleModel](DefaultValidatorOptions())
@@ -2134,7 +2134,7 @@ func TestSchemaJSON_CachingSimple(t *testing.T) {
 // TestSchemaJSON_NoCache tests SchemaJSON when schema is already cached but JSON is not.
 func TestSchemaJSON_NoCache(t *testing.T) {
 	type Model struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2151,7 +2151,7 @@ func TestSchemaJSON_NoCache(t *testing.T) {
 // TestUnmarshalCtx_ContextCanceled tests context handling during unmarshal.
 func TestUnmarshalCtx_ContextCanceled(t *testing.T) {
 	type Model struct {
-		Value string `json:"value" pedantigo:"required"`
+		Value string `json:"value" validate:"required"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2182,7 +2182,7 @@ func TestMarshalWithOptions_NilPointer(t *testing.T) {
 func TestUnion_SplitTags_QuotedComma(t *testing.T) {
 	type Variant struct {
 		Type string `json:"type"`
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	u, err := NewUnion[any](UnionOptions{
@@ -2243,8 +2243,8 @@ func TestDict_BasicConversion(t *testing.T) {
 // TestNewModel_ValidationFailure tests NewModel with validation failure.
 func TestNewModel_ValidationFailure(t *testing.T) {
 	type Model struct {
-		Name  string `json:"name" pedantigo:"required"`
-		Email string `json:"email" pedantigo:"email"`
+		Name  string `json:"name" validate:"required"`
+		Email string `json:"email" validate:"email"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2257,7 +2257,7 @@ func TestNewModel_ValidationFailure(t *testing.T) {
 // TestValidate_MapField tests validation with map field and dive.
 func TestValidate_MapFieldDive(t *testing.T) {
 	type Model struct {
-		Tags map[string]string `json:"tags" pedantigo:"dive,keys,min=2,endkeys,min=3"`
+		Tags map[string]string `json:"tags" validate:"dive,keys,min=2,endkeys,min=3"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2281,7 +2281,7 @@ func TestValidate_MapFieldDive(t *testing.T) {
 // TestValidate_PointerToStruct tests validation with pointer to nested struct.
 func TestValidate_PointerToStruct(t *testing.T) {
 	type Inner struct {
-		Value string `json:"value" pedantigo:"min=3"`
+		Value string `json:"value" validate:"min=3"`
 	}
 	type Outer struct {
 		Inner *Inner `json:"inner"`
@@ -2308,7 +2308,7 @@ func TestValidate_PointerToStruct(t *testing.T) {
 // TestSchemaOpenAPI_Caching tests SchemaOpenAPI caching.
 func TestSchemaOpenAPI_Caching(t *testing.T) {
 	type Model struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2326,7 +2326,7 @@ func TestSchemaOpenAPI_Caching(t *testing.T) {
 // TestSchemaJSONOpenAPI_Caching tests SchemaJSONOpenAPI caching.
 func TestSchemaJSONOpenAPI_Caching(t *testing.T) {
 	type Model struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2347,7 +2347,7 @@ func TestSchemaJSONOpenAPI_Caching(t *testing.T) {
 func TestUnion_ValidateVariant_PointerType(t *testing.T) {
 	type Variant struct {
 		Type  string `json:"type"`
-		Value int    `json:"value" pedantigo:"min=10"`
+		Value int    `json:"value" validate:"min=10"`
 	}
 
 	u, err := NewUnion[any](UnionOptions{
@@ -2373,7 +2373,7 @@ func TestUnion_ValidateVariant_PointerType(t *testing.T) {
 func TestUnion_VariantWithUnexportedFields(t *testing.T) {
 	type VariantWithUnexported struct {
 		Type   string `json:"type"`
-		Public string `json:"public" pedantigo:"required"`
+		Public string `json:"public" validate:"required"`
 	}
 
 	u, err := NewUnion[any](UnionOptions{
@@ -2415,10 +2415,10 @@ func TestUnion_VariantWithNoConstraints(t *testing.T) {
 // TestSchemaOpenAPI_NestedTypes tests SchemaOpenAPI with nested types that get definitions.
 func TestSchemaOpenAPI_NestedTypes(t *testing.T) {
 	type Inner struct {
-		Value string `json:"value" pedantigo:"required"`
+		Value string `json:"value" validate:"required"`
 	}
 	type Outer struct {
-		Name  string `json:"name" pedantigo:"required"`
+		Name  string `json:"name" validate:"required"`
 		Inner Inner  `json:"inner"`
 	}
 
@@ -2437,7 +2437,7 @@ func TestSchemaOpenAPI_NestedTypes(t *testing.T) {
 // TestSchemaJSON_AfterSchema tests SchemaJSON when Schema was called first (cached path).
 func TestSchemaJSON_AfterSchema(t *testing.T) {
 	type Model struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2454,7 +2454,7 @@ func TestSchemaJSON_AfterSchema(t *testing.T) {
 // TestSchemaJSONOpenAPI_AfterSchemaOpenAPI tests caching path.
 func TestSchemaJSONOpenAPI_AfterSchemaOpenAPI(t *testing.T) {
 	type Model struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2472,7 +2472,7 @@ func TestSchemaJSONOpenAPI_AfterSchemaOpenAPI(t *testing.T) {
 func TestValidate_CrossFieldConstraint(t *testing.T) {
 	type Model struct {
 		Field1 string `json:"field1"`
-		Field2 string `json:"field2" pedantigo:"eqfield=Field1"`
+		Field2 string `json:"field2" validate:"eqfield=Field1"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2491,7 +2491,7 @@ func TestValidate_CrossFieldConstraint(t *testing.T) {
 // TestValidate_MapWithDiveAndKeys tests map validation with dive and key constraints.
 func TestValidate_MapWithDiveAndKeys(t *testing.T) {
 	type Model struct {
-		Data map[string]int `json:"data" pedantigo:"dive,keys,min=2,endkeys,min=1"`
+		Data map[string]int `json:"data" validate:"dive,keys,min=2,endkeys,min=1"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2515,7 +2515,7 @@ func TestValidate_MapWithDiveAndKeys(t *testing.T) {
 // TestValidate_SliceWithDive tests slice validation with dive.
 func TestValidate_SliceWithDive(t *testing.T) {
 	type Model struct {
-		Items []string `json:"items" pedantigo:"dive,min=3"`
+		Items []string `json:"items" validate:"dive,min=3"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2534,10 +2534,10 @@ func TestValidate_SliceWithDive(t *testing.T) {
 // TestValidate_SliceOfStructsWithDive tests slice of structs with dive and nested validation.
 func TestValidate_SliceOfStructsWithDive(t *testing.T) {
 	type Item struct {
-		Name string `json:"name" pedantigo:"min=2"`
+		Name string `json:"name" validate:"min=2"`
 	}
 	type Model struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2576,7 +2576,7 @@ func TestSchema_WithSliceAndMapTypes(t *testing.T) {
 // TestUnmarshalCtx_NormalContext tests UnmarshalCtx with a normal context.
 func TestUnmarshalCtx_NormalContext(t *testing.T) {
 	type Model struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2604,10 +2604,10 @@ func TestUnmarshalCtx_NilContext(t *testing.T) {
 // TestSchemaOpenAPI_WithPointerNestedFields tests schema with pointer nested fields.
 func TestSchemaOpenAPI_WithPointerNestedFields(t *testing.T) {
 	type InnerA struct {
-		Value string `json:"value" pedantigo:"required"`
+		Value string `json:"value" validate:"required"`
 	}
 	type OuterA struct {
-		Name   string             `json:"name" pedantigo:"required"`
+		Name   string             `json:"name" validate:"required"`
 		Inner  *InnerA            `json:"inner"`
 		Inners []*InnerA          `json:"inners"`
 		Map    map[string]*InnerA `json:"map"`
@@ -2626,7 +2626,7 @@ func TestSchemaOpenAPI_WithPointerNestedFields(t *testing.T) {
 func TestValidate_SkipUnlessActive(t *testing.T) {
 	type Model struct {
 		Active bool   `json:"active"`
-		Data   string `json:"data" pedantigo:"skip_unless=Active,min=5"`
+		Data   string `json:"data" validate:"skip_unless=Active,min=5"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2646,8 +2646,8 @@ func TestValidate_SkipUnlessActive(t *testing.T) {
 // TestValidate_CrossFieldWithValidationError tests cross-field constraint returning ValidationError.
 func TestValidate_CrossFieldWithValidationError(t *testing.T) {
 	type Model struct {
-		Password        string `json:"password" pedantigo:"min=5"`
-		ConfirmPassword string `json:"confirm_password" pedantigo:"eqfield=Password"`
+		Password        string `json:"password" validate:"min=5"`
+		ConfirmPassword string `json:"confirm_password" validate:"eqfield=Password"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2667,7 +2667,7 @@ func TestValidate_CrossFieldWithValidationError(t *testing.T) {
 func TestSchemaOpenAPI_WithSliceOfPointerStructs(t *testing.T) {
 	type ItemB struct {
 		ID   int    `json:"id"`
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 	type ContainerB struct {
 		Items []*ItemB `json:"items"`
@@ -2682,7 +2682,7 @@ func TestSchemaOpenAPI_WithSliceOfPointerStructs(t *testing.T) {
 // TestSchemaOpenAPI_WithMapOfPointerValues tests schema with map[string]*struct.
 func TestSchemaOpenAPI_WithMapOfPointerValues(t *testing.T) {
 	type ValueC struct {
-		Data string `json:"data" pedantigo:"required"`
+		Data string `json:"data" validate:"required"`
 	}
 	type ContainerC struct {
 		Mapping map[string]*ValueC `json:"mapping"`
@@ -2697,7 +2697,7 @@ func TestSchemaOpenAPI_WithMapOfPointerValues(t *testing.T) {
 // TestValidate_NestedStructWithPointer tests validation with pointer to nested struct.
 func TestValidate_NestedStructWithPointer(t *testing.T) {
 	type InnerD struct {
-		Value string `json:"value" pedantigo:"min=3"`
+		Value string `json:"value" validate:"min=3"`
 	}
 	type OuterD struct {
 		Name  string  `json:"name"`
@@ -2724,7 +2724,7 @@ func TestMarshal_ExtraFieldsInSlice(t *testing.T) {
 	}
 	type Model struct {
 		Items  []Item         `json:"items"`
-		Extras map[string]any `json:"extras" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"extras" validate:"extra_fields"`
 	}
 
 	opts := DefaultValidatorOptions()
@@ -2746,7 +2746,7 @@ func TestMarshal_ExtraFieldsInSlice(t *testing.T) {
 // TestMarshalWithOptions_OmitZero tests MarshalWithOptions with OmitZero option.
 func TestMarshalWithOptions_OmitZero(t *testing.T) {
 	type Model struct {
-		Name  string `json:"name" pedantigo:"required"`
+		Name  string `json:"name" validate:"required"`
 		Count int    `json:"count,omitzero"`
 		Flag  bool   `json:"flag"`
 	}
@@ -2767,8 +2767,8 @@ func TestMarshalWithOptions_OmitZero(t *testing.T) {
 // TestDict_WithExtras tests Dict with extra fields enabled.
 func TestDict_WithExtras(t *testing.T) {
 	type Model struct {
-		Name   string         `json:"name" pedantigo:"required"`
-		Extras map[string]any `json:"extras" pedantigo:"extra_fields"`
+		Name   string         `json:"name" validate:"required"`
+		Extras map[string]any `json:"extras" validate:"extra_fields"`
 	}
 
 	opts := DefaultValidatorOptions()
@@ -2820,10 +2820,10 @@ func TestVar_MapLen(t *testing.T) {
 // TestValidate_MapWithDive tests map validation with dive tag.
 func TestValidate_MapWithDiveNestedStruct(t *testing.T) {
 	type Inner struct {
-		Value int `json:"value" pedantigo:"min=5"`
+		Value int `json:"value" validate:"min=5"`
 	}
 	type Model struct {
-		Data map[string]Inner `json:"data" pedantigo:"dive"`
+		Data map[string]Inner `json:"data" validate:"dive"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2842,7 +2842,7 @@ func TestValidate_MapWithDiveNestedStruct(t *testing.T) {
 // TestSchemaJSON_Concurrent tests concurrent SchemaJSON calls to exercise caching.
 func TestSchemaJSON_Concurrent(t *testing.T) {
 	type Model struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2863,7 +2863,7 @@ func TestSchemaJSON_Concurrent(t *testing.T) {
 // TestSchemaJSONOpenAPI_Concurrent tests concurrent SchemaJSONOpenAPI calls.
 func TestSchemaJSONOpenAPI_Concurrent(t *testing.T) {
 	type Model struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2887,7 +2887,7 @@ func TestSchemaJSONOpenAPI_Concurrent(t *testing.T) {
 func TestValidate_SkipConstraint_FieldPath(t *testing.T) {
 	type Model struct {
 		Enabled bool   `json:"enabled"`
-		Data    string `json:"data" pedantigo:"skip_unless=Enabled,min=3"`
+		Data    string `json:"data" validate:"skip_unless=Enabled,min=3"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -2902,7 +2902,7 @@ func TestValidate_SkipConstraint_FieldPath(t *testing.T) {
 func TestUnion_VariantWithConstraints(t *testing.T) {
 	type VariantA struct {
 		Type  string `json:"type"`
-		Email string `json:"email" pedantigo:"email"`
+		Email string `json:"email" validate:"email"`
 	}
 
 	u, err := NewUnion[any](UnionOptions{
@@ -2927,7 +2927,7 @@ func TestUnion_VariantWithConstraints(t *testing.T) {
 func TestUnion_VariantWithRequiredMissing(t *testing.T) {
 	type VariantB struct {
 		Type string `json:"type"`
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	u, err := NewUnion[any](UnionOptions{
@@ -2947,7 +2947,7 @@ func TestUnion_VariantWithRequiredMissing(t *testing.T) {
 func TestUnion_SplitTagsQuoted(t *testing.T) {
 	type VariantC struct {
 		Type   string `json:"type"`
-		Status string `json:"status" pedantigo:"oneof=a b c"`
+		Status string `json:"status" validate:"oneof=a b c"`
 	}
 
 	u, err := NewUnion[any](UnionOptions{
@@ -2968,11 +2968,11 @@ func TestUnion_SplitTagsQuoted(t *testing.T) {
 func TestMarshal_ExtrasInNestedPointerSlice(t *testing.T) {
 	type Inner struct {
 		Val    string         `json:"val"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 	type Outer struct {
 		Items  []*Inner       `json:"items"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 
 	v := New[Outer](ValidatorOptions{ExtraFields: ExtraAllow})
@@ -2996,7 +2996,7 @@ func TestMarshal_ExtrasInNestedPointerSlice(t *testing.T) {
 func TestMarshal_ExtrasNotStructSlice(t *testing.T) {
 	type Model struct {
 		Names  []string       `json:"names"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 
 	v := New[Model](ValidatorOptions{ExtraFields: ExtraAllow})
@@ -3014,7 +3014,7 @@ func TestMarshal_ExtrasNotStructSlice(t *testing.T) {
 // TestSchemaJSON_CachePathSchemaOnly tests SchemaJSON when schema is cached but JSON is not.
 func TestSchemaJSON_CachePathSchemaOnly(t *testing.T) {
 	type CacheTestModel struct {
-		ID string `json:"id" pedantigo:"required,uuid"`
+		ID string `json:"id" validate:"required,uuid"`
 	}
 
 	v := New[CacheTestModel](DefaultValidatorOptions())
@@ -3036,7 +3036,7 @@ func TestSchemaJSON_CachePathSchemaOnly(t *testing.T) {
 // TestSchemaJSONOpenAPI_CachePathSchemaOnly tests SchemaJSONOpenAPI when OpenAPI schema cached but JSON not.
 func TestSchemaJSONOpenAPI_CachePathSchemaOnly(t *testing.T) {
 	type CacheTestModel2 struct {
-		Value int `json:"value" pedantigo:"min=0"`
+		Value int `json:"value" validate:"min=0"`
 	}
 
 	v := New[CacheTestModel2](DefaultValidatorOptions())
@@ -3058,7 +3058,7 @@ func TestSchemaJSONOpenAPI_CachePathSchemaOnly(t *testing.T) {
 // TestValidate_NonStructField tests validation skipping non-struct top-level.
 func TestValidate_MapDiveWithKeysEndkeys(t *testing.T) {
 	type Model struct {
-		Tags map[string]int `json:"tags" pedantigo:"dive,keys,min=2,endkeys,min=0"`
+		Tags map[string]int `json:"tags" validate:"dive,keys,min=2,endkeys,min=0"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -3077,7 +3077,7 @@ func TestValidate_MapDiveWithKeysEndkeys(t *testing.T) {
 // TestUnmarshalCtx_InvalidJSON tests UnmarshalCtx with invalid JSON.
 func TestUnmarshalCtx_InvalidJSON(t *testing.T) {
 	type Model struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -3090,7 +3090,7 @@ func TestUnmarshalCtx_InvalidJSON(t *testing.T) {
 // TestFindTypeForDefinition_DeepNested tests findTypeForDefinition with deeply nested types.
 func TestFindTypeForDefinition_DeepNested(t *testing.T) {
 	type Level3 struct {
-		Value string `json:"value" pedantigo:"required"`
+		Value string `json:"value" validate:"required"`
 	}
 	type Level2 struct {
 		Level3 Level3 `json:"level3"`
@@ -3109,10 +3109,10 @@ func TestFindTypeForDefinition_DeepNested(t *testing.T) {
 // TestValidate_SliceWithDiveNestedStruct tests slice validation with dive to nested struct.
 func TestValidate_SliceWithDiveNestedStruct(t *testing.T) {
 	type Item struct {
-		Name string `json:"name" pedantigo:"min=2"`
+		Name string `json:"name" validate:"min=2"`
 	}
 	type Container struct {
-		Items []Item `json:"items" pedantigo:"dive"`
+		Items []Item `json:"items" validate:"dive"`
 	}
 
 	v := New[Container](DefaultValidatorOptions())
@@ -3131,8 +3131,8 @@ func TestValidate_SliceWithDiveNestedStruct(t *testing.T) {
 // TestMarshal_NilExtrasField tests marshal when extras field is nil.
 func TestMarshal_NilExtrasField(t *testing.T) {
 	type Model struct {
-		Name   string         `json:"name" pedantigo:"required"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Name   string         `json:"name" validate:"required"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 
 	v := New[Model](ValidatorOptions{ExtraFields: ExtraAllow})
@@ -3147,8 +3147,8 @@ func TestMarshal_NilExtrasField(t *testing.T) {
 // TestValidate_CrossFieldWithValidationErrorReturn tests cross-field returning ValidationError.
 func TestValidate_CrossFieldEqFieldFail(t *testing.T) {
 	type Model struct {
-		Password string `json:"password" pedantigo:"required"`
-		Confirm  string `json:"confirm" pedantigo:"eqfield=Password"`
+		Password string `json:"password" validate:"required"`
+		Confirm  string `json:"confirm" validate:"eqfield=Password"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -3162,8 +3162,8 @@ func TestValidate_CrossFieldEqFieldFail(t *testing.T) {
 // TestMarshalWithOptions_ContextExclusion tests context-based field exclusion.
 func TestMarshalWithOptions_ContextExclusion(t *testing.T) {
 	type Model struct {
-		Name     string `json:"name" pedantigo:"required"`
-		Internal string `json:"internal" pedantigo:"exclude:api"`
+		Name     string `json:"name" validate:"required"`
+		Internal string `json:"internal" validate:"exclude:api"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -3224,7 +3224,7 @@ func TestUnion_SplitTagsWithQuotes(t *testing.T) {
 	// Test variant with complex tag containing equals sign in value
 	type VariantComplex struct {
 		Type  string `json:"type"`
-		Email string `json:"email" pedantigo:"required,email"`
+		Email string `json:"email" validate:"required,email"`
 	}
 
 	u, err := NewUnion[any](UnionOptions{
@@ -3259,7 +3259,7 @@ func TestMarshal_FieldWithJSONOmitempty(t *testing.T) {
 // TestValidate_NestedPointerNil tests validation with nil nested pointer.
 func TestValidate_NestedPointerNil(t *testing.T) {
 	type Inner struct {
-		Value string `json:"value" pedantigo:"required"`
+		Value string `json:"value" validate:"required"`
 	}
 	type Outer struct {
 		Inner *Inner `json:"inner"`
@@ -3276,7 +3276,7 @@ func TestValidate_NestedPointerNil(t *testing.T) {
 // TestValidate_CacheNilField tests validation when cache field is nil.
 func TestValidate_CacheNilField(t *testing.T) {
 	type Model struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -3341,11 +3341,11 @@ func TestMarshal_NestedPointerStruct(t *testing.T) {
 func TestMarshal_ExtrasWithNestedPointer(t *testing.T) {
 	type Inner struct {
 		Value  string         `json:"value"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 	type Outer struct {
 		Inner  *Inner         `json:"inner"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 
 	v := New[Outer](ValidatorOptions{ExtraFields: ExtraAllow})
@@ -3364,7 +3364,7 @@ func TestMarshal_ExtrasWithNestedPointer(t *testing.T) {
 // TestSchemaJSON_NilDefCheck tests SchemaJSON with type that has definitions.
 func TestSchemaJSON_NilDefCheck(t *testing.T) {
 	type Inner struct {
-		ID string `json:"id" pedantigo:"required"`
+		ID string `json:"id" validate:"required"`
 	}
 	type Outer struct {
 		Items []Inner `json:"items"`
@@ -3381,7 +3381,7 @@ func TestSchemaJSON_NilDefCheck(t *testing.T) {
 // TestMarshalWithOptions_ValidStruct tests MarshalWithOptions with valid struct.
 func TestMarshalWithOptions_ValidStruct(t *testing.T) {
 	type Model struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[Model](DefaultValidatorOptions())
@@ -3416,7 +3416,7 @@ func TestUnion_PointerTypeVariant(t *testing.T) {
 // TestSchema_SliceOfPointers tests schema with slice of pointer structs.
 func TestSchema_SliceOfPointers(t *testing.T) {
 	type Item struct {
-		ID string `json:"id" pedantigo:"required,uuid"`
+		ID string `json:"id" validate:"required,uuid"`
 	}
 	type Container struct {
 		Items []*Item `json:"items"`
@@ -3431,8 +3431,8 @@ func TestSchema_SliceOfPointers(t *testing.T) {
 func TestUnion_VariantRequiredEmpty(t *testing.T) {
 	type RequiredVariant struct {
 		Type  string `json:"type"`
-		Name  string `json:"name" pedantigo:"required"`
-		Value int    `json:"value" pedantigo:"min=0"`
+		Name  string `json:"name" validate:"required"`
+		Value int    `json:"value" validate:"min=0"`
 	}
 
 	u, err := NewUnion[any](UnionOptions{
@@ -3451,8 +3451,8 @@ func TestUnion_VariantRequiredEmpty(t *testing.T) {
 // TestValidate_CrossFieldConstraintError tests eqfield constraint failure.
 func TestValidate_CrossFieldConstraintError(t *testing.T) {
 	type PasswordForm struct {
-		Password string `json:"password" pedantigo:"required,min=6"`
-		Confirm  string `json:"confirm" pedantigo:"required,eqfield=Password"`
+		Password string `json:"password" validate:"required,min=6"`
+		Confirm  string `json:"confirm" validate:"required,eqfield=Password"`
 	}
 
 	v := New[PasswordForm](DefaultValidatorOptions())
@@ -3502,7 +3502,7 @@ func TestSchemaJSON_CacheHitPath(t *testing.T) {
 // TestSchemaJSON_GenerateWithCachedSchema tests path where schema cached but not JSON.
 func TestSchemaJSON_GenerateWithCachedSchema(t *testing.T) {
 	type SchemaFirst struct {
-		Value int `json:"value" pedantigo:"min=0"`
+		Value int `json:"value" validate:"min=0"`
 	}
 
 	v := New[SchemaFirst](DefaultValidatorOptions())
@@ -3521,11 +3521,11 @@ func TestSchemaJSON_GenerateWithCachedSchema(t *testing.T) {
 func TestMarshalExtras_MapWithNestedStruct(t *testing.T) {
 	type Inner struct {
 		ID     string         `json:"id"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 	type Outer struct {
 		Items  map[string]*Inner `json:"items"`
-		Extras map[string]any    `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any    `json:"-" validate:"extra_fields"`
 	}
 
 	v := New[Outer](ValidatorOptions{ExtraFields: ExtraAllow})
@@ -3576,7 +3576,7 @@ func TestSchemaJSONOpenAPI_CacheHit(t *testing.T) {
 // TestSchemaJSONOpenAPI_WithCachedOpenAPI tests path where OpenAPI cached but not JSON.
 func TestSchemaJSONOpenAPI_WithCachedOpenAPI(t *testing.T) {
 	type OpenAPIFirst struct {
-		ID string `json:"id" pedantigo:"uuid"`
+		ID string `json:"id" validate:"uuid"`
 	}
 
 	v := New[OpenAPIFirst](DefaultValidatorOptions())
@@ -3609,11 +3609,11 @@ func TestFindTypeForDefinition_MapValueType(t *testing.T) {
 func TestMarshalWithExtras_SliceOfStructs(t *testing.T) {
 	type Item struct {
 		Name   string         `json:"name"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 	type Container struct {
 		Items  []Item         `json:"items"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 
 	v := New[Container](ValidatorOptions{ExtraFields: ExtraAllow})
@@ -3634,7 +3634,7 @@ func TestUnion_SplitTagsWithQuotedComma(t *testing.T) {
 	// Direct test of splitTags behavior via variant with complex tag
 	type ComplexVariant struct {
 		Type   string `json:"type"`
-		Status string `json:"status" pedantigo:"oneof=pending active done"`
+		Status string `json:"status" validate:"oneof=pending active done"`
 	}
 
 	u, err := NewUnion[any](UnionOptions{
@@ -3672,7 +3672,7 @@ func TestDict_WithNestedMap(t *testing.T) {
 // TestNewModel_WithMapData tests NewModel creates from map.
 func TestNewModel_WithMapData(t *testing.T) {
 	type User struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 		Age  int    `json:"age"`
 	}
 
@@ -3814,7 +3814,7 @@ func TestExtraAllow_JsonTagWithOptions(t *testing.T) {
 	type Item struct {
 		Name   string         `json:"name,omitempty"`
 		Active bool           `json:"active,omitempty"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 
 	v := New[Item](ValidatorOptions{ExtraFields: ExtraAllow})
@@ -3831,7 +3831,7 @@ func TestExtraAllow_JsonTagWithOptions(t *testing.T) {
 func TestExtraAllow_FieldWithNoJsonTag(t *testing.T) {
 	type Item struct {
 		Title  string         // No json tag, uses field name "Title"
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 
 	v := New[Item](ValidatorOptions{ExtraFields: ExtraAllow})
@@ -3861,8 +3861,8 @@ func TestValidateWithCache_NilCache(t *testing.T) {
 // TestValidate_CrossFieldErrorAsValidationError tests cross-field returns ValidationError.
 func TestValidate_CrossFieldErrorAsValidationError(t *testing.T) {
 	type Form struct {
-		Password        string `json:"password" pedantigo:"required,min=3"`
-		ConfirmPassword string `json:"confirm_password" pedantigo:"required,eqfield=Password"`
+		Password        string `json:"password" validate:"required,min=3"`
+		ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=Password"`
 	}
 
 	v := New[Form](DefaultValidatorOptions())
@@ -3878,11 +3878,11 @@ func TestValidate_CrossFieldErrorAsValidationError(t *testing.T) {
 func TestMarshalExtras_NilSliceElement(t *testing.T) {
 	type Item struct {
 		Name   string         `json:"name"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 	type Container struct {
 		Items  []*Item        `json:"items"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 
 	v := New[Container](ValidatorOptions{ExtraFields: ExtraAllow})
@@ -3902,7 +3902,7 @@ func TestMarshalExtras_NilSliceElement(t *testing.T) {
 func TestUnion_SplitTagsQuotedComma(t *testing.T) {
 	type QuotedVariant struct {
 		Type    string `json:"type"`
-		Pattern string `json:"pattern" pedantigo:"oneof=\"red,green\",\"blue\""`
+		Pattern string `json:"pattern" validate:"oneof=\"red,green\",\"blue\""`
 	}
 
 	u, err := NewUnion[any](UnionOptions{
@@ -3925,7 +3925,7 @@ func TestUnion_SplitTagsQuotedComma(t *testing.T) {
 func TestUnion_PointerVariantType(t *testing.T) {
 	type UserVariant struct {
 		Type string `json:"type"`
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	// Create union with pointer to variant
@@ -3948,7 +3948,7 @@ func TestUnion_PointerVariantType(t *testing.T) {
 func TestUnion_VariantUnexportedFieldSkipped(t *testing.T) {
 	type VariantWithUnexported struct {
 		Type     string `json:"type"`
-		Name     string `json:"name" pedantigo:"required"`
+		Name     string `json:"name" validate:"required"`
 		internal string //nolint:unused // unexported, should be skipped
 	}
 
@@ -3981,9 +3981,9 @@ func TestUnmarshalCtx_BadJSON(t *testing.T) {
 // TestStructPartial_WithExtraAllow tests StructPartial with ExtraAllow mode.
 func TestStructPartial_WithExtraAllow(t *testing.T) {
 	type Item struct {
-		Name   string         `json:"name" pedantigo:"required"`
-		Value  int            `json:"value" pedantigo:"min=0"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Name   string         `json:"name" validate:"required"`
+		Value  int            `json:"value" validate:"min=0"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 
 	v := New[Item](ValidatorOptions{ExtraFields: ExtraAllow})
@@ -4041,7 +4041,7 @@ func TestUnion_EmptyDiscriminatorField(t *testing.T) {
 // TestValidate_NonPointerStruct tests Validate with non-pointer struct.
 func TestValidate_NonPointerStruct(t *testing.T) {
 	type Simple struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[Simple](DefaultValidatorOptions())
@@ -4110,7 +4110,7 @@ func TestSchemaJSONOpenAPI_CachePathTest(t *testing.T) {
 // TestUnmarshalCtx_WithValidData tests UnmarshalCtx success path.
 func TestUnmarshalCtx_WithValidData(t *testing.T) {
 	type Simple struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[Simple](DefaultValidatorOptions())
@@ -4226,7 +4226,7 @@ func TestUnion_StringVariantTypeNonStruct(t *testing.T) {
 // TestSchema_CacheThenJSON tests calling Schema() then SchemaJSON() uses cached schema.
 func TestSchema_CacheThenJSON(t *testing.T) {
 	type CacheTestStruct struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[CacheTestStruct]()
@@ -4243,7 +4243,7 @@ func TestSchema_CacheThenJSON(t *testing.T) {
 // TestSchemaOpenAPI_ThenSchemaJSONOpenAPI tests cache path for OpenAPI schemas.
 func TestSchemaOpenAPI_CacheThenJSON(t *testing.T) {
 	type OpenAPICacheStruct struct {
-		ID int `json:"id" pedantigo:"min=1"`
+		ID int `json:"id" validate:"min=1"`
 	}
 
 	v := New[OpenAPICacheStruct]()
@@ -4261,7 +4261,7 @@ func TestSchemaOpenAPI_CacheThenJSON(t *testing.T) {
 // This covers findTypeForDefinition pointer handling (lines 260-262).
 func TestSchemaOpenAPI_WithNestedPointerTypes(t *testing.T) {
 	type InnerPointer struct {
-		Value string `json:"value" pedantigo:"required"`
+		Value string `json:"value" validate:"required"`
 	}
 	type OuterPointerStruct struct {
 		Inner *InnerPointer `json:"inner"`
@@ -4278,7 +4278,7 @@ func TestSchemaOpenAPI_WithNestedPointerTypes(t *testing.T) {
 // This helps cover searchSliceType (lines 313-327).
 func TestSchemaOpenAPI_WithSliceOfStructs(t *testing.T) {
 	type ItemStruct struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 	type ContainerSlice struct {
 		Items []ItemStruct `json:"items"`
@@ -4293,7 +4293,7 @@ func TestSchemaOpenAPI_WithSliceOfStructs(t *testing.T) {
 // This helps cover searchMapType (lines 330-343).
 func TestSchemaOpenAPI_WithMapOfStructs(t *testing.T) {
 	type MapValueStruct struct {
-		Data int `json:"data" pedantigo:"min=0"`
+		Data int `json:"data" validate:"min=0"`
 	}
 	type ContainerMap struct {
 		Lookup map[string]MapValueStruct `json:"lookup"`
@@ -4327,7 +4327,7 @@ func TestUnmarshal_BadJSON_NoStrictFields(t *testing.T) {
 // TestUnmarshal_ValidJSON_NoStrictFields tests valid JSON with StrictMissingFields=false.
 func TestUnmarshal_ValidJSON_NoStrictFields(t *testing.T) {
 	type SimpleStructNoStrict struct {
-		Value int `json:"value" pedantigo:"min=1"`
+		Value int `json:"value" validate:"min=1"`
 	}
 
 	v := New[SimpleStructNoStrict](ValidatorOptions{

@@ -8,7 +8,7 @@ import (
 )
 
 // DefaultTagName is the default struct tag name used by Pedantigo.
-const DefaultTagName = "pedantigo"
+const DefaultTagName = "validate"
 
 // ExtraFieldsTag is the tag value for fields that store extra/unknown JSON fields.
 const ExtraFieldsTag = "extra_fields"
@@ -60,8 +60,8 @@ func splitTagConstraints(tag string) []string {
 	return parts
 }
 
-// ParseTag parses a struct tag using the default "pedantigo" tag name.
-// Example: pedantigo:"required,email,min=18" -> map{"required": "", "email": "", "min": "18"}
+// ParseTag parses a struct tag using the default "validate" tag name.
+// Example: validate:"required,email,min=18" -> map{"required": "", "email": "", "min": "18"}
 // Special handling for oneof which has space-separated values: oneof=admin user guest.
 func ParseTag(tag reflect.StructTag) map[string]string {
 	return ParseTagWithName(tag, DefaultTagName)
@@ -130,15 +130,15 @@ func ParseTagWithName(tag reflect.StructTag, tagName string) map[string]string {
 	return constraints
 }
 
-// ParseTagWithDive parses a struct tag using the default "pedantigo" tag name
+// ParseTagWithDive parses a struct tag using the default "validate" tag name
 // and returns a structured ParsedTag that separates collection-level, key-level,
 // and element-level constraints.
 //
 // Syntax:
-//   - pedantigo:"min=3"                    -> CollectionConstraints only
-//   - pedantigo:"dive,email"               -> ElementConstraints only (dive present)
-//   - pedantigo:"min=3,dive,min=5"         -> Both collection and element
-//   - pedantigo:"dive,keys,min=2,endkeys,email" -> Map: key + value constraints
+//   - validate:"min=3"                    -> CollectionConstraints only
+//   - validate:"dive,email"               -> ElementConstraints only (dive present)
+//   - validate:"min=3,dive,min=5"         -> Both collection and element
+//   - validate:"dive,keys,min=2,endkeys,email" -> Map: key + value constraints
 func ParseTagWithDive(tag reflect.StructTag) *ParsedTag {
 	return ParseTagWithDiveAndName(tag, DefaultTagName)
 }

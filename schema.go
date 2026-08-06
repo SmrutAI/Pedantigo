@@ -11,7 +11,7 @@ import (
 )
 
 // parseTagFunc creates a closure that parses tags using the validator's configured tag name.
-// This enables custom tag name support (e.g., "validate" or "binding" instead of "pedantigo").
+// This enables custom tag name support (e.g., overriding the default "validate" with "binding").
 func (v *Validator[T]) parseTagFunc() func(reflect.StructTag) map[string]string {
 	return func(tag reflect.StructTag) map[string]string {
 		return tags.ParseTagWithName(tag, v.tagName)
@@ -236,7 +236,7 @@ func (v *Validator[T]) SchemaJSONOpenAPI() ([]byte, error) {
 // enhanceSchemaWithDefs enhances both root schema and all definitions.
 func (v *Validator[T]) enhanceSchemaWithDefs(schema *jsonschema.Schema, typ reflect.Type) {
 	// Clear the required fields set by jsonschema library
-	// We'll add our own based on pedantigo:"required" tags (or custom tag name)
+	// We'll add our own based on validate:"required" tags (or custom tag name)
 	schema.Required = nil
 
 	// Get parse function once and reuse for all schemas

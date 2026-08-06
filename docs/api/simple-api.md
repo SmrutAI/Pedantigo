@@ -41,9 +41,9 @@ Unmarshals JSON bytes into a struct of type T with automatic validation.
 **Example**:
 ```go
 type User struct {
-    Name  string `json:"name" pedantigo:"required"`
-    Email string `json:"email" pedantigo:"email"`
-    Age   int    `json:"age" pedantigo:"min=18"`
+    Name  string `json:"name" validate:"required"`
+    Email string `json:"email" validate:"email"`
+    Age   int    `json:"age" validate:"min=18"`
 }
 
 data := []byte(`{"name":"Alice","email":"alice@example.com","age":25}`)
@@ -82,8 +82,8 @@ Validates a struct that already exists in memory (not from JSON).
 **Example**:
 ```go
 type Config struct {
-    Host string `pedantigo:"required"`
-    Port int    `pedantigo:"min=1,max=65535"`
+    Host string `validate:"required"`
+    Port int    `validate:"min=1,max=65535"`
 }
 
 config := &Config{
@@ -119,8 +119,8 @@ Accepts multiple input formats and creates a validated struct:
 **Example - From JSON**:
 ```go
 type User struct {
-    Email string `json:"email" pedantigo:"email"`
-    Age   int    `json:"age" pedantigo:"min=18"`
+    Email string `json:"email" validate:"email"`
+    Age   int    `json:"age" validate:"min=18"`
 }
 
 user, err := pedantigo.NewModel[User]([]byte(`{"email":"bob@example.com","age":30}`))
@@ -157,8 +157,8 @@ Returns the JSON Schema as a `*jsonschema.Schema` object (from `invopop/jsonsche
 **Example**:
 ```go
 type Product struct {
-    Name  string `json:"name" pedantigo:"required,min=1"`
-    Price float64 `json:"price" pedantigo:"min=0"`
+    Name  string `json:"name" validate:"required,min=1"`
+    Price float64 `json:"price" validate:"min=0"`
 }
 
 schema := pedantigo.Schema[Product]()
@@ -216,7 +216,7 @@ Returns a JSON Schema compatible with OpenAPI 3.1 specifications:
 **Example**:
 ```go
 type APIResponse struct {
-    Success bool      `json:"success" pedantigo:"required"`
+    Success bool      `json:"success" validate:"required"`
     Data    *User     `json:"data"` // nullable
     Message string    `json:"message"`
 }
@@ -359,9 +359,9 @@ opts := pedantigo.DefaultMarshalOptions() // Create default options
 **Example - Context-based Exclusion**:
 ```go
 type User struct {
-    Name     string `json:"name" pedantigo:"required"`
-    Email    string `json:"email" pedantigo:"email"`
-    Password string `json:"password" pedantigo:"exclude:api"`
+    Name     string `json:"name" validate:"required"`
+    Email    string `json:"email" validate:"email"`
+    Password string `json:"password" validate:"exclude:api"`
 }
 
 user := &User{
@@ -380,9 +380,9 @@ jsonData, err := pedantigo.MarshalWithOptions(user, opts)
 **Example - With OmitZero**:
 ```go
 type Config struct {
-    Host     string `json:"host" pedantigo:"required"`
-    Port     int    `json:"port" pedantigo:"omitzero"`
-    Timeout  int    `json:"timeout" pedantigo:"omitzero"`
+    Host     string `json:"host" validate:"required"`
+    Port     int    `json:"port" validate:"omitzero"`
+    Timeout  int    `json:"timeout" validate:"omitzero"`
 }
 
 config := &Config{
@@ -465,25 +465,25 @@ Use the `pedantigo` struct tag (not `validate`) for Simple API:
 ```go
 type User struct {
     // Field name for JSON serialization
-    Name string `json:"name" pedantigo:"required,min=1,max=100"`
+    Name string `json:"name" validate:"required,min=1,max=100"`
 
     // Email validation
-    Email string `json:"email" pedantigo:"required,email"`
+    Email string `json:"email" validate:"required,email"`
 
     // Numeric constraints
-    Age int `json:"age" pedantigo:"min=0,max=150"`
+    Age int `json:"age" validate:"min=0,max=150"`
 
     // Pattern matching
-    Phone string `json:"phone" pedantigo:"pattern=^\\d{10}$"`
+    Phone string `json:"phone" validate:"pattern=^\\d{10}$"`
 
     // Field exclusion by context
-    Password string `json:"password" pedantigo:"exclude:api,exclude:logs"`
+    Password string `json:"password" validate:"exclude:api,exclude:logs"`
 
     // Zero value omission
-    Score int `json:"score" pedantigo:"omitzero"`
+    Score int `json:"score" validate:"omitzero"`
 
     // Default values
-    Status string `json:"status" pedantigo:"default=pending"`
+    Status string `json:"status" validate:"default=pending"`
 }
 ```
 

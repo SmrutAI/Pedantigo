@@ -37,19 +37,19 @@ func checkValidationError(t *testing.T, err error, expectErr bool, errField stri
 // TestExcludedIf tests ExcludedIf validation.
 func TestExcludedIf(t *testing.T) {
 	type Payment struct {
-		Method     string `json:"method" pedantigo:"required"`
-		CashAmount int    `json:"cash_amount" pedantigo:"excluded_if=Method card"`
+		Method     string `json:"method" validate:"required"`
+		CashAmount int    `json:"cash_amount" validate:"excluded_if=Method card"`
 	}
 
 	type UserPreferences struct {
-		OptIn       bool   `json:"opt_in" pedantigo:"required"`
-		PhoneNumber string `json:"phone_number" pedantigo:"excluded_if=OptIn false"`
+		OptIn       bool   `json:"opt_in" validate:"required"`
+		PhoneNumber string `json:"phone_number" validate:"excluded_if=OptIn false"`
 	}
 
 	type Vehicle struct {
-		Type         string `json:"type" pedantigo:"required"`
-		LicensePlate string `json:"license_plate" pedantigo:"excluded_if=Type bicycle"`
-		ParkingSpot  int    `json:"parking_spot" pedantigo:"excluded_if=Type bicycle"`
+		Type         string `json:"type" validate:"required"`
+		LicensePlate string `json:"license_plate" validate:"excluded_if=Type bicycle"`
+		ParkingSpot  int    `json:"parking_spot" validate:"excluded_if=Type bicycle"`
 	}
 
 	tests := []struct {
@@ -172,8 +172,8 @@ func TestExcludedIf(t *testing.T) {
 // TestExcludedUnless tests ExcludedUnless validation.
 func TestExcludedUnless(t *testing.T) {
 	type Document struct {
-		Status        string `json:"status" pedantigo:"required"`
-		ApprovalNotes string `json:"approval_notes" pedantigo:"excluded_unless=Status approved"`
+		Status        string `json:"status" validate:"required"`
+		ApprovalNotes string `json:"approval_notes" validate:"excluded_unless=Status approved"`
 	}
 
 	tests := []struct {
@@ -240,18 +240,18 @@ func TestExcludedUnless(t *testing.T) {
 // TestExcludedWith tests ExcludedWith validation.
 func TestExcludedWith(t *testing.T) {
 	type User struct {
-		HomePhone string `json:"home_phone" pedantigo:"required"`
-		WorkPhone string `json:"work_phone" pedantigo:"excluded_with=HomePhone"`
+		HomePhone string `json:"home_phone" validate:"required"`
+		WorkPhone string `json:"work_phone" validate:"excluded_with=HomePhone"`
 	}
 
 	type Account struct {
-		BankBalance    int `json:"bank_balance" pedantigo:"min=0"`
-		CreditLineUsed int `json:"credit_line_used" pedantigo:"excluded_with=BankBalance"`
+		BankBalance    int `json:"bank_balance" validate:"min=0"`
+		CreditLineUsed int `json:"credit_line_used" validate:"excluded_with=BankBalance"`
 	}
 
 	type Feature struct {
-		EnabledGlobally bool   `json:"enabled_globally" pedantigo:"required"`
-		OverrideReason  string `json:"override_reason" pedantigo:"excluded_with=EnabledGlobally"`
+		EnabledGlobally bool   `json:"enabled_globally" validate:"required"`
+		OverrideReason  string `json:"override_reason" validate:"excluded_with=EnabledGlobally"`
 	}
 
 	tests := []struct {
@@ -381,13 +381,13 @@ func TestExcludedWith(t *testing.T) {
 // TestExcludedWithout tests ExcludedWithout validation.
 func TestExcludedWithout(t *testing.T) {
 	type Address struct {
-		Country string `json:"country" pedantigo:"required"`
-		ZipCode string `json:"zip_code" pedantigo:"excluded_without=Country"`
+		Country string `json:"country" validate:"required"`
+		ZipCode string `json:"zip_code" validate:"excluded_without=Country"`
 	}
 
 	type Notification struct {
-		IsEnabled   bool   `json:"is_enabled" pedantigo:"required"`
-		RetryPolicy string `json:"retry_policy" pedantigo:"excluded_without=IsEnabled"`
+		IsEnabled   bool   `json:"is_enabled" validate:"required"`
+		RetryPolicy string `json:"retry_policy" validate:"excluded_without=IsEnabled"`
 	}
 
 	tests := []struct {
@@ -486,7 +486,7 @@ func TestExcludedWithout(t *testing.T) {
 func TestExcludedWithoutUnmarshal(t *testing.T) {
 	type Shipping struct {
 		Weight      int `json:"weight"`
-		TrackingNum int `json:"tracking_num" pedantigo:"excluded_without=Weight"`
+		TrackingNum int `json:"tracking_num" validate:"excluded_without=Weight"`
 	}
 
 	tests := []struct {
@@ -550,10 +550,10 @@ func TestExcludedWithoutUnmarshal(t *testing.T) {
 // TestMultipleExclusionConstraints_Complex tests MultipleExclusionConstraints complex.
 func TestMultipleExclusionConstraints_Complex(t *testing.T) {
 	type Subscription struct {
-		Status             string `json:"status" pedantigo:"required"`
-		CancellationReason string `json:"cancellation_reason" pedantigo:"excluded_unless=Status cancelled"`
-		DowngradeReason    string `json:"downgrade_reason" pedantigo:"excluded_unless=Status downgraded"`
-		SuspendedUntilDate string `json:"suspended_until_date" pedantigo:"excluded_without=Status"`
+		Status             string `json:"status" validate:"required"`
+		CancellationReason string `json:"cancellation_reason" validate:"excluded_unless=Status cancelled"`
+		DowngradeReason    string `json:"downgrade_reason" validate:"excluded_unless=Status downgraded"`
+		SuspendedUntilDate string `json:"suspended_until_date" validate:"excluded_without=Status"`
 	}
 
 	validator := pedantigo.New[Subscription]()
@@ -609,12 +609,12 @@ func TestMultipleExclusionConstraints_Complex(t *testing.T) {
 
 func TestConditionalExclusion_RealWorldPaymentExample(t *testing.T) {
 	type PaymentMethod struct {
-		Type           string `json:"type" pedantigo:"required"`
-		CardNumber     string `json:"card_number" pedantigo:"excluded_unless=Type card"`
-		BankAccount    string `json:"bank_account" pedantigo:"excluded_unless=Type bank_transfer"`
-		CryptoCurrency string `json:"crypto_currency" pedantigo:"excluded_unless=Type crypto"`
-		CardExpiryDate string `json:"card_expiry_date" pedantigo:"excluded_with=BankAccount,excluded_with=CryptoCurrency"`
-		RoutingNumber  string `json:"routing_number" pedantigo:"excluded_without=Type"`
+		Type           string `json:"type" validate:"required"`
+		CardNumber     string `json:"card_number" validate:"excluded_unless=Type card"`
+		BankAccount    string `json:"bank_account" validate:"excluded_unless=Type bank_transfer"`
+		CryptoCurrency string `json:"crypto_currency" validate:"excluded_unless=Type crypto"`
+		CardExpiryDate string `json:"card_expiry_date" validate:"excluded_with=BankAccount,excluded_with=CryptoCurrency"`
+		RoutingNumber  string `json:"routing_number" validate:"excluded_without=Type"`
 	}
 
 	validator := pedantigo.New[PaymentMethod]()

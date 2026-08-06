@@ -17,7 +17,7 @@ func TestRequiredWithAll(t *testing.T) {
 		A      string `json:"a"`
 		B      string `json:"b"`
 		C      string `json:"c"`
-		Target string `json:"target" pedantigo:"required_with_all=A B C"`
+		Target string `json:"target" validate:"required_with_all=A B C"`
 	}
 
 	// Test 1: All present, target present - pass
@@ -53,7 +53,7 @@ func TestRequiredWithAll(t *testing.T) {
 		type Form2 struct {
 			A      string `json:"a"`
 			B      string `json:"b"`
-			Target string `json:"target" pedantigo:"required_with_all=A B"`
+			Target string `json:"target" validate:"required_with_all=A B"`
 		}
 		validator := pedantigo.New[Form2]()
 		err := validator.Validate(&Form2{A: "1", B: "2", Target: ""})
@@ -98,7 +98,7 @@ func TestRequiredWithoutAll(t *testing.T) {
 		A      string `json:"a"`
 		B      string `json:"b"`
 		C      string `json:"c"`
-		Target string `json:"target" pedantigo:"required_without_all=A B C"`
+		Target string `json:"target" validate:"required_without_all=A B C"`
 	}
 
 	// Test 1: All absent, target present - pass
@@ -134,7 +134,7 @@ func TestRequiredWithoutAll(t *testing.T) {
 		type Form2 struct {
 			A      string `json:"a"`
 			B      string `json:"b"`
-			Target string `json:"target" pedantigo:"required_without_all=A B"`
+			Target string `json:"target" validate:"required_without_all=A B"`
 		}
 		validator := pedantigo.New[Form2]()
 		err := validator.Validate(&Form2{A: "", B: "", Target: ""})
@@ -179,7 +179,7 @@ func TestExcludedWithAll(t *testing.T) {
 		A      string `json:"a"`
 		B      string `json:"b"`
 		C      string `json:"c"`
-		Target string `json:"target" pedantigo:"excluded_with_all=A B C"`
+		Target string `json:"target" validate:"excluded_with_all=A B C"`
 	}
 
 	// Test 1: All present, target present - fail
@@ -215,7 +215,7 @@ func TestExcludedWithAll(t *testing.T) {
 		type Form2 struct {
 			A      string `json:"a"`
 			B      string `json:"b"`
-			Target string `json:"target" pedantigo:"excluded_with_all=A B"`
+			Target string `json:"target" validate:"excluded_with_all=A B"`
 		}
 		validator := pedantigo.New[Form2]()
 		err := validator.Validate(&Form2{A: "1", B: "2", Target: "value"})
@@ -267,7 +267,7 @@ func TestExcludedWithoutAll(t *testing.T) {
 		A      string `json:"a"`
 		B      string `json:"b"`
 		C      string `json:"c"`
-		Target string `json:"target" pedantigo:"excluded_without_all=A B C"`
+		Target string `json:"target" validate:"excluded_without_all=A B C"`
 	}
 
 	// Test 1: All absent, target present - fail
@@ -303,7 +303,7 @@ func TestExcludedWithoutAll(t *testing.T) {
 		type Form2 struct {
 			A      string `json:"a"`
 			B      string `json:"b"`
-			Target string `json:"target" pedantigo:"excluded_without_all=A B"`
+			Target string `json:"target" validate:"excluded_without_all=A B"`
 		}
 		validator := pedantigo.New[Form2]()
 		err := validator.Validate(&Form2{A: "", B: "", Target: "value"})
@@ -354,7 +354,7 @@ func TestAllConstraintsWithIntegers(t *testing.T) {
 	type Form struct {
 		Count1 int    `json:"count1"`
 		Count2 int    `json:"count2"`
-		Target string `json:"target" pedantigo:"required_with_all=Count1 Count2"`
+		Target string `json:"target" validate:"required_with_all=Count1 Count2"`
 	}
 
 	// Zero is considered absent for integers
@@ -387,7 +387,7 @@ func TestAllConstraintsWithBooleans(t *testing.T) {
 	type Form struct {
 		Flag1  bool   `json:"flag1"`
 		Flag2  bool   `json:"flag2"`
-		Target string `json:"target" pedantigo:"required_with_all=Flag1 Flag2"`
+		Target string `json:"target" validate:"required_with_all=Flag1 Flag2"`
 	}
 
 	// false is considered absent for booleans
@@ -420,7 +420,7 @@ func TestAllConstraintsWithFloats(t *testing.T) {
 	type Form struct {
 		Price1 float64 `json:"price1"`
 		Price2 float64 `json:"price2"`
-		Target string  `json:"target" pedantigo:"required_with_all=Price1 Price2"`
+		Target string  `json:"target" validate:"required_with_all=Price1 Price2"`
 	}
 
 	t.Run("float zero is absent", func(t *testing.T) {
@@ -448,7 +448,7 @@ func TestAllConstraintsMixedTypes(t *testing.T) {
 		IntField    int     `json:"int_field"`
 		BoolField   bool    `json:"bool_field"`
 		FloatField  float64 `json:"float_field"`
-		Target      string  `json:"target" pedantigo:"required_with_all=StringField IntField BoolField FloatField"`
+		Target      string  `json:"target" validate:"required_with_all=StringField IntField BoolField FloatField"`
 	}
 
 	t.Run("mixed all present", func(t *testing.T) {
@@ -515,7 +515,7 @@ func TestAllConstraintsMixedTypes(t *testing.T) {
 func TestAllConstraintsSingleField(t *testing.T) {
 	type Form struct {
 		A      string `json:"a"`
-		Target string `json:"target" pedantigo:"required_with_all=A"`
+		Target string `json:"target" validate:"required_with_all=A"`
 	}
 
 	t.Run("single field present", func(t *testing.T) {
@@ -543,7 +543,7 @@ func TestExcludedWithAllComplexScenario(t *testing.T) {
 		CVV        string `json:"cvv"`
 		ExpiryDate string `json:"expiry_date"`
 		// CashAmount should not be present if all credit card fields are present
-		CashAmount string `json:"cash_amount" pedantigo:"excluded_with_all=CreditCard CVV ExpiryDate"`
+		CashAmount string `json:"cash_amount" validate:"excluded_with_all=CreditCard CVV ExpiryDate"`
 	}
 
 	t.Run("credit card payment - no cash", func(t *testing.T) {
@@ -597,7 +597,7 @@ func TestRequiredWithoutAllComplexScenario(t *testing.T) {
 		Email    string `json:"email"`
 		Phone    string `json:"phone"`
 		// If none of the identifiers are present, OTP is required
-		OTP string `json:"otp" pedantigo:"required_without_all=Username Email Phone"`
+		OTP string `json:"otp" validate:"required_without_all=Username Email Phone"`
 	}
 
 	t.Run("no identifiers - otp required", func(t *testing.T) {
@@ -650,10 +650,10 @@ func TestAllConstraintsMultipleOnSameStruct(t *testing.T) {
 		A       string `json:"a"`
 		B       string `json:"b"`
 		C       string `json:"c"`
-		Target1 string `json:"target1" pedantigo:"required_with_all=A B"`
-		Target2 string `json:"target2" pedantigo:"excluded_with_all=A B C"`
-		Target3 string `json:"target3" pedantigo:"required_without_all=A B C"`
-		Target4 string `json:"target4" pedantigo:"excluded_without_all=A B C"`
+		Target1 string `json:"target1" validate:"required_with_all=A B"`
+		Target2 string `json:"target2" validate:"excluded_with_all=A B C"`
+		Target3 string `json:"target3" validate:"required_without_all=A B C"`
+		Target4 string `json:"target4" validate:"excluded_without_all=A B C"`
 	}
 
 	t.Run("all fields present", func(t *testing.T) {
@@ -705,14 +705,14 @@ func TestAllConstraintsFieldOrdering(t *testing.T) {
 		A      string `json:"a"`
 		B      string `json:"b"`
 		C      string `json:"c"`
-		Target string `json:"target" pedantigo:"required_with_all=A B C"`
+		Target string `json:"target" validate:"required_with_all=A B C"`
 	}
 
 	type Form2 struct {
 		A      string `json:"a"`
 		B      string `json:"b"`
 		C      string `json:"c"`
-		Target string `json:"target" pedantigo:"required_with_all=C B A"`
+		Target string `json:"target" validate:"required_with_all=C B A"`
 	}
 
 	t.Run("forward order", func(t *testing.T) {
@@ -732,7 +732,7 @@ func TestAllConstraintsWithPointers(t *testing.T) {
 	type Form struct {
 		A      *string `json:"a"`
 		B      *string `json:"b"`
-		Target string  `json:"target" pedantigo:"required_with_all=A B"`
+		Target string  `json:"target" validate:"required_with_all=A B"`
 	}
 
 	a := "value_a"

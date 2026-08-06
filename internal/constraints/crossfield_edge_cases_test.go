@@ -67,8 +67,8 @@ func TestCrossField_NonexistentField(t *testing.T) {
 			name: "eqfield with nonexistent target field",
 			testFunc: func() interface{} {
 				type User struct {
-					Password        string `pedantigo:"required"`
-					ConfirmPassword string `pedantigo:"eqfield=NonExistentField"`
+					Password        string `validate:"required"`
+					ConfirmPassword string `validate:"eqfield=NonExistentField"`
 				}
 				return New[User]()
 			},
@@ -78,8 +78,8 @@ func TestCrossField_NonexistentField(t *testing.T) {
 			name: "gtfield with nonexistent target field",
 			testFunc: func() interface{} {
 				type Range struct {
-					Min int `pedantigo:"required"`
-					Val int `pedantigo:"gtfield=NoSuchField"`
+					Min int `validate:"required"`
+					Val int `validate:"gtfield=NoSuchField"`
 				}
 				return New[Range]()
 			},
@@ -89,8 +89,8 @@ func TestCrossField_NonexistentField(t *testing.T) {
 			name: "ltfield with nonexistent target field",
 			testFunc: func() interface{} {
 				type Range struct {
-					Max int `pedantigo:"required"`
-					Val int `pedantigo:"ltfield=InvalidTarget"`
+					Max int `validate:"required"`
+					Val int `validate:"ltfield=InvalidTarget"`
 				}
 				return New[Range]()
 			},
@@ -114,8 +114,8 @@ func TestCrossField_TypeIncompatibility(t *testing.T) {
 			name: "string compared with int (gtfield)",
 			setup: func() (interface{}, interface{}) {
 				type Mixed struct {
-					Age  int    `pedantigo:"required"`
-					Name string `pedantigo:"gtfield=Age"`
+					Age  int    `validate:"required"`
+					Name string `validate:"gtfield=Age"`
 				}
 				v := New[Mixed]()
 				return v, &Mixed{Age: 25, Name: "Alice"}
@@ -126,8 +126,8 @@ func TestCrossField_TypeIncompatibility(t *testing.T) {
 			name: "string compared with float64 (ltfield)",
 			setup: func() (interface{}, interface{}) {
 				type Mixed struct {
-					Price float64 `pedantigo:"required"`
-					Label string  `pedantigo:"ltfield=Price"`
+					Price float64 `validate:"required"`
+					Label string  `validate:"ltfield=Price"`
 				}
 				v := New[Mixed]()
 				return v, &Mixed{Price: 99.99, Label: "expensive"}
@@ -141,8 +141,8 @@ func TestCrossField_TypeIncompatibility(t *testing.T) {
 					Value int
 				}
 				type Mixed struct {
-					Count  int    `pedantigo:"required"`
-					Config Nested `pedantigo:"eqfield=Count"`
+					Count  int    `validate:"required"`
+					Config Nested `validate:"eqfield=Count"`
 				}
 				v := New[Mixed]()
 				return v, &Mixed{Count: 5, Config: Nested{Value: 5}}
@@ -180,8 +180,8 @@ func TestCrossField_NilPointer(t *testing.T) {
 			name: "target field is nil pointer",
 			setup: func() (interface{}, interface{}) {
 				type Optional struct {
-					Value  *int `pedantigo:"required"`
-					MinVal int  `pedantigo:"ltfield=Value"`
+					Value  *int `validate:"required"`
+					MinVal int  `validate:"ltfield=Value"`
 				}
 				v := New[Optional]()
 				return v, &Optional{Value: nil, MinVal: 10}
@@ -192,8 +192,8 @@ func TestCrossField_NilPointer(t *testing.T) {
 			name: "source field is nil pointer",
 			setup: func() (interface{}, interface{}) {
 				type Optional struct {
-					Value  *int `pedantigo:"required"`
-					MinVal *int `pedantigo:"gtfield=Value"`
+					Value  *int `validate:"required"`
+					MinVal *int `validate:"gtfield=Value"`
 				}
 				v := New[Optional]()
 				val := 10
@@ -205,8 +205,8 @@ func TestCrossField_NilPointer(t *testing.T) {
 			name: "both fields are nil pointers (should be equal)",
 			setup: func() (interface{}, interface{}) {
 				type Optional struct {
-					Field1 *int `pedantigo:"required"`
-					Field2 *int `pedantigo:"eqfield=Field1"`
+					Field1 *int `validate:"required"`
+					Field2 *int `validate:"eqfield=Field1"`
 				}
 				v := New[Optional]()
 				return v, &Optional{Field1: nil, Field2: nil}
@@ -241,8 +241,8 @@ func TestCrossField_CaseSensitivity(t *testing.T) {
 			name: "lowercase field reference (case mismatch)",
 			testFunc: func() interface{} {
 				type CaseTest struct {
-					Value    int `pedantigo:"required"`
-					MinValue int `pedantigo:"gtfield=value"`
+					Value    int `validate:"required"`
+					MinValue int `validate:"gtfield=value"`
 				}
 				return New[CaseTest]()
 			},
@@ -252,8 +252,8 @@ func TestCrossField_CaseSensitivity(t *testing.T) {
 			name: "incorrect mixed case field reference",
 			testFunc: func() interface{} {
 				type CaseTest struct {
-					UserID   int `pedantigo:"required"`
-					MinLimit int `pedantigo:"ltfield=userid"`
+					UserID   int `validate:"required"`
+					MinLimit int `validate:"ltfield=userid"`
 				}
 				return New[CaseTest]()
 			},
@@ -263,8 +263,8 @@ func TestCrossField_CaseSensitivity(t *testing.T) {
 			name: "correct case field reference (should work)",
 			testFunc: func() interface{} {
 				type CaseTest struct {
-					Value    int `pedantigo:"required"`
-					MinValue int `pedantigo:"gtfield=Value"`
+					Value    int `validate:"required"`
+					MinValue int `validate:"gtfield=Value"`
 				}
 				return New[CaseTest]()
 			},
@@ -286,7 +286,7 @@ func TestCrossField_NestedStruct(t *testing.T) {
 	}
 	type Outer struct {
 		Inner Inner
-		Check int `pedantigo:"eqfield=Inner.Value"`
+		Check int `validate:"eqfield=Inner.Value"`
 	}
 
 	t.Run("nested field reference - valid", func(t *testing.T) {
@@ -319,9 +319,9 @@ func TestCrossField_MultipleConstraints(t *testing.T) {
 			name: "both constraints valid",
 			setup: func() (interface{}, interface{}) {
 				type Range struct {
-					Min int `pedantigo:"required"`
-					Max int `pedantigo:"required"`
-					Val int `pedantigo:"gtfield=Min,ltfield=Max"`
+					Min int `validate:"required"`
+					Max int `validate:"required"`
+					Val int `validate:"gtfield=Min,ltfield=Max"`
 				}
 				v := New[Range]()
 				return v, &Range{Min: 0, Max: 100, Val: 50}
@@ -332,9 +332,9 @@ func TestCrossField_MultipleConstraints(t *testing.T) {
 			name: "first constraint fails",
 			setup: func() (interface{}, interface{}) {
 				type Range struct {
-					Min int `pedantigo:"required"`
-					Max int `pedantigo:"required"`
-					Val int `pedantigo:"gtfield=Min,ltfield=Max"`
+					Min int `validate:"required"`
+					Max int `validate:"required"`
+					Val int `validate:"gtfield=Min,ltfield=Max"`
 				}
 				v := New[Range]()
 				return v, &Range{Min: 50, Max: 100, Val: 40}
@@ -345,9 +345,9 @@ func TestCrossField_MultipleConstraints(t *testing.T) {
 			name: "second constraint fails",
 			setup: func() (interface{}, interface{}) {
 				type Range struct {
-					Min int `pedantigo:"required"`
-					Max int `pedantigo:"required"`
-					Val int `pedantigo:"gtfield=Min,ltfield=Max"`
+					Min int `validate:"required"`
+					Max int `validate:"required"`
+					Val int `validate:"gtfield=Min,ltfield=Max"`
 				}
 				v := New[Range]()
 				return v, &Range{Min: 0, Max: 50, Val: 60}
@@ -358,9 +358,9 @@ func TestCrossField_MultipleConstraints(t *testing.T) {
 			name: "both constraints fail",
 			setup: func() (interface{}, interface{}) {
 				type Range struct {
-					Min int `pedantigo:"required"`
-					Max int `pedantigo:"required"`
-					Val int `pedantigo:"gtfield=Min,ltfield=Max"`
+					Min int `validate:"required"`
+					Max int `validate:"required"`
+					Val int `validate:"gtfield=Min,ltfield=Max"`
 				}
 				v := New[Range]()
 				return v, &Range{Min: 50, Max: 40, Val: 30}
@@ -397,7 +397,7 @@ func TestCrossField_SelfReference(t *testing.T) {
 			name: "eqfield self-reference",
 			testFunc: func() interface{} {
 				type Recursive struct {
-					Value int `pedantigo:"eqfield=Value"`
+					Value int `validate:"eqfield=Value"`
 				}
 				return New[Recursive]()
 			},
@@ -407,7 +407,7 @@ func TestCrossField_SelfReference(t *testing.T) {
 			name: "gtfield self-reference",
 			testFunc: func() interface{} {
 				type Recursive struct {
-					Value int `pedantigo:"gtfield=Value"`
+					Value int `validate:"gtfield=Value"`
 				}
 				return New[Recursive]()
 			},
@@ -442,8 +442,8 @@ func TestCrossField_CircularDependency(t *testing.T) {
 			name: "two-field circular dependency",
 			setup: func() (interface{}, interface{}) {
 				type Circular struct {
-					Field1 int `pedantigo:"gtfield=Field2"`
-					Field2 int `pedantigo:"gtfield=Field1"`
+					Field1 int `validate:"gtfield=Field2"`
+					Field2 int `validate:"gtfield=Field1"`
 				}
 				v := New[Circular]()
 				return v, &Circular{Field1: 10, Field2: 5}
@@ -477,9 +477,9 @@ func TestCrossField_ZeroValue(t *testing.T) {
 			name: "both fields are zero (should be equal)",
 			setup: func() (interface{}, interface{}) {
 				type Range struct {
-					Min int `pedantigo:"required"`
-					Max int `pedantigo:"required"`
-					Val int `pedantigo:"eqfield=Min"`
+					Min int `validate:"required"`
+					Max int `validate:"required"`
+					Val int `validate:"eqfield=Min"`
 				}
 				v := New[Range]()
 				return v, &Range{Min: 0, Max: 100, Val: 0}
@@ -490,8 +490,8 @@ func TestCrossField_ZeroValue(t *testing.T) {
 			name: "zero vs non-zero (should fail equality)",
 			setup: func() (interface{}, interface{}) {
 				type Range struct {
-					Min int `pedantigo:"required"`
-					Val int `pedantigo:"eqfield=Min"`
+					Min int `validate:"required"`
+					Val int `validate:"eqfield=Min"`
 				}
 				v := New[Range]()
 				return v, &Range{Min: 10, Val: 0}
@@ -502,8 +502,8 @@ func TestCrossField_ZeroValue(t *testing.T) {
 			name: "both empty strings (should be equal)",
 			setup: func() (interface{}, interface{}) {
 				type Strings struct {
-					Field1 string `pedantigo:"required"`
-					Field2 string `pedantigo:"eqfield=Field1"`
+					Field1 string `validate:"required"`
+					Field2 string `validate:"eqfield=Field1"`
 				}
 				v := New[Strings]()
 				return v, &Strings{Field1: "", Field2: ""}
@@ -542,8 +542,8 @@ func TestCrossField_NumericTypeCompatibility(t *testing.T) {
 			name: "int vs int64 comparison",
 			setup: func() (interface{}, interface{}) {
 				type Mixed struct {
-					Value1 int   `pedantigo:"required"`
-					Value2 int64 `pedantigo:"gtfield=Value1"`
+					Value1 int   `validate:"required"`
+					Value2 int64 `validate:"gtfield=Value1"`
 				}
 				v := New[Mixed]()
 				return v, &Mixed{Value1: 10, Value2: 20}
@@ -554,8 +554,8 @@ func TestCrossField_NumericTypeCompatibility(t *testing.T) {
 			name: "float64 vs int comparison",
 			setup: func() (interface{}, interface{}) {
 				type Mixed struct {
-					IntVal   int     `pedantigo:"required"`
-					FloatVal float64 `pedantigo:"ltfield=IntVal"`
+					IntVal   int     `validate:"required"`
+					FloatVal float64 `validate:"ltfield=IntVal"`
 				}
 				v := New[Mixed]()
 				return v, &Mixed{IntVal: 100, FloatVal: 50.5}
@@ -566,8 +566,8 @@ func TestCrossField_NumericTypeCompatibility(t *testing.T) {
 			name: "uint vs int comparison",
 			setup: func() (interface{}, interface{}) {
 				type Mixed struct {
-					Signed   int  `pedantigo:"required"`
-					Unsigned uint `pedantigo:"eqfield=Signed"`
+					Signed   int  `validate:"required"`
+					Unsigned uint `validate:"eqfield=Signed"`
 				}
 				v := New[Mixed]()
 				return v, &Mixed{Signed: 10, Unsigned: 10}
@@ -601,8 +601,8 @@ func TestCrossField_EmptyString(t *testing.T) {
 			name: "empty string equality",
 			setup: func() (interface{}, interface{}) {
 				type Strings struct {
-					Field1 string `pedantigo:"required"`
-					Field2 string `pedantigo:"eqfield=Field1"`
+					Field1 string `validate:"required"`
+					Field2 string `validate:"eqfield=Field1"`
 				}
 				v := New[Strings]()
 				return v, &Strings{Field1: "", Field2: ""}
@@ -613,8 +613,8 @@ func TestCrossField_EmptyString(t *testing.T) {
 			name: "empty string inequality (should fail)",
 			setup: func() (interface{}, interface{}) {
 				type Strings struct {
-					Field1 string `pedantigo:"required"`
-					Field2 string `pedantigo:"nefield=Field1"`
+					Field1 string `validate:"required"`
+					Field2 string `validate:"nefield=Field1"`
 				}
 				v := New[Strings]()
 				return v, &Strings{Field1: "", Field2: ""}
@@ -654,8 +654,8 @@ func TestCrossField_TimeComparison(t *testing.T) {
 			name: "equal times",
 			setup: func() (interface{}, interface{}) {
 				type TimeRange struct {
-					StartTime time.Time `pedantigo:"required"`
-					EndTime   time.Time `pedantigo:"eqfield=StartTime"`
+					StartTime time.Time `validate:"required"`
+					EndTime   time.Time `validate:"eqfield=StartTime"`
 				}
 				v := New[TimeRange]()
 				return v, &TimeRange{StartTime: now, EndTime: now}
@@ -666,8 +666,8 @@ func TestCrossField_TimeComparison(t *testing.T) {
 			name: "end time after start time",
 			setup: func() (interface{}, interface{}) {
 				type TimeRange struct {
-					StartTime time.Time `pedantigo:"required"`
-					EndTime   time.Time `pedantigo:"gtfield=StartTime"`
+					StartTime time.Time `validate:"required"`
+					EndTime   time.Time `validate:"gtfield=StartTime"`
 				}
 				v := New[TimeRange]()
 				return v, &TimeRange{StartTime: now, EndTime: now.Add(1 * time.Hour)}
@@ -678,8 +678,8 @@ func TestCrossField_TimeComparison(t *testing.T) {
 			name: "end time before start time (should fail)",
 			setup: func() (interface{}, interface{}) {
 				type TimeRange struct {
-					StartTime time.Time `pedantigo:"required"`
-					EndTime   time.Time `pedantigo:"ltfield=StartTime"`
+					StartTime time.Time `validate:"required"`
+					EndTime   time.Time `validate:"ltfield=StartTime"`
 				}
 				v := New[TimeRange]()
 				return v, &TimeRange{StartTime: now, EndTime: now.Add(-1 * time.Hour)}
@@ -716,8 +716,8 @@ func TestCrossField_AllOperators(t *testing.T) {
 			name: "eqfield (equal) - valid",
 			setup: func() (interface{}, interface{}) {
 				type Pair struct {
-					Field1 int `pedantigo:"required"`
-					Field2 int `pedantigo:"eqfield=Field1"`
+					Field1 int `validate:"required"`
+					Field2 int `validate:"eqfield=Field1"`
 				}
 				v := New[Pair]()
 				return v, &Pair{Field1: 42, Field2: 42}
@@ -728,8 +728,8 @@ func TestCrossField_AllOperators(t *testing.T) {
 			name: "nefield (not equal) - valid",
 			setup: func() (interface{}, interface{}) {
 				type Pair struct {
-					Field1 int `pedantigo:"required"`
-					Field2 int `pedantigo:"nefield=Field1"`
+					Field1 int `validate:"required"`
+					Field2 int `validate:"nefield=Field1"`
 				}
 				v := New[Pair]()
 				return v, &Pair{Field1: 42, Field2: 43}
@@ -740,8 +740,8 @@ func TestCrossField_AllOperators(t *testing.T) {
 			name: "gtfield (greater than) - valid",
 			setup: func() (interface{}, interface{}) {
 				type Pair struct {
-					Field1 int `pedantigo:"required"`
-					Field2 int `pedantigo:"gtfield=Field1"`
+					Field1 int `validate:"required"`
+					Field2 int `validate:"gtfield=Field1"`
 				}
 				v := New[Pair]()
 				return v, &Pair{Field1: 10, Field2: 20}
@@ -752,8 +752,8 @@ func TestCrossField_AllOperators(t *testing.T) {
 			name: "gtefield (greater than or equal) - valid",
 			setup: func() (interface{}, interface{}) {
 				type Pair struct {
-					Field1 int `pedantigo:"required"`
-					Field2 int `pedantigo:"gtefield=Field1"`
+					Field1 int `validate:"required"`
+					Field2 int `validate:"gtefield=Field1"`
 				}
 				v := New[Pair]()
 				return v, &Pair{Field1: 10, Field2: 10}
@@ -764,8 +764,8 @@ func TestCrossField_AllOperators(t *testing.T) {
 			name: "ltfield (less than) - valid",
 			setup: func() (interface{}, interface{}) {
 				type Pair struct {
-					Field1 int `pedantigo:"required"`
-					Field2 int `pedantigo:"ltfield=Field1"`
+					Field1 int `validate:"required"`
+					Field2 int `validate:"ltfield=Field1"`
 				}
 				v := New[Pair]()
 				return v, &Pair{Field1: 100, Field2: 50}
@@ -776,8 +776,8 @@ func TestCrossField_AllOperators(t *testing.T) {
 			name: "ltefield (less than or equal) - valid",
 			setup: func() (interface{}, interface{}) {
 				type Pair struct {
-					Field1 int `pedantigo:"required"`
-					Field2 int `pedantigo:"ltefield=Field1"`
+					Field1 int `validate:"required"`
+					Field2 int `validate:"ltefield=Field1"`
 				}
 				v := New[Pair]()
 				return v, &Pair{Field1: 100, Field2: 100}
@@ -811,8 +811,8 @@ func TestCrossField_BoundaryValues(t *testing.T) {
 			name: "zero and one (boundary)",
 			setup: func() (interface{}, interface{}) {
 				type Boundary struct {
-					Field1 int `pedantigo:"required"`
-					Field2 int `pedantigo:"gtfield=Field1"`
+					Field1 int `validate:"required"`
+					Field2 int `validate:"gtfield=Field1"`
 				}
 				v := New[Boundary]()
 				return v, &Boundary{Field1: 0, Field2: 1}
@@ -823,8 +823,8 @@ func TestCrossField_BoundaryValues(t *testing.T) {
 			name: "negative number comparison",
 			setup: func() (interface{}, interface{}) {
 				type Boundary struct {
-					Field1 int `pedantigo:"required"`
-					Field2 int `pedantigo:"ltfield=Field1"`
+					Field1 int `validate:"required"`
+					Field2 int `validate:"ltfield=Field1"`
 				}
 				v := New[Boundary]()
 				return v, &Boundary{Field1: -10, Field2: -100}
@@ -835,8 +835,8 @@ func TestCrossField_BoundaryValues(t *testing.T) {
 			name: "max int64 comparison",
 			setup: func() (interface{}, interface{}) {
 				type Boundary struct {
-					Field1 int64 `pedantigo:"required"`
-					Field2 int64 `pedantigo:"eqfield=Field1"`
+					Field1 int64 `validate:"required"`
+					Field2 int64 `validate:"eqfield=Field1"`
 				}
 				v := New[Boundary]()
 				return v, &Boundary{Field1: 9223372036854775807, Field2: 9223372036854775807}
@@ -870,8 +870,8 @@ func TestCrossField_BooleanAndComplexTypes(t *testing.T) {
 			name: "boolean comparison",
 			setup: func() (interface{}, interface{}) {
 				type BooleanTest struct {
-					Flag1 bool `pedantigo:"required"`
-					Flag2 bool `pedantigo:"eqfield=Flag1"`
+					Flag1 bool `validate:"required"`
+					Flag2 bool `validate:"eqfield=Flag1"`
 				}
 				v := New[BooleanTest]()
 				return v, &BooleanTest{Flag1: true, Flag2: true}
@@ -882,8 +882,8 @@ func TestCrossField_BooleanAndComplexTypes(t *testing.T) {
 			name: "slice comparison",
 			setup: func() (interface{}, interface{}) {
 				type SliceTest struct {
-					Items []int `pedantigo:"required"`
-					Ref   []int `pedantigo:"eqfield=Items"`
+					Items []int `validate:"required"`
+					Ref   []int `validate:"eqfield=Items"`
 				}
 				v := New[SliceTest]()
 				return v, &SliceTest{Items: []int{1, 2, 3}, Ref: []int{1, 2, 3}}
@@ -917,7 +917,7 @@ func TestCrossField_UnexportedField(t *testing.T) {
 			name: "reference to unexported field",
 			testFunc: func() interface{} {
 				type Unexported struct {
-					Field int `pedantigo:"gtfield=value"`
+					Field int `validate:"gtfield=value"`
 				}
 				return New[Unexported]()
 			},
@@ -952,8 +952,8 @@ func TestCrossField_PointerTypes(t *testing.T) {
 			name: "pointer vs value comparison",
 			setup: func() (interface{}, interface{}) {
 				type PointerTest struct {
-					Value1 *int `pedantigo:"required"`
-					Value2 int  `pedantigo:"gtfield=Value1"`
+					Value1 *int `validate:"required"`
+					Value2 int  `validate:"gtfield=Value1"`
 				}
 				v := New[PointerTest]()
 				val := 10
@@ -965,8 +965,8 @@ func TestCrossField_PointerTypes(t *testing.T) {
 			name: "different pointer types comparison",
 			setup: func() (interface{}, interface{}) {
 				type PointerTest struct {
-					Value1 *int   `pedantigo:"required"`
-					Value2 *int64 `pedantigo:"eqfield=Value1"`
+					Value1 *int   `validate:"required"`
+					Value2 *int64 `validate:"eqfield=Value1"`
 				}
 				v := New[PointerTest]()
 				val1 := 10
@@ -1002,8 +1002,8 @@ func TestCrossField_FieldOrder(t *testing.T) {
 			name: "forward reference to later-defined field",
 			setup: func() (interface{}, interface{}) {
 				type Order struct {
-					Field2 int `pedantigo:"gtfield=Field1"`
-					Field1 int `pedantigo:"required"`
+					Field2 int `validate:"gtfield=Field1"`
+					Field1 int `validate:"required"`
 				}
 				v := New[Order]()
 				return v, &Order{Field1: 10, Field2: 20}
@@ -1037,9 +1037,9 @@ func TestCrossField_ChainedConstraints(t *testing.T) {
 			name: "chain of cross-field constraints (Min < Mid < Max)",
 			setup: func() (interface{}, interface{}) {
 				type MultiConstraint struct {
-					Min int `pedantigo:"required"`
-					Mid int `pedantigo:"gtfield=Min"`
-					Max int `pedantigo:"gtfield=Mid"`
+					Min int `validate:"required"`
+					Mid int `validate:"gtfield=Min"`
+					Max int `validate:"gtfield=Mid"`
 				}
 				v := New[MultiConstraint]()
 				return v, &MultiConstraint{Min: 10, Mid: 20, Max: 30}
@@ -1073,8 +1073,8 @@ func TestCrossField_FloatSpecialValues(t *testing.T) {
 			name: "positive infinity comparison",
 			setup: func() (interface{}, interface{}) {
 				type FloatSpecial struct {
-					Field1 float64 `pedantigo:"required"`
-					Field2 float64 `pedantigo:"gtfield=Field1"`
+					Field1 float64 `validate:"required"`
+					Field2 float64 `validate:"gtfield=Field1"`
 				}
 				v := New[FloatSpecial]()
 				inf := math.Inf(1)

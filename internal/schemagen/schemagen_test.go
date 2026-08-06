@@ -16,19 +16,19 @@ import (
 // Test structs
 // SimpleStruct represents the data structure.
 type SimpleStruct struct {
-	Name  string `json:"name" pedantigo:"required,min=3,max=50"`
-	Age   int    `json:"age" pedantigo:"min=18,max=100"`
-	Email string `json:"email" pedantigo:"email"`
+	Name  string `json:"name" validate:"required,min=3,max=50"`
+	Age   int    `json:"age" validate:"min=18,max=100"`
+	Email string `json:"email" validate:"email"`
 }
 
 type NestedStruct struct {
-	User    SimpleStruct `json:"user" pedantigo:"required"`
+	User    SimpleStruct `json:"user" validate:"required"`
 	Created time.Time    `json:"created"`
 }
 
 type SliceStruct struct {
-	Tags []string `json:"tags" pedantigo:"min=1,max=10"`
-	IDs  []int    `json:"ids" pedantigo:"min=1"`
+	Tags []string `json:"tags" validate:"min=1,max=10"`
+	IDs  []int    `json:"ids" validate:"min=1"`
 }
 
 type MapStruct struct {
@@ -36,16 +36,16 @@ type MapStruct struct {
 }
 
 type ConstraintsStruct struct {
-	URL        string  `json:"url" pedantigo:"url"`
-	UUID       string  `json:"uuid" pedantigo:"uuid"`
-	IPv4       string  `json:"ipv4" pedantigo:"ipv4"`
-	IPv6       string  `json:"ipv6" pedantigo:"ipv6"`
-	Pattern    string  `json:"pattern" pedantigo:"regexp=^[A-Z]+$"`
-	Status     string  `json:"status" pedantigo:"oneof=active inactive pending"`
-	Score      float64 `json:"score" pedantigo:"gte=0,lte=100"`
-	Count      int     `json:"count" pedantigo:"gt=0,lt=1000"`
-	Enabled    bool    `json:"enabled" pedantigo:"default=true"`
-	MaxRetries int     `json:"max_retries" pedantigo:"default=3"`
+	URL        string  `json:"url" validate:"url"`
+	UUID       string  `json:"uuid" validate:"uuid"`
+	IPv4       string  `json:"ipv4" validate:"ipv4"`
+	IPv6       string  `json:"ipv6" validate:"ipv6"`
+	Pattern    string  `json:"pattern" validate:"regexp=^[A-Z]+$"`
+	Status     string  `json:"status" validate:"oneof=active inactive pending"`
+	Score      float64 `json:"score" validate:"gte=0,lte=100"`
+	Count      int     `json:"count" validate:"gt=0,lt=1000"`
+	Enabled    bool    `json:"enabled" validate:"default=true"`
+	MaxRetries int     `json:"max_retries" validate:"default=3"`
 }
 
 // Test containers for nested types
@@ -134,7 +134,7 @@ func TestGenerateOpenAPIBaseSchema(t *testing.T) {
 
 func TestEnhanceSchema(t *testing.T) {
 	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
-		pedantigoTag := tag.Get("pedantigo")
+		pedantigoTag := tag.Get("validate")
 		if pedantigoTag == "" {
 			return nil
 		}
@@ -1420,7 +1420,7 @@ func TestParseDefaultValue(t *testing.T) {
 
 func TestEnhanceNestedTypes(t *testing.T) {
 	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
-		pedantigoTag := tag.Get("pedantigo")
+		pedantigoTag := tag.Get("validate")
 		if pedantigoTag == "" {
 			return nil
 		}
@@ -1659,7 +1659,7 @@ func TestApplyConstraintsToItems(t *testing.T) {
 
 func TestFullIntegration(t *testing.T) {
 	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
-		pedantigoTag := tag.Get("pedantigo")
+		pedantigoTag := tag.Get("validate")
 		if pedantigoTag == "" {
 			return nil
 		}
@@ -1752,33 +1752,33 @@ func splitKeyValue(part string) (key, value string, found bool) {
 
 // CatUnion represents a cat variant with validation constraints.
 type CatUnion struct {
-	Name  string `json:"name" pedantigo:"required"`
-	Lives int    `json:"lives" pedantigo:"min=1,max=9"`
+	Name  string `json:"name" validate:"required"`
+	Lives int    `json:"lives" validate:"min=1,max=9"`
 }
 
 // DogUnion represents a dog variant with validation constraints.
 type DogUnion struct {
-	Name  string `json:"name" pedantigo:"required"`
+	Name  string `json:"name" validate:"required"`
 	Breed string `json:"breed"`
 }
 
 // BirdUnion represents a bird variant with validation constraints.
 type BirdUnion struct {
-	Name string `json:"name" pedantigo:"required"`
-	Eggs int    `json:"eggs" pedantigo:"min=0"`
+	Name string `json:"name" validate:"required"`
+	Eggs int    `json:"eggs" validate:"min=0"`
 }
 
 // NestedVariant represents a variant with nested struct fields.
 type NestedVariant struct {
-	ID    string       `json:"id" pedantigo:"required"`
-	Owner SimpleStruct `json:"owner" pedantigo:"required"`
+	ID    string       `json:"id" validate:"required"`
+	Owner SimpleStruct `json:"owner" validate:"required"`
 }
 
 // TestGenerateVariantSchema_BasicVariant tests GenerateVariantSchema
 // generates schema for variant type with properties.
 func TestGenerateVariantSchema_BasicVariant(t *testing.T) {
 	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
-		validateTag := tag.Get("pedantigo")
+		validateTag := tag.Get("validate")
 		if validateTag == "" {
 			return nil
 		}
@@ -1847,7 +1847,7 @@ func TestGenerateVariantSchema_DiscriminatorConstConstraint(t *testing.T) {
 	}
 
 	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
-		validateTag := tag.Get("pedantigo")
+		validateTag := tag.Get("validate")
 		if validateTag == "" {
 			return nil
 		}
@@ -1889,7 +1889,7 @@ func TestGenerateVariantSchema_DiscriminatorConstConstraint(t *testing.T) {
 // GenerateVariantSchema includes validation constraints from pedantigo tags.
 func TestGenerateVariantSchema_IncludesValidationConstraints(t *testing.T) {
 	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
-		validateTag := tag.Get("pedantigo")
+		validateTag := tag.Get("validate")
 		if validateTag == "" {
 			return nil
 		}
@@ -1935,7 +1935,7 @@ func TestGenerateVariantSchema_IncludesValidationConstraints(t *testing.T) {
 // GenerateVariantSchema handles nested struct fields.
 func TestGenerateVariantSchema_HandlesNestedStructs(t *testing.T) {
 	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
-		validateTag := tag.Get("pedantigo")
+		validateTag := tag.Get("validate")
 		if validateTag == "" {
 			return nil
 		}
@@ -2011,7 +2011,7 @@ func TestGenerateUnionSchema_ReturnsOneOfSchema(t *testing.T) {
 	}
 
 	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
-		validateTag := tag.Get("pedantigo")
+		validateTag := tag.Get("validate")
 		if validateTag == "" {
 			return nil
 		}
@@ -2073,7 +2073,7 @@ func TestGenerateUnionSchema_OneOfArrayLength(t *testing.T) {
 	}
 
 	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
-		validateTag := tag.Get("pedantigo")
+		validateTag := tag.Get("validate")
 		if validateTag == "" {
 			return nil
 		}
@@ -2115,7 +2115,7 @@ func TestGenerateUnionSchema_EachVariantProperlyGenerated(t *testing.T) {
 	}
 
 	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
-		validateTag := tag.Get("pedantigo")
+		validateTag := tag.Get("validate")
 		if validateTag == "" {
 			return nil
 		}
@@ -2159,7 +2159,7 @@ func TestGenerateUnionSchema_DiscriminatorConstInEachVariant(t *testing.T) {
 	}
 
 	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
-		validateTag := tag.Get("pedantigo")
+		validateTag := tag.Get("validate")
 		if validateTag == "" {
 			return nil
 		}
@@ -2209,7 +2209,7 @@ func TestGenerateUnionSchema_VariantPropertiesIncluded(t *testing.T) {
 	}
 
 	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
-		validateTag := tag.Get("pedantigo")
+		validateTag := tag.Get("validate")
 		if validateTag == "" {
 			return nil
 		}
@@ -2310,7 +2310,7 @@ func TestGenerateUnionSchema_WithValidationConstraints(t *testing.T) {
 	}
 
 	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
-		validateTag := tag.Get("pedantigo")
+		validateTag := tag.Get("validate")
 		if validateTag == "" {
 			return nil
 		}
@@ -2351,13 +2351,13 @@ func TestGenerateUnionSchema_WithValidationConstraints(t *testing.T) {
 // TestEnhanceSchema_UnexportedFields tests that unexported fields are skipped.
 func TestEnhanceSchema_UnexportedFields(t *testing.T) {
 	type StructWithUnexported struct {
-		Public     string `json:"public" pedantigo:"required"`
+		Public     string `json:"public" validate:"required"`
 		private    string //nolint:unused // intentionally unexported for testing
-		AlsoPublic int    `json:"also_public" pedantigo:"min=0"`
+		AlsoPublic int    `json:"also_public" validate:"min=0"`
 	}
 
 	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
-		pedantigoTag := tag.Get("pedantigo")
+		pedantigoTag := tag.Get("validate")
 		if pedantigoTag == "" {
 			return nil
 		}
@@ -2388,11 +2388,11 @@ func TestEnhanceSchema_UnexportedFields(t *testing.T) {
 // TestEnhanceSchema_PointerType tests enhancing a pointer type.
 func TestEnhanceSchema_PointerType(t *testing.T) {
 	type Target struct {
-		Name string `json:"name" pedantigo:"required,min=1"`
+		Name string `json:"name" validate:"required,min=1"`
 	}
 
 	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
-		pedantigoTag := tag.Get("pedantigo")
+		pedantigoTag := tag.Get("validate")
 		if pedantigoTag == "" {
 			return nil
 		}
@@ -2439,13 +2439,13 @@ func TestEnhanceSchema_NonStructType(t *testing.T) {
 // TestEnhanceSchema_JSONTagWithOptions tests JSON tag with comma-separated options.
 func TestEnhanceSchema_JSONTagWithOptions(t *testing.T) {
 	type StructWithJSONOptions struct {
-		Name     string `json:"name,omitempty" pedantigo:"required"`
-		Age      int    `json:"age,string" pedantigo:"min=0"`
+		Name     string `json:"name,omitempty" validate:"required"`
+		Age      int    `json:"age,string" validate:"min=0"`
 		Disabled string `json:"-"`
 	}
 
 	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
-		pedantigoTag := tag.Get("pedantigo")
+		pedantigoTag := tag.Get("validate")
 		if pedantigoTag == "" {
 			return nil
 		}
@@ -2503,15 +2503,15 @@ func TestApplyConstraints_MapWithConstraints(t *testing.T) {
 
 // MetadataStruct is a test struct with schema metadata.
 type MetadataStruct struct {
-	Name  string `json:"name" pedantigo:"required,title=User Name,description=Full name of user,examples=[\"John\",\"Jane\"]"`
-	Age   int    `json:"age" pedantigo:"min=0,description=Age in years,examples=[18,25,30]"`
-	Email string `json:"email" pedantigo:"email,title=Email Address,description=Contact email,examples=[\"john@example.com\",\"jane@example.com\"]"`
+	Name  string `json:"name" validate:"required,title=User Name,description=Full name of user,examples=[\"John\",\"Jane\"]"`
+	Age   int    `json:"age" validate:"min=0,description=Age in years,examples=[18,25,30]"`
+	Email string `json:"email" validate:"email,title=Email Address,description=Contact email,examples=[\"john@example.com\",\"jane@example.com\"]"`
 }
 
 // TestEnhanceSchema_WithMetadata tests metadata propagation through EnhanceSchema.
 func TestEnhanceSchema_WithMetadata(t *testing.T) {
 	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
-		pedantigoTag := tag.Get("pedantigo")
+		pedantigoTag := tag.Get("validate")
 		if pedantigoTag == "" {
 			return nil
 		}
@@ -2568,15 +2568,15 @@ func TestEnhanceSchema_WithMetadata(t *testing.T) {
 
 // ComplexMetadataStruct tests metadata with special characters and edge cases.
 type ComplexMetadataStruct struct {
-	Description string `json:"description" pedantigo:"title=Item Description,examples=[\"This is a test\",\"Another example here\"]"`
-	Count       int    `json:"count" pedantigo:"title=Item Count,description=Number of items available"`
-	Status      string `json:"status" pedantigo:"oneof=active inactive,title=Status,description=Current status,examples=[\"active\",\"inactive\"]"`
+	Description string `json:"description" validate:"title=Item Description,examples=[\"This is a test\",\"Another example here\"]"`
+	Count       int    `json:"count" validate:"title=Item Count,description=Number of items available"`
+	Status      string `json:"status" validate:"oneof=active inactive,title=Status,description=Current status,examples=[\"active\",\"inactive\"]"`
 }
 
 // TestEnhanceSchema_WithComplexMetadata tests metadata with special characters.
 func TestEnhanceSchema_WithComplexMetadata(t *testing.T) {
 	mockParseTagFunc := func(tag reflect.StructTag) map[string]string {
-		pedantigoTag := tag.Get("pedantigo")
+		pedantigoTag := tag.Get("validate")
 		if pedantigoTag == "" {
 			return nil
 		}
@@ -2647,11 +2647,11 @@ func TestEnhanceSchema_NilProperties(t *testing.T) {
 // TestEnhanceSchema_FieldWithoutSchema tests when field schema doesn't exist.
 func TestEnhanceSchema_FieldWithoutSchema(t *testing.T) {
 	type Missing struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	parseTagFunc := func(tag reflect.StructTag) map[string]string {
-		pedantigoTag := tag.Get("pedantigo")
+		pedantigoTag := tag.Get("validate")
 		if pedantigoTag == "" {
 			return nil
 		}
@@ -2671,11 +2671,11 @@ func TestEnhanceSchema_FieldWithoutSchema(t *testing.T) {
 // TestEnhanceSchema_DuplicateRequired tests that required fields aren't duplicated.
 func TestEnhanceSchema_DuplicateRequired(t *testing.T) {
 	type User struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	parseTagFunc := func(tag reflect.StructTag) map[string]string {
-		pedantigoTag := tag.Get("pedantigo")
+		pedantigoTag := tag.Get("validate")
 		if pedantigoTag == "" {
 			return nil
 		}

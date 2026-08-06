@@ -20,9 +20,9 @@ import (
 )
 
 type User struct {
-    Name  string `json:"name" pedantigo:"required,min=2,max=50"`
-    Email string `json:"email" pedantigo:"required,email"`
-    Age   int    `json:"age" pedantigo:"min=18,max=120"`
+    Name  string `json:"name" validate:"required,min=2,max=50"`
+    Email string `json:"email" validate:"required,email"`
+    Age   int    `json:"age" validate:"min=18,max=120"`
 }
 
 func main() {
@@ -80,12 +80,12 @@ Use `SchemaLLM()` / `SchemaJSONLLM()` for LLM integrations. Both `$schema` and `
 
 ```go
 type Address struct {
-    Street string `json:"street" pedantigo:"required"`
-    City   string `json:"city" pedantigo:"required"`
+    Street string `json:"street" validate:"required"`
+    City   string `json:"city" validate:"required"`
 }
 
 type User struct {
-    Name    string  `json:"name" pedantigo:"required"`
+    Name    string  `json:"name" validate:"required"`
     Address Address `json:"address"`
 }
 
@@ -194,7 +194,7 @@ func SchemaOpenAPI[T any]() *jsonschema.Schema
 **Example**:
 ```go
 type APIResponse struct {
-    Success bool   `json:"success" pedantigo:"required"`
+    Success bool   `json:"success" validate:"required"`
     Data    *User  `json:"data"`        // nullable
     Message string `json:"message,omitempty"`
 }
@@ -249,8 +249,8 @@ func SchemaLLM[T any]() *jsonschema.Schema
 **Example**:
 ```go
 type ToolArgs struct {
-    Query  string `json:"query" pedantigo:"required,min=1,description=Search query"`
-    Limit  int    `json:"limit" pedantigo:"min=1,max=100,description=Max results"`
+    Query  string `json:"query" validate:"required,min=1,description=Search query"`
+    Limit  int    `json:"limit" validate:"min=1,max=100,description=Max results"`
 }
 
 // Get schema for LLM function calling
@@ -274,8 +274,8 @@ func SchemaJSONLLM[T any]() ([]byte, error)
 **Example**:
 ```go
 type FunctionResponse struct {
-    Thought string `json:"thought" pedantigo:"required,description=Chain of thought"`
-    Action  string `json:"action" pedantigo:"required,oneof=search respond,description=Action to take"`
+    Thought string `json:"thought" validate:"required,description=Chain of thought"`
+    Action  string `json:"action" validate:"required,oneof=search respond,description=Action to take"`
 }
 
 schemaBytes, err := pedantigo.SchemaJSONLLM[FunctionResponse]()
@@ -353,37 +353,37 @@ Pedantigo validation constraints are automatically mapped to JSON Schema keyword
 
 | Constraint | JSON Schema | Description | Example |
 |-----------|-----------|-------------|---------|
-| `required` | `required: [...]` | Field is required | `pedantigo:"required"` |
-| `min` | `minimum` / `minLength` | Numeric min or string length | `pedantigo:"min=18"` |
-| `max` | `maximum` / `maxLength` | Numeric max or string length | `pedantigo:"max=100"` |
-| `gt` | `exclusiveMinimum` | Greater than (numeric) | `pedantigo:"gt=0"` |
-| `gte` | `minimum` | Greater than or equal | `pedantigo:"gte=1"` |
-| `lt` | `exclusiveMaximum` | Less than (numeric) | `pedantigo:"lt=100"` |
-| `lte` | `maximum` | Less than or equal | `pedantigo:"lte=99"` |
-| `len` | `minLength=X, maxLength=X` | Exact string/array length | `pedantigo:"len=32"` |
-| `oneof` / `enum` | `enum: [...]` | Must be one of values | `pedantigo:"oneof=draft published archived"` |
+| `required` | `required: [...]` | Field is required | `validate:"required"` |
+| `min` | `minimum` / `minLength` | Numeric min or string length | `validate:"min=18"` |
+| `max` | `maximum` / `maxLength` | Numeric max or string length | `validate:"max=100"` |
+| `gt` | `exclusiveMinimum` | Greater than (numeric) | `validate:"gt=0"` |
+| `gte` | `minimum` | Greater than or equal | `validate:"gte=1"` |
+| `lt` | `exclusiveMaximum` | Less than (numeric) | `validate:"lt=100"` |
+| `lte` | `maximum` | Less than or equal | `validate:"lte=99"` |
+| `len` | `minLength=X, maxLength=X` | Exact string/array length | `validate:"len=32"` |
+| `oneof` / `enum` | `enum: [...]` | Must be one of values | `validate:"oneof=draft published archived"` |
 
 ### String Constraints
 
 | Constraint | JSON Schema | Example |
 |-----------|-----------|---------|
-| `minLength` | `minLength` | `pedantigo:"minLength=3"` |
-| `maxLength` | `maxLength` | `pedantigo:"maxLength=255"` |
-| `pattern` | `pattern` | `pedantigo:"pattern=^[a-z]+$"` |
-| `email` | `format: "email"` | `pedantigo:"email"` |
-| `url` | `format: "uri"` | `pedantigo:"url"` |
-| `uuid` | `format: "uuid"` | `pedantigo:"uuid"` |
-| `lowercase` | `pattern` (enforced) | `pedantigo:"lowercase"` |
-| `uppercase` | `pattern` (enforced) | `pedantigo:"uppercase"` |
+| `minLength` | `minLength` | `validate:"minLength=3"` |
+| `maxLength` | `maxLength` | `validate:"maxLength=255"` |
+| `pattern` | `pattern` | `validate:"pattern=^[a-z]+$"` |
+| `email` | `format: "email"` | `validate:"email"` |
+| `url` | `format: "uri"` | `validate:"url"` |
+| `uuid` | `format: "uuid"` | `validate:"uuid"` |
+| `lowercase` | `pattern` (enforced) | `validate:"lowercase"` |
+| `uppercase` | `pattern` (enforced) | `validate:"uppercase"` |
 
 ### Numeric Constraints
 
 | Constraint | JSON Schema | Example |
 |-----------|-----------|---------|
-| `positive` | `exclusiveMinimum: 0` | `pedantigo:"positive"` |
-| `negative` | `exclusiveMaximum: 0` | `pedantigo:"negative"` |
-| `multiple_of` | `multipleOf` | `pedantigo:"multiple_of=5"` |
-| `decimal_places` | Custom format | `pedantigo:"decimal_places=2"` |
+| `positive` | `exclusiveMinimum: 0` | `validate:"positive"` |
+| `negative` | `exclusiveMaximum: 0` | `validate:"negative"` |
+| `multiple_of` | `multipleOf` | `validate:"multiple_of=5"` |
+| `decimal_places` | Custom format | `validate:"decimal_places=2"` |
 
 ### Format Constraints
 
@@ -391,22 +391,22 @@ All standard formats map to `format` keyword:
 
 | Constraint | Format Value | Example |
 |-----------|-------------|---------|
-| `email` | `"email"` | `pedantigo:"email"` |
-| `ipv4` | `"ipv4"` | `pedantigo:"ipv4"` |
-| `ipv6` | `"ipv6"` | `pedantigo:"ipv6"` |
-| `hostname` | `"hostname"` | `pedantigo:"hostname"` |
-| `fqdn` | `"fqdn"` | `pedantigo:"fqdn"` |
-| `port` | `"port"` | `pedantigo:"port"` |
-| `jwt` | `"jwt"` | `pedantigo:"jwt"` |
-| `semver` | `"semver"` | `pedantigo:"semver"` |
+| `email` | `"email"` | `validate:"email"` |
+| `ipv4` | `"ipv4"` | `validate:"ipv4"` |
+| `ipv6` | `"ipv6"` | `validate:"ipv6"` |
+| `hostname` | `"hostname"` | `validate:"hostname"` |
+| `fqdn` | `"fqdn"` | `validate:"fqdn"` |
+| `port` | `"port"` | `validate:"port"` |
+| `jwt` | `"jwt"` | `validate:"jwt"` |
+| `semver` | `"semver"` | `validate:"semver"` |
 
 ### Collection Constraints
 
 | Constraint | JSON Schema | Example |
 |-----------|-----------|---------|
-| `minItems` | `minItems` | `pedantigo:"minItems=1"` |
-| `maxItems` | `maxItems` | `pedantigo:"maxItems=100"` |
-| `unique` | `uniqueItems: true` | `pedantigo:"unique"` |
+| `minItems` | `minItems` | `validate:"minItems=1"` |
+| `maxItems` | `maxItems` | `validate:"maxItems=100"` |
+| `unique` | `uniqueItems: true` | `validate:"unique"` |
 
 ## Schema Metadata Tags
 
@@ -418,7 +418,7 @@ Set the schema title for a field:
 
 ```go
 type User struct {
-    Name string `json:"name" pedantigo:"required,title=Full Name"`
+    Name string `json:"name" validate:"required,title=Full Name"`
 }
 ```
 
@@ -441,8 +441,8 @@ Add field description (appears in API docs, forms, etc.):
 
 ```go
 type User struct {
-    Email string `json:"email" pedantigo:"required,email,description=User's primary email address"`
-    Age   int    `json:"age" pedantigo:"min=0,max=150,description=Age in years (0-150)"`
+    Email string `json:"email" validate:"required,email,description=User's primary email address"`
+    Age   int    `json:"age" validate:"min=0,max=150,description=Age in years (0-150)"`
 }
 ```
 
@@ -471,9 +471,9 @@ Provide example values in the schema using a JSON array literal:
 
 ```go
 type Product struct {
-    Name     string  `json:"name" pedantigo:"required,examples=[\"Laptop\",\"Monitor\",\"Keyboard\"]"`
-    Price    float64 `json:"price" pedantigo:"gt=0,examples=[99.99,299.99,1999.99]"`
-    Discount float64 `json:"discount" pedantigo:"min=0,max=100,examples=[10,25,50]"`
+    Name     string  `json:"name" validate:"required,examples=[\"Laptop\",\"Monitor\",\"Keyboard\"]"`
+    Price    float64 `json:"price" validate:"gt=0,examples=[99.99,299.99,1999.99]"`
+    Discount float64 `json:"discount" validate:"min=0,max=100,examples=[10,25,50]"`
 }
 ```
 
@@ -481,16 +481,16 @@ type Product struct {
 
 ```go
 // String examples
-Name string `pedantigo:"examples=[\"Alice\",\"Bob\"]"`
+Name string `validate:"examples=[\"Alice\",\"Bob\"]"`
 
 // Integer examples
-Age int `pedantigo:"examples=[18,25,42]"`
+Age int `validate:"examples=[18,25,42]"`
 
 // Float examples
-Score float64 `pedantigo:"examples=[0.5,0.75,1.0]"`
+Score float64 `validate:"examples=[0.5,0.75,1.0]"`
 
 // Nested array examples (e.g. for [][]int fields)
-Pairs [][]int `pedantigo:"examples=[[0,1],[2,3],[4,5]]"`
+Pairs [][]int `validate:"examples=[[0,1],[2,3],[4,5]]"`
 ```
 
 :::note Breaking change
@@ -521,10 +521,10 @@ Mark fields as deprecated:
 
 ```go
 type User struct {
-    Name     string `json:"name" pedantigo:"required"`
-    OldEmail string `json:"old_email" pedantigo:"email,deprecated"`
+    Name     string `json:"name" validate:"required"`
+    OldEmail string `json:"old_email" validate:"email,deprecated"`
     // or with message:
-    LegacyID int `json:"legacy_id" pedantigo:"deprecated=Use 'id' field instead"`
+    LegacyID int `json:"legacy_id" validate:"deprecated=Use 'id' field instead"`
 }
 ```
 
@@ -560,28 +560,28 @@ import (
 
 type CreateUserRequest struct {
     // Basic fields with constraints
-    Name string `json:"name" pedantigo:"required,min=2,max=100,title=Full Name,description=User's full name"`
+    Name string `json:"name" validate:"required,min=2,max=100,title=Full Name,description=User's full name"`
 
     // Email with format constraint
-    Email string `json:"email" pedantigo:"required,email,description=Primary email address"`
+    Email string `json:"email" validate:"required,email,description=Primary email address"`
 
     // Numeric with range
-    Age int `json:"age" pedantigo:"min=18,max=120,description=Age in years"`
+    Age int `json:"age" validate:"min=18,max=120,description=Age in years"`
 
     // Enum field
-    Status string `json:"status" pedantigo:"required,oneof=active inactive suspended,description=Account status"`
+    Status string `json:"status" validate:"required,oneof=active inactive suspended,description=Account status"`
 
     // Optional field with description
-    Bio string `json:"bio,omitempty" pedantigo:"maxLength=500,description=User biography"`
+    Bio string `json:"bio,omitempty" validate:"maxLength=500,description=User biography"`
 
     // Tags/roles array
-    Tags []string `json:"tags,omitempty" pedantigo:"maxItems=10,unique,description=User interests and skills"`
+    Tags []string `json:"tags,omitempty" validate:"maxItems=10,unique,description=User interests and skills"`
 
     // URL field
-    Website string `json:"website,omitempty" pedantigo:"url,description=User's personal website"`
+    Website string `json:"website,omitempty" validate:"url,description=User's personal website"`
 
     // Deprecated field
-    OldUsername string `json:"old_username,omitempty" pedantigo:"deprecated=Use 'name' instead"`
+    OldUsername string `json:"old_username,omitempty" validate:"deprecated=Use 'name' instead"`
 }
 
 func main() {
@@ -659,14 +659,14 @@ Nested structs are automatically inlined in the default schema mode:
 
 ```go
 type Address struct {
-    Street string `json:"street" pedantigo:"required"`
-    City   string `json:"city" pedantigo:"required"`
-    Zip    string `json:"zip" pedantigo:"required,len=5"`
+    Street string `json:"street" validate:"required"`
+    City   string `json:"city" validate:"required"`
+    Zip    string `json:"zip" validate:"required,len=5"`
 }
 
 type User struct {
-    Name    string  `json:"name" pedantigo:"required"`
-    Address Address `json:"address" pedantigo:"required"`
+    Name    string  `json:"name" validate:"required"`
+    Address Address `json:"address" validate:"required"`
 }
 
 schema := pedantigo.Schema[User]()
@@ -706,9 +706,9 @@ Generate OpenAPI/Swagger specs automatically:
 
 ```go
 type CreatePostRequest struct {
-    Title   string `json:"title" pedantigo:"required,min=5,max=200,description=Post title"`
-    Content string `json:"content" pedantigo:"required,min=10,max=10000,description=Post content"`
-    Tags    []string `json:"tags" pedantigo:"maxItems=10,unique,description=Post tags"`
+    Title   string `json:"title" validate:"required,min=5,max=200,description=Post title"`
+    Content string `json:"content" validate:"required,min=10,max=10000,description=Post content"`
+    Tags    []string `json:"tags" validate:"maxItems=10,unique,description=Post tags"`
 }
 
 schema := pedantigo.SchemaJSONOpenAPI[CreatePostRequest]()
@@ -737,10 +737,10 @@ Provide schema to LLMs for structured generation:
 
 ```go
 type TranslationResult struct {
-    Original string `json:"original" pedantigo:"required,description=Original text"`
-    Translated string `json:"translated" pedantigo:"required,description=Translated text"`
-    Language string `json:"language" pedantigo:"required,oneof=en es fr de,description=Target language code"`
-    Confidence float64 `json:"confidence" pedantigo:"min=0,max=1,description=Translation confidence 0-1"`
+    Original string `json:"original" validate:"required,description=Original text"`
+    Translated string `json:"translated" validate:"required,description=Translated text"`
+    Language string `json:"language" validate:"required,oneof=en es fr de,description=Target language code"`
+    Confidence float64 `json:"confidence" validate:"min=0,max=1,description=Translation confidence 0-1"`
 }
 
 schema := pedantigo.SchemaJSON[TranslationResult]()

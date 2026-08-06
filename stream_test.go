@@ -10,9 +10,9 @@ import (
 
 // StreamTestUser is a test struct for streaming tests.
 type StreamTestUser struct {
-	Name  string `json:"name" pedantigo:"required"`
-	Email string `json:"email" pedantigo:"email"`
-	Age   int    `json:"age" pedantigo:"min=0"`
+	Name  string `json:"name" validate:"required"`
+	Email string `json:"email" validate:"email"`
+	Age   int    `json:"age" validate:"min=0"`
 }
 
 // NestedStreamTest is a test struct with nested fields.
@@ -23,8 +23,8 @@ type NestedStreamTest struct {
 
 // Address is a nested struct for testing.
 type Address struct {
-	Street string `json:"street" pedantigo:"required"`
-	City   string `json:"city" pedantigo:"required"`
+	Street string `json:"street" validate:"required"`
+	City   string `json:"city" validate:"required"`
 }
 
 // ==================== Parser Creation Tests ====================

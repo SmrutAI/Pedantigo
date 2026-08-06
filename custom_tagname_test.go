@@ -12,18 +12,18 @@ import (
 // Integration Tests for Custom Tag Name Support
 // ============================================================================
 
-// TestCustomTagName_PlaygroundCompatibility tests using "validate" tags
+// TestCustomTagName_PlaygroundCompatibility tests using "custom_validate" tags
 // like go-playground/validator for seamless migration.
 func TestCustomTagName_PlaygroundCompatibility(t *testing.T) {
 	resetTagNameForTesting()
 	resetValidatorCreatedForTesting()
 
-	// Set global tag name to "validate" (playground compatible)
-	SetTagName("validate")
+	// Set global tag name to "custom_validate" (playground compatible)
+	SetTagName("custom_validate")
 
 	type User struct {
-		Email string `json:"email" validate:"required,email"`
-		Age   int    `json:"age" validate:"min=18,max=120"`
+		Email string `json:"email" custom_validate:"required,email"`
+		Age   int    `json:"age" custom_validate:"min=18,max=120"`
 	}
 
 	v := New[User]()
@@ -54,12 +54,12 @@ func TestCustomTagName_InstanceOverridesGlobal(t *testing.T) {
 	resetTagNameForTesting()
 	resetValidatorCreatedForTesting()
 
-	// Set global to "validate"
-	SetTagName("validate")
+	// Set global to "custom_validate"
+	SetTagName("custom_validate")
 
 	type Data struct {
-		// Has both validate and custom tags with different constraints
-		Value string `json:"value" validate:"required" custom:"min=5"`
+		// Has both custom_validate and custom tags with different constraints
+		Value string `json:"value" custom_validate:"required" custom:"min=5"`
 	}
 
 	// Create validator with custom tag name override
@@ -80,13 +80,13 @@ func TestCustomTagName_InstanceOverridesGlobal(t *testing.T) {
 	resetValidatorCreatedForTesting()
 }
 
-// TestCustomTagName_DefaultIsPedantigo verifies default tag is "pedantigo".
-func TestCustomTagName_DefaultIsPedantigo(t *testing.T) {
+// TestCustomTagName_DefaultIsValidate verifies default tag is "validate".
+func TestCustomTagName_DefaultIsValidate(t *testing.T) {
 	resetTagNameForTesting()
 	resetValidatorCreatedForTesting()
 
 	type User struct {
-		Name string `json:"name" pedantigo:"required,min=2"`
+		Name string `json:"name" validate:"required,min=2"`
 	}
 
 	v := New[User]()
@@ -142,10 +142,10 @@ func TestCustomTagName_DiveWithCustomTag(t *testing.T) {
 	resetTagNameForTesting()
 	resetValidatorCreatedForTesting()
 
-	SetTagName("validate")
+	SetTagName("custom_validate")
 
 	type EmailList struct {
-		Emails []string `json:"emails" validate:"min=1,dive,email"`
+		Emails []string `json:"emails" custom_validate:"min=1,dive,email"`
 	}
 
 	v := New[EmailList]()
@@ -169,15 +169,15 @@ func TestCustomTagName_NestedStructs(t *testing.T) {
 	resetTagNameForTesting()
 	resetValidatorCreatedForTesting()
 
-	SetTagName("validate")
+	SetTagName("custom_validate")
 
 	type Address struct {
-		City    string `json:"city" validate:"required"`
-		ZipCode string `json:"zip_code" validate:"len=5"`
+		City    string `json:"city" custom_validate:"required"`
+		ZipCode string `json:"zip_code" custom_validate:"len=5"`
 	}
 
 	type Person struct {
-		Name    string  `json:"name" validate:"required"`
+		Name    string  `json:"name" custom_validate:"required"`
 		Address Address `json:"address"`
 	}
 
@@ -203,10 +203,10 @@ func TestCustomTagName_Validate(t *testing.T) {
 	resetTagNameForTesting()
 	resetValidatorCreatedForTesting()
 
-	SetTagName("validate")
+	SetTagName("custom_validate")
 
 	type User struct {
-		Email string `json:"email" validate:"required,email"`
+		Email string `json:"email" custom_validate:"required,email"`
 	}
 
 	v := New[User]()
@@ -231,17 +231,17 @@ func TestCustomTagName_Schema(t *testing.T) {
 	resetTagNameForTesting()
 	resetValidatorCreatedForTesting()
 
-	SetTagName("validate")
+	SetTagName("custom_validate")
 
 	type Product struct {
-		Name  string `json:"name" validate:"required,min=1,max=100"`
-		Price int    `json:"price" validate:"min=0"`
+		Name  string `json:"name" custom_validate:"required,min=1,max=100"`
+		Price int    `json:"price" custom_validate:"min=0"`
 	}
 
 	v := New[Product]()
 	schema := v.Schema()
 
-	// Schema should include constraints from the "validate" tag
+	// Schema should include constraints from the "custom_validate" tag
 	require.NotNil(t, schema)
 	require.NotNil(t, schema.Properties)
 
@@ -265,14 +265,14 @@ func TestCustomTagName_UnionValidator(t *testing.T) {
 	resetTagNameForTesting()
 	resetValidatorCreatedForTesting()
 
-	SetTagName("validate")
+	SetTagName("custom_validate")
 
 	type Cat struct {
-		Name  string `json:"name" validate:"required"`
-		Lives int    `json:"lives" validate:"min=1,max=9"`
+		Name  string `json:"name" custom_validate:"required"`
+		Lives int    `json:"lives" custom_validate:"min=1,max=9"`
 	}
 	type Dog struct {
-		Name  string `json:"name" validate:"required"`
+		Name  string `json:"name" custom_validate:"required"`
 		Breed string `json:"breed"`
 	}
 
@@ -303,11 +303,11 @@ func TestCustomTagName_UnionSchema(t *testing.T) {
 	resetTagNameForTesting()
 	resetValidatorCreatedForTesting()
 
-	SetTagName("validate")
+	SetTagName("custom_validate")
 
 	type Cat struct {
-		Name  string `json:"name" validate:"required,min=2"`
-		Lives int    `json:"lives" validate:"min=1,max=9"`
+		Name  string `json:"name" custom_validate:"required,min=2"`
+		Lives int    `json:"lives" custom_validate:"min=1,max=9"`
 	}
 
 	v, err := NewUnion[any](UnionOptions{
@@ -335,11 +335,11 @@ func TestCustomTagName_SchemaOpenAPI(t *testing.T) {
 	resetTagNameForTesting()
 	resetValidatorCreatedForTesting()
 
-	SetTagName("validate")
+	SetTagName("custom_validate")
 
 	type Product struct {
-		Name  string `json:"name" validate:"required,min=1,max=100"`
-		Price int    `json:"price" validate:"min=0"`
+		Name  string `json:"name" custom_validate:"required,min=1,max=100"`
+		Price int    `json:"price" custom_validate:"min=0"`
 	}
 
 	v := New[Product]()
@@ -360,10 +360,10 @@ func TestCustomTagName_SchemaJSON(t *testing.T) {
 	resetTagNameForTesting()
 	resetValidatorCreatedForTesting()
 
-	SetTagName("validate")
+	SetTagName("custom_validate")
 
 	type User struct {
-		Email string `json:"email" validate:"required,email"`
+		Email string `json:"email" custom_validate:"required,email"`
 	}
 
 	v := New[User]()
@@ -383,12 +383,12 @@ func TestCustomTagName_MarshalWithOptions(t *testing.T) {
 	resetTagNameForTesting()
 	resetValidatorCreatedForTesting()
 
-	SetTagName("validate")
+	SetTagName("custom_validate")
 
 	type User struct {
 		ID       int    `json:"id"`
 		Name     string `json:"name"`
-		Password string `json:"password" validate:"exclude:api"`
+		Password string `json:"password" custom_validate:"exclude:api"`
 	}
 
 	v := New[User]()
@@ -409,11 +409,11 @@ func TestCustomTagName_InstanceOverride_Schema(t *testing.T) {
 	resetTagNameForTesting()
 	resetValidatorCreatedForTesting()
 
-	SetTagName("validate") // Global is "validate"
+	SetTagName("custom_validate") // Global is "custom_validate"
 
 	type Data struct {
 		// Has different constraints in different tags
-		Value string `json:"value" validate:"min=10" custom:"min=5"`
+		Value string `json:"value" custom_validate:"min=10" custom:"min=5"`
 	}
 
 	// Use instance override to "custom"
@@ -422,7 +422,7 @@ func TestCustomTagName_InstanceOverride_Schema(t *testing.T) {
 
 	valueSchema, ok := schema.Properties.Get("value")
 	require.True(t, ok)
-	// Should be min=5 from "custom" tag, not min=10 from "validate" tag
+	// Should be min=5 from "custom" tag, not min=10 from "custom_validate" tag
 	assert.Equal(t, uint64(5), *valueSchema.MinLength)
 
 	resetTagNameForTesting()

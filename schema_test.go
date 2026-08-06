@@ -50,11 +50,11 @@ func TestSchema_TypeMapping(t *testing.T) {
 			name: "nested struct",
 			setup: func() (interface{}, *jsonschema.Schema) {
 				type Address struct {
-					City string `json:"city" pedantigo:"required"`
-					Zip  string `json:"zip" pedantigo:"min=5"`
+					City string `json:"city" validate:"required"`
+					Zip  string `json:"zip" validate:"min=5"`
 				}
 				type User struct {
-					Name    string  `json:"name" pedantigo:"required"`
+					Name    string  `json:"name" validate:"required"`
 					Address Address `json:"address"`
 				}
 				v := New[User]()
@@ -82,8 +82,8 @@ func TestSchema_TypeMapping(t *testing.T) {
 			name: "slice with item constraints",
 			setup: func() (interface{}, *jsonschema.Schema) {
 				type Config struct {
-					Tags   []string `json:"tags" pedantigo:"min=3"`
-					Admins []string `json:"admins" pedantigo:"email"`
+					Tags   []string `json:"tags" validate:"min=3"`
+					Admins []string `json:"admins" validate:"email"`
 				}
 				v := New[Config]()
 				return v, nil
@@ -107,8 +107,8 @@ func TestSchema_TypeMapping(t *testing.T) {
 			name: "map with value constraints",
 			setup: func() (interface{}, *jsonschema.Schema) {
 				type Config struct {
-					Settings map[string]string `json:"settings" pedantigo:"min=3"`
-					Contacts map[string]string `json:"contacts" pedantigo:"email"`
+					Settings map[string]string `json:"settings" validate:"min=3"`
+					Contacts map[string]string `json:"contacts" validate:"email"`
 				}
 				v := New[Config]()
 				return v, nil
@@ -156,8 +156,8 @@ func TestSchema_Constraints(t *testing.T) {
 			name: "required fields",
 			setup: func() interface{} {
 				type User struct {
-					Name  string `json:"name" pedantigo:"required"`
-					Email string `json:"email" pedantigo:"required"`
+					Name  string `json:"name" validate:"required"`
+					Email string `json:"email" validate:"required"`
 					Age   int    `json:"age"`
 				}
 				return New[User]()
@@ -176,9 +176,9 @@ func TestSchema_Constraints(t *testing.T) {
 			name: "numeric constraints (gt/lt/gte/lte/min/max)",
 			setup: func() interface{} {
 				type Product struct {
-					Price    float64 `json:"price" pedantigo:"gt=0,lt=10000"`
-					Stock    int     `json:"stock" pedantigo:"gte=0,lte=1000"`
-					Discount int     `json:"discount" pedantigo:"min=0,max=100"`
+					Price    float64 `json:"price" validate:"gt=0,lt=10000"`
+					Stock    int     `json:"stock" validate:"gte=0,lte=1000"`
+					Discount int     `json:"discount" validate:"min=0,max=100"`
 				}
 				return New[Product]()
 			},
@@ -200,8 +200,8 @@ func TestSchema_Constraints(t *testing.T) {
 			name: "string length constraints (min/max)",
 			setup: func() interface{} {
 				type User struct {
-					Username string `json:"username" pedantigo:"min=3,max=20"`
-					Bio      string `json:"bio" pedantigo:"max=500"`
+					Username string `json:"username" validate:"min=3,max=20"`
+					Bio      string `json:"bio" validate:"max=500"`
 				}
 				return New[User]()
 			},
@@ -221,11 +221,11 @@ func TestSchema_Constraints(t *testing.T) {
 			name: "format constraints (email, url, uuid, ipv4, ipv6)",
 			setup: func() interface{} {
 				type Contact struct {
-					Email    string `json:"email" pedantigo:"email"`
-					Website  string `json:"website" pedantigo:"url"`
-					ID       string `json:"id" pedantigo:"uuid"`
-					IPv4Addr string `json:"ipv4" pedantigo:"ipv4"`
-					IPv6Addr string `json:"ipv6" pedantigo:"ipv6"`
+					Email    string `json:"email" validate:"email"`
+					Website  string `json:"website" validate:"url"`
+					ID       string `json:"id" validate:"uuid"`
+					IPv4Addr string `json:"ipv4" validate:"ipv4"`
+					IPv6Addr string `json:"ipv6" validate:"ipv6"`
 				}
 				return New[Contact]()
 			},
@@ -251,7 +251,7 @@ func TestSchema_Constraints(t *testing.T) {
 			name: "regex pattern constraint",
 			setup: func() interface{} {
 				type Code struct {
-					ZipCode string `json:"zipCode" pedantigo:"regexp=^[0-9]{5}$"`
+					ZipCode string `json:"zipCode" validate:"regexp=^[0-9]{5}$"`
 				}
 				return New[Code]()
 			},
@@ -264,9 +264,9 @@ func TestSchema_Constraints(t *testing.T) {
 			name: "default values (int, string, bool)",
 			setup: func() interface{} {
 				type Config struct {
-					Port    int    `json:"port" pedantigo:"default=8080"`
-					Host    string `json:"host" pedantigo:"default=localhost"`
-					Enabled bool   `json:"enabled" pedantigo:"default=true"`
+					Port    int    `json:"port" validate:"default=8080"`
+					Host    string `json:"host" validate:"default=localhost"`
+					Enabled bool   `json:"enabled" validate:"default=true"`
 				}
 				return New[Config]()
 			},
@@ -315,9 +315,9 @@ func TestSchemaJSON_Serialization(t *testing.T) {
 			name: "SchemaJSON produces valid JSON",
 			setup: func() interface{} {
 				type User struct {
-					Name  string `json:"name" pedantigo:"required,min=3"`
-					Email string `json:"email" pedantigo:"required,email"`
-					Age   int    `json:"age" pedantigo:"gte=18,lte=120"`
+					Name  string `json:"name" validate:"required,min=3"`
+					Email string `json:"email" validate:"required,email"`
+					Age   int    `json:"age" validate:"gte=18,lte=120"`
 				}
 				return New[User]()
 			},
@@ -352,12 +352,12 @@ func TestSchemaJSON_Serialization(t *testing.T) {
 			name: "SchemaJSONOpenAPI with nested references and $defs",
 			setup: func() interface{} {
 				type Address struct {
-					City string `json:"city" pedantigo:"required"`
-					Zip  string `json:"zip" pedantigo:"min=5"`
+					City string `json:"city" validate:"required"`
+					Zip  string `json:"zip" validate:"min=5"`
 				}
 				type User struct {
-					Name    string  `json:"name" pedantigo:"required,min=3"`
-					Address Address `json:"address" pedantigo:"required"`
+					Name    string  `json:"name" validate:"required,min=3"`
+					Address Address `json:"address" validate:"required"`
 				}
 				return New[User]()
 			},
@@ -413,12 +413,12 @@ func TestSchemaJSON_Serialization(t *testing.T) {
 			name: "SchemaOpenAPI returns nested definitions with constraints",
 			setup: func() interface{} {
 				type Contact struct {
-					Email string `json:"email" pedantigo:"required,email"`
-					Phone string `json:"phone" pedantigo:"min=10"`
+					Email string `json:"email" validate:"required,email"`
+					Phone string `json:"phone" validate:"min=10"`
 				}
 				type Company struct {
-					Name    string  `json:"name" pedantigo:"required,min=3"`
-					Contact Contact `json:"contact" pedantigo:"required"`
+					Name    string  `json:"name" validate:"required,min=3"`
+					Contact Contact `json:"contact" validate:"required"`
 				}
 				return New[Company]()
 			},
@@ -478,8 +478,8 @@ func TestSchema_Caching(t *testing.T) {
 			name: "Schema() caches pointer on repeated calls",
 			setup: func() interface{} {
 				type Product struct {
-					Name  string  `json:"name" pedantigo:"required,min=3"`
-					Price float64 `json:"price" pedantigo:"gt=0"`
+					Name  string  `json:"name" validate:"required,min=3"`
+					Price float64 `json:"price" validate:"gt=0"`
 				}
 				return New[Product]()
 			},
@@ -496,8 +496,8 @@ func TestSchema_Caching(t *testing.T) {
 			name: "SchemaJSON() caches bytes on repeated calls",
 			setup: func() interface{} {
 				type Config struct {
-					Host string `json:"host" pedantigo:"required,min=1"`
-					Port int    `json:"port" pedantigo:"gt=0,lt=65536"`
+					Host string `json:"host" validate:"required,min=1"`
+					Port int    `json:"port" validate:"gt=0,lt=65536"`
 				}
 				return New[Config]()
 			},
@@ -516,8 +516,8 @@ func TestSchema_Caching(t *testing.T) {
 			name: "SchemaOpenAPI() caches pointer on repeated calls",
 			setup: func() interface{} {
 				type Item struct {
-					ID    string `json:"id" pedantigo:"required,uuid"`
-					Title string `json:"title" pedantigo:"required,min=5"`
+					ID    string `json:"id" validate:"required,uuid"`
+					Title string `json:"title" validate:"required,min=5"`
 				}
 				return New[Item]()
 			},
@@ -534,8 +534,8 @@ func TestSchema_Caching(t *testing.T) {
 			name: "SchemaJSONOpenAPI() caches bytes on repeated calls",
 			setup: func() interface{} {
 				type Event struct {
-					Name      string `json:"name" pedantigo:"required,min=1"`
-					Timestamp int64  `json:"timestamp" pedantigo:"required,gte=0"`
+					Name      string `json:"name" validate:"required,min=1"`
+					Timestamp int64  `json:"timestamp" validate:"required,gte=0"`
 				}
 				return New[Event]()
 			},
@@ -554,10 +554,10 @@ func TestSchema_Caching(t *testing.T) {
 			name: "independent validators have independent caches",
 			setup: func() interface{} {
 				type Cat struct {
-					Name string `json:"name" pedantigo:"required"`
+					Name string `json:"name" validate:"required"`
 				}
 				type Dog struct {
-					Name string `json:"name" pedantigo:"required"`
+					Name string `json:"name" validate:"required"`
 				}
 				// Return tuple of two validators
 				return struct {
@@ -603,8 +603,8 @@ func TestSchema_ConcurrencySafe(t *testing.T) {
 			name: "Schema() is thread-safe with 100 concurrent goroutines",
 			setup: func() interface{} {
 				type User struct {
-					Name  string `json:"name" pedantigo:"required"`
-					Email string `json:"email" pedantigo:"required,email"`
+					Name  string `json:"name" validate:"required"`
+					Email string `json:"email" validate:"required,email"`
 				}
 				return New[User]()
 			},
@@ -643,8 +643,8 @@ func TestSchema_ConcurrencySafe(t *testing.T) {
 			name: "SchemaJSON() is thread-safe with 100 concurrent goroutines",
 			setup: func() interface{} {
 				type Settings struct {
-					Timeout int `json:"timeout" pedantigo:"gt=0,lt=60000"`
-					Retries int `json:"retries" pedantigo:"gte=0,lte=10"`
+					Timeout int `json:"timeout" validate:"gt=0,lt=60000"`
+					Retries int `json:"retries" validate:"gte=0,lte=10"`
 				}
 				return New[Settings]()
 			},
@@ -713,13 +713,13 @@ func bytesEqual(a, b []byte) bool {
 // TestSchemaOpenAPI_SliceOfStructs tests SchemaOpenAPI sliceofstructs.
 func TestSchemaOpenAPI_SliceOfStructs(t *testing.T) {
 	type Author struct {
-		Name  string `json:"name" pedantigo:"required,min=2"`
-		Email string `json:"email" pedantigo:"email"`
+		Name  string `json:"name" validate:"required,min=2"`
+		Email string `json:"email" validate:"email"`
 	}
 
 	type Book struct {
-		Title   string   `json:"title" pedantigo:"required,min=1"`
-		Authors []Author `json:"authors" pedantigo:"required"`
+		Title   string   `json:"title" validate:"required,min=1"`
+		Authors []Author `json:"authors" validate:"required"`
 	}
 
 	validator := New[Book]()
@@ -754,12 +754,12 @@ func TestSchemaOpenAPI_SliceOfStructs(t *testing.T) {
 // TestSchemaOpenAPI_PointerSliceOfStructs tests SchemaOpenAPI pointersliceofstructs.
 func TestSchemaOpenAPI_PointerSliceOfStructs(t *testing.T) {
 	type Tag struct {
-		Name  string `json:"name" pedantigo:"required,min=1"`
-		Color string `json:"color" pedantigo:"regexp=^#[0-9a-fA-F]{6}$"`
+		Name  string `json:"name" validate:"required,min=1"`
+		Color string `json:"color" validate:"regexp=^#[0-9a-fA-F]{6}$"`
 	}
 
 	type Article struct {
-		Title string `json:"title" pedantigo:"required"`
+		Title string `json:"title" validate:"required"`
 		Tags  []*Tag `json:"tags"` // Pointer slice
 	}
 
@@ -781,12 +781,12 @@ func TestSchemaOpenAPI_PointerSliceOfStructs(t *testing.T) {
 // TestSchemaOpenAPI_MapOfStructs tests SchemaOpenAPI mapofstructs.
 func TestSchemaOpenAPI_MapOfStructs(t *testing.T) {
 	type Contact struct {
-		Email string `json:"email" pedantigo:"required,email"`
-		Phone string `json:"phone" pedantigo:"min=10,max=15"`
+		Email string `json:"email" validate:"required,email"`
+		Phone string `json:"phone" validate:"min=10,max=15"`
 	}
 
 	type Company struct {
-		Name     string             `json:"name" pedantigo:"required,min=1"`
+		Name     string             `json:"name" validate:"required,min=1"`
 		Contacts map[string]Contact `json:"contacts"`
 	}
 
@@ -822,13 +822,13 @@ func TestSchemaOpenAPI_MapOfStructs(t *testing.T) {
 // TestSchemaOpenAPI_PointerMapOfStructs tests SchemaOpenAPI pointermapofstructs.
 func TestSchemaOpenAPI_PointerMapOfStructs(t *testing.T) {
 	type Address struct {
-		Street  string `json:"street" pedantigo:"required,min=1"`
-		City    string `json:"city" pedantigo:"required,min=2"`
-		ZipCode string `json:"zipCode" pedantigo:"regexp=^[0-9]{5}$"`
+		Street  string `json:"street" validate:"required,min=1"`
+		City    string `json:"city" validate:"required,min=2"`
+		ZipCode string `json:"zipCode" validate:"regexp=^[0-9]{5}$"`
 	}
 
 	type Organization struct {
-		Name      string              `json:"name" pedantigo:"required"`
+		Name      string              `json:"name" validate:"required"`
 		Locations map[string]*Address `json:"locations"` // Pointer map values
 	}
 
@@ -855,16 +855,16 @@ func TestSchemaOpenAPI_PointerMapOfStructs(t *testing.T) {
 // TestSchemaOpenAPI_NestedStructInSlice tests SchemaOpenAPI nestedstructinslice.
 func TestSchemaOpenAPI_NestedStructInSlice(t *testing.T) {
 	type Permission struct {
-		Name string `json:"name" pedantigo:"required,min=1"`
+		Name string `json:"name" validate:"required,min=1"`
 	}
 
 	type Role struct {
-		Title       string       `json:"title" pedantigo:"required,min=1"`
+		Title       string       `json:"title" validate:"required,min=1"`
 		Permissions []Permission `json:"permissions"`
 	}
 
 	type User struct {
-		Username string `json:"username" pedantigo:"required,min=3"`
+		Username string `json:"username" validate:"required,min=3"`
 		Roles    []Role `json:"roles"`
 	}
 
@@ -896,17 +896,17 @@ func TestSchemaOpenAPI_NestedStructInSlice(t *testing.T) {
 // TestSchemaOpenAPI_NestedStructInMap tests SchemaOpenAPI nestedstructinmap.
 func TestSchemaOpenAPI_NestedStructInMap(t *testing.T) {
 	type Metadata struct {
-		Key   string `json:"key" pedantigo:"required,min=1"`
-		Value string `json:"value" pedantigo:"required"`
+		Key   string `json:"key" validate:"required,min=1"`
+		Value string `json:"value" validate:"required"`
 	}
 
 	type Resource struct {
-		Name     string              `json:"name" pedantigo:"required,min=1"`
+		Name     string              `json:"name" validate:"required,min=1"`
 		Metadata map[string]Metadata `json:"metadata"`
 	}
 
 	type Project struct {
-		Title     string              `json:"title" pedantigo:"required,min=1"`
+		Title     string              `json:"title" validate:"required,min=1"`
 		Resources map[string]Resource `json:"resources"`
 	}
 
@@ -936,13 +936,13 @@ func TestSchemaOpenAPI_NestedStructInMap(t *testing.T) {
 // TestSchemaOpenAPI_DirectTypeMatch tests findTypeForDefinition direct name matching.
 func TestSchemaOpenAPI_DirectTypeMatch(t *testing.T) {
 	type Address struct {
-		Street string `json:"street" pedantigo:"required"`
-		City   string `json:"city" pedantigo:"required,min=2"`
+		Street string `json:"street" validate:"required"`
+		City   string `json:"city" validate:"required,min=2"`
 	}
 
 	type Person struct {
-		Name    string  `json:"name" pedantigo:"required"`
-		Address Address `json:"address" pedantigo:"required"`
+		Name    string  `json:"name" validate:"required"`
+		Address Address `json:"address" validate:"required"`
 	}
 
 	validator := New[Person]()
@@ -965,12 +965,12 @@ func TestSchemaOpenAPI_DirectTypeMatch(t *testing.T) {
 // TestSchemaOpenAPI_PointerFieldType tests findTypeForDefinition with pointer field types.
 func TestSchemaOpenAPI_PointerFieldType(t *testing.T) {
 	type Config struct {
-		Key   string `json:"key" pedantigo:"required"`
-		Value string `json:"value" pedantigo:"min=1"`
+		Key   string `json:"key" validate:"required"`
+		Value string `json:"value" validate:"min=1"`
 	}
 
 	type Service struct {
-		Name   string  `json:"name" pedantigo:"required"`
+		Name   string  `json:"name" validate:"required"`
 		Config *Config `json:"config"` // Pointer to nested struct
 	}
 
@@ -994,16 +994,16 @@ func TestSchemaOpenAPI_PointerFieldType(t *testing.T) {
 // TestSchemaOpenAPI_DeeplyNestedStruct tests findTypeForDefinition recursive search.
 func TestSchemaOpenAPI_DeeplyNestedStruct(t *testing.T) {
 	type Level3 struct {
-		Data string `json:"data" pedantigo:"required,min=5"`
+		Data string `json:"data" validate:"required,min=5"`
 	}
 
 	type Level2 struct {
-		Info   string `json:"info" pedantigo:"required"`
+		Info   string `json:"info" validate:"required"`
 		Nested Level3 `json:"nested"`
 	}
 
 	type Level1 struct {
-		Title string `json:"title" pedantigo:"required"`
+		Title string `json:"title" validate:"required"`
 		Mid   Level2 `json:"mid"`
 	}
 
@@ -1027,19 +1027,19 @@ func TestSchemaOpenAPI_DeeplyNestedStruct(t *testing.T) {
 // TestSchemaOpenAPI_MixedNestedTypes tests all search paths together.
 func TestSchemaOpenAPI_MixedNestedTypes(t *testing.T) {
 	type Tag struct {
-		Name string `json:"name" pedantigo:"required,min=1"`
+		Name string `json:"name" validate:"required,min=1"`
 	}
 
 	type Metadata struct {
-		Key string `json:"key" pedantigo:"required"`
+		Key string `json:"key" validate:"required"`
 	}
 
 	type Comment struct {
-		Text string `json:"text" pedantigo:"required,min=3"`
+		Text string `json:"text" validate:"required,min=3"`
 	}
 
 	type Article struct {
-		Title    string              `json:"title" pedantigo:"required"`
+		Title    string              `json:"title" validate:"required"`
 		Tags     []Tag               `json:"tags"`     // Slice of structs
 		Meta     map[string]Metadata `json:"meta"`     // Map of structs
 		Comments []Comment           `json:"comments"` // Another slice
@@ -1071,8 +1071,8 @@ func TestSchemaOpenAPI_MixedNestedTypes(t *testing.T) {
 // TestSchemaJSON_Caching tests all caching paths in SchemaJSON.
 func TestSchemaJSON_Caching(t *testing.T) {
 	type Product struct {
-		Name  string `json:"name" pedantigo:"required,min=1"`
-		Price int    `json:"price" pedantigo:"gt=0"`
+		Name  string `json:"name" validate:"required,min=1"`
+		Price int    `json:"price" validate:"gt=0"`
 	}
 
 	t.Run("first call generates and caches", func(t *testing.T) {
@@ -1137,8 +1137,8 @@ func TestSchemaJSON_Caching(t *testing.T) {
 // TestSchemaJSONOpenAPI_CachingPaths tests all caching paths in SchemaJSONOpenAPI.
 func TestSchemaJSONOpenAPI_CachingPaths(t *testing.T) {
 	type Item struct {
-		Name  string `json:"name" pedantigo:"required,min=1"`
-		Value int    `json:"value" pedantigo:"gt=0"`
+		Name  string `json:"name" validate:"required,min=1"`
+		Value int    `json:"value" validate:"gt=0"`
 	}
 
 	t.Run("first call generates and caches both schema and JSON", func(t *testing.T) {
@@ -1259,8 +1259,8 @@ func TestSchemaJSON_DefinitionUnwrapping(t *testing.T) {
 	// This happens with certain struct configurations
 	// Config contains configuration settings
 	type Config struct {
-		Host string `json:"host" pedantigo:"required,url"`
-		Port int    `json:"port" pedantigo:"gte=1,lte=65535"`
+		Host string `json:"host" validate:"required,url"`
+		Port int    `json:"port" validate:"gte=1,lte=65535"`
 	}
 
 	validator := New[Config]()
@@ -1291,8 +1291,8 @@ func TestSchemaJSON_DefinitionUnwrapping(t *testing.T) {
 // TestSchemaLLM_NoSchemaField verifies that SchemaLLM() does NOT include $schema field.
 func TestSchemaLLM_NoSchemaField(t *testing.T) {
 	type User struct {
-		Name  string `json:"name" pedantigo:"required,min=2"`
-		Email string `json:"email" pedantigo:"email"`
+		Name  string `json:"name" validate:"required,min=2"`
+		Email string `json:"email" validate:"email"`
 	}
 
 	validator := New[User]()
@@ -1320,8 +1320,8 @@ func TestSchemaLLM_NoSchemaField(t *testing.T) {
 // TestSchemaJSONLLM_NoSchemaFieldInJSON verifies JSON output has no $schema.
 func TestSchemaJSONLLM_NoSchemaFieldInJSON(t *testing.T) {
 	type User struct {
-		Name  string `json:"name" pedantigo:"required,min=2"`
-		Email string `json:"email" pedantigo:"email"`
+		Name  string `json:"name" validate:"required,min=2"`
+		Email string `json:"email" validate:"email"`
 	}
 
 	validator := New[User]()
@@ -1356,16 +1356,16 @@ func TestSchemaJSONLLM_NoSchemaFieldInJSON(t *testing.T) {
 // from the schema object, including nested structs.
 func TestSchemaLLM_NoIDOrSchemaField(t *testing.T) {
 	type Address struct {
-		City    string `json:"city" pedantigo:"required"`
-		Country string `json:"country" pedantigo:"required"`
+		City    string `json:"city" validate:"required"`
+		Country string `json:"country" validate:"required"`
 	}
 	type Company struct {
-		Name    string  `json:"name" pedantigo:"required"`
-		Address Address `json:"address" pedantigo:"required"`
+		Name    string  `json:"name" validate:"required"`
+		Address Address `json:"address" validate:"required"`
 	}
 	type Employee struct {
-		Name    string  `json:"name" pedantigo:"required"`
-		Company Company `json:"company" pedantigo:"required"`
+		Name    string  `json:"name" validate:"required"`
+		Company Company `json:"company" validate:"required"`
 		Home    Address `json:"home"`
 	}
 
@@ -1409,16 +1409,16 @@ func TestSchemaLLM_NoIDOrSchemaField(t *testing.T) {
 // so both paths must be tested separately.
 func TestSchemaJSONLLM_NoIDOrSchemaFieldAnywhere(t *testing.T) {
 	type Address struct {
-		City    string `json:"city" pedantigo:"required"`
-		Country string `json:"country" pedantigo:"required"`
+		City    string `json:"city" validate:"required"`
+		Country string `json:"country" validate:"required"`
 	}
 	type Company struct {
-		Name    string  `json:"name" pedantigo:"required"`
-		Address Address `json:"address" pedantigo:"required"`
+		Name    string  `json:"name" validate:"required"`
+		Address Address `json:"address" validate:"required"`
 	}
 	type Employee struct {
-		Name    string  `json:"name" pedantigo:"required"`
-		Company Company `json:"company" pedantigo:"required"`
+		Name    string  `json:"name" validate:"required"`
+		Company Company `json:"company" validate:"required"`
 		Home    Address `json:"home"`
 	}
 
@@ -1466,8 +1466,8 @@ func TestSchemaJSONLLM_NoIDOrSchemaFieldAnywhere(t *testing.T) {
 // TestSchemaLLM_Caching verifies SchemaLLM() has independent caching.
 func TestSchemaLLM_Caching(t *testing.T) {
 	type Product struct {
-		Name  string `json:"name" pedantigo:"required,min=1"`
-		Price int    `json:"price" pedantigo:"gt=0"`
+		Name  string `json:"name" validate:"required,min=1"`
+		Price int    `json:"price" validate:"gt=0"`
 	}
 
 	t.Run("SchemaLLM caches pointer on repeated calls", func(t *testing.T) {
@@ -1541,8 +1541,8 @@ func TestSchemaLLM_Caching(t *testing.T) {
 // TestSchemaLLM_Concurrent verifies SchemaLLM is thread-safe.
 func TestSchemaLLM_Concurrent(t *testing.T) {
 	type User struct {
-		Name  string `json:"name" pedantigo:"required"`
-		Email string `json:"email" pedantigo:"email"`
+		Name  string `json:"name" validate:"required"`
+		Email string `json:"email" validate:"email"`
 	}
 
 	t.Run("SchemaLLM is thread-safe", func(t *testing.T) {
@@ -1613,13 +1613,13 @@ func TestSchemaLLM_Concurrent(t *testing.T) {
 // TestSchemaJSONLLM_Constraints verifies all constraints are in LLM schema.
 func TestSchemaJSONLLM_Constraints(t *testing.T) {
 	type ComplexModel struct {
-		Username string   `json:"username" pedantigo:"required,min=3,max=20"`
-		Email    string   `json:"email" pedantigo:"required,email"`
-		Age      int      `json:"age" pedantigo:"gte=18,lte=120"`
-		Price    float64  `json:"price" pedantigo:"gt=0,lt=10000"`
-		Tags     []string `json:"tags" pedantigo:"min=1"`
-		Website  string   `json:"website" pedantigo:"url"`
-		UUID     string   `json:"uuid" pedantigo:"uuid"`
+		Username string   `json:"username" validate:"required,min=3,max=20"`
+		Email    string   `json:"email" validate:"required,email"`
+		Age      int      `json:"age" validate:"gte=18,lte=120"`
+		Price    float64  `json:"price" validate:"gt=0,lt=10000"`
+		Tags     []string `json:"tags" validate:"min=1"`
+		Website  string   `json:"website" validate:"url"`
+		UUID     string   `json:"uuid" validate:"uuid"`
 	}
 
 	validator := New[ComplexModel]()
@@ -1675,8 +1675,8 @@ func TestSchemaJSONLLM_Constraints(t *testing.T) {
 // TestSchemaLLM_SimpleAPI tests simple API wrappers.
 func TestSchemaLLM_SimpleAPI(t *testing.T) {
 	type Config struct {
-		Host string `json:"host" pedantigo:"required,min=1"`
-		Port int    `json:"port" pedantigo:"gte=1,lte=65535"`
+		Host string `json:"host" validate:"required,min=1"`
+		Port int    `json:"port" validate:"gte=1,lte=65535"`
 	}
 
 	t.Run("SchemaLLM simple API returns schema without $schema", func(t *testing.T) {
@@ -1722,8 +1722,8 @@ func TestSchemaLLM_SimpleAPI(t *testing.T) {
 // TestSchemaLLM_VsSchemaJSON_Comparison verifies $schema difference.
 func TestSchemaLLM_VsSchemaJSON_Comparison(t *testing.T) {
 	type User struct {
-		Name  string `json:"name" pedantigo:"required,min=2"`
-		Email string `json:"email" pedantigo:"email"`
+		Name  string `json:"name" validate:"required,min=2"`
+		Email string `json:"email" validate:"email"`
 	}
 
 	// Get both schemas
@@ -1763,8 +1763,8 @@ func TestSchemaLLM_VsSchemaJSON_Comparison(t *testing.T) {
 
 func TestSchemaJSON_SchemaCachedJSONNotCached(t *testing.T) {
 	type Product struct {
-		Name  string `json:"name" pedantigo:"required,min=1"`
-		Price int    `json:"price" pedantigo:"gt=0"`
+		Name  string `json:"name" validate:"required,min=1"`
+		Price int    `json:"price" validate:"gt=0"`
 	}
 
 	validator := New[Product]()
@@ -1790,11 +1790,11 @@ func TestSchemaJSON_SchemaCachedJSONNotCached(t *testing.T) {
 
 func TestSchemaJSONOpenAPI_SchemaCachedJSONNotCached(t *testing.T) {
 	type NestedChild struct {
-		Value string `json:"value" pedantigo:"required"`
+		Value string `json:"value" validate:"required"`
 	}
 
 	type Parent struct {
-		Name  string       `json:"name" pedantigo:"required"`
+		Name  string       `json:"name" validate:"required"`
 		Child *NestedChild `json:"child"`
 	}
 
@@ -1819,8 +1819,8 @@ func TestSchemaJSONOpenAPI_SchemaCachedJSONNotCached(t *testing.T) {
 
 func TestSchemaJSONLLM_SchemaCachedJSONNotCached(t *testing.T) {
 	type Config struct {
-		Host string `json:"host" pedantigo:"required,min=1"`
-		Port int    `json:"port" pedantigo:"gte=1,lte=65535"`
+		Host string `json:"host" validate:"required,min=1"`
+		Port int    `json:"port" validate:"gte=1,lte=65535"`
 	}
 
 	validator := New[Config]()
@@ -1850,12 +1850,12 @@ func TestSchemaJSONLLM_SchemaCachedJSONNotCached(t *testing.T) {
 
 func TestFindTypeForDefinition_PointerTypes(t *testing.T) {
 	type Address struct {
-		Street string `json:"street" pedantigo:"required"`
-		City   string `json:"city" pedantigo:"required"`
+		Street string `json:"street" validate:"required"`
+		City   string `json:"city" validate:"required"`
 	}
 
 	type Person struct {
-		Name    string   `json:"name" pedantigo:"required"`
+		Name    string   `json:"name" validate:"required"`
 		Address *Address `json:"address"` // Pointer to nested struct
 	}
 
@@ -1881,7 +1881,7 @@ func TestFindTypeForDefinition_PointerTypes(t *testing.T) {
 
 func TestSchemaOpenAPI_NonStructTypes(t *testing.T) {
 	type SimpleModel struct {
-		Name   string         `json:"name" pedantigo:"required"`
+		Name   string         `json:"name" validate:"required"`
 		Tags   []string       `json:"tags"`   // Slice of non-struct (string)
 		Scores []int          `json:"scores"` // Slice of non-struct (int)
 		Labels []bool         `json:"labels"` // Slice of non-struct (bool)
@@ -1910,7 +1910,7 @@ func TestSchemaOpenAPI_NonStructTypes(t *testing.T) {
 // TestSchemaOpenAPI_DeepNesting tests deeply nested structures.
 func TestSchemaOpenAPI_DeepNesting(t *testing.T) {
 	type Level3 struct {
-		Data string `json:"data" pedantigo:"required"`
+		Data string `json:"data" validate:"required"`
 	}
 
 	type Level2 struct {
@@ -1922,7 +1922,7 @@ func TestSchemaOpenAPI_DeepNesting(t *testing.T) {
 	}
 
 	type Root struct {
-		Name   string  `json:"name" pedantigo:"required"`
+		Name   string  `json:"name" validate:"required"`
 		Level1 *Level1 `json:"level1"`
 	}
 
@@ -1948,7 +1948,7 @@ func TestSchemaOpenAPI_DeepNesting(t *testing.T) {
 // TestSchemaJSON_DirectCall tests SchemaJSON without prior Schema call.
 func TestSchemaJSON_DirectCall(t *testing.T) {
 	type Item struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	validator := New[Item]()
@@ -1967,7 +1967,7 @@ func TestSchemaJSON_DirectCall(t *testing.T) {
 // TestSchemaJSONLLM_DirectCall tests SchemaJSONLLM without prior SchemaLLM call.
 func TestSchemaJSONLLM_DirectCall(t *testing.T) {
 	type Item struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	validator := New[Item]()
@@ -1990,7 +1990,7 @@ func TestSchemaJSONLLM_DirectCall(t *testing.T) {
 // TestSchemaJSONOpenAPI_DirectCall tests SchemaJSONOpenAPI without prior SchemaOpenAPI call.
 func TestSchemaJSONOpenAPI_DirectCall(t *testing.T) {
 	type Item struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	validator := New[Item]()
@@ -2138,7 +2138,7 @@ func TestFindTypeForDefinition_TypeVariants(t *testing.T) {
 
 func TestValidateWithCache_NilCache_Simple(t *testing.T) {
 	type SimpleStruct struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[SimpleStruct]()
@@ -2158,7 +2158,7 @@ func TestValidateWithCache_NonStructKind(t *testing.T) {
 
 func TestValidateWithCache_PointerIndirection(t *testing.T) {
 	type NestedStruct struct {
-		Value string `json:"value" pedantigo:"required"`
+		Value string `json:"value" validate:"required"`
 	}
 
 	v := New[*NestedStruct]()
@@ -2174,8 +2174,8 @@ func TestValidateWithCache_PointerIndirection(t *testing.T) {
 
 func TestSchemaJSON_ConcurrentCachePaths(t *testing.T) {
 	type ConcurrentStruct struct {
-		Field1 string `json:"field1" pedantigo:"required"`
-		Field2 int    `json:"field2" pedantigo:"min=0"`
+		Field1 string `json:"field1" validate:"required"`
+		Field2 int    `json:"field2" validate:"min=0"`
 	}
 
 	v := New[ConcurrentStruct]()
@@ -2208,8 +2208,8 @@ func TestSchemaJSON_ConcurrentCachePaths(t *testing.T) {
 
 func TestSchemaJSON_CachedSchemaButNotJSON(t *testing.T) {
 	type TestStruct struct {
-		Name  string `json:"name" pedantigo:"required"`
-		Email string `json:"email" pedantigo:"email"`
+		Name  string `json:"name" validate:"required"`
+		Email string `json:"email" validate:"email"`
 	}
 
 	v := New[TestStruct]()
@@ -2228,8 +2228,8 @@ func TestSchemaJSON_CachedSchemaButNotJSON(t *testing.T) {
 
 func TestSchemaJSONOpenAPI_ConcurrentCachePaths(t *testing.T) {
 	type OpenAPIStruct struct {
-		ID   string `json:"id" pedantigo:"uuid"`
-		Name string `json:"name" pedantigo:"required"`
+		ID   string `json:"id" validate:"uuid"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[OpenAPIStruct]()
@@ -2262,11 +2262,11 @@ func TestSchemaJSONOpenAPI_ConcurrentCachePaths(t *testing.T) {
 
 func TestSchemaJSONOpenAPI_CachedSchemaButNotJSON(t *testing.T) {
 	type NestedType struct {
-		Value string `json:"value" pedantigo:"required"`
+		Value string `json:"value" validate:"required"`
 	}
 
 	type TestStruct struct {
-		Name   string     `json:"name" pedantigo:"required"`
+		Name   string     `json:"name" validate:"required"`
 		Nested NestedType `json:"nested"`
 	}
 
@@ -2287,7 +2287,7 @@ func TestSchemaJSONOpenAPI_CachedSchemaButNotJSON(t *testing.T) {
 func TestMarshalWithExtras_UnmarshalError(t *testing.T) {
 	type WithExtras struct {
 		Name   string         `json:"name"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 
 	v := New[WithExtras](ValidatorOptions{
@@ -2309,13 +2309,13 @@ func TestMarshalWithExtras_UnmarshalError(t *testing.T) {
 func TestMarshalWithExtras_NestedStructs(t *testing.T) {
 	type NestedWithExtras struct {
 		Field  string         `json:"field"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 
 	type ParentWithExtras struct {
 		Name   string           `json:"name"`
 		Nested NestedWithExtras `json:"nested"`
-		Extras map[string]any   `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any   `json:"-" validate:"extra_fields"`
 	}
 
 	v := New[ParentWithExtras](ValidatorOptions{
@@ -2344,12 +2344,12 @@ func TestMarshalWithExtras_NestedStructs(t *testing.T) {
 func TestMarshalWithExtras_SliceOfStructsWithExtras(t *testing.T) {
 	type ItemWithExtras struct {
 		Name   string         `json:"name"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 
 	type Container struct {
 		Items  []ItemWithExtras `json:"items"`
-		Extras map[string]any   `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any   `json:"-" validate:"extra_fields"`
 	}
 
 	v := New[Container](ValidatorOptions{
@@ -2388,13 +2388,13 @@ func TestMarshalWithExtras_SliceOfStructsWithExtras(t *testing.T) {
 func TestMarshalWithExtras_PointerFields(t *testing.T) {
 	type NestedWithExtras struct {
 		Value  string         `json:"value"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 
 	type WithPointerField struct {
 		Name   string            `json:"name"`
 		Nested *NestedWithExtras `json:"nested"`
-		Extras map[string]any    `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any    `json:"-" validate:"extra_fields"`
 	}
 
 	v := New[WithPointerField](ValidatorOptions{
@@ -2423,7 +2423,7 @@ func TestMarshalWithExtras_PointerFields(t *testing.T) {
 func TestMarshalWithExtras_NilExtrasField(t *testing.T) {
 	type WithExtras struct {
 		Name   string         `json:"name"`
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 
 	v := New[WithExtras](ValidatorOptions{
@@ -2446,7 +2446,7 @@ func TestMarshalWithExtras_NilExtrasField(t *testing.T) {
 
 func TestSchemaJSON_DoubleCheckCache(t *testing.T) {
 	type RaceStruct struct {
-		Field string `json:"field" pedantigo:"required"`
+		Field string `json:"field" validate:"required"`
 	}
 
 	v := New[RaceStruct]()
@@ -2468,7 +2468,7 @@ func TestSchemaJSON_DoubleCheckCache(t *testing.T) {
 
 func TestSchemaJSONOpenAPI_DoubleCheckCache(t *testing.T) {
 	type RaceStruct struct {
-		Field string `json:"field" pedantigo:"required"`
+		Field string `json:"field" validate:"required"`
 	}
 
 	v := New[RaceStruct]()
@@ -2491,7 +2491,7 @@ func TestSchemaJSONOpenAPI_DoubleCheckCache(t *testing.T) {
 func TestValidateWithCache_SkipConstraints(t *testing.T) {
 	type ConditionalValidation struct {
 		Role     string `json:"role"`
-		AdminKey string `json:"admin_key" pedantigo:"skip_unless=Role admin,required,min=10"`
+		AdminKey string `json:"admin_key" validate:"skip_unless=Role admin,required,min=10"`
 	}
 
 	v := New[ConditionalValidation]()
@@ -2520,7 +2520,7 @@ func TestValidateWithCache_SkipConstraints(t *testing.T) {
 
 func TestMarshalWithExtras_EmptyStruct(t *testing.T) {
 	type EmptyWithExtras struct {
-		Extras map[string]any `json:"-" pedantigo:"extra_fields"`
+		Extras map[string]any `json:"-" validate:"extra_fields"`
 	}
 
 	v := New[EmptyWithExtras](ValidatorOptions{
@@ -2556,7 +2556,7 @@ func TestSchemaJSONLLM_DefinitionsFallback(t *testing.T) {
 
 func TestSchemaJSONLLM_ConcurrentAccess(t *testing.T) {
 	type ConcurrentLLMStruct struct {
-		Name string `json:"name" pedantigo:"required"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	v := New[ConcurrentLLMStruct]()

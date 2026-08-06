@@ -5,10 +5,10 @@ import (
 )
 
 type PartialTestUser struct {
-	Email    string `json:"email" pedantigo:"required,email"`
-	Name     string `json:"name" pedantigo:"required,min=2"`
-	Age      int    `json:"age" pedantigo:"min=18"`
-	Password string `json:"password" pedantigo:"required,min=8"`
+	Email    string `json:"email" validate:"required,email"`
+	Name     string `json:"name" validate:"required,min=2"`
+	Age      int    `json:"age" validate:"min=18"`
+	Password string `json:"password" validate:"required,min=8"`
 }
 
 func TestValidator_StructPartial(t *testing.T) {

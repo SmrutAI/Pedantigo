@@ -24,15 +24,15 @@ Validates the **number of items** (elements) in a slice, array, or map.
 ```go
 type ShoppingCart struct {
     // Must have at least 1 item, at most 100 items
-    Items []Product `json:"items" pedantigo:"required,min=1,max=100"`
+    Items []Product `json:"items" validate:"required,min=1,max=100"`
 
     // Tags collection: 0 to 10 tags
-    Tags []string `json:"tags" pedantigo:"max=10"`
+    Tags []string `json:"tags" validate:"max=10"`
 }
 
 type ConfigMap struct {
     // Must have between 2 and 50 configuration entries
-    Settings map[string]string `json:"settings" pedantigo:"min=2,max=50"`
+    Settings map[string]string `json:"settings" validate:"min=2,max=50"`
 }
 ```
 
@@ -49,12 +49,12 @@ Validates that a collection has an **exact number of items**.
 ```go
 type ChessTournament struct {
     // Exactly 8 players
-    Players []Player `json:"players" pedantigo:"len=8"`
+    Players []Player `json:"players" validate:"len=8"`
 }
 
 type RGBColor struct {
     // Array must have exactly 3 values (red, green, blue)
-    Values [3]int `json:"values" pedantigo:"len=3"`
+    Values [3]int `json:"values" validate:"len=3"`
 }
 ```
 
@@ -72,10 +72,10 @@ Validates that all elements in a collection are **unique** (no duplicates).
 ```go
 type UserGroup struct {
     // All email addresses must be different
-    EmailAddresses []string `json:"emails" pedantigo:"required,unique"`
+    EmailAddresses []string `json:"emails" validate:"required,unique"`
 
     // All product IDs must be unique
-    ProductIDs []int `json:"product_ids" pedantigo:"required,unique"`
+    ProductIDs []int `json:"product_ids" validate:"required,unique"`
 }
 ```
 
@@ -105,17 +105,17 @@ When validating slices of structs, use `unique=fieldName` to ensure all items ha
 ```go
 type UserList struct {
     // All users must have different usernames
-    Users []User `json:"users" pedantigo:"required,unique=Username"`
+    Users []User `json:"users" validate:"required,unique=Username"`
 }
 
 type User struct {
-    Username string `json:"username" pedantigo:"required"`
-    Email    string `json:"email" pedantigo:"required,email"`
+    Username string `json:"username" validate:"required"`
+    Email    string `json:"email" validate:"required,email"`
 }
 
 type InventoryItem struct {
     // All items must have different SKU (stock keeping unit)
-    Items []Product `json:"items" pedantigo:"required,unique=SKU"`
+    Items []Product `json:"items" validate:"required,unique=SKU"`
 }
 
 type Product struct {
@@ -158,10 +158,10 @@ The `dive` constraint tells Pedantigo to apply constraints to each element in a 
 ```go
 type PostRequest struct {
     // Each tag must be lowercase, 3-20 characters
-    Tags []string `json:"tags" pedantigo:"required,dive,lowercase,min=3,max=20"`
+    Tags []string `json:"tags" validate:"required,dive,lowercase,min=3,max=20"`
 
     // Each score must be between 0 and 100
-    Scores []int `json:"scores" pedantigo:"required,dive,min=0,max=100"`
+    Scores []int `json:"scores" validate:"required,dive,min=0,max=100"`
 }
 ```
 
@@ -179,10 +179,10 @@ You can validate both the collection size and individual element properties:
 ```go
 type DocumentUpload struct {
     // Must have 1-10 files, each with 3-50 character filename
-    Files []string `json:"files" pedantigo:"required,min=1,max=10,dive,min=3,max=50"`
+    Files []string `json:"files" validate:"required,min=1,max=10,dive,min=3,max=50"`
 
     // Must have 2-5 categories, each category must be lowercase letters only
-    Categories []string `json:"categories" pedantigo:"required,min=2,max=5,dive,alpha,lowercase"`
+    Categories []string `json:"categories" validate:"required,min=2,max=5,dive,alpha,lowercase"`
 }
 ```
 
@@ -200,13 +200,13 @@ Use `dive` to validate each struct in a collection:
 ```go
 type OrderRequest struct {
     // Each order item must be valid
-    Items []OrderItem `json:"items" pedantigo:"required,min=1,max=100,dive"`
+    Items []OrderItem `json:"items" validate:"required,min=1,max=100,dive"`
 }
 
 type OrderItem struct {
-    SKU      string `json:"sku" pedantigo:"required,len=10"`
-    Quantity int    `json:"quantity" pedantigo:"required,min=1,max=1000"`
-    Price    float64 `json:"price" pedantigo:"required,gt=0"`
+    SKU      string `json:"sku" validate:"required,len=10"`
+    Quantity int    `json:"quantity" validate:"required,min=1,max=1000"`
+    Price    float64 `json:"price" validate:"required,gt=0"`
 }
 ```
 
@@ -232,10 +232,10 @@ Use `keys` and `endkeys` to apply constraints specifically to map keys (not valu
 ```go
 type AppConfig struct {
     // All keys must be lowercase alphanumeric
-    Settings map[string]string `json:"settings" pedantigo:"required,keys,lowercase,alphanum,endkeys"`
+    Settings map[string]string `json:"settings" validate:"required,keys,lowercase,alphanum,endkeys"`
 
     // All keys must be valid email addresses
-    UserPreferences map[string]any `json:"preferences" pedantigo:"keys,email,endkeys"`
+    UserPreferences map[string]any `json:"preferences" validate:"keys,email,endkeys"`
 }
 ```
 
@@ -251,7 +251,7 @@ type AppConfig struct {
 ```go
 type EnvironmentVars struct {
     // Keys must be uppercase, values must be non-empty strings
-    Variables map[string]string `json:"variables" pedantigo:"required,keys,uppercase,alphanum,endkeys,dive,min=1"`
+    Variables map[string]string `json:"variables" validate:"required,keys,uppercase,alphanum,endkeys,dive,min=1"`
 }
 ```
 
@@ -269,10 +269,10 @@ Provides a default value when a collection field is missing from JSON.
 ```go
 type UserPreferences struct {
     // If tags are not provided, default to empty array
-    Tags []string `json:"tags,omitempty" pedantigo:"default="`
+    Tags []string `json:"tags,omitempty" validate:"default="`
 
     // If not provided, defaults to a predefined list
-    Regions []string `json:"regions" pedantigo:"default=us-east-1 us-west-2"`
+    Regions []string `json:"regions" validate:"default=us-east-1 us-west-2"`
 }
 ```
 
@@ -297,34 +297,34 @@ import (
 )
 
 type BlogPost struct {
-    Title string `json:"title" pedantigo:"required,min=5,max=200"`
+    Title string `json:"title" validate:"required,min=5,max=200"`
 
     // 1-1000 tags, each 2-30 lowercase characters
-    Tags []string `json:"tags" pedantigo:"min=1,max=1000,dive,min=2,max=30,lowercase"`
+    Tags []string `json:"tags" validate:"min=1,max=1000,dive,min=2,max=30,lowercase"`
 
     // 1-10 authors, all with different emails
-    Authors []Author `json:"authors" pedantigo:"required,min=1,max=10,dive,unique=Email"`
+    Authors []Author `json:"authors" validate:"required,min=1,max=10,dive,unique=Email"`
 
     // Map of translations: keys must be language codes (2 chars uppercase)
     // Values must be 10+ characters
-    Translations map[string]string `json:"translations" pedantigo:"keys,len=2,uppercase,alphanum,endkeys,dive,min=10"`
+    Translations map[string]string `json:"translations" validate:"keys,len=2,uppercase,alphanum,endkeys,dive,min=10"`
 
     // Each comment must be valid
-    Comments []Comment `json:"comments" pedantigo:"max=500,dive"`
+    Comments []Comment `json:"comments" validate:"max=500,dive"`
 
     // Related post URLs: all must be unique, each must be valid URL
-    RelatedPosts []string `json:"related_posts" pedantigo:"max=5,dive,unique,url"`
+    RelatedPosts []string `json:"related_posts" validate:"max=5,dive,unique,url"`
 }
 
 type Author struct {
-    Name  string `json:"name" pedantigo:"required,min=2,max=100"`
-    Email string `json:"email" pedantigo:"required,email"`
+    Name  string `json:"name" validate:"required,min=2,max=100"`
+    Email string `json:"email" validate:"required,email"`
 }
 
 type Comment struct {
-    Author  string `json:"author" pedantigo:"required,min=1,max=50"`
-    Text    string `json:"text" pedantigo:"required,min=10,max=5000"`
-    Rating  int    `json:"rating" pedantigo:"required,min=1,max=5"`
+    Author  string `json:"author" validate:"required,min=1,max=50"`
+    Text    string `json:"text" validate:"required,min=10,max=5000"`
+    Rating  int    `json:"rating" validate:"required,min=1,max=5"`
 }
 
 func main() {
@@ -445,17 +445,17 @@ func main() {
 ```go
 type Project struct {
     // Tasks with assigned users, validated deeply
-    Tasks []Task `json:"tasks" pedantigo:"required,min=1,max=500,dive"`
+    Tasks []Task `json:"tasks" validate:"required,min=1,max=500,dive"`
 }
 
 type Task struct {
-    Title       string   `json:"title" pedantigo:"required,min=3,max=100"`
-    AssignedTo  []User   `json:"assigned_to" pedantigo:"max=10,dive"`
-    SubTasks    []Task   `json:"subtasks" pedantigo:"max=50,dive"`  // Recursive validation
+    Title       string   `json:"title" validate:"required,min=3,max=100"`
+    AssignedTo  []User   `json:"assigned_to" validate:"max=10,dive"`
+    SubTasks    []Task   `json:"subtasks" validate:"max=50,dive"`  // Recursive validation
 }
 
 type User struct {
-    Username string `json:"username" pedantigo:"required,alphanum,min=3,max=20"`
+    Username string `json:"username" validate:"required,alphanum,min=3,max=20"`
 }
 ```
 
@@ -464,10 +464,10 @@ type User struct {
 ```go
 type DataSet struct {
     // Unique identifiers - enforces set semantics
-    IDs []string `json:"ids" pedantigo:"required,unique,dive,uuid"`
+    IDs []string `json:"ids" validate:"required,unique,dive,uuid"`
 
     // Unique enum values
-    Statuses []string `json:"statuses" pedantigo:"required,unique,dive,oneof=active inactive pending"`
+    Statuses []string `json:"statuses" validate:"required,unique,dive,oneof=active inactive pending"`
 }
 ```
 
@@ -476,9 +476,9 @@ type DataSet struct {
 ```go
 type NotificationConfig struct {
     // 1-5 unique email addresses for notifications
-    EmailRecipients []string `json:"recipients" pedantigo:"required,min=1,max=5,unique,dive,email"`
+    EmailRecipients []string `json:"recipients" validate:"required,min=1,max=5,unique,dive,email"`
 
     // 1-10 webhook URLs, all unique and valid
-    WebhookURLs []string `json:"webhooks" pedantigo:"min=1,max=10,unique,dive,url,startswith=https://"`
+    WebhookURLs []string `json:"webhooks" validate:"min=1,max=10,unique,dive,url,startswith=https://"`
 }
 ```

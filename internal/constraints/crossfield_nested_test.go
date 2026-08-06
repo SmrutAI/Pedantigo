@@ -23,8 +23,8 @@ type InnerValues struct {
 // OuterStruct tests single-level nested field references.
 type OuterStruct struct {
 	Inner InnerValues
-	Value int    `pedantigo:"gtfield=Inner.MinValue,ltfield=Inner.MaxValue"`
-	Name  string `pedantigo:"eqfield=Inner.Name"`
+	Value int    `validate:"gtfield=Inner.MinValue,ltfield=Inner.MaxValue"`
+	Name  string `validate:"eqfield=Inner.Name"`
 }
 
 // DeepNestedStruct tests multi-level nested paths (Level1.Level2.RefValue).
@@ -34,13 +34,13 @@ type DeepNestedStruct struct {
 			RefValue int
 		}
 	}
-	Value int `pedantigo:"eqfield=Level1.Level2.RefValue"`
+	Value int `validate:"eqfield=Level1.Level2.RefValue"`
 }
 
 // WithPointerInner tests cross-field with pointer to nested struct.
 type WithPointerInner struct {
 	Inner *InnerValues
-	Value int `pedantigo:"gtfield=Inner.MinValue"`
+	Value int `validate:"gtfield=Inner.MinValue"`
 }
 
 // MultiNestedStruct tests multiple nested field references in one struct.
@@ -53,8 +53,8 @@ type MultiNestedStruct struct {
 		DefaultMin int
 		DefaultMax int
 	}
-	CurrentMin int `pedantigo:"gtefield=Bounds.Min,ltefield=Bounds.Max"`
-	CurrentMax int `pedantigo:"gtefield=Bounds.Min,ltefield=Bounds.Max,gtfield=CurrentMin"`
+	CurrentMin int `validate:"gtefield=Bounds.Min,ltefield=Bounds.Max"`
+	CurrentMax int `validate:"gtefield=Bounds.Min,ltefield=Bounds.Max,gtfield=CurrentMin"`
 }
 
 // ============================================================================
@@ -289,7 +289,7 @@ func TestCrossField_NestedPointer_NilInMiddle(t *testing.T) {
 	}
 	type Container struct {
 		Root  Level1
-		Value int `pedantigo:"gtfield=Root.Level2.Level3.Value"`
+		Value int `validate:"gtfield=Root.Level2.Level3.Value"`
 	}
 
 	data := Container{
@@ -485,8 +485,8 @@ func TestCrossField_NestedString(t *testing.T) {
 			Locale   string
 			Timezone string
 		}
-		UserLocale   string `pedantigo:"eqfield=Defaults.Locale"`
-		UserTimezone string `pedantigo:"nefield=Defaults.Timezone"`
+		UserLocale   string `validate:"eqfield=Defaults.Locale"`
+		UserTimezone string `validate:"nefield=Defaults.Timezone"`
 	}
 
 	tests := []struct {
@@ -561,7 +561,7 @@ func TestCrossField_NestedFloat(t *testing.T) {
 			MinPrice float64
 			MaxPrice float64
 		}
-		CurrentPrice float64 `pedantigo:"gtfield=Limits.MinPrice,ltfield=Limits.MaxPrice"`
+		CurrentPrice float64 `validate:"gtfield=Limits.MinPrice,ltfield=Limits.MaxPrice"`
 	}
 
 	tests := []struct {
@@ -648,8 +648,8 @@ func TestCrossField_NestedMixedTypes(t *testing.T) {
 			MaxInt   int
 			MaxFloat float64
 		}
-		IntValue   int     `pedantigo:"ltfield=Config.MaxInt"`
-		FloatValue float64 `pedantigo:"ltfield=Config.MaxFloat"`
+		IntValue   int     `validate:"ltfield=Config.MaxInt"`
+		FloatValue float64 `validate:"ltfield=Config.MaxFloat"`
 	}
 
 	data := MixedTypes{
@@ -694,7 +694,7 @@ func TestCrossField_NestedNonExistentField(t *testing.T) {
 			Value int
 		}
 		// This references a field that doesn't exist
-		Data int `pedantigo:"gtfield=Inner.NonExistent"`
+		Data int `validate:"gtfield=Inner.NonExistent"`
 	}
 
 	// This should panic during construction

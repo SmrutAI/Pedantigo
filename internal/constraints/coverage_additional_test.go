@@ -13,7 +13,7 @@ import (
 func TestISO3166NumericConstraint_EdgeCases(t *testing.T) {
 	t.Run("valid int country code", func(t *testing.T) {
 		type Country struct {
-			Code int `json:"code" pedantigo:"iso3166_1_alpha_numeric"`
+			Code int `json:"code" validate:"iso3166_1_alpha_numeric"`
 		}
 
 		validator := New[Country]()
@@ -25,7 +25,7 @@ func TestISO3166NumericConstraint_EdgeCases(t *testing.T) {
 
 	t.Run("valid uint country code", func(t *testing.T) {
 		type Country struct {
-			Code uint `json:"code" pedantigo:"iso3166_1_alpha_numeric"`
+			Code uint `json:"code" validate:"iso3166_1_alpha_numeric"`
 		}
 
 		validator := New[Country]()
@@ -37,7 +37,7 @@ func TestISO3166NumericConstraint_EdgeCases(t *testing.T) {
 
 	t.Run("uint country code exceeds 999", func(t *testing.T) {
 		type Country struct {
-			Code uint `json:"code" pedantigo:"iso3166_1_alpha_numeric"`
+			Code uint `json:"code" validate:"iso3166_1_alpha_numeric"`
 		}
 
 		validator := New[Country]()
@@ -49,7 +49,7 @@ func TestISO3166NumericConstraint_EdgeCases(t *testing.T) {
 
 	t.Run("invalid string type", func(t *testing.T) {
 		type Country struct {
-			Code string `json:"code" pedantigo:"iso3166_1_alpha_numeric"`
+			Code string `json:"code" validate:"iso3166_1_alpha_numeric"`
 		}
 
 		validator := New[Country]()
@@ -61,7 +61,7 @@ func TestISO3166NumericConstraint_EdgeCases(t *testing.T) {
 
 	t.Run("invalid country code", func(t *testing.T) {
 		type Country struct {
-			Code int `json:"code" pedantigo:"iso3166_1_alpha_numeric"`
+			Code int `json:"code" validate:"iso3166_1_alpha_numeric"`
 		}
 
 		validator := New[Country]()
@@ -76,7 +76,7 @@ func TestISO3166NumericConstraint_EdgeCases(t *testing.T) {
 func TestISO4217NumericConstraint_EdgeCases(t *testing.T) {
 	t.Run("valid int currency code", func(t *testing.T) {
 		type Currency struct {
-			Code int `json:"code" pedantigo:"iso4217_numeric"`
+			Code int `json:"code" validate:"iso4217_numeric"`
 		}
 
 		validator := New[Currency]()
@@ -88,7 +88,7 @@ func TestISO4217NumericConstraint_EdgeCases(t *testing.T) {
 
 	t.Run("valid uint currency code", func(t *testing.T) {
 		type Currency struct {
-			Code uint `json:"code" pedantigo:"iso4217_numeric"`
+			Code uint `json:"code" validate:"iso4217_numeric"`
 		}
 
 		validator := New[Currency]()
@@ -100,7 +100,7 @@ func TestISO4217NumericConstraint_EdgeCases(t *testing.T) {
 
 	t.Run("uint currency code exceeds 999", func(t *testing.T) {
 		type Currency struct {
-			Code uint `json:"code" pedantigo:"iso4217_numeric"`
+			Code uint `json:"code" validate:"iso4217_numeric"`
 		}
 
 		validator := New[Currency]()
@@ -112,7 +112,7 @@ func TestISO4217NumericConstraint_EdgeCases(t *testing.T) {
 
 	t.Run("invalid string type", func(t *testing.T) {
 		type Currency struct {
-			Code string `json:"code" pedantigo:"iso4217_numeric"`
+			Code string `json:"code" validate:"iso4217_numeric"`
 		}
 
 		validator := New[Currency]()
@@ -124,7 +124,7 @@ func TestISO4217NumericConstraint_EdgeCases(t *testing.T) {
 
 	t.Run("invalid currency code", func(t *testing.T) {
 		type Currency struct {
-			Code int `json:"code" pedantigo:"iso4217_numeric"`
+			Code int `json:"code" validate:"iso4217_numeric"`
 		}
 
 		validator := New[Currency]()
@@ -139,7 +139,7 @@ func TestISO4217NumericConstraint_EdgeCases(t *testing.T) {
 func TestLenConstraint_Coverage(t *testing.T) {
 	t.Run("exact string length valid", func(t *testing.T) {
 		type Data struct {
-			Code string `json:"code" pedantigo:"len=5"`
+			Code string `json:"code" validate:"len=5"`
 		}
 
 		validator := New[Data]()
@@ -151,7 +151,7 @@ func TestLenConstraint_Coverage(t *testing.T) {
 
 	t.Run("exact string length invalid short", func(t *testing.T) {
 		type Data struct {
-			Code string `json:"code" pedantigo:"len=5"`
+			Code string `json:"code" validate:"len=5"`
 		}
 
 		validator := New[Data]()
@@ -163,7 +163,7 @@ func TestLenConstraint_Coverage(t *testing.T) {
 
 	t.Run("exact string length invalid long", func(t *testing.T) {
 		type Data struct {
-			Code string `json:"code" pedantigo:"len=5"`
+			Code string `json:"code" validate:"len=5"`
 		}
 
 		validator := New[Data]()
@@ -178,7 +178,7 @@ func TestLenConstraint_Coverage(t *testing.T) {
 func TestISSNConstraint_Coverage(t *testing.T) {
 	t.Run("valid ISSN", func(t *testing.T) {
 		type Journal struct {
-			ISSN string `json:"issn" pedantigo:"issn"`
+			ISSN string `json:"issn" validate:"issn"`
 		}
 
 		validator := New[Journal]()
@@ -190,7 +190,7 @@ func TestISSNConstraint_Coverage(t *testing.T) {
 
 	t.Run("invalid ISSN wrong checksum", func(t *testing.T) {
 		type Journal struct {
-			ISSN string `json:"issn" pedantigo:"issn"`
+			ISSN string `json:"issn" validate:"issn"`
 		}
 
 		validator := New[Journal]()
@@ -202,7 +202,7 @@ func TestISSNConstraint_Coverage(t *testing.T) {
 
 	t.Run("invalid ISSN format", func(t *testing.T) {
 		type Journal struct {
-			ISSN string `json:"issn" pedantigo:"issn"`
+			ISSN string `json:"issn" validate:"issn"`
 		}
 
 		validator := New[Journal]()
@@ -214,7 +214,7 @@ func TestISSNConstraint_Coverage(t *testing.T) {
 
 	t.Run("empty ISSN skips validation", func(t *testing.T) {
 		type Journal struct {
-			ISSN string `json:"issn" pedantigo:"issn"`
+			ISSN string `json:"issn" validate:"issn"`
 		}
 
 		validator := New[Journal]()
@@ -229,7 +229,7 @@ func TestISSNConstraint_Coverage(t *testing.T) {
 func TestCronConstraint_Coverage(t *testing.T) {
 	t.Run("valid cron expression", func(t *testing.T) {
 		type Schedule struct {
-			Cron string `json:"cron" pedantigo:"cron"`
+			Cron string `json:"cron" validate:"cron"`
 		}
 
 		validator := New[Schedule]()
@@ -241,7 +241,7 @@ func TestCronConstraint_Coverage(t *testing.T) {
 
 	t.Run("valid cron with ranges", func(t *testing.T) {
 		type Schedule struct {
-			Cron string `json:"cron" pedantigo:"cron"`
+			Cron string `json:"cron" validate:"cron"`
 		}
 
 		validator := New[Schedule]()
@@ -253,7 +253,7 @@ func TestCronConstraint_Coverage(t *testing.T) {
 
 	t.Run("valid cron with steps", func(t *testing.T) {
 		type Schedule struct {
-			Cron string `json:"cron" pedantigo:"cron"`
+			Cron string `json:"cron" validate:"cron"`
 		}
 
 		validator := New[Schedule]()
@@ -265,7 +265,7 @@ func TestCronConstraint_Coverage(t *testing.T) {
 
 	t.Run("invalid cron expression", func(t *testing.T) {
 		type Schedule struct {
-			Cron string `json:"cron" pedantigo:"cron"`
+			Cron string `json:"cron" validate:"cron"`
 		}
 
 		validator := New[Schedule]()
@@ -277,7 +277,7 @@ func TestCronConstraint_Coverage(t *testing.T) {
 
 	t.Run("invalid cron range out of bounds", func(t *testing.T) {
 		type Schedule struct {
-			Cron string `json:"cron" pedantigo:"cron"`
+			Cron string `json:"cron" validate:"cron"`
 		}
 
 		validator := New[Schedule]()
@@ -292,7 +292,7 @@ func TestCronConstraint_Coverage(t *testing.T) {
 func TestOrConstraint_Coverage(t *testing.T) {
 	t.Run("or constraint hexcolor|rgb first matches", func(t *testing.T) {
 		type Data struct {
-			Color string `json:"color" pedantigo:"hexcolor|rgb"`
+			Color string `json:"color" validate:"hexcolor|rgb"`
 		}
 
 		validator := New[Data]()
@@ -304,7 +304,7 @@ func TestOrConstraint_Coverage(t *testing.T) {
 
 	t.Run("or constraint hexcolor|rgb second matches", func(t *testing.T) {
 		type Data struct {
-			Color string `json:"color" pedantigo:"hexcolor|rgb"`
+			Color string `json:"color" validate:"hexcolor|rgb"`
 		}
 
 		validator := New[Data]()
@@ -316,7 +316,7 @@ func TestOrConstraint_Coverage(t *testing.T) {
 
 	t.Run("or constraint hexcolor|rgb none matches", func(t *testing.T) {
 		type Data struct {
-			Color string `json:"color" pedantigo:"hexcolor|rgb"`
+			Color string `json:"color" validate:"hexcolor|rgb"`
 		}
 
 		validator := New[Data]()
@@ -331,7 +331,7 @@ func TestOrConstraint_Coverage(t *testing.T) {
 func TestColorConstraint_Coverage(t *testing.T) {
 	t.Run("valid hex color", func(t *testing.T) {
 		type Style struct {
-			Color string `json:"color" pedantigo:"hexcolor"`
+			Color string `json:"color" validate:"hexcolor"`
 		}
 
 		validator := New[Style]()
@@ -343,7 +343,7 @@ func TestColorConstraint_Coverage(t *testing.T) {
 
 	t.Run("valid short hex color", func(t *testing.T) {
 		type Style struct {
-			Color string `json:"color" pedantigo:"hexcolor"`
+			Color string `json:"color" validate:"hexcolor"`
 		}
 
 		validator := New[Style]()
@@ -355,7 +355,7 @@ func TestColorConstraint_Coverage(t *testing.T) {
 
 	t.Run("invalid hex color", func(t *testing.T) {
 		type Style struct {
-			Color string `json:"color" pedantigo:"hexcolor"`
+			Color string `json:"color" validate:"hexcolor"`
 		}
 
 		validator := New[Style]()
@@ -367,7 +367,7 @@ func TestColorConstraint_Coverage(t *testing.T) {
 
 	t.Run("valid rgb color", func(t *testing.T) {
 		type Style struct {
-			Color string `json:"color" pedantigo:"rgb"`
+			Color string `json:"color" validate:"rgb"`
 		}
 
 		validator := New[Style]()
@@ -379,7 +379,7 @@ func TestColorConstraint_Coverage(t *testing.T) {
 
 	t.Run("invalid rgb color out of range", func(t *testing.T) {
 		type Style struct {
-			Color string `json:"color" pedantigo:"rgb"`
+			Color string `json:"color" validate:"rgb"`
 		}
 
 		validator := New[Style]()
@@ -391,7 +391,7 @@ func TestColorConstraint_Coverage(t *testing.T) {
 
 	t.Run("valid hsl color", func(t *testing.T) {
 		type Style struct {
-			Color string `json:"color" pedantigo:"hsl"`
+			Color string `json:"color" validate:"hsl"`
 		}
 
 		validator := New[Style]()
@@ -406,7 +406,7 @@ func TestColorConstraint_Coverage(t *testing.T) {
 func TestUniqueConstraint_Coverage(t *testing.T) {
 	t.Run("unique slice valid", func(t *testing.T) {
 		type Data struct {
-			Items []string `json:"items" pedantigo:"unique"`
+			Items []string `json:"items" validate:"unique"`
 		}
 
 		validator := New[Data]()
@@ -418,7 +418,7 @@ func TestUniqueConstraint_Coverage(t *testing.T) {
 
 	t.Run("unique slice invalid duplicates", func(t *testing.T) {
 		type Data struct {
-			Items []string `json:"items" pedantigo:"unique"`
+			Items []string `json:"items" validate:"unique"`
 		}
 
 		validator := New[Data]()
@@ -430,7 +430,7 @@ func TestUniqueConstraint_Coverage(t *testing.T) {
 
 	t.Run("unique map values valid", func(t *testing.T) {
 		type Data struct {
-			Mapping map[string]int `json:"mapping" pedantigo:"unique"`
+			Mapping map[string]int `json:"mapping" validate:"unique"`
 		}
 
 		validator := New[Data]()
@@ -442,7 +442,7 @@ func TestUniqueConstraint_Coverage(t *testing.T) {
 
 	t.Run("unique map values invalid", func(t *testing.T) {
 		type Data struct {
-			Mapping map[string]int `json:"mapping" pedantigo:"unique"`
+			Mapping map[string]int `json:"mapping" validate:"unique"`
 		}
 
 		validator := New[Data]()
@@ -458,7 +458,7 @@ func TestUniqueConstraint_Coverage(t *testing.T) {
 			Name string `json:"name"`
 		}
 		type Data struct {
-			Items []Item `json:"items" pedantigo:"unique=ID"`
+			Items []Item `json:"items" validate:"unique=ID"`
 		}
 
 		validator := New[Data]()
@@ -474,7 +474,7 @@ func TestUniqueConstraint_Coverage(t *testing.T) {
 			Name string `json:"name"`
 		}
 		type Data struct {
-			Items []Item `json:"items" pedantigo:"unique=ID"`
+			Items []Item `json:"items" validate:"unique=ID"`
 		}
 
 		validator := New[Data]()
@@ -489,7 +489,7 @@ func TestUniqueConstraint_Coverage(t *testing.T) {
 func TestEncodingConstraint_Coverage(t *testing.T) {
 	t.Run("valid base64 standard", func(t *testing.T) {
 		type Data struct {
-			Encoded string `json:"encoded" pedantigo:"base64"`
+			Encoded string `json:"encoded" validate:"base64"`
 		}
 
 		validator := New[Data]()
@@ -501,7 +501,7 @@ func TestEncodingConstraint_Coverage(t *testing.T) {
 
 	t.Run("invalid base64", func(t *testing.T) {
 		type Data struct {
-			Encoded string `json:"encoded" pedantigo:"base64"`
+			Encoded string `json:"encoded" validate:"base64"`
 		}
 
 		validator := New[Data]()
@@ -513,7 +513,7 @@ func TestEncodingConstraint_Coverage(t *testing.T) {
 
 	t.Run("valid base64url", func(t *testing.T) {
 		type Data struct {
-			Encoded string `json:"encoded" pedantigo:"base64url"`
+			Encoded string `json:"encoded" validate:"base64url"`
 		}
 
 		validator := New[Data]()
@@ -525,7 +525,7 @@ func TestEncodingConstraint_Coverage(t *testing.T) {
 
 	t.Run("valid base64rawurl", func(t *testing.T) {
 		type Data struct {
-			Encoded string `json:"encoded" pedantigo:"base64rawurl"`
+			Encoded string `json:"encoded" validate:"base64rawurl"`
 		}
 
 		validator := New[Data]()
@@ -540,7 +540,7 @@ func TestEncodingConstraint_Coverage(t *testing.T) {
 func TestNumericConstraint_EdgeCases(t *testing.T) {
 	t.Run("positive constraint valid", func(t *testing.T) {
 		type Data struct {
-			Value int `json:"value" pedantigo:"positive"`
+			Value int `json:"value" validate:"positive"`
 		}
 
 		validator := New[Data]()
@@ -552,7 +552,7 @@ func TestNumericConstraint_EdgeCases(t *testing.T) {
 
 	t.Run("positive constraint invalid zero", func(t *testing.T) {
 		type Data struct {
-			Value int `json:"value" pedantigo:"positive"`
+			Value int `json:"value" validate:"positive"`
 		}
 
 		validator := New[Data]()
@@ -564,7 +564,7 @@ func TestNumericConstraint_EdgeCases(t *testing.T) {
 
 	t.Run("negative constraint valid", func(t *testing.T) {
 		type Data struct {
-			Value int `json:"value" pedantigo:"negative"`
+			Value int `json:"value" validate:"negative"`
 		}
 
 		validator := New[Data]()
@@ -576,7 +576,7 @@ func TestNumericConstraint_EdgeCases(t *testing.T) {
 
 	t.Run("nonnegative constraint valid zero", func(t *testing.T) {
 		type Data struct {
-			Value int `json:"value" pedantigo:"nonnegative"`
+			Value int `json:"value" validate:"nonnegative"`
 		}
 
 		validator := New[Data]()
@@ -588,7 +588,7 @@ func TestNumericConstraint_EdgeCases(t *testing.T) {
 
 	t.Run("nonpositive constraint valid zero", func(t *testing.T) {
 		type Data struct {
-			Value int `json:"value" pedantigo:"nonpositive"`
+			Value int `json:"value" validate:"nonpositive"`
 		}
 
 		validator := New[Data]()

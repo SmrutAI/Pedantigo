@@ -29,8 +29,8 @@ The simplest way to create a stream parser:
 
 ```go
 type Message struct {
-    Role    string `json:"role" pedantigo:"required,enum=user|assistant|system"`
-    Content string `json:"content" pedantigo:"required,min=1"`
+    Role    string `json:"role" validate:"required,enum=user|assistant|system"`
+    Content string `json:"content" validate:"required,min=1"`
 }
 
 // Create a parser for streaming messages
@@ -53,8 +53,8 @@ If you need discriminated union support or other advanced features, create a cus
 
 ```go
 type MessageContent struct {
-    Type string `json:"type" pedantigo:"required,enum=text|image|video"`
-    Body string `json:"body" pedantigo:"required"`
+    Type string `json:"type" validate:"required,enum=text|image|video"`
+    Body string `json:"body" validate:"required"`
 }
 
 // Create a validator with custom configuration
@@ -164,8 +164,8 @@ import (
 )
 
 type ChatCompletion struct {
-    Content string `json:"content" pedantigo:"required"`
-    Model   string `json:"model" pedantigo:"required"`
+    Content string `json:"content" validate:"required"`
+    Model   string `json:"model" validate:"required"`
 }
 
 func handleOpenAIStream(ctx context.Context, client *openai.Client) error {
@@ -232,8 +232,8 @@ import (
 )
 
 type ContentBlock struct {
-    Type string `json:"type" pedantigo:"required,enum=text|image"`
-    Text string `json:"text" pedantigo:"required,min=1"`
+    Type string `json:"type" validate:"required,enum=text|image"`
+    Text string `json:"text" validate:"required,min=1"`
 }
 
 func handleAnthropicStream(ctx context.Context, client *anthropic.Client) error {

@@ -19,20 +19,20 @@ const (
 
 // Cat represents a cat variant in the pet union.
 type Cat struct {
-	Name  string `json:"name" pedantigo:"required"`
-	Lives int    `json:"lives" pedantigo:"min=1,max=9"`
+	Name  string `json:"name" validate:"required"`
+	Lives int    `json:"lives" validate:"min=1,max=9"`
 }
 
 // Dog represents a dog variant in the pet union.
 type Dog struct {
-	Name  string `json:"name" pedantigo:"required"`
+	Name  string `json:"name" validate:"required"`
 	Breed string `json:"breed"`
 }
 
 // Bird represents a bird variant in the pet union.
 type Bird struct {
-	Name string `json:"name" pedantigo:"required"`
-	Eggs int    `json:"eggs" pedantigo:"min=0"`
+	Name string `json:"name" validate:"required"`
+	Eggs int    `json:"eggs" validate:"min=0"`
 }
 
 // Pet is the union container type (for type parameter T).
@@ -1137,7 +1137,7 @@ func TestUnionValidator_Schema_VariantConstraintsApplied(t *testing.T) {
 	require.NotNil(t, catSchema, "cat schema should exist")
 	require.NotNil(t, catSchema.Properties)
 
-	// Check that name is in required (from pedantigo:"required")
+	// Check that name is in required (from validate:"required")
 	// and lives has min/max constraints
 	livesSchema, ok := catSchema.Properties.Get("lives")
 	require.True(t, ok, "lives property should exist")

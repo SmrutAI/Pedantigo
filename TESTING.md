@@ -21,7 +21,7 @@ Table-driven tests are the standard pattern in Go. They reduce code duplication 
 ```go
 func TestMin(t *testing.T) {
 	type MinTest struct {
-		Age int `pedantigo:"min=18"`
+		Age int `validate:"min=18"`
 	}
 
 	tests := []struct {
@@ -75,13 +75,13 @@ When testing multiple types, use type switches:
 ```go
 func TestCrossFieldConstraints(t *testing.T) {
 	type StructA struct {
-		Field1 string `pedantigo:"required"`
-		Field2 string `pedantigo:"eqfield=Field1"`
+		Field1 string `validate:"required"`
+		Field2 string `validate:"eqfield=Field1"`
 	}
 
 	type StructB struct {
-		Age    int `pedantigo:"required"`
-		MinAge int `pedantigo:"ltfield=Age"`
+		Age    int `validate:"required"`
+		MinAge int `validate:"ltfield=Age"`
 	}
 
 	tests := []struct {
@@ -129,8 +129,8 @@ func TestCrossFieldConstraints(t *testing.T) {
 func TestFeatureName(t *testing.T) {
 	// 1. Define test structs
 	type TestStruct struct {
-		Field1 string `pedantigo:"required"`
-		Field2 int    `pedantigo:"min=0"`
+		Field1 string `validate:"required"`
+		Field2 int    `validate:"min=0"`
 	}
 
 	// 2. Create reusable validators (optional)
@@ -436,7 +436,7 @@ See `internal/constraints/constraints_test.go`:
 ```go
 func TestEmail(t *testing.T) {
 	type EmailTest struct {
-		Email string `pedantigo:"email"`
+		Email string `validate:"email"`
 	}
 
 	tests := []struct {
@@ -471,8 +471,8 @@ See `internal/constraints/crossfield_comparison_test.go`:
 ```go
 func TestEqField(t *testing.T) {
 	type PasswordConfirm struct {
-		Password        string `pedantigo:"required"`
-		PasswordConfirm string `pedantigo:"eqfield=Password"`
+		Password        string `validate:"required"`
+		PasswordConfirm string `validate:"eqfield=Password"`
 	}
 
 	tests := []struct {

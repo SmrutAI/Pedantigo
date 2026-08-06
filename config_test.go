@@ -11,13 +11,13 @@ import (
 // Tests for Global Tag Name Configuration
 // ============================================================================
 
-// TestGetTagName_Default verifies the default tag name is "pedantigo".
+// TestGetTagName_Default verifies the default tag name is "validate".
 func TestGetTagName_Default(t *testing.T) {
 	// Reset to default for this test
 	resetTagNameForTesting()
 
 	tagName := GetTagName()
-	assert.Equal(t, "pedantigo", tagName, "default tag name should be 'pedantigo'")
+	assert.Equal(t, "validate", tagName, "default tag name should be 'validate'")
 }
 
 // TestSetTagName_Custom verifies setting a custom tag name.
@@ -25,8 +25,8 @@ func TestSetTagName_Custom(t *testing.T) {
 	resetTagNameForTesting()
 	resetValidatorCreatedForTesting() // Must reset flag for SetTagName to work
 
-	SetTagName("validate")
-	assert.Equal(t, "validate", GetTagName())
+	SetTagName("custom_validate")
+	assert.Equal(t, "custom_validate", GetTagName())
 
 	resetValidatorCreatedForTesting() // Reset again before next SetTagName
 	SetTagName("binding")
@@ -43,7 +43,7 @@ func TestSetTagName_Empty_FallsBack(t *testing.T) {
 	resetValidatorCreatedForTesting()
 
 	SetTagName("")
-	assert.Equal(t, "pedantigo", GetTagName(), "empty tag name should fall back to 'pedantigo'")
+	assert.Equal(t, "validate", GetTagName(), "empty tag name should fall back to 'pedantigo'")
 
 	resetValidatorCreatedForTesting()
 }
@@ -57,7 +57,7 @@ func TestGetTagName_ThreadSafe(t *testing.T) {
 	const numGoroutines = 100
 
 	// Set a known value
-	SetTagName("validate")
+	SetTagName("custom_validate")
 
 	// Concurrent reads
 	for i := 0; i < numGoroutines; i++ {
@@ -65,7 +65,7 @@ func TestGetTagName_ThreadSafe(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			tagName := GetTagName()
-			assert.Equal(t, "validate", tagName)
+			assert.Equal(t, "custom_validate", tagName)
 		}()
 	}
 
@@ -93,7 +93,7 @@ func TestSetTagName_PanicsAfterValidatorCreated(t *testing.T) {
 
 	// Now SetTagName should panic
 	assert.Panics(t, func() {
-		SetTagName("validate")
+		SetTagName("custom_validate")
 	}, "SetTagName should panic when called after validator creation")
 
 	// Reset for other tests

@@ -8,7 +8,7 @@ import (
 type Options struct {
 	Context  string
 	OmitZero bool
-	TagName  string // The struct tag name to use (e.g., "pedantigo", "validate", "binding")
+	TagName  string // The struct tag name to use (default "validate"; e.g., "binding" for Gin)
 }
 
 // ShouldIncludeField determines if a field should be included in output.

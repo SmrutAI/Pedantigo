@@ -18,9 +18,9 @@ Use `eqfield` to require a field to equal another field, and `nefield` to requir
 
 ```go
 type RegisterRequest struct {
-    Email            string `json:"email" pedantigo:"required,email"`
-    Password         string `json:"password" pedantigo:"required,minLength=8"`
-    PasswordConfirm  string `json:"password_confirm" pedantigo:"required,eqfield=Password"`
+    Email            string `json:"email" validate:"required,email"`
+    Password         string `json:"password" validate:"required,minLength=8"`
+    PasswordConfirm  string `json:"password_confirm" validate:"required,eqfield=Password"`
 }
 
 // Valid - passwords match
@@ -50,8 +50,8 @@ if err != nil {
 
 ```go
 type UpdateUsername struct {
-    CurrentUsername string `json:"current_username" pedantigo:"required"`
-    NewUsername     string `json:"new_username" pedantigo:"required,nefield=CurrentUsername"`
+    CurrentUsername string `json:"current_username" validate:"required"`
+    NewUsername     string `json:"new_username" validate:"required,nefield=CurrentUsername"`
 }
 
 // Valid - new username differs from current
@@ -78,9 +78,9 @@ Use `gtfield`, `gtefield`, `ltfield`, and `ltefield` to compare numeric or strin
 
 ```go
 type EventBooking struct {
-    EventName  string    `json:"event_name" pedantigo:"required"`
-    StartDate  time.Time `json:"start_date" pedantigo:"required"`
-    EndDate    time.Time `json:"end_date" pedantigo:"required,gtfield=StartDate"`
+    EventName  string    `json:"event_name" validate:"required"`
+    StartDate  time.Time `json:"start_date" validate:"required"`
+    EndDate    time.Time `json:"end_date" validate:"required,gtfield=StartDate"`
 }
 
 // Valid - end date is after start date
@@ -105,10 +105,10 @@ _, err := pedantigo.Unmarshal[EventBooking](badData)
 
 ```go
 type ProductListing struct {
-    Name       string  `json:"name" pedantigo:"required"`
-    MinPrice   float64 `json:"min_price" pedantigo:"required,gt=0"`
-    MaxPrice   float64 `json:"max_price" pedantigo:"required,gtfield=MinPrice"`
-    DiscountAt float64 `json:"discount_at" pedantigo:"gtefield=MinPrice,ltefield=MaxPrice"`
+    Name       string  `json:"name" validate:"required"`
+    MinPrice   float64 `json:"min_price" validate:"required,gt=0"`
+    MaxPrice   float64 `json:"max_price" validate:"required,gtfield=MinPrice"`
+    DiscountAt float64 `json:"discount_at" validate:"gtefield=MinPrice,ltefield=MaxPrice"`
 }
 
 // Valid - prices are properly ordered
@@ -143,10 +143,10 @@ Use `required_if` to require a field when another field has a specific value. Us
 
 ```go
 type ShippingForm struct {
-    Country      string `json:"country" pedantigo:"required,oneof=US CA MX"`
-    State        string `json:"state" pedantigo:"required_if=Country US"`
-    Province     string `json:"province" pedantigo:"required_if=Country CA"`
-    PostalCode   string `json:"postal_code" pedantigo:"required"`
+    Country      string `json:"country" validate:"required,oneof=US CA MX"`
+    State        string `json:"state" validate:"required_if=Country US"`
+    Province     string `json:"province" validate:"required_if=Country CA"`
+    PostalCode   string `json:"postal_code" validate:"required"`
 }
 
 // Valid - Country is US and State is provided
@@ -179,9 +179,9 @@ _, err := pedantigo.Unmarshal[ShippingForm](badData)
 ```go
 type SubscriptionForm struct {
     HasBusiness      bool   `json:"has_business"`
-    BusinessName     string `json:"business_name" pedantigo:"required_if=HasBusiness true"`
-    BusinessLicense  string `json:"business_license" pedantigo:"required_if=HasBusiness true"`
-    PersonalName     string `json:"personal_name" pedantigo:"required_unless=HasBusiness true"`
+    BusinessName     string `json:"business_name" validate:"required_if=HasBusiness true"`
+    BusinessLicense  string `json:"business_license" validate:"required_if=HasBusiness true"`
+    PersonalName     string `json:"personal_name" validate:"required_unless=HasBusiness true"`
 }
 
 // Valid - business fields provided
@@ -215,11 +215,11 @@ Use `required_with` to require a field only if another field is present (non-zer
 
 ```go
 type PaymentInfo struct {
-    PaymentMethod string `json:"payment_method" pedantigo:"required,oneof=credit_card bank_transfer"`
-    CardNumber    string `json:"card_number" pedantigo:"required_if=PaymentMethod credit_card"`
-    CVV           string `json:"cvv" pedantigo:"required_with=CardNumber"`
-    BankAccount   string `json:"bank_account" pedantigo:"required_if=PaymentMethod bank_transfer"`
-    RoutingNumber string `json:"routing_number" pedantigo:"required_with=BankAccount"`
+    PaymentMethod string `json:"payment_method" validate:"required,oneof=credit_card bank_transfer"`
+    CardNumber    string `json:"card_number" validate:"required_if=PaymentMethod credit_card"`
+    CVV           string `json:"cvv" validate:"required_with=CardNumber"`
+    BankAccount   string `json:"bank_account" validate:"required_if=PaymentMethod bank_transfer"`
+    RoutingNumber string `json:"routing_number" validate:"required_with=BankAccount"`
 }
 
 // Valid - credit card with CVV
@@ -252,7 +252,7 @@ _, err := pedantigo.Unmarshal[PaymentInfo](badData)
 ```go
 type TwoFactorSettings struct {
     TwoFactorEnabled bool   `json:"two_factor_enabled"`
-    BackupCode      string `json:"backup_code" pedantigo:"required_without=TwoFactorEnabled"`
+    BackupCode      string `json:"backup_code" validate:"required_without=TwoFactorEnabled"`
 }
 
 // Valid - backup code provided when 2FA is disabled
@@ -286,8 +286,8 @@ Use `skip_unless` to conditionally apply validation only when a condition is met
 
 ```go
 type Order struct {
-    Type     string `json:"type" pedantigo:"required,oneof=standard express"`
-    Priority int    `json:"priority" pedantigo:"skip_unless=Type express,required,min=1,max=10"`
+    Type     string `json:"type" validate:"required,oneof=standard express"`
+    Priority int    `json:"priority" validate:"skip_unless=Type express,required,min=1,max=10"`
 }
 
 // Priority is only validated when Type is "express"
@@ -342,8 +342,8 @@ Use `excluded_if` to forbid a field when another field has a specific value. The
 ```go
 type DiscountCode struct {
     AccountID   string `json:"account_id"`
-    DiscountPercent int    `json:"discount_percent" pedantigo:"excluded_if=AccountID premium"`
-    Notes       string `json:"notes" pedantigo:"excluded_unless=AccountID enterprise"`
+    DiscountPercent int    `json:"discount_percent" validate:"excluded_if=AccountID premium"`
+    Notes       string `json:"notes" validate:"excluded_unless=AccountID enterprise"`
 }
 
 // Valid - premium account (no discount percent allowed)
@@ -376,8 +376,8 @@ Use `excluded_with` to forbid a field when another field is present. Use `exclud
 
 ```go
 type AuthRequest struct {
-    APIKey string `json:"api_key" pedantigo:"minLength=20,maxLength=50"`
-    Token  string `json:"token" pedantigo:"excluded_with=APIKey,minLength=20,maxLength=100"`
+    APIKey string `json:"api_key" validate:"minLength=20,maxLength=50"`
+    Token  string `json:"token" validate:"excluded_with=APIKey,minLength=20,maxLength=100"`
 }
 
 // Valid - uses API key only
@@ -425,9 +425,9 @@ Since Pedantigo calls your `Validate()` method automatically, calling `pedantigo
 
 ```go
 type FlightBooking struct {
-    Origin      string    `json:"origin" pedantigo:"required"`
-    Destination string    `json:"destination" pedantigo:"required,nefield=Origin"`
-    DepartDate  time.Time `json:"depart_date" pedantigo:"required"`
+    Origin      string    `json:"origin" validate:"required"`
+    Destination string    `json:"destination" validate:"required,nefield=Origin"`
+    DepartDate  time.Time `json:"depart_date" validate:"required"`
     ReturnDate  time.Time `json:"return_date"`
     IsRoundTrip bool      `json:"is_round_trip"`
 }
@@ -470,9 +470,9 @@ If your `Validate()` method returns an error, it will be collected in the `Valid
 
 ```go
 type Account struct {
-    Username string `json:"username" pedantigo:"required,minLength=3,maxLength=20"`
-    Email    string `json:"email" pedantigo:"required,email"`
-    Age      int    `json:"age" pedantigo:"min=18"`
+    Username string `json:"username" validate:"required,minLength=3,maxLength=20"`
+    Email    string `json:"email" validate:"required,email"`
+    Age      int    `json:"age" validate:"min=18"`
 }
 
 func (a Account) Validate() error {
@@ -513,30 +513,30 @@ import (
 
 type EventRegistration struct {
     // Basic fields
-    Email           string    `json:"email" pedantigo:"required,email"`
-    FullName        string    `json:"full_name" pedantigo:"required,minLength=2"`
+    Email           string    `json:"email" validate:"required,email"`
+    FullName        string    `json:"full_name" validate:"required,minLength=2"`
 
     // Field comparisons
-    Password        string    `json:"password" pedantigo:"required,minLength=12"`
-    PasswordConfirm string    `json:"password_confirm" pedantigo:"required,eqfield=Password"`
+    Password        string    `json:"password" validate:"required,minLength=12"`
+    PasswordConfirm string    `json:"password_confirm" validate:"required,eqfield=Password"`
 
     // Conditional requirements
     IsStudent       bool      `json:"is_student"`
-    StudentID       string    `json:"student_id" pedantigo:"required_if=IsStudent true,len=10"`
-    Company         string    `json:"company" pedantigo:"required_unless=IsStudent true"`
+    StudentID       string    `json:"student_id" validate:"required_if=IsStudent true,len=10"`
+    Company         string    `json:"company" validate:"required_unless=IsStudent true"`
 
     // Date ranges
-    StartDate       time.Time `json:"start_date" pedantigo:"required"`
-    EndDate         time.Time `json:"end_date" pedantigo:"required,gtfield=StartDate"`
+    StartDate       time.Time `json:"start_date" validate:"required"`
+    EndDate         time.Time `json:"end_date" validate:"required,gtfield=StartDate"`
 
     // Mutually exclusive
-    PhoneNumber     string    `json:"phone_number" pedantigo:"excluded_with=TelegramHandle,len=10"`
-    TelegramHandle  string    `json:"telegram_handle" pedantigo:"excluded_with=PhoneNumber"`
+    PhoneNumber     string    `json:"phone_number" validate:"excluded_with=TelegramHandle,len=10"`
+    TelegramHandle  string    `json:"telegram_handle" validate:"excluded_with=PhoneNumber"`
 
     // Optional dependencies
     HasAccommodation bool      `json:"has_accommodation"`
-    HotelName        string    `json:"hotel_name" pedantigo:"required_with=HasAccommodation"`
-    CheckinDate      time.Time `json:"checkin_date" pedantigo:"required_with=HasAccommodation"`
+    HotelName        string    `json:"hotel_name" validate:"required_with=HasAccommodation"`
+    CheckinDate      time.Time `json:"checkin_date" validate:"required_with=HasAccommodation"`
 }
 
 // Validate implements custom cross-field validation logic
