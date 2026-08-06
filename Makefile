@@ -89,7 +89,11 @@ fmt: ## Format code with goimports + gofmt
 lint: ## Run golangci-lint
 	@echo "Running golangci-lint..."
 	@which golangci-lint > /dev/null || (echo "golangci-lint not installed. Install with: brew install golangci-lint" && exit 1)
-	golangci-lint run ./...
+	# golangci-lint's binary is built with go1.25 and doesn't yet support go1.26
+	# (tracked upstream: golangci/golangci-lint#6272). Force its internal `go`
+	# subprocess calls to use go1.25 so package analysis doesn't panic, while
+	# the rest of the toolchain (build, vet, test) stays on go1.26.
+	GOTOOLCHAIN=go1.25.12 golangci-lint run ./...
 
 deps: ## Download and tidy Go dependencies
 	@echo "Tidying dependencies..."
