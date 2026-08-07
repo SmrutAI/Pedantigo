@@ -102,7 +102,7 @@ func New[T any](opts ...ValidatorOptions) *Validator[T] {
 // visited tracks types already being processed to detect circular references (#15).
 func (v *Validator[T]) buildFieldConstraints(typ reflect.Type, tagName string, visited map[reflect.Type]bool) *constraints.FieldCache {
 	// Handle pointer types
-	if typ.Kind() == reflect.Ptr {
+	if typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
 	}
 
@@ -134,7 +134,7 @@ func (v *Validator[T]) buildFieldConstraints(typ reflect.Type, tagName string, v
 
 		// Field type info
 		fieldType := field.Type
-		if fieldType.Kind() == reflect.Ptr {
+		if fieldType.Kind() == reflect.Pointer {
 			fieldType = fieldType.Elem()
 		}
 		isCollection := fieldType.Kind() == reflect.Slice || fieldType.Kind() == reflect.Map
@@ -193,7 +193,7 @@ func (v *Validator[T]) buildFieldConstraints(typ reflect.Type, tagName string, v
 			cached.NestedCache = v.buildFieldConstraints(fieldType, tagName, visited)
 		case reflect.Slice, reflect.Map:
 			elemType := fieldType.Elem()
-			if elemType.Kind() == reflect.Ptr {
+			if elemType.Kind() == reflect.Pointer {
 				elemType = elemType.Elem()
 			}
 			if elemType.Kind() == reflect.Struct {
@@ -211,7 +211,7 @@ func (v *Validator[T]) buildFieldConstraints(typ reflect.Type, tagName string, v
 // This is called at creation time to fail fast on invalid tag combinations.
 func (v *Validator[T]) validateDiveTags(typ reflect.Type, tagName string) {
 	// Handle pointer types
-	if typ.Kind() == reflect.Ptr {
+	if typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
 	}
 
@@ -235,7 +235,7 @@ func (v *Validator[T]) validateDiveTags(typ reflect.Type, tagName string) {
 
 		// Get the underlying field type (dereference pointers)
 		fieldType := field.Type
-		if fieldType.Kind() == reflect.Ptr {
+		if fieldType.Kind() == reflect.Pointer {
 			fieldType = fieldType.Elem()
 		}
 
@@ -298,7 +298,7 @@ func (v *Validator[T]) setFieldValue(fieldValue reflect.Value, inValue any, fiel
 func (v *Validator[T]) Validate(obj *T) error {
 	if obj == nil {
 		return &ValidationError{
-			Errors: []FieldError{{Field: "root", Message: "cannot validate nil pointer"}},
+			Errors: []FieldError{{Field: fieldNameRoot, Message: ErrMsgNilPointer}},
 		}
 	}
 
@@ -327,7 +327,7 @@ func (v *Validator[T]) Validate(obj *T) error {
 				} else {
 					// Single error or custom error type
 					ctx.errs = append(ctx.errs, FieldError{
-						Field:   "root",
+						Field:   fieldNameRoot,
 						Message: err.Error(),
 					})
 				}
@@ -356,7 +356,7 @@ func (v *Validator[T]) validateWithCache(val reflect.Value, path []byte, ctx *va
 	}
 
 	// Handle pointer indirection
-	for val.Kind() == reflect.Ptr {
+	for val.Kind() == reflect.Pointer {
 		if val.IsNil() {
 			return
 		}
@@ -524,7 +524,7 @@ func (v *Validator[T]) Unmarshal(data []byte) (*T, error) {
 			if err := decoder.Decode(&obj); err != nil {
 				return &obj, &ValidationError{
 					Errors: []FieldError{{
-						Field:   "root",
+						Field:   fieldNameRoot,
 						Message: "JSON decode error: " + ErrMsgUnknownField,
 					}},
 				}
@@ -533,7 +533,7 @@ func (v *Validator[T]) Unmarshal(data []byte) (*T, error) {
 			if err := json.Unmarshal(data, &obj); err != nil {
 				return nil, &ValidationError{
 					Errors: []FieldError{{
-						Field:   "root",
+						Field:   fieldNameRoot,
 						Message: fmt.Sprintf("JSON decode error: %v", err),
 					}},
 				}
@@ -555,7 +555,7 @@ func (v *Validator[T]) Unmarshal(data []byte) (*T, error) {
 		if err := decoder.Decode(&obj); err != nil {
 			return &obj, &ValidationError{
 				Errors: []FieldError{{
-					Field:   "root",
+					Field:   fieldNameRoot,
 					Message: ErrMsgUnknownField,
 				}},
 			}
@@ -567,7 +567,7 @@ func (v *Validator[T]) Unmarshal(data []byte) (*T, error) {
 	if err := json.Unmarshal(data, &jsonMap); err != nil {
 		return nil, &ValidationError{
 			Errors: []FieldError{{
-				Field:   "root",
+				Field:   fieldNameRoot,
 				Message: fmt.Sprintf("JSON decode error: %v", err),
 			}},
 		}
@@ -733,7 +733,7 @@ func (v *Validator[T]) captureExtrasInField(fieldVal reflect.Value, fieldType re
 		if nestedMap, ok := nestedJSON.(map[string]any); ok {
 			v.captureExtrasRecursive(fieldVal, nestedMap, tagName)
 		}
-	case reflect.Ptr:
+	case reflect.Pointer:
 		if fieldType.Elem().Kind() == reflect.Struct && !fieldVal.IsNil() {
 			if nestedMap, ok := nestedJSON.(map[string]any); ok {
 				v.captureExtrasRecursive(fieldVal.Elem(), nestedMap, tagName)
@@ -748,7 +748,7 @@ func (v *Validator[T]) captureExtrasInField(fieldVal reflect.Value, fieldType re
 func (v *Validator[T]) captureExtrasInSlice(fieldVal reflect.Value, fieldType reflect.Type, nestedJSON any, tagName string) {
 	elemType := fieldType.Elem()
 	isStructSlice := elemType.Kind() == reflect.Struct
-	isPtrStructSlice := elemType.Kind() == reflect.Ptr && elemType.Elem().Kind() == reflect.Struct
+	isPtrStructSlice := elemType.Kind() == reflect.Pointer && elemType.Elem().Kind() == reflect.Struct
 
 	if !isStructSlice && !isPtrStructSlice {
 		return
@@ -761,7 +761,7 @@ func (v *Validator[T]) captureExtrasInSlice(fieldVal reflect.Value, fieldType re
 
 	for idx := 0; idx < fieldVal.Len() && idx < len(sliceJSON); idx++ {
 		elemVal := fieldVal.Index(idx)
-		if elemType.Kind() == reflect.Ptr {
+		if elemType.Kind() == reflect.Pointer {
 			if elemVal.IsNil() {
 				continue
 			}
@@ -810,7 +810,7 @@ func (v *Validator[T]) marshalWithExtras(obj *T) ([]byte, error) {
 
 	// Get the struct value
 	objVal := reflect.ValueOf(obj)
-	if objVal.Kind() == reflect.Ptr {
+	if objVal.Kind() == reflect.Pointer {
 		objVal = objVal.Elem()
 	}
 
@@ -874,7 +874,7 @@ func (v *Validator[T]) mergeExtrasInField(fieldVal reflect.Value, fieldType refl
 		if nestedMap, ok := resultMap[fieldName].(map[string]any); ok {
 			v.mergeExtrasRecursive(fieldVal, nestedMap, tagName)
 		}
-	case reflect.Ptr:
+	case reflect.Pointer:
 		if fieldType.Elem().Kind() == reflect.Struct && !fieldVal.IsNil() {
 			if nestedMap, ok := resultMap[fieldName].(map[string]any); ok {
 				v.mergeExtrasRecursive(fieldVal.Elem(), nestedMap, tagName)
@@ -889,7 +889,7 @@ func (v *Validator[T]) mergeExtrasInField(fieldVal reflect.Value, fieldType refl
 func (v *Validator[T]) mergeExtrasInSlice(fieldVal reflect.Value, fieldType reflect.Type, resultMap map[string]any, fieldName, tagName string) {
 	elemType := fieldType.Elem()
 	isStructSlice := elemType.Kind() == reflect.Struct
-	isPtrStructSlice := elemType.Kind() == reflect.Ptr && elemType.Elem().Kind() == reflect.Struct
+	isPtrStructSlice := elemType.Kind() == reflect.Pointer && elemType.Elem().Kind() == reflect.Struct
 
 	if !isStructSlice && !isPtrStructSlice {
 		return
@@ -902,7 +902,7 @@ func (v *Validator[T]) mergeExtrasInSlice(fieldVal reflect.Value, fieldType refl
 
 	for idx := 0; idx < fieldVal.Len() && idx < len(sliceAny); idx++ {
 		elemVal := fieldVal.Index(idx)
-		if elemType.Kind() == reflect.Ptr {
+		if elemType.Kind() == reflect.Pointer {
 			if elemVal.IsNil() {
 				continue
 			}
@@ -924,7 +924,7 @@ func (v *Validator[T]) MarshalWithOptions(obj *T, opts MarshalOptions) ([]byte, 
 
 	// Build field metadata for filtering
 	val := reflect.ValueOf(obj)
-	if val.Kind() == reflect.Ptr {
+	if val.Kind() == reflect.Pointer {
 		if val.IsNil() {
 			return []byte("null"), nil
 		}
@@ -982,7 +982,7 @@ func (v *Validator[T]) NewModel(input any) (*T, error) {
 	case *T:
 		if val == nil {
 			return nil, &ValidationError{
-				Errors: []FieldError{{Field: "root", Message: "cannot validate nil pointer"}},
+				Errors: []FieldError{{Field: fieldNameRoot, Message: ErrMsgNilPointer}},
 			}
 		}
 		if err := v.Validate(val); err != nil {
@@ -1000,7 +1000,7 @@ func (v *Validator[T]) NewModel(input any) (*T, error) {
 		var zero T
 		return nil, &ValidationError{
 			Errors: []FieldError{{
-				Field:   "root",
+				Field:   fieldNameRoot,
 				Message: fmt.Sprintf("unsupported input type: %T, expected []byte, %T, *%T, or map[string]any", input, zero, zero),
 			}},
 		}
@@ -1085,7 +1085,7 @@ func (v *Validator[T]) StructPartial(obj *T, fields ...string) error {
 			Errors: []FieldError{{
 				Field:   "",
 				Code:    "NIL_POINTER",
-				Message: "cannot validate nil pointer",
+				Message: ErrMsgNilPointer,
 			}},
 		}
 	}
@@ -1120,7 +1120,7 @@ func (v *Validator[T]) StructPartial(obj *T, fields ...string) error {
 			errs = append(errs, FieldError{
 				Field:   cached.JSONName,
 				Code:    constraints.CodeRequired,
-				Message: "is required",
+				Message: ErrMsgFieldRequired,
 				Value:   fieldValue.Interface(),
 			})
 			continue // Skip further validation for this field
@@ -1183,7 +1183,7 @@ func (v *Validator[T]) StructExcept(obj *T, excludeFields ...string) error {
 			Errors: []FieldError{{
 				Field:   "",
 				Code:    "NIL_POINTER",
-				Message: "cannot validate nil pointer",
+				Message: ErrMsgNilPointer,
 			}},
 		}
 	}
@@ -1213,7 +1213,7 @@ func (v *Validator[T]) StructExcept(obj *T, excludeFields ...string) error {
 			errs = append(errs, FieldError{
 				Field:   cached.JSONName,
 				Code:    constraints.CodeRequired,
-				Message: "is required",
+				Message: ErrMsgFieldRequired,
 				Value:   fieldValue.Interface(),
 			})
 			continue // Skip further validation for this field

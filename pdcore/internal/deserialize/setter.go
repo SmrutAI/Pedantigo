@@ -50,7 +50,7 @@ func SetFieldValueWithOptions(
 	}
 
 	// Handle pointer types
-	if fieldType.Kind() == reflect.Ptr {
+	if fieldType.Kind() == reflect.Pointer {
 		// If inValue is nil, set the pointer field to nil (explicit JSON null)
 		if inValue == nil {
 			fieldValue.Set(reflect.Zero(fieldType))
@@ -531,7 +531,7 @@ func SetDefaultValue(fieldValue reflect.Value, defaultValue string, recursiveSet
 	}
 
 	// Handle pointer types
-	if fieldValue.Kind() == reflect.Ptr {
+	if fieldValue.Kind() == reflect.Pointer {
 		// Create a new value of the element type
 		elemType := fieldValue.Type().Elem()
 		newPtr := reflect.New(elemType)

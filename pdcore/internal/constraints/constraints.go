@@ -193,7 +193,7 @@ func derefValue(value any) (reflect.Value, bool) {
 		return reflect.Value{}, false
 	}
 
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			return reflect.Value{}, false
 		}
@@ -309,75 +309,75 @@ func BuildConstraints(constraints map[string]string, fieldType reflect.Type) []C
 // appendCoreConstraint appends core validation constraints if name matches.
 func appendCoreConstraint(result []Constraint, name, value string, fieldType reflect.Type) []Constraint {
 	switch name {
-	case "min":
+	case CMin:
 		if c, ok := buildMinConstraint(value, fieldType); ok {
 			return append(result, c)
 		}
-	case "max":
+	case CMax:
 		if c, ok := buildMaxConstraint(value, fieldType); ok {
 			return append(result, c)
 		}
-	case "gt":
+	case CGt:
 		if threshold, err := strconv.ParseFloat(value, 64); err == nil {
 			return append(result, gtConstraint{threshold: threshold})
 		}
-	case "gte":
+	case CGte:
 		if threshold, err := strconv.ParseFloat(value, 64); err == nil {
 			return append(result, geConstraint{threshold: threshold})
 		}
-	case "lt":
+	case CLt:
 		if threshold, err := strconv.ParseFloat(value, 64); err == nil {
 			return append(result, ltConstraint{threshold: threshold})
 		}
-	case "lte":
+	case CLte:
 		if threshold, err := strconv.ParseFloat(value, 64); err == nil {
 			return append(result, leConstraint{threshold: threshold})
 		}
-	case "email":
+	case CEmail:
 		return append(result, emailConstraint{})
-	case "url":
+	case CUrl:
 		return append(result, urlConstraint{})
-	case "uri":
+	case CUri:
 		return append(result, uriConstraint{})
-	case "uuid":
+	case CUuid:
 		return append(result, uuidConstraint{})
-	case "uuid3":
+	case CUuid3:
 		return append(result, uuid3Constraint{})
-	case "uuid4":
+	case CUuid4:
 		return append(result, uuid4Constraint{})
-	case "uuid5":
+	case CUuid5:
 		return append(result, uuid5Constraint{})
-	case "regexp":
+	case CRegexp:
 		return append(result, buildRegexConstraint(value))
-	case "ipv4":
+	case CIpv4:
 		return append(result, ipv4Constraint{})
-	case "ipv6":
+	case CIpv6:
 		return append(result, ipv6Constraint{})
-	case "oneof":
+	case COneof:
 		return append(result, buildEnumConstraint(value))
-	case "oneofci":
+	case COneofci:
 		return append(result, buildEnumCIConstraint(value))
-	case "eq":
+	case CEq:
 		if c, ok := buildEqConstraint(value); ok {
 			return append(result, c)
 		}
-	case "ne":
+	case CNe:
 		if c, ok := buildNeConstraint(value); ok {
 			return append(result, c)
 		}
-	case "eq_ignore_case":
+	case CEqIgnoreCase:
 		if c, ok := buildEqIgnoreCaseConstraint(value); ok {
 			return append(result, c)
 		}
-	case "ne_ignore_case":
+	case CNeIgnoreCase:
 		if c, ok := buildNeIgnoreCaseConstraint(value); ok {
 			return append(result, c)
 		}
-	case "len":
+	case CLen:
 		if c, ok := buildLenConstraint(value); ok {
 			return append(result, c)
 		}
-	case "http_url":
+	case CHttpUrl:
 		return append(result, httpURLConstraint{})
 	}
 	return result
@@ -386,83 +386,83 @@ func appendCoreConstraint(result []Constraint, name, value string, fieldType ref
 // appendStringConstraint appends string validation constraints if name matches.
 func appendStringConstraint(result []Constraint, name, value string) []Constraint {
 	switch name {
-	case "ascii":
+	case CAscii:
 		return append(result, asciiConstraint{})
-	case "alpha":
+	case CAlpha:
 		return append(result, alphaConstraint{})
-	case "alphanum":
+	case CAlphanum:
 		return append(result, alphanumConstraint{})
-	case "alphaspace":
+	case CAlphaspace:
 		return append(result, alphaspaceConstraint{})
-	case "alphanumspace":
+	case CAlphanumspace:
 		return append(result, alphanumspaceConstraint{})
-	case "printascii":
+	case CPrintascii:
 		return append(result, printasciiConstraint{})
-	case "numeric":
+	case CNumeric:
 		return append(result, numericConstraint{})
-	case "number":
+	case CNumber:
 		return append(result, numberConstraint{})
-	case "hexadecimal":
+	case CHexadecimal:
 		return append(result, hexadecimalConstraint{})
-	case "alphaunicode":
+	case CAlphaunicode:
 		return append(result, alphaunicodeConstraint{})
-	case "alphanumunicode":
+	case CAlphanumunicode:
 		return append(result, alphanumunicodeConstraint{})
-	case "contains":
+	case CContains:
 		if c, ok := buildContainsConstraint(value); ok {
 			return append(result, c)
 		}
-	case "excludes":
+	case CExcludes:
 		if c, ok := buildExcludesConstraint(value); ok {
 			return append(result, c)
 		}
-	case "startswith":
+	case CStartswith:
 		if c, ok := buildStartswithConstraint(value); ok {
 			return append(result, c)
 		}
-	case "endswith":
+	case CEndswith:
 		if c, ok := buildEndswithConstraint(value); ok {
 			return append(result, c)
 		}
-	case "startsnotwith":
+	case CStartsnotwith:
 		if c, ok := buildStartsnotwithConstraint(value); ok {
 			return append(result, c)
 		}
-	case "endsnotwith":
+	case CEndsnotwith:
 		if c, ok := buildEndsnotwithConstraint(value); ok {
 			return append(result, c)
 		}
-	case "containsany":
+	case CContainsany:
 		if c, ok := buildContainsanyConstraint(value); ok {
 			return append(result, c)
 		}
-	case "excludesall":
+	case CExcludesall:
 		if c, ok := buildExcludesallConstraint(value); ok {
 			return append(result, c)
 		}
-	case "excludesrune":
+	case CExcludesrune:
 		if c, ok := buildExcludesruneConstraint(value); ok {
 			return append(result, c)
 		}
-	case "containsrune":
+	case CContainsRune:
 		if c, ok := buildContainsRuneConstraint(value); ok {
 			return append(result, c)
 		}
-	case "lowercase":
+	case CLowercase:
 		return append(result, lowercaseConstraint{})
-	case "uppercase":
+	case CUppercase:
 		return append(result, uppercaseConstraint{})
-	case "multibyte":
+	case CMultibyte:
 		return append(result, multibyteConstraint{})
-	case "urn_rfc2141":
+	case CUrnRfc2141:
 		return append(result, urnRfc2141Constraint{})
-	case "strip_whitespace":
+	case CStripWhitespace:
 		// In Validate mode: check if string has no leading/trailing whitespace
 		return append(result, stripWhitespaceConstraint{})
-	case "to_lower":
+	case CToLower:
 		// In Validate mode: check if string is all lowercase
 		return append(result, lowercaseConstraint{})
-	case "to_upper":
+	case CToUpper:
 		// In Validate mode: check if string is all uppercase
 		return append(result, uppercaseConstraint{})
 	}
@@ -472,23 +472,23 @@ func appendStringConstraint(result []Constraint, name, value string) []Constrain
 // appendNumericConstraint appends numeric validation constraints if name matches.
 func appendNumericConstraint(result []Constraint, name, value string) []Constraint {
 	switch name {
-	case "positive":
+	case CPositive:
 		return append(result, positiveConstraint{})
-	case "negative":
+	case CNegative:
 		return append(result, negativeConstraint{})
-	case "multiple_of":
+	case CMultipleOf:
 		if c, ok := buildMultipleOfConstraint(value); ok {
 			return append(result, c)
 		}
-	case "max_digits":
+	case CMaxDigits:
 		if c, ok := buildMaxDigitsConstraint(value); ok {
 			return append(result, c)
 		}
-	case "decimal_places":
+	case CDecimalPlaces:
 		if c, ok := buildDecimalPlacesConstraint(value); ok {
 			return append(result, c)
 		}
-	case "disallow_inf_nan":
+	case CDisallowInfNan:
 		return append(result, disallowInfNanConstraint{})
 	}
 	return result
@@ -497,9 +497,9 @@ func appendNumericConstraint(result []Constraint, name, value string) []Constrai
 // appendCollectionConstraint appends collection validation constraints if name matches.
 func appendCollectionConstraint(result []Constraint, name, value string) []Constraint {
 	switch name {
-	case "unique":
+	case CUnique:
 		return append(result, uniqueConstraint{field: value})
-	case "default":
+	case CDefault:
 		return append(result, defaultConstraint{value: value})
 	}
 	return result
@@ -508,33 +508,33 @@ func appendCollectionConstraint(result []Constraint, name, value string) []Const
 // appendNetworkConstraint appends network format validators if name matches.
 func appendNetworkConstraint(result []Constraint, name string) []Constraint {
 	switch name {
-	case "ip":
+	case CIp:
 		return append(result, ipConstraint{})
-	case "cidr":
+	case CCidr:
 		return append(result, cidrConstraint{})
-	case "cidrv4":
+	case CCidrv4:
 		return append(result, cidrv4Constraint{})
-	case "cidrv6":
+	case CCidrv6:
 		return append(result, cidrv6Constraint{})
-	case "mac":
+	case CMac:
 		return append(result, macConstraint{})
-	case "hostname":
+	case CHostname:
 		return append(result, hostnameConstraint{})
-	case "hostname_rfc1123":
+	case CHostnameRfc1123:
 		return append(result, hostnameRFC1123Constraint{})
-	case "hostname_port":
+	case CHostnamePort:
 		return append(result, hostnamePortConstraint{})
-	case "fqdn":
+	case CFqdn:
 		return append(result, fqdnConstraint{})
-	case "port":
+	case CPort:
 		return append(result, portConstraint{})
-	case "tcp_addr":
+	case CTcpAddr:
 		return append(result, tcpAddrConstraint{})
-	case "udp_addr":
+	case CUdpAddr:
 		return append(result, udpAddrConstraint{})
-	case "tcp4_addr":
+	case CTcp4Addr:
 		return append(result, tcp4AddrConstraint{})
-	case "https_url":
+	case CHttpsUrl:
 		return append(result, httpsURLConstraint{})
 	}
 	return result
@@ -543,15 +543,15 @@ func appendNetworkConstraint(result []Constraint, name string) []Constraint {
 // appendFinanceConstraint appends finance format validators if name matches.
 func appendFinanceConstraint(result []Constraint, name string) []Constraint {
 	switch name {
-	case "credit_card":
+	case CCreditCard:
 		return append(result, creditCardConstraint{})
-	case "btc_addr":
+	case CBtcAddr:
 		return append(result, btcAddrConstraint{})
-	case "btc_addr_bech32":
+	case CBtcAddrBech32:
 		return append(result, btcAddrBech32Constraint{})
-	case "eth_addr":
+	case CEthAddr:
 		return append(result, ethAddrConstraint{})
-	case "luhn_checksum":
+	case CLuhnChecksum:
 		return append(result, luhnChecksumConstraint{})
 	}
 	return result
@@ -560,19 +560,19 @@ func appendFinanceConstraint(result []Constraint, name string) []Constraint {
 // appendIdentityConstraint appends identity format validators if name matches.
 func appendIdentityConstraint(result []Constraint, name string) []Constraint {
 	switch name {
-	case "isbn":
+	case CIsbn:
 		return append(result, isbnConstraint{})
-	case "isbn10":
+	case CIsbn10:
 		return append(result, isbn10Constraint{})
-	case "isbn13":
+	case CIsbn13:
 		return append(result, isbn13Constraint{})
-	case "issn":
+	case CIssn:
 		return append(result, issnConstraint{})
-	case "ssn":
+	case CSsn:
 		return append(result, ssnConstraint{})
-	case "ein":
+	case CEin:
 		return append(result, einConstraint{})
-	case "e164":
+	case CE164:
 		return append(result, e164Constraint{})
 	}
 	return result
@@ -581,9 +581,9 @@ func appendIdentityConstraint(result []Constraint, name string) []Constraint {
 // appendGeoConstraint appends geolocation format validators if name matches.
 func appendGeoConstraint(result []Constraint, name string) []Constraint {
 	switch name {
-	case "latitude":
+	case CLatitude:
 		return append(result, latitudeConstraint{})
-	case "longitude":
+	case CLongitude:
 		return append(result, longitudeConstraint{})
 	}
 	return result
@@ -592,15 +592,15 @@ func appendGeoConstraint(result []Constraint, name string) []Constraint {
 // appendColorConstraint appends color format validators if name matches.
 func appendColorConstraint(result []Constraint, name string) []Constraint {
 	switch name {
-	case "hexcolor":
+	case CHexcolor:
 		return append(result, hexcolorConstraint{})
-	case "rgb":
+	case CRgb:
 		return append(result, rgbConstraint{})
-	case "rgba":
+	case CRgba:
 		return append(result, rgbaConstraint{})
-	case "hsl":
+	case CHsl:
 		return append(result, hslConstraint{})
-	case "hsla":
+	case CHsla:
 		return append(result, hslaConstraint{})
 	}
 	return result
@@ -609,19 +609,19 @@ func appendColorConstraint(result []Constraint, name string) []Constraint {
 // appendEncodingConstraint appends encoding format validators if name matches.
 func appendEncodingConstraint(result []Constraint, name string) []Constraint {
 	switch name {
-	case "jwt":
+	case CJwt:
 		return append(result, jwtConstraint{})
-	case "json":
+	case CJson:
 		return append(result, jsonConstraint{})
-	case "base64":
+	case CBase64:
 		return append(result, base64Constraint{})
-	case "base64url":
+	case CBase64url:
 		return append(result, base64urlConstraint{})
-	case "base64rawurl":
+	case CBase64rawurl:
 		return append(result, base64rawurlConstraint{})
-	case "datauri":
+	case CDatauri:
 		return append(result, datauriConstraint{})
-	case "base32":
+	case CBase32:
 		return append(result, base32Constraint{})
 	}
 	return result
@@ -630,17 +630,17 @@ func appendEncodingConstraint(result []Constraint, name string) []Constraint {
 // appendHashConstraint appends hash format validators if name matches.
 func appendHashConstraint(result []Constraint, name string) []Constraint {
 	switch name {
-	case "md4":
+	case CMd4:
 		return append(result, md4Constraint{})
-	case "md5":
+	case CMd5:
 		return append(result, md5Constraint{})
-	case "sha256":
+	case CSha256:
 		return append(result, sha256Constraint{})
-	case "sha384":
+	case CSha384:
 		return append(result, sha384Constraint{})
-	case "sha512":
+	case CSha512:
 		return append(result, sha512Constraint{})
-	case "mongodb":
+	case CMongodb:
 		return append(result, mongodbConstraint{})
 	}
 	return result
@@ -649,19 +649,19 @@ func appendHashConstraint(result []Constraint, name string) []Constraint {
 // appendMiscConstraint appends miscellaneous format validators if name matches.
 func appendMiscConstraint(result []Constraint, name, value string) []Constraint {
 	switch name {
-	case "html":
+	case CHtml:
 		return append(result, htmlConstraint{})
-	case "cron":
+	case CCron:
 		return append(result, cronConstraint{})
-	case "semver":
+	case CSemver:
 		return append(result, semverConstraint{})
-	case "ulid":
+	case CUlid:
 		return append(result, ulidConstraint{})
-	case "datetime":
+	case CDatetime:
 		if c, ok := buildDatetimeConstraint(value); ok {
 			return append(result, c)
 		}
-	case "timezone":
+	case CTimezone:
 		return append(result, timezoneConstraint{})
 	}
 	return result

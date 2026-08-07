@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/invopop/jsonschema"
+
+	"github.com/SmrutAI/pedantigo/v2/pdcore/internal/constraints"
 )
 
 // Format constraint name constants.
@@ -110,6 +112,12 @@ const (
 	metaDeprecated  = "deprecated"
 )
 
+// constraintDefaultUsingMethod is a runtime-only constraint name; it has no schema effect.
+const constraintDefaultUsingMethod = "defaultUsingMethod"
+
+// jsonSchemaTypeObject is the JSON Schema "type" value for object definitions.
+const jsonSchemaTypeObject = "object"
+
 // GenerateBaseSchema creates base JSON schema for a type (all nested structs inlined).
 func GenerateBaseSchema[T any]() *jsonschema.Schema {
 	var zero T
@@ -125,7 +133,7 @@ func GenerateBaseSchema[T any]() *jsonschema.Schema {
 		// The jsonschema library creates a reference schema with definitions
 		// Find the actual struct schema in the definitions
 		for _, def := range baseSchema.Definitions {
-			if def.Type == "object" && def.Properties != nil {
+			if def.Type == jsonSchemaTypeObject && def.Properties != nil {
 				actualSchema = def
 				break
 			}
@@ -155,7 +163,7 @@ func GenerateOpenAPIBaseSchema[T any]() *jsonschema.Schema {
 // EnhanceSchema implements the functionality.
 func EnhanceSchema(schema *jsonschema.Schema, typ reflect.Type, parseTagFunc func(reflect.StructTag) map[string]string) {
 	// Handle pointer types
-	if typ.Kind() == reflect.Ptr {
+	if typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
 	}
 
@@ -267,7 +275,7 @@ func ApplyConstraints(schema *jsonschema.Schema, constraintsMap map[string]strin
 
 	for name, value := range constraintsMap {
 		switch name {
-		case "required":
+		case constraints.CRequired:
 			// Already handled in EnhanceSchema
 			continue
 
@@ -275,25 +283,25 @@ func ApplyConstraints(schema *jsonschema.Schema, constraintsMap map[string]strin
 			// Already processed above to ensure order
 			continue
 
-		case "min":
+		case constraints.CMin:
 			applyMinConstraint(schema, value, fieldType)
 
-		case "max":
+		case constraints.CMax:
 			applyMaxConstraint(schema, value, fieldType)
 
-		case "gt":
+		case constraints.CGt:
 			// gt → exclusiveMinimum (exclusive)
 			schema.ExclusiveMinimum = json.Number(value)
 
-		case "gte":
+		case constraints.CGte:
 			// gte → minimum (inclusive)
 			schema.Minimum = json.Number(value)
 
-		case "lt":
+		case constraints.CLt:
 			// lt → exclusiveMaximum (exclusive)
 			schema.ExclusiveMaximum = json.Number(value)
 
-		case "lte":
+		case constraints.CLte:
 			// lte → maximum (inclusive)
 			schema.Maximum = json.Number(value)
 
@@ -322,11 +330,11 @@ func ApplyConstraints(schema *jsonschema.Schema, constraintsMap map[string]strin
 			fmtFilepath, fmtDirpath, fmtFile, fmtDir:
 			applyFormatConstraint(schema, name)
 
-		case "regexp":
+		case constraints.CRegexp:
 			// regexp → pattern
 			schema.Pattern = value
 
-		case "oneof":
+		case constraints.COneof:
 			// oneof → enum array (space-separated values)
 			values := strings.Fields(value)
 			enumValues := make([]any, len(values))
@@ -335,16 +343,16 @@ func ApplyConstraints(schema *jsonschema.Schema, constraintsMap map[string]strin
 			}
 			schema.Enum = enumValues
 
-		case "eq":
+		case constraints.CEq:
 			// eq → const (JSON Schema keyword for exact value match)
 			schema.Const = value
 
-		case "ne":
+		case constraints.CNe:
 			// ne → not.const (JSON Schema keyword for "not equal")
 			// Note: JSON Schema uses "not" with nested schema for negation
 			schema.Not = &jsonschema.Schema{Const: value}
 
-		case "len":
+		case constraints.CLen:
 			// len → minLength + maxLength (exact length)
 			if length, err := strconv.Atoi(value); err == nil && length >= 0 {
 				l := uint64(length) //nolint:gosec // bounds checked above
@@ -352,55 +360,55 @@ func ApplyConstraints(schema *jsonschema.Schema, constraintsMap map[string]strin
 				schema.MaxLength = &l
 			}
 
-		case "ascii":
+		case constraints.CAscii:
 			// ascii → pattern for ASCII characters only (0x00-0x7F)
 			schema.Pattern = "^[\\x00-\\x7F]*$"
 
-		case "alpha":
+		case constraints.CAlpha:
 			// alpha → pattern for alphabetic characters only (a-z, A-Z)
 			schema.Pattern = "^[a-zA-Z]+$"
 
-		case "alphanum":
+		case constraints.CAlphanum:
 			// alphanum → pattern for alphanumeric characters only (a-z, A-Z, 0-9)
 			schema.Pattern = "^[a-zA-Z0-9]+$"
 
-		case "contains":
+		case constraints.CContains:
 			// contains → pattern for substring presence (with escaped special characters)
 			escapedSubstring := regexp.QuoteMeta(value)
 			schema.Pattern = ".*" + escapedSubstring + ".*"
 
-		case "excludes":
+		case constraints.CExcludes:
 			// excludes → pattern using negative lookahead to exclude substring
 			escapedSubstring := regexp.QuoteMeta(value)
 			schema.Pattern = "^(?!.*" + escapedSubstring + ").*$"
 
-		case "startswith":
+		case constraints.CStartswith:
 			// startswith → pattern anchored at start
 			escapedPrefix := regexp.QuoteMeta(value)
 			schema.Pattern = "^" + escapedPrefix + ".*"
 
-		case "endswith":
+		case constraints.CEndswith:
 			// endswith → pattern anchored at end
 			escapedSuffix := regexp.QuoteMeta(value)
 			schema.Pattern = ".*" + escapedSuffix + "$"
 
-		case "lowercase":
+		case constraints.CLowercase:
 			// lowercase → pattern excluding uppercase letters
 			schema.Pattern = "^[^A-Z]*$"
 
-		case "uppercase":
+		case constraints.CUppercase:
 			// uppercase → pattern excluding lowercase letters
 			schema.Pattern = "^[^a-z]*$"
 
-		case "positive":
+		case constraints.CPositive:
 			// positive → exclusiveMinimum of 0
 			schema.ExclusiveMinimum = json.Number("0")
 
-		case "negative":
+		case constraints.CNegative:
 			// negative → exclusiveMaximum of 0
 			schema.ExclusiveMaximum = json.Number("0")
 
-		case "multiple_of":
+		case constraints.CMultipleOf:
 			// multiple_of → multipleOf (JSON Schema keyword)
 			schema.MultipleOf = json.Number(value)
 
@@ -428,11 +436,11 @@ func ApplyConstraints(schema *jsonschema.Schema, constraintsMap map[string]strin
 				}
 			}
 
-		case "default":
+		case constraints.CDefault:
 			// default → default value
 			schema.Default = ParseDefaultValue(value, fieldType)
 
-		case "defaultUsingMethod":
+		case constraintDefaultUsingMethod:
 			// Skip - this is runtime behavior, not schema
 			continue
 		}
@@ -464,16 +472,16 @@ func ApplyConstraintsToItems(schema *jsonschema.Schema, constraintsMap map[strin
 			schema.Format = fmtIPv4
 		case fmtIPv6:
 			schema.Format = fmtIPv6
-		case "regexp":
+		case constraints.CRegexp:
 			schema.Pattern = value
-		case "oneof":
+		case constraints.COneof:
 			values := strings.Fields(value)
 			enumValues := make([]any, len(values))
 			for i, v := range values {
 				enumValues[i] = v
 			}
 			schema.Enum = enumValues
-		case "min":
+		case constraints.CMin:
 			// Context-aware for element type
 			kind := elemType.Kind()
 			if kind == reflect.String {
@@ -484,7 +492,7 @@ func ApplyConstraintsToItems(schema *jsonschema.Schema, constraintsMap map[strin
 			} else {
 				schema.Minimum = json.Number(value)
 			}
-		case "max":
+		case constraints.CMax:
 			// Context-aware for element type
 			kind := elemType.Kind()
 			if kind == reflect.String {
@@ -495,13 +503,13 @@ func ApplyConstraintsToItems(schema *jsonschema.Schema, constraintsMap map[strin
 			} else {
 				schema.Maximum = json.Number(value)
 			}
-		case "gt":
+		case constraints.CGt:
 			schema.ExclusiveMinimum = json.Number(value)
-		case "gte":
+		case constraints.CGte:
 			schema.Minimum = json.Number(value)
-		case "lt":
+		case constraints.CLt:
 			schema.ExclusiveMaximum = json.Number(value)
-		case "lte":
+		case constraints.CLte:
 			schema.Maximum = json.Number(value)
 		}
 	}
@@ -536,7 +544,7 @@ func ParseDefaultValue(value string, typ reflect.Type) any {
 // For strings/arrays: sets minLength, for numbers: sets minimum.
 func applyMinConstraint(schema *jsonschema.Schema, value string, fieldType reflect.Type) {
 	checkType := fieldType
-	if checkType.Kind() == reflect.Ptr {
+	if checkType.Kind() == reflect.Pointer {
 		checkType = checkType.Elem()
 	}
 	kind := checkType.Kind()
@@ -556,7 +564,7 @@ func applyMinConstraint(schema *jsonschema.Schema, value string, fieldType refle
 // For strings/arrays: sets maxLength, for numbers: sets maximum.
 func applyMaxConstraint(schema *jsonschema.Schema, value string, fieldType reflect.Type) {
 	checkType := fieldType
-	if checkType.Kind() == reflect.Ptr {
+	if checkType.Kind() == reflect.Pointer {
 		checkType = checkType.Elem()
 	}
 	kind := checkType.Kind()
@@ -740,7 +748,7 @@ func applyFormatConstraint(schema *jsonschema.Schema, constraintName string) {
 // Implementation.
 func GenerateVariantSchema(variantType reflect.Type, discriminatorField, discriminatorValue string, parseTagFunc func(reflect.StructTag) map[string]string) *jsonschema.Schema {
 	// Handle pointer types
-	if variantType.Kind() == reflect.Ptr {
+	if variantType.Kind() == reflect.Pointer {
 		variantType = variantType.Elem()
 	}
 
@@ -759,7 +767,7 @@ func GenerateVariantSchema(variantType reflect.Type, discriminatorField, discrim
 		// The jsonschema library creates a reference schema with definitions
 		// Find the actual struct schema in the definitions
 		for _, def := range variantSchema.Definitions {
-			if def.Type == "object" && def.Properties != nil {
+			if def.Type == jsonSchemaTypeObject && def.Properties != nil {
 				variantSchema = def
 				break
 			}

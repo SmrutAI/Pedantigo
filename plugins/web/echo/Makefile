@@ -79,10 +79,22 @@ fmt: ## Format code with goimports + gofmt
 	goimports -w -local github.com/SmrutAI/pedantigo .
 	gofmt -s -w .
 
-lint: ## Run golangci-lint
+# Pinned to match the exact version CI installs (see .github/workflows/ci.yml) —
+# invoked by direct path, not via PATH resolution, so a stale golangci-lint
+# elsewhere on PATH (e.g. an older Homebrew install) can never silently shadow
+# it and let a local `make lint` pass on issues CI would catch.
+GOLANGCI_LINT_VERSION := v2.12.2
+GOLANGCI_LINT_BIN := $(shell go env GOPATH)/bin/golangci-lint
+
+$(GOLANGCI_LINT_BIN): ## Install the pinned golangci-lint version if missing or outdated
+	@if [ ! -x "$(GOLANGCI_LINT_BIN)" ] || ! "$(GOLANGCI_LINT_BIN)" version 2>/dev/null | grep -q "version $(GOLANGCI_LINT_VERSION:v%=%) "; then \
+		echo "Installing golangci-lint $(GOLANGCI_LINT_VERSION)..."; \
+		GOTOOLCHAIN=go1.25.12 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION); \
+	fi
+
+lint: $(GOLANGCI_LINT_BIN) ## Run golangci-lint
 	@echo "Running golangci-lint..."
-	@which golangci-lint > /dev/null || (echo "golangci-lint not installed. Install with: brew install golangci-lint" && exit 1)
-	GOTOOLCHAIN=go1.25.12 golangci-lint run ./...
+	GOTOOLCHAIN=go1.25.12 "$(GOLANGCI_LINT_BIN)" run ./...
 
 deps: ## Download and tidy Go dependencies
 	@echo "Tidying dependencies..."

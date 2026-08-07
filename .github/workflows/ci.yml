@@ -49,20 +49,29 @@ jobs:
         run: pre-commit run --all-files
 
       - name: Run tests with coverage
-        run: make test-ci-cov
+        # pdcore and plugins/web/echo are separate Go modules (the plugin has
+        # its own go.mod with a replace back to pdcore), so there is no single
+        # `make test-ci-cov` target — each module's coverage.out/test-results.xml
+        # stays scoped to its own directory and can't be merged by concatenation
+        # across the module boundary. Run both explicitly.
+        run: |
+          make test-ci-cov-core
+          make test-ci-cov-plugins
 
       - name: Upload test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
-          files: test-results.xml
+          files: '**/test-results.xml'
           comment_mode: always
           check_name: Test Results
 
       - name: Generate coverage report
+        # Coverage badge/threshold tracks pdcore (the library) only, matching
+        # the 90%/96% thresholds tuned before the pdcore/plugins module split.
         run: |
           chmod +x .github/scripts/coverage-report.sh
-          .github/scripts/coverage-report.sh coverage.out code-coverage-results.md 90 96
+          .github/scripts/coverage-report.sh pdcore/coverage.out code-coverage-results.md 90 96
 
       - name: Add coverage PR comment
         uses: marocchino/sticky-pull-request-comment@v2

@@ -22,7 +22,7 @@ type FieldMetadata struct {
 func BuildFieldMetadata(typ reflect.Type, tagName string) map[string]FieldMetadata {
 	metadata := make(map[string]FieldMetadata)
 
-	if typ.Kind() == reflect.Ptr {
+	if typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
 	}
 

@@ -8,6 +8,9 @@ import (
 	"time"
 )
 
+// boolStringTrue is the string form of a true boolean value in a skip_unless comparison.
+const boolStringTrue = "true"
+
 // CrossFieldConstraint represents a validation constraint that compares two fields.
 type CrossFieldConstraint interface {
 	ValidateCrossField(fieldValue any, structValue reflect.Value, fieldName string) error
@@ -219,7 +222,7 @@ func BuildCrossFieldConstraintsForField(constraints map[string]string, structTyp
 						expected, _ := strconv.ParseUint(compareValue, 10, 64)
 						compareFn = func(v reflect.Value) bool { return v.Uint() == expected }
 					case reflect.Bool:
-						expected := compareValue == "true"
+						expected := compareValue == boolStringTrue
 						compareFn = func(v reflect.Value) bool { return v.Bool() == expected }
 					default:
 						// Fallback: string comparison via fmt.Sprint
@@ -293,7 +296,7 @@ func CheckTypeCompatibility(a, b any) error {
 		// Only allow if both are pointer types (one nil, one not)
 		aVal := reflect.ValueOf(a)
 		bVal := reflect.ValueOf(b)
-		if aVal.Kind() == reflect.Ptr || bVal.Kind() == reflect.Ptr {
+		if aVal.Kind() == reflect.Pointer || bVal.Kind() == reflect.Pointer {
 			// At least one is a pointer type, this is incompatible
 			return fmt.Errorf("cannot compare nil with non-nil value")
 		}
@@ -325,7 +328,7 @@ func CheckTypeCompatibility(a, b any) error {
 
 // Dereference removes pointer indirection from a type.
 func Dereference(t reflect.Type) reflect.Type {
-	for t != nil && t.Kind() == reflect.Ptr {
+	for t != nil && t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	return t
@@ -353,8 +356,8 @@ func Compare(a, b any) int {
 	bVal := reflect.ValueOf(b)
 
 	// Check if both are nil pointers
-	aIsNil := aVal.Kind() == reflect.Ptr && aVal.IsNil()
-	bIsNil := bVal.Kind() == reflect.Ptr && bVal.IsNil()
+	aIsNil := aVal.Kind() == reflect.Pointer && aVal.IsNil()
+	bIsNil := bVal.Kind() == reflect.Pointer && bVal.IsNil()
 
 	if aIsNil && bIsNil {
 		return 0 // Both nil are equal
@@ -367,10 +370,10 @@ func Compare(a, b any) int {
 	}
 
 	// Dereference pointers
-	if aVal.Kind() == reflect.Ptr {
+	if aVal.Kind() == reflect.Pointer {
 		aVal = aVal.Elem()
 	}
-	if bVal.Kind() == reflect.Ptr {
+	if bVal.Kind() == reflect.Pointer {
 		bVal = bVal.Elem()
 	}
 
@@ -422,7 +425,7 @@ func CompareToString(value any) string {
 	val := reflect.ValueOf(value)
 
 	// Handle pointer types
-	if val.Kind() == reflect.Ptr {
+	if val.Kind() == reflect.Pointer {
 		if val.IsNil() {
 			return ""
 		}

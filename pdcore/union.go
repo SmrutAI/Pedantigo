@@ -174,9 +174,9 @@ func (v *UnionValidator[T]) Validate(obj any) error {
 // It checks all struct field constraints from tags without requiring explicit Validator creation.
 func (v *UnionValidator[T]) validateVariant(variantValue reflect.Value, variantType reflect.Type) error {
 	// Handle pointer types
-	if variantType.Kind() == reflect.Ptr {
+	if variantType.Kind() == reflect.Pointer {
 		variantType = variantType.Elem()
-		if variantValue.Kind() == reflect.Ptr {
+		if variantValue.Kind() == reflect.Pointer {
 			variantValue = variantValue.Elem()
 		}
 	}
@@ -225,7 +225,7 @@ func (v *UnionValidator[T]) validateVariant(variantValue reflect.Value, variantT
 			if fieldValue.IsZero() {
 				fieldErrors = append(fieldErrors, FieldError{
 					Field:   fieldPath,
-					Message: "is required",
+					Message: ErrMsgFieldRequired,
 					Value:   fieldValue.Interface(),
 				})
 				continue

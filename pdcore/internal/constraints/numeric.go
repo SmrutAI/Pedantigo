@@ -416,7 +416,7 @@ func buildMinConstraint(value string, fieldType reflect.Type) (Constraint, bool)
 
 	// Handle pointer types - check underlying type
 	checkType := fieldType
-	if checkType.Kind() == reflect.Ptr {
+	if checkType.Kind() == reflect.Pointer {
 		checkType = checkType.Elem()
 	}
 	kind := checkType.Kind()
@@ -438,7 +438,7 @@ func buildMaxConstraint(value string, fieldType reflect.Type) (Constraint, bool)
 
 	// Handle pointer types - check underlying type
 	checkType := fieldType
-	if checkType.Kind() == reflect.Ptr {
+	if checkType.Kind() == reflect.Pointer {
 		checkType = checkType.Elem()
 	}
 	kind := checkType.Kind()
