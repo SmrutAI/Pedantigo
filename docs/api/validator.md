@@ -27,7 +27,7 @@ The Validator API creates reusable validator instances with custom configuration
 ### Default Options
 
 ```go
-import "github.com/SmrutAI/pedantigo/v2"
+import "github.com/SmrutAI/pedantigo/v2/pdcore"
 
 type User struct {
     Email string `validate:"required,email"`
@@ -35,7 +35,7 @@ type User struct {
 }
 
 // Create validator with default options
-validator := pedantigo.New[User]()
+validator := pdcore.New[User]()
 ```
 
 Default options:
@@ -45,12 +45,12 @@ Default options:
 ### Custom Options
 
 ```go
-import "github.com/SmrutAI/pedantigo/v2"
+import "github.com/SmrutAI/pedantigo/v2/pdcore"
 
 // Create with custom options
-validator := pedantigo.New[User](pedantigo.ValidatorOptions{
+validator := pdcore.New[User](pdcore.ValidatorOptions{
     StrictMissingFields: false,  // Allow missing fields (use pointers for optional)
-    ExtraFields:         pedantigo.ExtraForbid,  // Reject unknown fields
+    ExtraFields:         pdcore.ExtraForbid,  // Reject unknown fields
 })
 ```
 
@@ -236,7 +236,7 @@ if err != nil {
 }
 
 // With custom options (context-based field exclusion)
-opts := pedantigo.ForContext("api")  // Excludes fields marked with exclude:api
+opts := pdcore.ForContext("api")  // Excludes fields marked with exclude:api
 jsonData, err := validator.MarshalWithOptions(user, opts)
 ```
 
@@ -275,7 +275,7 @@ Create once, use many times for best performance:
 
 ```go
 // At initialization
-validator := pedantigo.New[User]()
+validator := pdcore.New[User]()
 
 // In request handler
 func handleUserCreation(w http.ResponseWriter, r *http.Request) {
@@ -308,15 +308,15 @@ Use different validators with different configurations:
 
 ```go
 // Strict validation for admin operations
-adminValidator := pedantigo.New[User](pedantigo.ValidatorOptions{
+adminValidator := pdcore.New[User](pdcore.ValidatorOptions{
     StrictMissingFields: true,
-    ExtraFields:         pedantigo.ExtraForbid,
+    ExtraFields:         pdcore.ExtraForbid,
 })
 
 // Lenient validation for imports
-importValidator := pedantigo.New[User](pedantigo.ValidatorOptions{
+importValidator := pdcore.New[User](pdcore.ValidatorOptions{
     StrictMissingFields: false,
-    ExtraFields:         pedantigo.ExtraIgnore,
+    ExtraFields:         pdcore.ExtraIgnore,
 })
 
 // Use as appropriate
@@ -380,7 +380,7 @@ Memory overhead is minimal (~10-50KB per validator instance).
 | Performance | Fastest (no cache lookup) | Fast (global cache) |
 | Reusability | Manual management | Automatic |
 | Use Case | High-throughput, custom config | General purpose |
-| Code Example | `validator.Unmarshal(data)` | `pedantigo.Unmarshal[User](data)` |
+| Code Example | `validator.Unmarshal(data)` | `pdcore.Unmarshal[User](data)` |
 
 ### When to Switch to Simple API
 
@@ -426,7 +426,7 @@ See [Errors](./errors.md) for detailed error handling.
 Register custom validation functions per validator instance:
 
 ```go
-validator := pedantigo.New[User]()
+validator := pdcore.New[User]()
 // Custom validators can be registered at validator creation
 // See ValidatorOptions for details
 ```
@@ -437,7 +437,7 @@ For complex validation scenarios with union types:
 
 ```go
 // Create union validator (advanced feature)
-validator := pedantigo.NewUnion[T](opts...)
+validator := pdcore.NewUnion[T](opts...)
 ```
 
 Refer to advanced examples for union validation patterns.
@@ -449,7 +449,7 @@ package main
 
 import (
     "fmt"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type User struct {
@@ -460,9 +460,9 @@ type User struct {
 
 func main() {
     // Create validator with custom options
-    validator := pedantigo.New[User](pedantigo.ValidatorOptions{
+    validator := pdcore.New[User](pdcore.ValidatorOptions{
         StrictMissingFields: true,
-        ExtraFields:         pedantigo.ExtraForbid,
+        ExtraFields:         pdcore.ExtraForbid,
     })
 
     // Example 1: Unmarshal JSON

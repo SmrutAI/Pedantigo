@@ -66,7 +66,7 @@ Email string `json:"email" validate:"required,email"`
 
 ```go
 func init() {
-    pedantigo.SetTagName("pedantigo")
+    pdcore.SetTagName("pedantigo")
 }
 ```
 
@@ -76,4 +76,48 @@ Option A is the better long-term choice — it gets you the tooling compatibilit
 
 ## Everything else is unchanged
 
-Constraint syntax, the Simple API (`pedantigo.Unmarshal`, `pedantigo.Validate`), the Core API (`pedantigo.New[T]()`), schema generation, and custom validator registration all work exactly as they did in v1. This is a one-line-of-behavior change, not a rewrite.
+Constraint syntax, the Simple API (`pdcore.Unmarshal`, `pdcore.Validate`), the Core API (`pdcore.New[T]()`), schema generation, and custom validator registration all work exactly as they did in v1. This is a one-line-of-behavior change, not a rewrite.
+
+---
+
+## Package restructure — `pdcore` sub-package
+
+All library code moved from the root package to `pdcore/`. The import path and package qualifier change:
+
+```go
+// v2.0.0 (before restructure)
+import "github.com/SmrutAI/pedantigo/v2"
+pedantigo.New[User]()
+pedantigo.Unmarshal[User](data)
+pedantigo.SecretStr
+
+// v2.x.x (after restructure)
+import "github.com/SmrutAI/pedantigo/v2/pdcore"
+pdcore.New[User]()
+pdcore.Unmarshal[User](data)
+pdcore.SecretStr
+```
+
+Install the new path:
+
+```bash
+go get github.com/SmrutAI/pedantigo/v2/pdcore
+```
+
+All types, functions, and constants are the same. Only the package name changed. Do NOT use import aliases — use `pdcore` directly.
+
+New API added: `pdcore.UnmarshalInto(data []byte, target any) error` — a non-generic variant for framework integrations. Panics if no validator is registered for the target type.
+
+**CRITICAL — registration pattern (this is NOT bare `New[T]()`):** To make a type visible to `UnmarshalInto`/framework plugins, it must be explicitly registered:
+
+```go
+var _ = pdcore.Register(pdcore.New[MyRequest]())
+```
+
+`pdcore.New[T]()` alone does NOT populate the cache `UnmarshalInto` reads from — only wrapping it in `pdcore.Register(...)` does. `Register` may be called exactly once per type; a second call for the same type panics. See `docs/plugins/web/echo.md` for the full explanation and the Echo Binder that consumes this.
+
+---
+
+## Echo Binder plugin
+
+A plugin at `github.com/SmrutAI/pedantigo/v2/plugins/web/echo` replaces Echo's `DefaultBinder` with one that calls `pdcore.UnmarshalInto` on POST/PUT/PATCH bodies. See `docs/plugins/web/echo.md` for details.

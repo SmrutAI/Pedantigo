@@ -268,7 +268,7 @@ package main
 
 import (
     "fmt"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type UserProfile struct {
@@ -317,7 +317,7 @@ func main() {
         "account_id": "1234567890"
     }`)
 
-    profile, err := pedantigo.Unmarshal[UserProfile](profileJSON)
+    profile, err := pdcore.Unmarshal[UserProfile](profileJSON)
     if err != nil {
         fmt.Printf("Validation failed: %v\n", err)
         return
@@ -336,7 +336,7 @@ func main() {
         "account_id": "abc123"
     }`)
 
-    _, err = pedantigo.Unmarshal[UserProfile](invalidJSON)
+    _, err = pdcore.Unmarshal[UserProfile](invalidJSON)
     if err != nil {
         fmt.Printf("Validation errors:\n%v\n", err)
         // Output will show all constraint violations:

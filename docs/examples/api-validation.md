@@ -11,7 +11,7 @@ Integrate Pedantigo with HTTP APIs for request and response validation. This gui
 Pedantigo works with any Go HTTP framework. The pattern is simple:
 
 1. **Read the request body**
-2. **Pass to `pedantigo.Unmarshal[T]`** to parse and validate
+2. **Pass to `pdcore.Unmarshal[T]`** to parse and validate
 3. **Return validation errors as JSON** if validation fails
 4. **Process the validated data** if validation succeeds
 
@@ -23,7 +23,7 @@ type CreateUserRequest struct {
 }
 
 // Works with any HTTP framework
-user, err := pedantigo.Unmarshal[CreateUserRequest](body)
+user, err := pdcore.Unmarshal[CreateUserRequest](body)
 if err != nil {
     // Return validation error as JSON
     return
@@ -44,7 +44,7 @@ import (
     "errors"
     "io"
     "net/http"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type CreateUserRequest struct {
@@ -55,7 +55,7 @@ type CreateUserRequest struct {
 
 type ErrorResponse struct {
     Error  string                    `json:"error"`
-    Errors []pedantigo.FieldError `json:"errors,omitempty"`
+    Errors []pdcore.FieldError `json:"errors,omitempty"`
 }
 
 func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -68,13 +68,13 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     // Parse and validate
-    req, err := pedantigo.Unmarshal[CreateUserRequest](body)
+    req, err := pdcore.Unmarshal[CreateUserRequest](body)
     if err != nil {
         w.Header().Set("Content-Type", "application/json")
         w.WriteHeader(http.StatusBadRequest)
 
         // Check if validation error
-        var validationErr *pedantigo.ValidationError
+        var validationErr *pdcore.ValidationError
         if errors.As(err, &validationErr) {
             json.NewEncoder(w).Encode(ErrorResponse{
                 Error:  "validation_failed",
@@ -145,7 +145,7 @@ import (
     "io"
     "net/http"
     "github.com/gin-gonic/gin"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type CreateUserRequest struct {
@@ -156,7 +156,7 @@ type CreateUserRequest struct {
 
 type ErrorResponse struct {
     Error  string                    `json:"error"`
-    Errors []pedantigo.FieldError `json:"errors,omitempty"`
+    Errors []pdcore.FieldError `json:"errors,omitempty"`
 }
 
 func CreateUserHandler(c *gin.Context) {
@@ -169,9 +169,9 @@ func CreateUserHandler(c *gin.Context) {
     defer c.Request.Body.Close()
 
     // Parse and validate
-    req, err := pedantigo.Unmarshal[CreateUserRequest](body)
+    req, err := pdcore.Unmarshal[CreateUserRequest](body)
     if err != nil {
-        var validationErr *pedantigo.ValidationError
+        var validationErr *pdcore.ValidationError
         if errors.As(err, &validationErr) {
             c.JSON(http.StatusBadRequest, ErrorResponse{
                 Error:  "validation_failed",
@@ -220,7 +220,7 @@ import (
     "io"
     "net/http"
     "github.com/labstack/echo/v4"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type CreateUserRequest struct {
@@ -231,7 +231,7 @@ type CreateUserRequest struct {
 
 type ErrorResponse struct {
     Error  string                    `json:"error"`
-    Errors []pedantigo.FieldError `json:"errors,omitempty"`
+    Errors []pdcore.FieldError `json:"errors,omitempty"`
 }
 
 func CreateUserHandler(c echo.Context) error {
@@ -245,9 +245,9 @@ func CreateUserHandler(c echo.Context) error {
     defer c.Request().Body.Close()
 
     // Parse and validate
-    req, err := pedantigo.Unmarshal[CreateUserRequest](body)
+    req, err := pdcore.Unmarshal[CreateUserRequest](body)
     if err != nil {
-        var validationErr *pedantigo.ValidationError
+        var validationErr *pdcore.ValidationError
         if errors.As(err, &validationErr) {
             return c.JSON(http.StatusBadRequest, ErrorResponse{
                 Error:  "validation_failed",
@@ -285,7 +285,7 @@ type FieldErrorResponse struct {
     FieldErrors map[string][]string `json:"field_errors"`
 }
 
-func FormatValidationErrors(validationErr *pedantigo.ValidationError) FieldErrorResponse {
+func FormatValidationErrors(validationErr *pdcore.ValidationError) FieldErrorResponse {
     fieldErrors := make(map[string][]string)
 
     for _, fieldErr := range validationErr.Errors {
@@ -376,7 +376,7 @@ import (
     "errors"
     "io"
     "net/http"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 // Request types
@@ -408,7 +408,7 @@ func CreateProductHandler(w http.ResponseWriter, r *http.Request) {
     body, _ := io.ReadAll(r.Body)
     defer r.Body.Close()
 
-    req, err := pedantigo.Unmarshal[CreateProductRequest](body)
+    req, err := pdcore.Unmarshal[CreateProductRequest](body)
     if err != nil {
         w.WriteHeader(http.StatusBadRequest)
         json.NewEncoder(w).Encode(map[string]any{
@@ -435,7 +435,7 @@ func CreateProductHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     // Validate response before sending
-    if err := pedantigo.Validate(&response); err != nil {
+    if err := pdcore.Validate(&response); err != nil {
         // Log the error - response construction failed validation
         // This catches bugs in your response building logic
         w.WriteHeader(http.StatusInternalServerError)
@@ -468,7 +468,7 @@ package main
 import (
     "encoding/json"
     "net/http"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type CreateUserRequest struct {
@@ -494,8 +494,8 @@ type APIResponse struct {
 // Handler to serve OpenAPI schemas
 func SchemaHandler(w http.ResponseWriter, r *http.Request) {
     // Get OpenAPI-compatible schemas for your types
-    requestSchema := pedantigo.SchemaOpenAPI[CreateUserRequest]()
-    responseSchema := pedantigo.SchemaOpenAPI[APIResponse]()
+    requestSchema := pdcore.SchemaOpenAPI[CreateUserRequest]()
+    responseSchema := pdcore.SchemaOpenAPI[APIResponse]()
 
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(map[string]any{
@@ -506,7 +506,7 @@ func SchemaHandler(w http.ResponseWriter, r *http.Request) {
 
 // Or serve as raw JSON bytes
 func SchemaJSONHandler(w http.ResponseWriter, r *http.Request) {
-    schemaBytes, err := pedantigo.SchemaJSONOpenAPI[CreateUserRequest]()
+    schemaBytes, err := pdcore.SchemaJSONOpenAPI[CreateUserRequest]()
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
@@ -548,9 +548,9 @@ paths:
 components:
   schemas:
     CreateUserRequest:
-      # Generated by pedantigo.SchemaOpenAPI[CreateUserRequest]()
+      # Generated by pdcore.SchemaOpenAPI[CreateUserRequest]()
     APIResponse:
-      # Generated by pedantigo.SchemaOpenAPI[APIResponse]()
+      # Generated by pdcore.SchemaOpenAPI[APIResponse]()
 ```
 
 ## Reusable Error Handler
@@ -564,23 +564,23 @@ import (
     "encoding/json"
     "errors"
     "net/http"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type ErrorResponse struct {
     Error       string                    `json:"error"`
-    Errors      []pedantigo.FieldError `json:"errors,omitempty"`
+    Errors      []pdcore.FieldError `json:"errors,omitempty"`
     DebugInfo   string                 `json:"debug,omitempty"`
 }
 
 // ValidateRequest unmarshals and validates JSON request body
 func ValidateRequest[T any](w http.ResponseWriter, body []byte) (*T, bool) {
-    data, err := pedantigo.Unmarshal[T](body)
+    data, err := pdcore.Unmarshal[T](body)
     if err != nil {
         w.Header().Set("Content-Type", "application/json")
         w.WriteHeader(http.StatusBadRequest)
 
-        var validationErr *pedantigo.ValidationError
+        var validationErr *pdcore.ValidationError
         if errors.As(err, &validationErr) {
             json.NewEncoder(w).Encode(ErrorResponse{
                 Error:  "validation_failed",
@@ -653,7 +653,7 @@ import (
     "io"
     "net/http"
     "uuid"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 // Request DTOs
@@ -699,7 +699,7 @@ func CreateProductHandler(w http.ResponseWriter, r *http.Request) {
     body, _ := io.ReadAll(r.Body)
     defer r.Body.Close()
 
-    req, err := pedantigo.Unmarshal[CreateProductRequest](body)
+    req, err := pdcore.Unmarshal[CreateProductRequest](body)
     if err != nil {
         writeValidationError(w, err)
         return
@@ -719,7 +719,7 @@ func CreateProductHandler(w http.ResponseWriter, r *http.Request) {
         Success: true,
         Data:    product,
     }
-    if err := pedantigo.Validate(&response); err != nil {
+    if err := pdcore.Validate(&response); err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         return
     }
@@ -744,7 +744,7 @@ func GetAllProductsHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     // Validate response
-    if err := pedantigo.Validate(&response); err != nil {
+    if err := pdcore.Validate(&response); err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         return
     }
@@ -759,7 +759,7 @@ func UpdateProductHandler(w http.ResponseWriter, r *http.Request) {
     body, _ := io.ReadAll(r.Body)
     defer r.Body.Close()
 
-    req, err := pedantigo.Unmarshal[UpdateProductRequest](body)
+    req, err := pdcore.Unmarshal[UpdateProductRequest](body)
     if err != nil {
         writeValidationError(w, err)
         return
@@ -801,7 +801,7 @@ func writeValidationError(w http.ResponseWriter, err error) {
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusBadRequest)
 
-    var validationErr *pedantigo.ValidationError
+    var validationErr *pdcore.ValidationError
     if errors.As(err, &validationErr) {
         json.NewEncoder(w).Encode(map[string]any{
             "error":  "validation_failed",

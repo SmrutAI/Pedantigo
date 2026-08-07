@@ -73,7 +73,7 @@ type User struct {
     Email string `json:"email" validate:"required,email"`
 }
 
-_, err := pedantigo.Unmarshal[User]([]byte(`{"email": "not-valid"}`))
+_, err := pdcore.Unmarshal[User]([]byte(`{"email": "not-valid"}`))
 fmt.Println(err)
 // Output: email: must be a valid email address
 ```
@@ -86,7 +86,7 @@ type User struct {
     Age   int    `json:"age" validate:"min=18"`
 }
 
-_, err := pedantigo.Unmarshal[User]([]byte(`{"email": "bad", "age": 5}`))
+_, err := pdcore.Unmarshal[User]([]byte(`{"email": "bad", "age": 5}`))
 fmt.Println(err)
 // Output: email: must be a valid email address (and 1 more errors)
 ```
@@ -94,7 +94,7 @@ fmt.Println(err)
 ### Accessing All Errors
 
 ```go
-if ve, ok := err.(*pedantigo.ValidationError); ok {
+if ve, ok := err.(*pdcore.ValidationError); ok {
     for _, fe := range ve.Errors {
         fmt.Printf("Field: %s\n", fe.Field)   // "email" or "age"
         fmt.Printf("Code: %s\n", fe.Code)     // "INVALID_EMAIL" or "MIN_VALUE"
@@ -108,9 +108,9 @@ if ve, ok := err.(*pedantigo.ValidationError); ok {
 
 ```go
 func handleRequest(w http.ResponseWriter, r *http.Request) {
-    user, err := pedantigo.Unmarshal[User](body)
+    user, err := pdcore.Unmarshal[User](body)
     if err != nil {
-        var ve *pedantigo.ValidationError
+        var ve *pdcore.ValidationError
         if errors.As(err, &ve) {
             w.WriteHeader(http.StatusBadRequest)
             json.NewEncoder(w).Encode(map[string]any{
@@ -157,9 +157,9 @@ The `Field` string describes the location of the error:
 Check if an error is a validation error using type assertion:
 
 ```go
-user, err := pedantigo.Unmarshal[User](jsonData)
+user, err := pdcore.Unmarshal[User](jsonData)
 if err != nil {
-    if validationErr, ok := err.(*pedantigo.ValidationError); ok {
+    if validationErr, ok := err.(*pdcore.ValidationError); ok {
         // Handle validation errors
         for _, fieldErr := range validationErr.Errors {
             fmt.Printf("Field: %s, Message: %s\n", fieldErr.Field, fieldErr.Message)
@@ -178,12 +178,12 @@ Use the `errors.As()` function for cleaner error handling:
 ```go
 import (
     "errors"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
-user, err := pedantigo.Unmarshal[User](jsonData)
+user, err := pdcore.Unmarshal[User](jsonData)
 if err != nil {
-    var validationErr *pedantigo.ValidationError
+    var validationErr *pdcore.ValidationError
     if errors.As(err, &validationErr) {
         // Handle validation errors
         for _, fieldErr := range validationErr.Errors {
@@ -205,9 +205,9 @@ type User struct {
     Username string `json:"username" validate:"required,min=3,max=20"`
 }
 
-user, err := pedantigo.Unmarshal[User](jsonData)
+user, err := pdcore.Unmarshal[User](jsonData)
 if err != nil {
-    var validationErr *pedantigo.ValidationError
+    var validationErr *pdcore.ValidationError
     if errors.As(err, &validationErr) {
         fmt.Printf("Validation failed with %d error(s):\n", len(validationErr.Errors))
         for i, fieldErr := range validationErr.Errors {
@@ -225,10 +225,10 @@ if err != nil {
 ### Filtering Errors by Field
 
 ```go
-var validationErr *pedantigo.ValidationError
+var validationErr *pdcore.ValidationError
 if errors.As(err, &validationErr) {
     // Get all errors for a specific field
-    emailErrors := make([]pedantigo.FieldError, 0)
+    emailErrors := make([]pdcore.FieldError, 0)
     for _, fieldErr := range validationErr.Errors {
         if fieldErr.Field == "email" {
             emailErrors = append(emailErrors, fieldErr)
@@ -289,7 +289,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type Address struct {
@@ -305,14 +305,14 @@ type User struct {
 }
 
 func handleValidationError(err error) {
-    var validationErr *pedantigo.ValidationError
+    var validationErr *pdcore.ValidationError
     if !errors.As(err, &validationErr) {
         log.Fatalf("Unexpected error: %v", err)
         return
     }
 
     // Organize errors by field
-    errorsByField := make(map[string][]pedantigo.FieldError)
+    errorsByField := make(map[string][]pdcore.FieldError)
     for _, fieldErr := range validationErr.Errors {
         errorsByField[fieldErr.Field] = append(errorsByField[fieldErr.Field], fieldErr)
     }
@@ -342,7 +342,7 @@ func main() {
         }
     }`)
 
-    user, err := pedantigo.Unmarshal[User](jsonData)
+    user, err := pdcore.Unmarshal[User](jsonData)
     if err != nil {
         handleValidationError(err)
         return
@@ -359,11 +359,11 @@ Pedantigo can also return non-validation errors in certain cases:
 
 ```go
 // JSON syntax error
-_, err := pedantigo.Unmarshal[User]([]byte(`{invalid json}`))
+_, err := pdcore.Unmarshal[User]([]byte(`{invalid json}`))
 // err will be a json.SyntaxError (not ValidationError)
 
 // Type mismatch (if type conversion fails)
-_, err := pedantigo.Unmarshal[User]([]byte(`{"age": "not a number"}`))
+_, err := pdcore.Unmarshal[User]([]byte(`{"age": "not a number"}`))
 // err will be a json.UnmarshalTypeError (not ValidationError)
 ```
 
@@ -376,7 +376,7 @@ Always check the actual error type before assuming it's a `ValidationError`.
 Returns both validation errors and JSON parsing errors:
 
 ```go
-user, err := pedantigo.Unmarshal[User](jsonData)
+user, err := pdcore.Unmarshal[User](jsonData)
 if err != nil {
     // Could be ValidationError, json.SyntaxError, or json.UnmarshalTypeError
 }
@@ -387,10 +387,10 @@ if err != nil {
 Returns only validation errors:
 
 ```go
-err := pedantigo.Validate(user)
+err := pdcore.Validate(user)
 if err != nil {
     // Always a ValidationError (if non-nil)
-    var validationErr *pedantigo.ValidationError
+    var validationErr *pdcore.ValidationError
     errors.As(err, &validationErr) // Always succeeds
 }
 ```
@@ -400,7 +400,7 @@ if err != nil {
 Returns both validation errors and type conversion errors:
 
 ```go
-user, err := pedantigo.NewModel[User](data)
+user, err := pdcore.NewModel[User](data)
 if err != nil {
     // Could be ValidationError or type conversion error
 }
@@ -420,9 +420,9 @@ func handleUserCreation(w http.ResponseWriter, r *http.Request) {
     var jsonData []byte
     // ... read request body into jsonData ...
 
-    user, err := pedantigo.Unmarshal[User](jsonData)
+    user, err := pdcore.Unmarshal[User](jsonData)
     if err != nil {
-        var validationErr *pedantigo.ValidationError
+        var validationErr *pdcore.ValidationError
         if errors.As(err, &validationErr) {
             w.Header().Set("Content-Type", "application/json")
             w.WriteHeader(http.StatusBadRequest)

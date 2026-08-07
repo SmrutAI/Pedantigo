@@ -293,7 +293,7 @@ package main
 
 import (
     "fmt"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type BlogPost struct {
@@ -360,7 +360,7 @@ func main() {
         ]
     }`)
 
-    post, err := pedantigo.Unmarshal[BlogPost](postJSON)
+    post, err := pdcore.Unmarshal[BlogPost](postJSON)
     if err != nil {
         fmt.Printf("Validation failed: %v\n", err)
         return
@@ -399,7 +399,7 @@ func main() {
         ]
     }`)
 
-    _, err = pedantigo.Unmarshal[BlogPost](invalidJSON)
+    _, err = pdcore.Unmarshal[BlogPost](invalidJSON)
     if err != nil {
         fmt.Printf("Validation errors:\n%v\n", err)
         // Output will show:

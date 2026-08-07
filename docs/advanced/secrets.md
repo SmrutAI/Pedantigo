@@ -73,7 +73,7 @@ type Config struct {
 ### Accessing the Value
 
 ```go
-config, err := pedantigo.Unmarshal[Config](jsonData)
+config, err := pdcore.Unmarshal[Config](jsonData)
 if err != nil {
     return err
 }
@@ -115,7 +115,7 @@ config := &Config{
 }
 
 // Marshal for API response
-jsonData, err := pedantigo.Marshal(config)
+jsonData, err := pdcore.Marshal(config)
 if err != nil {
     return err
 }
@@ -138,7 +138,7 @@ package main
 import (
     "fmt"
     "log"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type AppConfig struct {
@@ -160,7 +160,7 @@ func main() {
         "app_name": "MyApp"
     }`)
 
-    config, err := pedantigo.Unmarshal[AppConfig](jsonInput)
+    config, err := pdcore.Unmarshal[AppConfig](jsonInput)
     if err != nil {
         log.Fatalf("Failed to load config: %v", err)
     }
@@ -178,7 +178,7 @@ func main() {
     setupExternalAPI(apiKey)
 
     // 4. Marshal back to JSON - secrets are masked
-    response, _ := pedantigo.Marshal(config)
+    response, _ := pdcore.Marshal(config)
     fmt.Println(string(response))
     // Output: {"database_url":"**********","external_api_key":"**********","app_name":"MyApp"}
 
@@ -240,13 +240,13 @@ jsonInput := []byte(`{
     "encryption_key": "aGVsbG8gd29ybGQ="  // base64 for "hello world"
 }`)
 
-config, _ := pedantigo.Unmarshal[EncryptionConfig](jsonInput)
+config, _ := pdcore.Unmarshal[EncryptionConfig](jsonInput)
 
 // Access actual bytes
 key := config.EncryptionKey.Value()  // []byte("hello world")
 
 // Marshal back to JSON - masked
-output, _ := pedantigo.Marshal(config)
+output, _ := pdcore.Marshal(config)
 // {"encryption_key":"**********"}
 ```
 
@@ -260,7 +260,7 @@ import (
     "crypto/cipher"
     "encoding/base64"
     "fmt"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type SecurityConfig struct {
@@ -291,7 +291,7 @@ func main() {
     }`, encKeyB64, hmacKeyB64))
 
     // Load config
-    config, err := pedantigo.Unmarshal[SecurityConfig](jsonInput)
+    config, err := pdcore.Unmarshal[SecurityConfig](jsonInput)
     if err != nil {
         fmt.Printf("Failed to load security config: %v\n", err)
         return
@@ -312,7 +312,7 @@ func main() {
     fmt.Printf("Encrypted data: %s\n", base64.StdEncoding.EncodeToString(ciphertext))
 
     // 3. Marshal config - keys are masked
-    output, _ := pedantigo.Marshal(config)
+    output, _ := pdcore.Marshal(config)
     // Safe to store or transmit: {"encryption_key":"**********","hmac_key":"**********","level":"high"}
 }
 ```
@@ -333,7 +333,7 @@ import (
     "fmt"
     "log"
     "net/http"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type ServerConfig struct {
@@ -368,7 +368,7 @@ func main() {
     }`)
 
     // Parse and validate
-    config, err := pedantigo.Unmarshal[ServerConfig](configJSON)
+    config, err := pdcore.Unmarshal[ServerConfig](configJSON)
     if err != nil {
         log.Fatalf("Invalid config: %v", err)
     }
@@ -404,7 +404,7 @@ func main() {
 
     mux.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
         // Safe to return config - secrets are masked
-        configJSON, _ := pedantigo.Marshal(config)
+        configJSON, _ := pdcore.Marshal(config)
         w.Header().Set("Content-Type", "application/json")
         w.Write(configJSON)
         // Secrets are "**********" - no data leaks!
@@ -513,7 +513,7 @@ type Config struct {
 
 // If validation fails, error message won't contain the actual secret
 jsonInput := []byte(`{"api_key": "short"}`)
-_, err := pedantigo.Unmarshal[Config](jsonInput)
+_, err := pdcore.Unmarshal[Config](jsonInput)
 
 // Error: validation error: field "api_key": constraint "min" failed
 // The actual value "short" is NOT in the error message

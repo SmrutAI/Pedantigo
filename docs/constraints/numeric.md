@@ -256,7 +256,7 @@ package main
 
 import (
     "fmt"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type ECommerceProduct struct {
@@ -314,7 +314,7 @@ func main() {
         "warranty_months": 24
     }`)
 
-    product, err := pedantigo.Unmarshal[ECommerceProduct](productJSON)
+    product, err := pdcore.Unmarshal[ECommerceProduct](productJSON)
     if err != nil {
         fmt.Printf("Validation failed: %v\n", err)
         return
@@ -336,7 +336,7 @@ func main() {
         "warranty_months": 25
     }`)
 
-    _, err = pedantigo.Unmarshal[ECommerceProduct](invalidJSON)
+    _, err = pdcore.Unmarshal[ECommerceProduct](invalidJSON)
     if err != nil {
         fmt.Printf("Validation errors:\n%v\n", err)
         // Output will show all numeric constraint violations:

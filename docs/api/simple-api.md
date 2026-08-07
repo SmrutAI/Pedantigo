@@ -12,9 +12,9 @@ The Simple API provides zero-setup validation through automatic caching. Call an
 
 ```go
 // No setup needed - just call the function
-user, err := pedantigo.Unmarshal[User](jsonData)
-schema := pedantigo.Schema[User]()
-err := pedantigo.Validate(user)
+user, err := pdcore.Unmarshal[User](jsonData)
+schema := pdcore.Schema[User]()
+err := pdcore.Validate(user)
 ```
 
 All functions use `sync.Map` to cache validators per type:
@@ -47,7 +47,7 @@ type User struct {
 }
 
 data := []byte(`{"name":"Alice","email":"alice@example.com","age":25}`)
-user, err := pedantigo.Unmarshal[User](data)
+user, err := pdcore.Unmarshal[User](data)
 if err != nil {
     // Handle validation errors
     log.Printf("Validation failed: %v", err)
@@ -62,6 +62,21 @@ fmt.Printf("User: %s (%s), age %d\n", user.Name, user.Email, user.Age)
 - Invalid JSON format
 - Constraint violations (email format, min/max values, patterns, etc.)
 - Type mismatches
+
+---
+
+### UnmarshalInto
+
+`UnmarshalInto(data []byte, target any) error` is a non-generic variant of `Unmarshal` for framework integrations that only have a `reflect.Type`/`any` at the call site (e.g. a web framework's binder). It looks up the validator registered for `target`'s concrete type and validates against it.
+
+```go
+var _ = pdcore.Register(pdcore.New[User]())
+
+var u User
+err := pdcore.UnmarshalInto(data, &u)
+```
+
+The target type must have been registered first via `pdcore.Register(pdcore.New[T]())` — `UnmarshalInto` panics with an actionable message naming the missing type if it wasn't. This is the mechanism the Echo Binder plugin (`docs/plugins/web/echo.md`) uses internally.
 
 ---
 
@@ -91,7 +106,7 @@ config := &Config{
     Port: 8080,
 }
 
-if err := pedantigo.Validate(config); err != nil {
+if err := pdcore.Validate(config); err != nil {
     log.Printf("Config invalid: %v", err)
     return
 }
@@ -123,12 +138,12 @@ type User struct {
     Age   int    `json:"age" validate:"min=18"`
 }
 
-user, err := pedantigo.NewModel[User]([]byte(`{"email":"bob@example.com","age":30}`))
+user, err := pdcore.NewModel[User]([]byte(`{"email":"bob@example.com","age":30}`))
 ```
 
 **Example - From Map (kwargs)**:
 ```go
-user, err := pedantigo.NewModel[User](map[string]any{
+user, err := pdcore.NewModel[User](map[string]any{
     "email": "charlie@example.com",
     "age":   25,
 })
@@ -137,7 +152,7 @@ user, err := pedantigo.NewModel[User](map[string]any{
 **Example - From Struct**:
 ```go
 existing := User{Email: "david@example.com", Age: 35}
-user, err := pedantigo.NewModel[User](existing) // Validates and returns pointer
+user, err := pdcore.NewModel[User](existing) // Validates and returns pointer
 ```
 
 ---
@@ -161,7 +176,7 @@ type Product struct {
     Price float64 `json:"price" validate:"min=0"`
 }
 
-schema := pedantigo.Schema[Product]()
+schema := pdcore.Schema[Product]()
 
 // Use the schema object
 fmt.Println("Product schema title:", schema.Title)
@@ -182,7 +197,7 @@ Returns the JSON Schema serialized as JSON bytes.
 
 **Example**:
 ```go
-schemaBytes, err := pedantigo.SchemaJSON[User]()
+schemaBytes, err := pdcore.SchemaJSON[User]()
 if err != nil {
     log.Fatal(err)
 }
@@ -221,7 +236,7 @@ type APIResponse struct {
     Message string    `json:"message"`
 }
 
-schema := pedantigo.SchemaOpenAPI[APIResponse]()
+schema := pdcore.SchemaOpenAPI[APIResponse]()
 // Embed in OpenAPI 3.1 specification's components/schemas
 ```
 
@@ -239,7 +254,7 @@ Component schema serialized as JSON bytes, ready to embed in OpenAPI 3.1 specifi
 
 **Example**:
 ```go
-schemaBytes, err := pedantigo.SchemaJSONOpenAPI[APIResponse]()
+schemaBytes, err := pdcore.SchemaJSONOpenAPI[APIResponse]()
 if err != nil {
     log.Fatal(err)
 }
@@ -267,7 +282,7 @@ Returns schema with both `$schema` and `$id` cleared. Some LLMs (like Groq) echo
 
 **Example**:
 ```go
-schema := pedantigo.SchemaLLM[ToolArgs]()
+schema := pdcore.SchemaLLM[ToolArgs]()
 // schema has no $schema or $id fields - cleaner for LLM integration
 ```
 
@@ -285,7 +300,7 @@ Returns JSON bytes with both `$schema` and `$id` fields absent.
 
 **Example**:
 ```go
-schemaBytes, err := pedantigo.SchemaJSONLLM[ToolArgs]()
+schemaBytes, err := pdcore.SchemaJSONLLM[ToolArgs]()
 if err != nil {
     log.Fatal(err)
 }
@@ -315,7 +330,7 @@ user := &User{
     Age:   28,
 }
 
-jsonData, err := pedantigo.Marshal(user)
+jsonData, err := pdcore.Marshal(user)
 if err != nil {
     log.Printf("Marshal failed: %v", err)
     return
@@ -352,8 +367,8 @@ type MarshalOptions struct {
 
 **Helper functions**:
 ```go
-opts := pedantigo.ForContext("api")      // Create context-based options
-opts := pedantigo.DefaultMarshalOptions() // Create default options
+opts := pdcore.ForContext("api")      // Create context-based options
+opts := pdcore.DefaultMarshalOptions() // Create default options
 ```
 
 **Example - Context-based Exclusion**:
@@ -371,8 +386,8 @@ user := &User{
 }
 
 // Serialize for API response (excludes password)
-opts := pedantigo.ForContext("api")
-jsonData, err := pedantigo.MarshalWithOptions(user, opts)
+opts := pdcore.ForContext("api")
+jsonData, err := pdcore.MarshalWithOptions(user, opts)
 // {"name":"Frank","email":"frank@example.com"}
 // Password field is omitted
 ```
@@ -392,7 +407,7 @@ config := &Config{
 }
 
 opts := MarshalOptions{OmitZero: true}
-jsonData, _ := pedantigo.MarshalWithOptions(config, opts)
+jsonData, _ := pdcore.MarshalWithOptions(config, opts)
 // {"host":"localhost"}
 // port and timeout omitted because they're zero and OmitZero is true
 ```
@@ -417,7 +432,7 @@ user := &User{
     Age:   32,
 }
 
-dict, err := pedantigo.Dict(user)
+dict, err := pdcore.Dict(user)
 if err != nil {
     log.Fatal(err)
 }
@@ -448,11 +463,11 @@ All Simple API functions benefit from automatic caching:
 **Example benchmark**:
 ```go
 // First call: ~10-15ms
-schema1 := pedantigo.Schema[User]()
+schema1 := pdcore.Schema[User]()
 
 // Subsequent calls: <100ns
 for i := 0; i < 1000000; i++ {
-    schema := pedantigo.Schema[User]() // Nearly free
+    schema := pdcore.Schema[User]() // Nearly free
 }
 ```
 
@@ -505,7 +520,7 @@ See [Validation Constraints](../concepts/constraints) for complete list.
 
 The Simple API covers 80% of use cases. Use the [Validator API](./validator.md) for advanced scenarios:
 
-- **Discriminated unions**: Use `pedantigo.NewUnion[T](opts...)`
+- **Discriminated unions**: Use `pdcore.NewUnion[T](opts...)`
 - **Custom field deserialization**: Implement `CustomDeserializer` interface
 - **Cross-field validation**: Implement `Validate()` method with custom logic
 - **Reusable validators**: Create once, use many times (tiny optimization)
@@ -513,10 +528,10 @@ The Simple API covers 80% of use cases. Use the [Validator API](./validator.md) 
 
 ```go
 // Simple API (80% of cases)
-user, err := pedantigo.Unmarshal[User](data)
+user, err := pdcore.Unmarshal[User](data)
 
 // Validator API (advanced cases)
-validator := pedantigo.New[User]()
+validator := pdcore.New[User]()
 user, err := validator.Unmarshal(data)
 schema := validator.Schema()
 // ... customize schema ...
@@ -539,7 +554,7 @@ validation error: field "age": constraint "min" failed (minimum: 18, actual: 10)
 
 Handle errors appropriately:
 ```go
-user, err := pedantigo.Unmarshal[User](data)
+user, err := pdcore.Unmarshal[User](data)
 if err != nil {
     // Log the error
     log.Errorf("Validation failed: %v", err)
@@ -563,7 +578,7 @@ for i := 0; i < 100; i++ {
     wg.Add(1)
     go func() {
         defer wg.Done()
-        user, err := pedantigo.Unmarshal[User](data)
+        user, err := pdcore.Unmarshal[User](data)
         // ...
     }()
 }

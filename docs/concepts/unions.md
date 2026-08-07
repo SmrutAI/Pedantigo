@@ -57,15 +57,15 @@ Each variant struct:
 
 ## Creating a UnionValidator
 
-Unlike the Simple API, discriminated unions require explicit creation with `pedantigo.NewUnion()`:
+Unlike the Simple API, discriminated unions require explicit creation with `pdcore.NewUnion()`:
 
 ```go
-validator, err := pedantigo.NewUnion[any](pedantigo.UnionOptions{
+validator, err := pdcore.NewUnion[any](pdcore.UnionOptions{
     DiscriminatorField: "type",
-    Variants: []pedantigo.UnionVariant{
-        pedantigo.VariantFor[CreditCard]("credit_card"),
-        pedantigo.VariantFor[BankTransfer]("bank_transfer"),
-        pedantigo.VariantFor[DigitalWallet]("digital_wallet"),
+    Variants: []pdcore.UnionVariant{
+        pdcore.VariantFor[CreditCard]("credit_card"),
+        pdcore.VariantFor[BankTransfer]("bank_transfer"),
+        pdcore.VariantFor[DigitalWallet]("digital_wallet"),
     },
 })
 
@@ -94,7 +94,7 @@ type UnionOptions struct {
 Each variant is created with `VariantFor[T]()`:
 
 ```go
-pedantigo.VariantFor[CreditCard]("credit_card")
+pdcore.VariantFor[CreditCard]("credit_card")
 ```
 
 The generic type parameter is the Go struct, and the string argument is the discriminator value to match in the JSON.
@@ -118,7 +118,7 @@ jsonData := []byte(`{
 result, err := validator.Unmarshal(jsonData)
 if err != nil {
     // Handle validation errors
-    var ve *pedantigo.ValidationError
+    var ve *pdcore.ValidationError
     if errors.As(err, &ve) {
         for _, fieldErr := range ve.Errors {
             fmt.Printf("Field %s: %s\n", fieldErr.Field, fieldErr.Message)
@@ -160,7 +160,7 @@ jsonData := []byte(`{
 
 _, err := validator.Unmarshal(jsonData)
 if err != nil {
-    var ve *pedantigo.ValidationError
+    var ve *pdcore.ValidationError
     if errors.As(err, &ve) {
         for _, fieldErr := range ve.Errors {
             // Example: Field "cardNumber" error
@@ -271,7 +271,7 @@ package main
 import (
     "errors"
     "fmt"
-    "pedantigo"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 // Define payment method variants
@@ -304,12 +304,12 @@ type DigitalWallet struct {
 
 func main() {
     // Create union validator once
-    validator, err := pedantigo.NewUnion[any](pedantigo.UnionOptions{
+    validator, err := pdcore.NewUnion[any](pdcore.UnionOptions{
         DiscriminatorField: "type",
-        Variants: []pedantigo.UnionVariant{
-            pedantigo.VariantFor[CreditCard]("credit_card"),
-            pedantigo.VariantFor[BankTransfer]("bank_transfer"),
-            pedantigo.VariantFor[DigitalWallet]("digital_wallet"),
+        Variants: []pdcore.UnionVariant{
+            pdcore.VariantFor[CreditCard]("credit_card"),
+            pdcore.VariantFor[BankTransfer]("bank_transfer"),
+            pdcore.VariantFor[DigitalWallet]("digital_wallet"),
         },
     })
 
@@ -379,7 +379,7 @@ func main() {
 
     _, err = validator.Unmarshal(invalidJSON)
     if err != nil {
-        var ve *pedantigo.ValidationError
+        var ve *pdcore.ValidationError
         if errors.As(err, &ve) {
             fmt.Println("Validation errors:")
             for _, fieldErr := range ve.Errors {
@@ -396,12 +396,12 @@ For LLM outputs or streaming APIs, you can use `StreamParser` with unions:
 
 ```go
 // Create stream parser for union types
-parser := pedantigo.NewStreamUnionParser[any](pedantigo.UnionOptions{
+parser := pdcore.NewStreamUnionParser[any](pdcore.UnionOptions{
     DiscriminatorField: "type",
-    Variants: []pedantigo.UnionVariant{
-        pedantigo.VariantFor[CreditCard]("credit_card"),
-        pedantigo.VariantFor[BankTransfer]("bank_transfer"),
-        pedantigo.VariantFor[DigitalWallet]("digital_wallet"),
+    Variants: []pdcore.UnionVariant{
+        pdcore.VariantFor[CreditCard]("credit_card"),
+        pdcore.VariantFor[BankTransfer]("bank_transfer"),
+        pdcore.VariantFor[DigitalWallet]("digital_wallet"),
     },
 })
 
@@ -473,7 +473,7 @@ type Suite struct {
 ### Example Usage
 
 ```go
-validator := pedantigo.New[Suite]()
+validator := pdcore.New[Suite]()
 
 // TV mode - TV is validated, Fan is skipped
 tvData := Suite{
@@ -530,7 +530,7 @@ Discriminated unions cannot use the Simple API because:
 - They require explicit variant registration
 - They need detailed configuration (discriminator field, variant mapping)
 
-This is why `pedantigo.NewUnion()` is required instead of `pedantigo.Unmarshal[T]()`.
+This is why `pdcore.NewUnion()` is required instead of `pdcore.Unmarshal[T]()`.
 
 ## See Also
 

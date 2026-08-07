@@ -26,7 +26,7 @@ package main
 
 import (
     "fmt"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type ToolCall struct {
@@ -39,7 +39,7 @@ type FunctionResponse struct {
 }
 
 func main() {
-    parser := pedantigo.NewStreamParser[FunctionResponse]()
+    parser := pdcore.NewStreamParser[FunctionResponse]()
 
     // Simulate streaming chunks from OpenAI
     chunks := []string{
@@ -82,7 +82,7 @@ type AgentResponse struct {
 }
 
 func processClaudeStream(chunks <-chan string) {
-    parser := pedantigo.NewStreamParser[AgentResponse]()
+    parser := pdcore.NewStreamParser[AgentResponse]()
 
     for chunk := range chunks {
         result, state, err := parser.Feed([]byte(chunk))
@@ -127,7 +127,7 @@ type ExtractedData struct {
 func getSystemPrompt() string {
     // Use SchemaJSONLLM for LLM integrations - no $schema or $id fields
     // Some LLMs (like Groq) echo back $schema/$id, causing parsing issues
-    schemaJSON, _ := pedantigo.SchemaJSONLLM[ExtractedData]()
+    schemaJSON, _ := pdcore.SchemaJSONLLM[ExtractedData]()
 
     return fmt.Sprintf(`You are a data extraction assistant.
 Extract the following fields from the input text.
@@ -154,7 +154,7 @@ type ExtractionResult struct {
 }
 
 func extractWithRetry(llm *LLMClient, text string, maxRetries int) (*ExtractionResult, error) {
-    parser := pedantigo.NewStreamParser[ExtractionResult]()
+    parser := pdcore.NewStreamParser[ExtractionResult]()
 
     for attempt := 0; attempt < maxRetries; attempt++ {
         parser.Reset()
@@ -214,19 +214,19 @@ func processAgentAction(jsonData []byte) {
     switch action["action"] {
     case "search":
         var searchReq SearchAction
-        if result, errs := pedantigo.Unmarshal[SearchAction](jsonData); errs == nil {
+        if result, errs := pdcore.Unmarshal[SearchAction](jsonData); errs == nil {
             performSearch(result.Query, result.Limit)
         }
 
     case "calculate":
         var calcReq CalculateAction
-        if result, errs := pedantigo.Unmarshal[CalculateAction](jsonData); errs == nil {
+        if result, errs := pdcore.Unmarshal[CalculateAction](jsonData); errs == nil {
             computeExpression(result.Expression)
         }
 
     case "respond":
         var respReq RespondAction
-        if result, errs := pedantigo.Unmarshal[RespondAction](jsonData); errs == nil {
+        if result, errs := pdcore.Unmarshal[RespondAction](jsonData); errs == nil {
             sendResponse(result.Response)
         }
     }
@@ -252,7 +252,7 @@ type StreamState struct {
     LastError error
 }
 
-func monitorStream(parser *pedantigo.StreamParser[Response]) {
+func monitorStream(parser *pdcore.StreamParser[Response]) {
     for chunk := range getStreamChunks() {
         result, state, err := parser.Feed([]byte(chunk))
 
@@ -291,14 +291,14 @@ type AgentStep struct {
 
 type AgentLoop struct {
     llm    *LLMClient
-    parser *pedantigo.StreamParser[AgentStep]
+    parser *pdcore.StreamParser[AgentStep]
     maxSteps int
 }
 
 func NewAgentLoop(llm *LLMClient) *AgentLoop {
     return &AgentLoop{
         llm:      llm,
-        parser:   pedantigo.NewStreamParser[AgentStep](),
+        parser:   pdcore.NewStreamParser[AgentStep](),
         maxSteps: 10,
     }
 }
@@ -366,8 +366,8 @@ type LLMResponse struct {
 }
 
 func processLLMOutput(output []byte) {
-    validator := pedantigo.New[LLMResponse](pedantigo.ValidatorOptions{
-        ExtraFields: pedantigo.ExtraAllow,  // Capture, don't reject
+    validator := pdcore.New[LLMResponse](pdcore.ValidatorOptions{
+        ExtraFields: pdcore.ExtraAllow,  // Capture, don't reject
     })
 
     response, err := validator.Unmarshal(output)
@@ -399,7 +399,7 @@ See [ExtraAllow Use Cases](../api/initialization#extra-allow-use-cases) for more
 ## Performance Tips
 
 1. **Reuse Parsers**: Create the parser once and call `Reset()` between streams
-2. **Schema Caching**: `pedantigo.Schema[T]()` is cached after first call (240x faster)
+2. **Schema Caching**: `pdcore.Schema[T]()` is cached after first call (240x faster)
 3. **Error Context**: `StreamState` provides bytes received and parse attempts for debugging
 4. **Non-Blocking**: `Feed()` returns immediately with incomplete state, don't wait for completion
 
@@ -411,7 +411,7 @@ Use `StreamParser` when:
 - Want to detect malformed JSON early
 - Processing large responses where latency matters
 
-Use Simple API (`pedantigo.Unmarshal`) when:
+Use Simple API (`pdcore.Unmarshal`) when:
 - You already have complete JSON
 - Parsing from request bodies or files
 - Simplicity is preferred over streaming semantics

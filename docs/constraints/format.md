@@ -862,7 +862,7 @@ package main
 
 import (
     "fmt"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type UserAccount struct {
@@ -944,7 +944,7 @@ func main() {
         "jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
     }`)
 
-    user, err := pedantigo.Unmarshal[UserAccount](userJSON)
+    user, err := pdcore.Unmarshal[UserAccount](userJSON)
     if err != nil {
         fmt.Printf("User validation failed: %v\n", err)
         return
@@ -968,7 +968,7 @@ func main() {
         "version": "1.2.3"
     }`)
 
-    company, err := pedantigo.Unmarshal[CompanyInfo](companyJSON)
+    company, err := pdcore.Unmarshal[CompanyInfo](companyJSON)
     if err != nil {
         fmt.Printf("Company validation failed: %v\n", err)
         return
