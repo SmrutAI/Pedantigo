@@ -27,7 +27,7 @@ func init() {
 	// Wire up custom validator lookup to constraints package
 	constraints.SetCustomValidatorLookup(func(name string) (constraints.CustomValidationFunc, bool) {
 		if fn, ok := GetCustomValidator(name); ok {
-			// Convert pedantigo.ValidationFunc to constraints.CustomValidationFunc
+			// Convert pdcore.ValidationFunc to constraints.CustomValidationFunc
 			// Both have the same signature: func(value any, param string) error
 			return constraints.CustomValidationFunc(fn), true
 		}
@@ -213,7 +213,7 @@ func GetCustomValidator(name string) (ValidationFunc, bool) {
 //
 // Example:
 //
-//	pedantigo.RegisterValidationCtx("db_unique", func(ctx context.Context, value any, param string) error {
+//	pdcore.RegisterValidationCtx("db_unique", func(ctx context.Context, value any, param string) error {
 //	    db := ctx.Value("db").(*sql.DB)
 //	    // Check uniqueness in database
 //	    return nil
@@ -245,7 +245,7 @@ func GetContextValidator(name string) (ValidationFuncCtx, bool) {
 //
 // Example:
 //
-//	pedantigo.RegisterTagNameFunc(func(field reflect.StructField) string {
+//	pdcore.RegisterTagNameFunc(func(field reflect.StructField) string {
 //	    if name := field.Tag.Get("form"); name != "" {
 //	        return name
 //	    }
@@ -266,10 +266,10 @@ func RegisterTagNameFunc(fn TagNameFunc) {
 //
 // Example:
 //
-//	pedantigo.RegisterAlias("iscolor", "hexcolor|rgb|rgba|hsl|hsla")
+//	pdcore.RegisterAlias("iscolor", "hexcolor|rgb|rgba|hsl|hsla")
 //	// Now `iscolor` expands to an OR constraint for all color formats
 //
-//	pedantigo.RegisterAlias("username", "required,alphanum,min=3,max=20")
+//	pdcore.RegisterAlias("username", "required,alphanum,min=3,max=20")
 //	// Now `username` expands to multiple constraints
 //
 // Returns an error if the alias name conflicts with a built-in validator.

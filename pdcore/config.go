@@ -31,7 +31,7 @@ func init() {
 // Example:
 //
 //	func init() {
-//	    pedantigo.SetTagName("validate") // Now uses `validate:"required,email"`
+//	    pdcore.SetTagName("validate") // Now uses `validate:"required,email"`
 //	}
 //
 //	type User struct {

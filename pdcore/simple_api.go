@@ -18,7 +18,7 @@ import (
 //
 // Example:
 //
-//	user, err := pedantigo.Unmarshal[User](jsonData)
+//	user, err := pdcore.Unmarshal[User](jsonData)
 //	if err != nil {
 //	    // Handle validation errors
 //	}
@@ -32,7 +32,7 @@ func Unmarshal[T any](data []byte) (*T, error) {
 // Example:
 //
 //	user := &User{Email: "invalid"}
-//	if err := pedantigo.Validate(user); err != nil {
+//	if err := pdcore.Validate(user); err != nil {
 //	    // Handle validation errors
 //	}
 func Validate[T any](obj *T) error {
@@ -46,17 +46,17 @@ func Validate[T any](obj *T) error {
 // Example:
 //
 //	// From JSON bytes
-//	user, err := pedantigo.NewModel[User](jsonData)
+//	user, err := pdcore.NewModel[User](jsonData)
 //
 //	// From map (kwargs pattern)
-//	user, err := pedantigo.NewModel[User](map[string]any{
+//	user, err := pdcore.NewModel[User](map[string]any{
 //	    "email": "test@example.com",
 //	    "age": 25,
 //	})
 //
 //	// From existing struct (validates it)
 //	existing := User{Email: "test@example.com"}
-//	user, err := pedantigo.NewModel[User](existing)
+//	user, err := pdcore.NewModel[User](existing)
 func NewModel[T any](input any) (*T, error) {
 	return getOrCreateValidator[T]().NewModel(input)
 }
@@ -66,7 +66,7 @@ func NewModel[T any](input any) (*T, error) {
 //
 // Example:
 //
-//	schema := pedantigo.Schema[User]()
+//	schema := pdcore.Schema[User]()
 //	// schema contains the full JSON Schema object
 func Schema[T any]() *jsonschema.Schema {
 	return getOrCreateValidator[T]().Schema()
@@ -77,7 +77,7 @@ func Schema[T any]() *jsonschema.Schema {
 //
 // Example:
 //
-//	schemaBytes, err := pedantigo.SchemaJSON[User]()
+//	schemaBytes, err := pdcore.SchemaJSON[User]()
 //	if err != nil {
 //	    // Handle error
 //	}
@@ -90,7 +90,7 @@ func SchemaJSON[T any]() ([]byte, error) {
 //
 // Example:
 //
-//	schema := pedantigo.SchemaOpenAPI[User]()
+//	schema := pdcore.SchemaOpenAPI[User]()
 //	// Use in OpenAPI specification
 func SchemaOpenAPI[T any]() *jsonschema.Schema {
 	return getOrCreateValidator[T]().SchemaOpenAPI()
@@ -101,7 +101,7 @@ func SchemaOpenAPI[T any]() *jsonschema.Schema {
 //
 // Example:
 //
-//	schemaBytes, err := pedantigo.SchemaJSONOpenAPI[User]()
+//	schemaBytes, err := pdcore.SchemaJSONOpenAPI[User]()
 //	if err != nil {
 //	    // Handle error
 //	}
@@ -115,7 +115,7 @@ func SchemaJSONOpenAPI[T any]() ([]byte, error) {
 //
 // Example:
 //
-//	schema := pedantigo.SchemaLLM[User]()
+//	schema := pdcore.SchemaLLM[User]()
 //	// schema contains the JSON Schema object without $schema field
 func SchemaLLM[T any]() *jsonschema.Schema {
 	return getOrCreateValidator[T]().SchemaLLM()
@@ -127,7 +127,7 @@ func SchemaLLM[T any]() *jsonschema.Schema {
 //
 // Example:
 //
-//	schemaBytes, err := pedantigo.SchemaJSONLLM[User]()
+//	schemaBytes, err := pdcore.SchemaJSONLLM[User]()
 //	if err != nil {
 //	    // Handle error
 //	}
@@ -142,7 +142,7 @@ func SchemaJSONLLM[T any]() ([]byte, error) {
 // Example:
 //
 //	user := &User{Email: "test@example.com", Age: 25}
-//	jsonData, err := pedantigo.Marshal(user)
+//	jsonData, err := pdcore.Marshal(user)
 //	if err != nil {
 //	    // Handle validation or marshal error
 //	}
@@ -157,8 +157,8 @@ func Marshal[T any](obj *T) ([]byte, error) {
 // Example:
 //
 //	user := &User{Email: "test@example.com", Password: "secret"}
-//	opts := pedantigo.ForContext("api") // Excludes password if tagged with exclude:api
-//	jsonData, err := pedantigo.MarshalWithOptions(user, opts)
+//	opts := pdcore.ForContext("api") // Excludes password if tagged with exclude:api
+//	jsonData, err := pdcore.MarshalWithOptions(user, opts)
 func MarshalWithOptions[T any](obj *T, opts MarshalOptions) ([]byte, error) {
 	return getOrCreateValidator[T]().MarshalWithOptions(obj, opts)
 }
@@ -169,7 +169,7 @@ func MarshalWithOptions[T any](obj *T, opts MarshalOptions) ([]byte, error) {
 // Example:
 //
 //	user := &User{Email: "test@example.com", Age: 25}
-//	dict, err := pedantigo.Dict(user)
+//	dict, err := pdcore.Dict(user)
 //	// dict["email"] == "test@example.com"
 //	// dict["age"] == 25
 func Dict[T any](obj *T) (map[string]interface{}, error) {
@@ -181,8 +181,8 @@ func Dict[T any](obj *T) (map[string]interface{}, error) {
 //
 // Example:
 //
-//	err := pedantigo.Var("test@example.com", "required,email")
-//	err := pedantigo.Var(25, "min=18,max=120")
+//	err := pdcore.Var("test@example.com", "required,email")
+//	err := pdcore.Var(25, "min=18,max=120")
 func Var(value any, tag string) error {
 	if tag == "" {
 		return nil // No constraints to validate
@@ -295,7 +295,7 @@ func Var(value any, tag string) error {
 //
 //	user := &User{Email: "invalid", Age: 15}
 //	// Only validate email field, skip age validation
-//	err := pedantigo.ValidatePartial(user, "email")
+//	err := pdcore.ValidatePartial(user, "email")
 func ValidatePartial[T any](obj *T, fields ...string) error {
 	return getOrCreateValidator[T]().StructPartial(obj, fields...)
 }
@@ -308,7 +308,7 @@ func ValidatePartial[T any](obj *T, fields ...string) error {
 //
 //	user := &User{Email: "test@example.com", Age: 15}
 //	// Validate all fields except age
-//	err := pedantigo.ValidateExcept(user, "age")
+//	err := pdcore.ValidateExcept(user, "age")
 func ValidateExcept[T any](obj *T, excludeFields ...string) error {
 	return getOrCreateValidator[T]().StructExcept(obj, excludeFields...)
 }
@@ -322,7 +322,7 @@ func ValidateExcept[T any](obj *T, excludeFields ...string) error {
 //
 //	ctx := context.WithValue(context.Background(), "db", dbConn)
 //	user := &User{Username: "john"}
-//	if err := pedantigo.ValidateCtx(ctx, user); err != nil {
+//	if err := pdcore.ValidateCtx(ctx, user); err != nil {
 //	    // Handle validation errors
 //	}
 func ValidateCtx[T any](ctx context.Context, obj *T) error {
@@ -336,7 +336,7 @@ func ValidateCtx[T any](ctx context.Context, obj *T) error {
 // Example:
 //
 //	ctx := context.WithValue(context.Background(), "db", dbConn)
-//	user, err := pedantigo.UnmarshalCtx[User](ctx, jsonData)
+//	user, err := pdcore.UnmarshalCtx[User](ctx, jsonData)
 //	if err != nil {
 //	    // Handle validation errors
 //	}

@@ -10,6 +10,8 @@ import TabItem from '@theme/TabItem';
 
 :::note v2: default tag changed to `validate`
 This is v2 documentation. The default struct tag changed from `pedantigo` to `validate` — no other behavior changed. If you're upgrading from v1, read the [migration guide](./migration/v1-to-v2) first.
+
+**New to Pedantigo? Start here with v2.** v1 is maintained only for existing users and receives no new features — all new development happens in v2.
 :::
 
 **Type-safe JSON validation for Go, inspired by Pydantic**

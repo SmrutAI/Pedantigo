@@ -13,21 +13,21 @@
 //	}
 //
 //	// Parse JSON and validate
-//	user, err := pedantigo.Unmarshal[User](jsonData)
+//	user, err := pdcore.Unmarshal[User](jsonData)
 //
 //	// Create from JSON, map, or struct
-//	user, err := pedantigo.NewModel[User](input)
+//	user, err := pdcore.NewModel[User](input)
 //
 //	// Get cached JSON Schema
-//	schema := pedantigo.Schema[User]()
+//	schema := pdcore.Schema[User]()
 //
 // # Validator API (Advanced)
 //
 // For custom options like strict mode or extra field handling:
 //
-//	validator := pedantigo.New[User](pedantigo.ValidatorOptions{
+//	validator := pdcore.New[User](pdcore.ValidatorOptions{
 //	    StrictMissingFields: true,
-//	    ExtraFields:         pedantigo.ExtraForbid,
+//	    ExtraFields:         pdcore.ExtraForbid,
 //	})
 //	user, err := validator.Unmarshal(jsonData)
 //

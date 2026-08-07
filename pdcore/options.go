@@ -28,7 +28,7 @@ type ValidatorOptions struct {
 	// This allows different validators to use different struct tag names.
 	//
 	// Example:
-	//   v := pedantigo.New[User](pedantigo.ValidatorOptions{TagName: "binding"})
+	//   v := pdcore.New[User](pdcore.ValidatorOptions{TagName: "binding"})
 	//   // This validator uses `binding:"required,email"` tags
 	TagName string
 }

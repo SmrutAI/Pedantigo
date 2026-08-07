@@ -191,8 +191,8 @@ type OrderResponse struct {
 }
 
 // Both work with Pedantigo
-userValidator := pedantigo.New[UserResponse]()
-orderValidator := pedantigo.New[OrderResponse]()
+userValidator := pdcore.New[UserResponse]()
+orderValidator := pdcore.New[OrderResponse]()
 ```
 
 ---
@@ -325,7 +325,7 @@ result = adapter.validate_python([1, 2, "3"])  # Validates + coerces
 // Define type explicitly
 type IntList []int
 
-validator := pedantigo.New[IntList]()
+validator := pdcore.New[IntList]()
 ```
 
 ---
@@ -354,7 +354,7 @@ type UserList struct {
 }
 
 // Or validate slice directly
-validator := pedantigo.New[[]User]()
+validator := pdcore.New[[]User]()
 ```
 
 ---
