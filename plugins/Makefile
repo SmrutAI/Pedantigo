@@ -1,13 +1,14 @@
 # pedantigo/plugins — Makefile
 #
-# Placeholder. No plugin sub-module has real build/test logic wired in yet
-# (plugins/web/echo/ is created in a later task; plugins/rpc/ and plugins/llm/
-# are empty .gitkeep placeholders). Every target below is a deliberate no-op
-# so that the root orchestrator Makefile's fan-out (`make -C plugins <target>`)
-# never fails while this directory has no real modules to build.
+# Dispatches each target to plugins/web/echo/Makefile — currently the only
+# real plugin module (plugins/rpc/ and plugins/llm/ are empty .gitkeep
+# placeholders with no go.mod, so there is nothing to dispatch to there yet).
+# Each target below is a single, direct dispatch — no loop, no fan-out.
 #
-# As each plugin module gains a real go.mod, wire its build/test/lint here
-# (mirror the fan-out pattern used in the root Makefile).
+# When plugins/rpc/ or plugins/llm/ gain a real go.mod, do NOT turn these
+# targets into loops. Add new, separately-named targets instead (e.g.
+# build-rpc, build-llm), matching the root Makefile's <action>-core /
+# <action>-plugins pattern one level down.
 
 .PHONY: help build test test-verbose test-run test-clean-cache test-coverage \
         test-ci test-ci-cov vet fmt lint deps check clean install bench all pre-commit
@@ -15,58 +16,58 @@
 .DEFAULT_GOAL := help
 
 help: ## Show this help message
-	@echo "pedantigo/plugins — no real modules wired in yet (no-op targets)"
+	@echo "pedantigo/plugins — dispatches to plugins/web/echo/Makefile"
 
-build: ## (no-op) Build all plugin modules
-	@true
+build: ## Build plugins/web/echo
+	@$(MAKE) -C web/echo build
 
-test: ## (no-op) Run tests in all plugin modules
-	@true
+test: ## Run tests in plugins/web/echo
+	@$(MAKE) -C web/echo test
 
-test-verbose: ## (no-op) Run tests (verbose) in all plugin modules
-	@true
+test-verbose: ## Run tests (verbose) in plugins/web/echo
+	@$(MAKE) -C web/echo test-verbose
 
-test-run: ## (no-op) Flexible test runner in all plugin modules
-	@true
+test-run: ## Flexible test runner in plugins/web/echo (RUN=TestName PKG=./path TIMEOUT=5m)
+	@$(MAKE) -C web/echo test-run RUN=$(RUN) PKG=$(PKG) TIMEOUT=$(TIMEOUT)
 
-test-clean-cache: ## (no-op) Clean Go test cache in all plugin modules
-	@true
+test-clean-cache: ## Clean Go test cache in plugins/web/echo
+	@$(MAKE) -C web/echo test-clean-cache
 
-test-coverage: ## (no-op) Run tests with coverage in all plugin modules
-	@true
+test-coverage: ## Run tests with coverage in plugins/web/echo
+	@$(MAKE) -C web/echo test-coverage
 
-test-ci: ## (no-op) CI: run tests with JUnit XML output in all plugin modules
-	@true
+test-ci: ## CI: run tests with JUnit XML output in plugins/web/echo
+	@$(MAKE) -C web/echo test-ci
 
-test-ci-cov: ## (no-op) CI: run tests with coverage + JUnit XML output in all plugin modules
-	@true
+test-ci-cov: ## CI: run tests with coverage + JUnit XML output in plugins/web/echo
+	@$(MAKE) -C web/echo test-ci-cov
 
-vet: ## (no-op) Run go vet in all plugin modules
-	@true
+vet: ## Run go vet in plugins/web/echo
+	@$(MAKE) -C web/echo vet
 
-fmt: ## (no-op) Format code in all plugin modules
-	@true
+fmt: ## Format code in plugins/web/echo
+	@$(MAKE) -C web/echo fmt
 
-lint: ## (no-op) Run golangci-lint in all plugin modules
-	@true
+lint: ## Run golangci-lint in plugins/web/echo
+	@$(MAKE) -C web/echo lint
 
-deps: ## (no-op) Download and tidy Go dependencies in all plugin modules
-	@true
+deps: ## Download and tidy Go dependencies in plugins/web/echo
+	@$(MAKE) -C web/echo deps
 
-check: ## (no-op) Run lint + test in all plugin modules
-	@true
+check: ## Run lint + test in plugins/web/echo
+	@$(MAKE) -C web/echo check
 
-bench: ## (no-op) Run benchmarks in all plugin modules
-	@true
+bench: ## Run benchmarks in plugins/web/echo
+	@$(MAKE) -C web/echo bench
 
-clean: ## (no-op) Clean build artifacts in all plugin modules
-	@true
+clean: ## Clean build artifacts in plugins/web/echo
+	@$(MAKE) -C web/echo clean
 
-install: ## (no-op) Install/update dependencies in all plugin modules
-	@true
+install: ## Install/update dependencies in plugins/web/echo
+	@$(MAKE) -C web/echo install
 
-all: ## (no-op) Run fmt, vet, and test in all plugin modules
-	@true
+all: ## Run fmt, vet, and test in plugins/web/echo
+	@$(MAKE) -C web/echo all
 
-pre-commit: ## (no-op) Quick check before commit, in all plugin modules
-	@true
+pre-commit: ## Quick check before commit, in plugins/web/echo
+	@$(MAKE) -C web/echo pre-commit

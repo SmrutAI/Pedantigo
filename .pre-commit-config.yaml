@@ -36,43 +36,77 @@ repos:
 
   # ============================================
   # 3-5. CUSTOM LOCAL HOOKS
+  # Each action (vet, lint, build, tests) has two separate hooks: -core runs
+  # first, -plugins runs after. All four core hooks run to completion before
+  # any plugin hook starts — pre-commit stops at the first failing hook, so
+  # every core issue is resolved before plugins are checked at all.
   # ============================================
   - repo: local
     hooks:
-      # --- ACTIVE (run on every commit) ---
+      # --- CORE (pdcore) — runs first ---
 
-      # 2b. Go vet (via Makefile)
-      - id: go-vet
-        name: Go vet
-        description: Runs make vet
-        entry: make vet
+      - id: go-vet-core
+        name: Go vet (core)
+        description: Runs make vet-core
+        entry: make vet-core
         language: system
         types: [go]
         pass_filenames: false
 
-      # 2c. golangci-lint (via Makefile)
-      - id: golangci-lint
-        name: golangci-lint
-        description: Runs make lint
-        entry: make lint
+      - id: golangci-lint-core
+        name: golangci-lint (core)
+        description: Runs make lint-core
+        entry: make lint-core
         language: system
         types: [go]
         pass_filenames: false
 
-      # 3. Go build (via Makefile)
-      - id: check-build
-        name: Go build check
-        description: Runs make build
-        entry: make build
+      - id: check-build-core
+        name: Go build check (core)
+        description: Runs make build-core
+        entry: make build-core
         language: system
         types: [go]
         pass_filenames: false
 
-      # 4. Go tests (active for library - should be fast)
-      - id: check-tests
-        name: Run Go tests
-        description: Runs make test
-        entry: make test-coverage
+      - id: check-tests-core
+        name: Run Go tests (core)
+        description: Runs make test-coverage-core
+        entry: make test-coverage-core
+        language: system
+        types: [go]
+        pass_filenames: false
+
+      # --- PLUGINS — runs after all core hooks pass ---
+
+      - id: go-vet-plugins
+        name: Go vet (plugins)
+        description: Runs make vet-plugins
+        entry: make vet-plugins
+        language: system
+        types: [go]
+        pass_filenames: false
+
+      - id: golangci-lint-plugins
+        name: golangci-lint (plugins)
+        description: Runs make lint-plugins
+        entry: make lint-plugins
+        language: system
+        types: [go]
+        pass_filenames: false
+
+      - id: check-build-plugins
+        name: Go build check (plugins)
+        description: Runs make build-plugins
+        entry: make build-plugins
+        language: system
+        types: [go]
+        pass_filenames: false
+
+      - id: check-tests-plugins
+        name: Run Go tests (plugins)
+        description: Runs make test-coverage-plugins
+        entry: make test-coverage-plugins
         language: system
         types: [go]
         pass_filenames: false

@@ -89,7 +89,7 @@ func getOrCreateValidator[T any]() *Validator[T] {
 
 // UnmarshalInto unmarshals JSON data into the target using the cached validator
 // for target's type. target must be a non-nil pointer to a struct whose type has
-// been registered via New[T]() (which populates the validator cache).
+// been registered via Register() (which populates the validator cache).
 //
 // If no validator is cached for target's type, UnmarshalInto panics with a message
 // naming the missing type and the registration call needed.
@@ -99,7 +99,7 @@ func getOrCreateValidator[T any]() *Validator[T] {
 //
 // Example:
 //
-//	var _ = pdcore.New[MyRequest]()  // register at init time
+//	var _ = pdcore.Register(pdcore.New[MyRequest]())  // register at init time
 //
 //	// later, at runtime:
 //	var req MyRequest
@@ -114,10 +114,42 @@ func UnmarshalInto(data []byte, target any) error {
 	if !ok {
 		panic(fmt.Sprintf(
 			"pdcore: no validator registered for type %s.%s. "+
-				"Add: var _ = pdcore.New[%s]()",
+				"UnmarshalInto (and any framework plugin built on it, e.g. the Echo Binder) "+
+				"can only validate types that were explicitly registered via Register(). "+
+				"Fix: add this once, at package init time, for this type:\n"+
+				"    var _ = pdcore.Register(pdcore.New[%s]())",
 			typ.PkgPath(), typ.Name(), typ.Name()))
 	}
 	return cached.(unmarshalable).unmarshalInto(data, target)
+}
+
+// Register makes v the instance that framework-plugin binders (UnmarshalInto,
+// the Echo Binder, etc.) will find for type T. Custom code that only ever calls
+// v.Unmarshal() / v.Validate() directly never needs this.
+//
+// Register may be called exactly once per type T. A second call for the same
+// type — even with an identical instance — panics. Duplicate registration is
+// the caller's responsibility to avoid; pedantigo enforces it rather than
+// silently picking a winner, because a type may legitimately have multiple
+// differently-configured validators (different ValidatorOptions), and only
+// one of them can be "the" plugin-visible instance.
+func Register[T any](v *Validator[T]) *Validator[T] {
+	typ := v.typ
+	_, loaded := validatorCache.LoadOrStore(typ, v)
+	if loaded {
+		panic(fmt.Sprintf(
+			"pdcore: validator for type %s.%s is already registered. "+
+				"Register[T]() may be called exactly once per type — this is enforced "+
+				"because a type may have multiple validators built with different "+
+				"ValidatorOptions (e.g. different TagName or StrictMissingFields), and "+
+				"pedantigo cannot know which one should be visible to plugin-based "+
+				"lookups like UnmarshalInto/the Echo Binder if more than one is registered. "+
+				"Fix: find the other pdcore.Register(pdcore.New[%s](...)) call for this "+
+				"type and remove one of them, so Register is called from exactly one "+
+				"package-level var declaration.",
+			typ.PkgPath(), typ.Name(), typ.Name()))
+	}
+	return v
 }
 
 // unmarshalable is a non-generic interface that allows type-erased unmarshal.
