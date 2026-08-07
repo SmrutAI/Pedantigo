@@ -1,6 +1,7 @@
 package echo
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -143,6 +144,63 @@ func TestBind_DeleteFallsBackToDefaultBinder(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, "Dave", out.Name)
+}
+
+type pathParamTestRequest struct {
+	ID   int    `json:"id" param:"id"`
+	Name string `json:"name" validate:"required"`
+}
+
+var _ = pdcore.Register(pdcore.New[pathParamTestRequest]())
+
+// TestBind_PathParamBindError covers the BindPathParams error branch: a
+// non-numeric path value bound to an int field fails type conversion.
+func TestBind_PathParamBindError(t *testing.T) {
+	e := echo.New()
+	e.Binder = NewBinder()
+
+	body := `{"name":"Alice"}`
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("id")
+	c.SetParamValues("not-a-number")
+
+	var out pathParamTestRequest
+	err := c.Bind(&out)
+
+	require.Error(t, err)
+	var httpErr *echo.HTTPError
+	require.ErrorAs(t, err, &httpErr, "expected *echo.HTTPError, got %T", err)
+	assert.Equal(t, http.StatusBadRequest, httpErr.Code)
+}
+
+// errReader is an io.Reader whose Read always fails, used to exercise the
+// io.ReadAll error branch in Bind.
+type errReader struct{}
+
+func (errReader) Read([]byte) (int, error) {
+	return 0, errors.New("simulated read error")
+}
+
+func TestBind_BodyReadError(t *testing.T) {
+	e := echo.New()
+	e.Binder = NewBinder()
+
+	req := httptest.NewRequest(http.MethodPost, "/", errReader{})
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	var out TestRequest
+	err := c.Bind(&out)
+
+	require.Error(t, err)
+	var httpErr *echo.HTTPError
+	require.ErrorAs(t, err, &httpErr, "expected *echo.HTTPError, got %T", err)
+	assert.Equal(t, http.StatusBadRequest, httpErr.Code)
+	assert.Equal(t, "failed to read body", httpErr.Message)
 }
 
 func TestBind_UnregisteredTypePanics(t *testing.T) {
