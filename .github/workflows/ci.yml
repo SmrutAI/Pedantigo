@@ -26,7 +26,21 @@ jobs:
           go install golang.org/x/tools/cmd/goimports@latest
 
           # golangci-lint v2.x (for make lint - matches local version)
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.12.2
+          #
+          # Installed via `go install` instead of the official install.sh: that
+          # script's checksum lookup (`grep "${BASENAME}" checksums.txt`) is
+          # unanchored, and v2.12.2's checksums.txt added a
+          # golangci-lint-<ver>-linux-amd64.tar.gz.sbom.json sidecar entry whose
+          # name is a superstring of the real tarball's name. grep matches both
+          # lines, so the expected-hash lookup returns two concatenated hashes
+          # and verification always fails, even though the download itself is
+          # fine. Tracked upstream: no fix merged as of this writing.
+          #
+          # GOTOOLCHAIN=go1.25.12 matches the Go version upstream's official
+          # v2.12.2 release binaries are built with (see the GOTOOLCHAIN scoping
+          # in the Makefile's lint target), so this build stays equivalent to
+          # the release binary the install.sh would have fetched.
+          GOTOOLCHAIN=go1.25.12 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
 
           # pre-commit (gitleaks installed automatically by pre-commit)
           pip install pre-commit
