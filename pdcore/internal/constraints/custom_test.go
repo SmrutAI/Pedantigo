@@ -305,11 +305,11 @@ func TestCustomConstraint_Validate_NilValue(t *testing.T) {
 				}
 				// Check for nil pointer using reflection (nil pointer in interface != nil interface)
 				v := reflect.ValueOf(value)
-				if v.Kind() == reflect.Ptr && v.IsNil() {
+				if v.Kind() == reflect.Pointer && v.IsNil() {
 					return nil // Skip validation for nil pointer
 				}
 				// Dereference pointer if needed
-				if v.Kind() == reflect.Ptr {
+				if v.Kind() == reflect.Pointer {
 					v = v.Elem()
 				}
 				if v.Kind() != reflect.String {

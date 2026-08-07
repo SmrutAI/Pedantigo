@@ -20,7 +20,7 @@ type ExtraFieldInfo struct {
 //   - Field type is not map[string]any
 func DetectExtraField(typ reflect.Type, tagName string) *ExtraFieldInfo {
 	// Handle pointer types - dereference to get the actual struct
-	if typ.Kind() == reflect.Ptr {
+	if typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
 	}
 
@@ -57,7 +57,7 @@ func DetectExtraField(typ reflect.Type, tagName string) *ExtraFieldInfo {
 		fieldType := field.Type
 
 		// Check it's not a pointer
-		if fieldType.Kind() == reflect.Ptr {
+		if fieldType.Kind() == reflect.Pointer {
 			panic(fmt.Sprintf("field '%s' tagged with pedantigo:\"extra_fields\" must be of type map[string]any", field.Name))
 		}
 

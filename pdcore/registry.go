@@ -106,7 +106,7 @@ func getOrCreateValidator[T any]() *Validator[T] {
 //	err := pdcore.UnmarshalInto(jsonBody, &req)
 func UnmarshalInto(data []byte, target any) error {
 	rv := reflect.ValueOf(target)
-	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+	if rv.Kind() != reflect.Pointer || rv.IsNil() {
 		panic("pdcore: UnmarshalInto target must be a non-nil pointer")
 	}
 	typ := rv.Elem().Type()
@@ -312,30 +312,30 @@ func clearValidatorCache() {
 func isBuiltInValidator(name string) bool {
 	builtInValidators := map[string]bool{
 		// Core
-		"required": true, "const": true,
+		constraints.CRequired: true, "const": true,
 		// When present, skips all constraints if the field is at its zero value (empty string, nil pointer/slice/map).
 		"omitempty": true,
 		// String
-		"min": true, "max": true, "len": true, "regex": true, "regexp": true, "pattern": true,
-		"email": true, "url": true, "uri": true, "uuid": true,
-		"alpha": true, "alphanum": true, "alphanumunicode": true,
-		"ascii": true, "contains": true, "excludes": true,
-		"startswith": true, "endswith": true, "lowercase": true, "uppercase": true,
-		"oneof": true, "oneofci": true, "enum": true,
+		constraints.CMin: true, constraints.CMax: true, constraints.CLen: true, "regex": true, constraints.CRegexp: true, "pattern": true,
+		constraints.CEmail: true, constraints.CUrl: true, constraints.CUri: true, constraints.CUuid: true,
+		constraints.CAlpha: true, constraints.CAlphanum: true, constraints.CAlphanumunicode: true,
+		constraints.CAscii: true, constraints.CContains: true, constraints.CExcludes: true,
+		constraints.CStartswith: true, constraints.CEndswith: true, constraints.CLowercase: true, constraints.CUppercase: true,
+		constraints.COneof: true, constraints.COneofci: true, "enum": true,
 		// Built-in aliases
 		"iscolor": true,
 		// Numeric
-		"gt": true, "gte": true, "lt": true, "lte": true,
-		"multipleOf": true, "positive": true, "negative": true,
+		constraints.CGt: true, constraints.CGte: true, constraints.CLt: true, constraints.CLte: true,
+		"multipleOf": true, constraints.CPositive: true, constraints.CNegative: true,
 		// Network
-		"ip": true, "ipv4": true, "ipv6": true, "cidr": true,
-		"mac": true, "hostname": true, "fqdn": true, "port": true,
+		constraints.CIp: true, constraints.CIpv4: true, constraints.CIpv6: true, constraints.CCidr: true,
+		constraints.CMac: true, constraints.CHostname: true, constraints.CFqdn: true, constraints.CPort: true,
 		// Format
-		"datetime": true, "date": true, "time": true,
-		"base64": true, "json": true, "jwt": true,
-		"creditcard": true, "isbn": true, "ssn": true,
+		constraints.CDatetime: true, "date": true, "time": true,
+		constraints.CBase64: true, constraints.CJson: true, constraints.CJwt: true,
+		"creditcard": true, constraints.CIsbn: true, constraints.CSsn: true,
 		// Collections
-		"dive": true, "keys": true, "endkeys": true, "unique": true,
+		"dive": true, "keys": true, "endkeys": true, constraints.CUnique: true,
 		// Cross-field
 		"eqfield": true, "nefield": true, "gtfield": true, "ltfield": true,
 		"required_if": true, "excluded_if": true,

@@ -43,7 +43,7 @@ func ParseFieldPath(structType reflect.Type, path string) *FieldPath {
 	// Traverse the path and validate each part
 	for i, part := range parts {
 		// Dereference pointers to get to the underlying struct type
-		for currentType.Kind() == reflect.Ptr {
+		for currentType.Kind() == reflect.Pointer {
 			currentType = currentType.Elem()
 		}
 
@@ -112,7 +112,7 @@ func (fp *FieldPath) ResolveValue(structValue reflect.Value) (any, error) {
 	// Traverse through each part of the path
 	for i, fieldIndex := range fp.IndexAtLevel {
 		// Dereference pointers until we get to a struct
-		for current.Kind() == reflect.Ptr {
+		for current.Kind() == reflect.Pointer {
 			if current.IsNil() {
 				// Nil pointer encountered - return error
 				return nil, fmt.Errorf("nil pointer encountered in field path %q at part: %s", fp.Raw, fp.Parts[i])

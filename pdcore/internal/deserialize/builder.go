@@ -43,7 +43,7 @@ func BuildFieldDeserializers(
 	deserializers := make(map[string]FieldDeserializer)
 
 	// Handle pointer types
-	if typ.Kind() == reflect.Ptr {
+	if typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
 	}
 
@@ -129,7 +129,7 @@ func BuildFieldDeserializers(
 
 		// Check if this is a string field (for transformations)
 		isStringField := field.Type.Kind() == reflect.String ||
-			(field.Type.Kind() == reflect.Ptr && field.Type.Elem().Kind() == reflect.String)
+			(field.Type.Kind() == reflect.Pointer && field.Type.Elem().Kind() == reflect.String)
 
 		// Create field deserializer closure
 		fieldIndex := i
@@ -206,7 +206,7 @@ func BuildFieldDeserializers(
 // Order of operations: strip_whitespace first, then to_lower/to_upper.
 func applyStringTransformations(fieldValue reflect.Value, transforms StringTransformations) {
 	// Handle pointer to string
-	if fieldValue.Kind() == reflect.Ptr {
+	if fieldValue.Kind() == reflect.Pointer {
 		if fieldValue.IsNil() {
 			return
 		}

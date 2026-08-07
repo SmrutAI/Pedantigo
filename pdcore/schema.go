@@ -257,7 +257,7 @@ func (v *Validator[T]) enhanceSchemaWithDefs(schema *jsonschema.Schema, typ refl
 
 // findTypeForDefinition finds the reflect.Type for a definition by name.
 func (v *Validator[T]) findTypeForDefinition(typ reflect.Type, defName string) reflect.Type {
-	if typ.Kind() == reflect.Ptr {
+	if typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
 	}
 
@@ -275,7 +275,7 @@ func (v *Validator[T]) findTypeForDefinition(typ reflect.Type, defName string) r
 		field := typ.Field(i)
 		fieldType := field.Type
 
-		if fieldType.Kind() == reflect.Ptr {
+		if fieldType.Kind() == reflect.Pointer {
 			fieldType = fieldType.Elem()
 		}
 
@@ -312,7 +312,7 @@ func (v *Validator[T]) findTypeForDefinition(typ reflect.Type, defName string) r
 // searchSliceType searches for a type within slice element types.
 func (v *Validator[T]) searchSliceType(fieldType reflect.Type, defName string) reflect.Type {
 	elemType := fieldType.Elem()
-	if elemType.Kind() == reflect.Ptr {
+	if elemType.Kind() == reflect.Pointer {
 		elemType = elemType.Elem()
 	}
 	if elemType.Name() == defName {
@@ -329,7 +329,7 @@ func (v *Validator[T]) searchSliceType(fieldType reflect.Type, defName string) r
 // searchMapType searches for a type within map value types.
 func (v *Validator[T]) searchMapType(fieldType reflect.Type, defName string) reflect.Type {
 	valueType := fieldType.Elem()
-	if valueType.Kind() == reflect.Ptr {
+	if valueType.Kind() == reflect.Pointer {
 		valueType = valueType.Elem()
 	}
 	if valueType.Name() == defName {

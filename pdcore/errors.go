@@ -6,10 +6,30 @@ import "fmt"
 const (
 	// codeValidationFailed is the default error code when no specific code is available.
 	codeValidationFailed = "VALIDATION_FAILED"
+
+	// codeRequired is the error code for a missing required value.
+	codeRequired = "REQUIRED"
+
+	// fieldNameValue is the FieldError.Field value used by Var, which validates a
+	// standalone value rather than a named struct field.
+	fieldNameValue = "value"
+
+	// fieldNameRoot is the FieldError.Field value for errors that apply to the
+	// whole struct being validated rather than one of its fields.
+	fieldNameRoot = "root"
 )
 
 // Error message constants for validation errors.
 const (
+	// ErrMsgFieldRequired is returned when a required field or value is missing.
+	ErrMsgFieldRequired = "is required"
+
+	// ErrMsgNilPointer is returned when Validate/StructPartial/StructExcept receives a nil pointer.
+	ErrMsgNilPointer = "cannot validate nil pointer"
+
+	// ErrMsgValueRequired is returned by Var when a required standalone value is missing.
+	ErrMsgValueRequired = "value is required"
+
 	// ErrMsgUnknownField is returned when ExtraForbid encounters unknown JSON fields.
 	ErrMsgUnknownField = "unknown field in JSON"
 

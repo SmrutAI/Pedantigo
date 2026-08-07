@@ -58,7 +58,7 @@ func HasWhitelistContext(metadata map[string]FieldMetadata, context string) bool
 // isZeroValue checks if a value is its zero value (including nil pointers).
 func isZeroValue(v reflect.Value) bool {
 	switch v.Kind() {
-	case reflect.Ptr, reflect.Interface, reflect.Slice, reflect.Map, reflect.Chan, reflect.Func:
+	case reflect.Pointer, reflect.Interface, reflect.Slice, reflect.Map, reflect.Chan, reflect.Func:
 		return v.IsNil()
 	case reflect.Array:
 		for i := 0; i < v.Len(); i++ {
@@ -87,7 +87,7 @@ func ToFilteredMap(
 ) map[string]any {
 	result := make(map[string]any)
 
-	if val.Kind() == reflect.Ptr {
+	if val.Kind() == reflect.Pointer {
 		if val.IsNil() {
 			return nil
 		}
@@ -109,7 +109,7 @@ func ToFilteredMap(
 		case fieldValue.Kind() == reflect.Struct:
 			nestedMeta := BuildFieldMetadata(fieldValue.Type(), opts.TagName)
 			result[jsonName] = ToFilteredMap(fieldValue, nestedMeta, opts)
-		case fieldValue.Kind() == reflect.Ptr && !fieldValue.IsNil():
+		case fieldValue.Kind() == reflect.Pointer && !fieldValue.IsNil():
 			elem := fieldValue.Elem()
 			if elem.Kind() == reflect.Struct {
 				nestedMeta := BuildFieldMetadata(elem.Type(), opts.TagName)

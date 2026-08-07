@@ -209,29 +209,29 @@ func Var(value any, tag string) error {
 		if value == nil {
 			return &ValidationError{
 				Errors: []FieldError{{
-					Field:   "value",
-					Code:    "REQUIRED",
-					Message: "value is required",
+					Field:   fieldNameValue,
+					Code:    codeRequired,
+					Message: ErrMsgValueRequired,
 				}},
 			}
 		}
 		// Check if value is zero
 		rv := reflect.ValueOf(value)
-		if rv.Kind() == reflect.Ptr && rv.IsNil() {
+		if rv.Kind() == reflect.Pointer && rv.IsNil() {
 			return &ValidationError{
 				Errors: []FieldError{{
-					Field:   "value",
-					Code:    "REQUIRED",
-					Message: "value is required",
+					Field:   fieldNameValue,
+					Code:    codeRequired,
+					Message: ErrMsgValueRequired,
 				}},
 			}
 		}
 		if isZeroValue(rv) {
 			return &ValidationError{
 				Errors: []FieldError{{
-					Field:   "value",
-					Code:    "REQUIRED",
-					Message: "value is required",
+					Field:   fieldNameValue,
+					Code:    codeRequired,
+					Message: ErrMsgValueRequired,
 				}},
 			}
 		}
@@ -242,13 +242,13 @@ func Var(value any, tag string) error {
 		return nil
 	}
 	rv := reflect.ValueOf(value)
-	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+	if rv.Kind() == reflect.Pointer && rv.IsNil() {
 		return nil
 	}
 
 	// Get the type for building constraints
 	var typ reflect.Type
-	if rv.Kind() == reflect.Ptr {
+	if rv.Kind() == reflect.Pointer {
 		typ = rv.Elem().Type()
 	} else {
 		typ = rv.Type()
@@ -275,7 +275,7 @@ func Var(value any, tag string) error {
 		}
 
 		errs = append(errs, FieldError{
-			Field:   "value",
+			Field:   fieldNameValue,
 			Code:    code,
 			Message: message,
 		})
@@ -351,7 +351,7 @@ func isZeroValue(v reflect.Value) bool {
 	switch v.Kind() {
 	case reflect.String:
 		return v.Len() == 0
-	case reflect.Ptr, reflect.Interface:
+	case reflect.Pointer, reflect.Interface:
 		return v.IsNil()
 	case reflect.Slice, reflect.Map, reflect.Chan:
 		return v.IsNil() || v.Len() == 0

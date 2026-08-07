@@ -19,7 +19,7 @@ func (c uniqueConstraint) Validate(value any) error {
 	}
 
 	v := reflect.ValueOf(value)
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			return nil
 		}
@@ -98,7 +98,7 @@ func (c uniqueConstraint) validateMap(v reflect.Value) error {
 // extractFieldValue extracts a field value from a struct element.
 func (c uniqueConstraint) extractFieldValue(elem reflect.Value, fieldName string) any {
 	// Dereference pointer if needed
-	if elem.Kind() == reflect.Ptr {
+	if elem.Kind() == reflect.Pointer {
 		if elem.IsNil() {
 			return nil
 		}
@@ -124,7 +124,7 @@ func (c uniqueConstraint) toComparable(v reflect.Value) any {
 	}
 
 	// Dereference pointers
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			return nil
 		}

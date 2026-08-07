@@ -104,6 +104,14 @@ linters:
       - third_party
       - testdata
 
+issues:
+  # golangci-lint's defaults (max-issues-per-linter: 50, max-same-issues: 3)
+  # silently truncate output once a linter accumulates that many hits, hiding
+  # real violations behind a misleadingly small reported count. Disabled so
+  # every run shows the true, complete issue list.
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
 formatters:
   enable:
     - gofmt
