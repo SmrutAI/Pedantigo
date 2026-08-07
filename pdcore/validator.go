@@ -1115,17 +1115,6 @@ func (v *Validator[T]) StructPartial(obj *T, fields ...string) error {
 
 		fieldValue := structValue.Field(cached.FieldIndex)
 
-		// Check required constraint (which is normally only handled during Unmarshal)
-		if cached.IsRequired && isZeroValue(fieldValue) {
-			errs = append(errs, FieldError{
-				Field:   cached.JSONName,
-				Code:    constraints.CodeRequired,
-				Message: ErrMsgFieldRequired,
-				Value:   fieldValue.Interface(),
-			})
-			continue // Skip further validation for this field
-		}
-
 		// Run constraints for this field
 		for _, c := range cached.Constraints {
 			err := c.Validate(fieldValue.Interface())
@@ -1207,17 +1196,6 @@ func (v *Validator[T]) StructExcept(obj *T, excludeFields ...string) error {
 		}
 
 		fieldValue := structValue.Field(cached.FieldIndex)
-
-		// Check required constraint (which is normally only handled during Unmarshal)
-		if cached.IsRequired && isZeroValue(fieldValue) {
-			errs = append(errs, FieldError{
-				Field:   cached.JSONName,
-				Code:    constraints.CodeRequired,
-				Message: ErrMsgFieldRequired,
-				Value:   fieldValue.Interface(),
-			})
-			continue // Skip further validation for this field
-		}
 
 		// Run constraints for this field
 		for _, c := range cached.Constraints {
