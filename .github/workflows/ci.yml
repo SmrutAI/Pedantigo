@@ -58,13 +58,63 @@ jobs:
           make test-ci-cov-core
           make test-ci-cov-plugins
 
-      - name: Upload test results
+      - name: Test Results
+        # Required status check (see repo ruleset "PR merge requirements",
+        # which requires a check literally named "Test Results"). Covers
+        # both modules combined so this one check gates the merge. Per-module
+        # numbers for the PR comment are parsed locally below instead of
+        # running this action a second/third time per module — the action
+        # already generates a real GitHub check run as a side effect of each
+        # invocation, so a second run would create a second, redundant check.
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
           files: '**/test-results.xml'
-          comment_mode: always
           check_name: Test Results
+          comment_mode: off
+
+      - name: Build combined test results comment
+        # Parses each module's JUnit XML directly (go-junit-report's
+        # <testsuites><testsuite tests= failures= errors= .../></testsuites>
+        # format) to get per-module counts, rather than invoking the action
+        # above again per module.
+        if: always()
+        run: |
+          python3 - <<'PYEOF'
+          import xml.etree.ElementTree as ET
+
+          def summarize(path):
+              root = ET.parse(path).getroot()
+              suites = root.findall("testsuite") if root.tag == "testsuites" else [root]
+              tests = failures = errors = skipped = 0
+              duration = 0.0
+              for s in suites:
+                  tests += int(s.get("tests", 0))
+                  failures += int(s.get("failures", 0))
+                  errors += int(s.get("errors", 0))
+                  skipped += int(s.get("skipped", 0))
+                  duration += float(s.get("time", 0))
+              passed = tests - failures - errors - skipped
+              status = "✅" if failures == 0 and errors == 0 else "❌"
+              return f"**{tests} tests** — {passed} passed, {failures} failed, {errors} errors, {skipped} skipped ({duration:.1f}s) {status}"
+
+          with open("test-results-comment.md", "w") as f:
+              f.write("## Test Results\n\n")
+              f.write("### pdcore\n")
+              f.write("Core validation library.\n\n")
+              f.write(summarize("pdcore/test-results.xml") + "\n\n")
+              f.write("### plugins/web/echo\n")
+              f.write("Echo framework Binder integration.\n\n")
+              f.write(summarize("plugins/web/echo/test-results.xml") + "\n")
+          PYEOF
+
+      - name: Add test results PR comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: always() && github.event_name == 'pull_request'
+        with:
+          header: test-results
+          recreate: true
+          path: test-results-comment.md
 
       - name: Generate coverage report
         # The coverage badge/threshold gate (used for the "Update coverage
@@ -80,19 +130,27 @@ jobs:
         # package graph). Both reports are appended into one comment file.
         run: |
           chmod +x .github/scripts/coverage-report.sh
-          .github/scripts/coverage-report.sh pdcore/coverage.out code-coverage-results.md 90 96
+          .github/scripts/coverage-report.sh pdcore/coverage.out pdcore-coverage-results.md 90 96
           (cd plugins/web/echo && "$GITHUB_WORKSPACE/.github/scripts/coverage-report.sh" coverage.out "$GITHUB_WORKSPACE/plugin-coverage-results.md" 90 96)
           {
+            echo "## Code Coverage"
+            echo ""
+            echo "### pdcore"
+            echo "Core validation library."
+            echo ""
+            cat pdcore-coverage-results.md
             echo ""
             echo "### plugins/web/echo"
+            echo "Echo framework Binder integration."
             echo ""
             cat plugin-coverage-results.md
-          } >> code-coverage-results.md
+          } > code-coverage-results.md
 
       - name: Add coverage PR comment
         uses: marocchino/sticky-pull-request-comment@v2
         if: github.event_name == 'pull_request'
         with:
+          header: coverage
           recreate: true
           path: code-coverage-results.md
 
