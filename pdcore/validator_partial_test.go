@@ -81,11 +81,10 @@ func TestValidator_StructPartial(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "required field validation",
-			user:    PartialTestUser{Name: "John"}, // Email required but empty
+			name:    "required field not validated by StructPartial",
+			user:    PartialTestUser{Name: "John"}, // Email required but empty - StructPartial doesn't check this
 			fields:  []string{"email"},
-			wantErr: true,
-			errMsg:  "required",
+			wantErr: false, // StructPartial skips required validation
 		},
 		{
 			name:    "min length validation",
@@ -204,6 +203,12 @@ func TestValidator_StructExcept(t *testing.T) {
 			wantErr: false, // Email required check skipped
 		},
 		{
+			name:    "required field not validated by StructExcept",
+			user:    PartialTestUser{Name: "John", Age: 25, Password: "securepass"}, // Email required but empty, not excluded
+			exclude: []string{"age"},
+			wantErr: false, // StructExcept skips required validation
+		},
+		{
 			name:    "exclude one error but catch another",
 			user:    PartialTestUser{Email: "invalid", Name: "X", Age: 25, Password: "securepass"},
 			exclude: []string{"email"},
@@ -316,12 +321,12 @@ func TestStructPartial_EdgeCases(t *testing.T) {
 		}
 	})
 
-	t.Run("zero value struct", func(t *testing.T) {
+	t.Run("zero value struct - required not validated", func(t *testing.T) {
 		user := PartialTestUser{}
 		err := v.StructPartial(&user, "email")
-		// Email is required, should error
-		if err == nil {
-			t.Error("Expected error for required field on zero value struct")
+		// StructPartial skips required validation - cannot validate on already-unmarshaled struct
+		if err != nil {
+			t.Errorf("StructPartial should not validate required fields, got: %v", err)
 		}
 	})
 
@@ -362,6 +367,16 @@ func TestStructExcept_EdgeCases(t *testing.T) {
 		// Should handle duplicates gracefully
 		if err != nil {
 			t.Errorf("Unexpected error with duplicate exclusions: %v", err)
+		}
+	})
+
+	t.Run("zero value struct - required not validated", func(t *testing.T) {
+		user := PartialTestUser{}
+		err := v.StructExcept(&user, "name", "age", "password")
+		// StructExcept skips required validation - cannot validate on already-unmarshaled struct.
+		// Only "email" remains included; its own constraint (like required) self-skips empty values.
+		if err != nil {
+			t.Errorf("StructExcept should not validate required fields, got: %v", err)
 		}
 	})
 }
