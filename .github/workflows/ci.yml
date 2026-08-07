@@ -61,11 +61,7 @@ jobs:
       - name: Test Results
         # Required status check (see repo ruleset "PR merge requirements",
         # which requires a check literally named "Test Results"). Covers
-        # both modules combined so this one check gates the merge. Per-module
-        # numbers for the PR comment are parsed locally below instead of
-        # running this action a second/third time per module — the action
-        # already generates a real GitHub check run as a side effect of each
-        # invocation, so a second run would create a second, redundant check.
+        # both modules combined so this one check gates the merge.
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
@@ -73,40 +69,46 @@ jobs:
           check_name: Test Results
           comment_mode: off
 
+      - name: Test results — validator
+        id: test-results-core
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: 'validator/test-results.xml'
+          check_name: Test Results (validator)
+          comment_mode: off
+
+      - name: Test results — plugins/web/echo
+        id: test-results-plugins
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: 'plugins/web/echo/test-results.xml'
+          check_name: Test Results (plugins/web/echo)
+          comment_mode: off
+
       - name: Build combined test results comment
-        # Parses each module's JUnit XML directly (go-junit-report's
-        # <testsuites><testsuite tests= failures= errors= .../></testsuites>
-        # format) to get per-module counts, rather than invoking the action
-        # above again per module.
+        # publish-unit-test-result-action posts one comment per check_name
+        # (keyed by check_name), so the two module-scoped runs above are
+        # kept at comment_mode: off and their native, rich `.summary` output
+        # (file/suite counts, pass/fail/skip icons, duration, delta vs base
+        # commit) is reassembled here into one comment with a titled section
+        # per module, instead of a flat single-module summary.
         if: always()
         run: |
-          python3 - <<'PYEOF'
-          import xml.etree.ElementTree as ET
-
-          def summarize(path):
-              root = ET.parse(path).getroot()
-              suites = root.findall("testsuite") if root.tag == "testsuites" else [root]
-              tests = failures = errors = skipped = 0
-              duration = 0.0
-              for s in suites:
-                  tests += int(s.get("tests", 0))
-                  failures += int(s.get("failures", 0))
-                  errors += int(s.get("errors", 0))
-                  skipped += int(s.get("skipped", 0))
-                  duration += float(s.get("time", 0))
-              passed = tests - failures - errors - skipped
-              status = "✅" if failures == 0 and errors == 0 else "❌"
-              return f"**{tests} tests** — {passed} passed, {failures} failed, {errors} errors, {skipped} skipped ({duration:.1f}s) {status}"
-
-          with open("test-results-comment.md", "w") as f:
-              f.write("## Test Results\n\n")
-              f.write("### validator\n")
-              f.write("Core validation library.\n\n")
-              f.write(summarize("validator/test-results.xml") + "\n\n")
-              f.write("### plugins/web/echo\n")
-              f.write("Echo framework Binder integration.\n\n")
-              f.write(summarize("plugins/web/echo/test-results.xml") + "\n")
-          PYEOF
+          {
+            echo "## Test Results"
+            echo ""
+            echo "### validator"
+            echo "Core validation library."
+            echo ""
+            echo '${{ fromJSON(steps.test-results-core.outputs.json).summary }}'
+            echo ""
+            echo "### plugins/web/echo"
+            echo "Echo framework Binder integration."
+            echo ""
+            echo '${{ fromJSON(steps.test-results-plugins.outputs.json).summary }}'
+          } > test-results-comment.md
 
       - name: Add test results PR comment
         uses: marocchino/sticky-pull-request-comment@v2
