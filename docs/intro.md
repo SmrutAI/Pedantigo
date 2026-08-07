@@ -34,7 +34,7 @@ package main
 
 import (
     "fmt"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type User struct {
@@ -47,7 +47,7 @@ func main() {
     jsonData := []byte(`{"email": "user@example.com", "age": 25, "role": "admin"}`)
 
     // Parse, validate, and unmarshal in one call
-    user, err := pedantigo.Unmarshal[User](jsonData)
+    user, err := pdcore.Unmarshal[User](jsonData)
     if err != nil {
         fmt.Println("Validation failed:", err)
         return
@@ -68,16 +68,16 @@ Pedantigo offers two API styles to match your use case:
 
 ```go
 // Parse JSON + validate
-user, err := pedantigo.Unmarshal[User](jsonData)
+user, err := pdcore.Unmarshal[User](jsonData)
 
 // Create from JSON/map/struct with validation
-user, err := pedantigo.NewModel[User](input)
+user, err := pdcore.NewModel[User](input)
 
 // Validate existing struct
-err := pedantigo.Validate[User](existingUser)
+err := pdcore.Validate[User](existingUser)
 
 // Get cached JSON Schema
-schema := pedantigo.Schema[User]()
+schema := pdcore.Schema[User]()
 ```
 
 The Simple API uses a global schema cache that's automatically managed. Perfect for typical validation workflows.
@@ -89,7 +89,7 @@ The Simple API uses a global schema cache that's automatically managed. Perfect 
 
 ```go
 // Create validator instance
-validator := pedantigo.New[User]()
+validator := pdcore.New[User]()
 
 // Use validator methods
 user, err := validator.Unmarshal(jsonData)

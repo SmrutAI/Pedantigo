@@ -27,25 +27,25 @@ Global functions with automatic caching. Uses [DefaultValidatorOptions()](#defau
 
 | Function                                     | Description                      |
 |----------------------------------------------|----------------------------------|
-| `pedantigo.Unmarshal[T](data)`               | Unmarshal JSON and validate      |
-| `pedantigo.Validate[T](obj)`                 | Validate existing struct         |
-| `pedantigo.NewModel[T](input)`               | Create from map/struct           |
-| `pedantigo.Schema[T]()`                      | Get JSON Schema                  |
-| `pedantigo.SchemaJSON[T]()`                  | Get JSON Schema as bytes         |
-| `pedantigo.SchemaLLM[T]()`                   | Get JSON Schema for LLM APIs (no `$schema` or `$id`) |
-| `pedantigo.SchemaJSONLLM[T]()`               | LLM schema as bytes (no `$schema` or `$id`) |
-| `pedantigo.SchemaOpenAPI[T]()`               | Get OpenAPI 3.1 component schema |
-| `pedantigo.SchemaJSONOpenAPI[T]()`           | OpenAPI 3.1 schema as bytes      |
-| `pedantigo.Marshal[T](obj)`                  | Marshal struct to JSON           |
-| `pedantigo.MarshalWithOptions[T](obj, opts)` | Marshal with options             |
-| `pedantigo.Dict[T](obj)`                     | Convert to map[string]any        |
+| `pdcore.Unmarshal[T](data)`               | Unmarshal JSON and validate      |
+| `pdcore.Validate[T](obj)`                 | Validate existing struct         |
+| `pdcore.NewModel[T](input)`               | Create from map/struct           |
+| `pdcore.Schema[T]()`                      | Get JSON Schema                  |
+| `pdcore.SchemaJSON[T]()`                  | Get JSON Schema as bytes         |
+| `pdcore.SchemaLLM[T]()`                   | Get JSON Schema for LLM APIs (no `$schema` or `$id`) |
+| `pdcore.SchemaJSONLLM[T]()`               | LLM schema as bytes (no `$schema` or `$id`) |
+| `pdcore.SchemaOpenAPI[T]()`               | Get OpenAPI 3.1 component schema |
+| `pdcore.SchemaJSONOpenAPI[T]()`           | OpenAPI 3.1 schema as bytes      |
+| `pdcore.Marshal[T](obj)`                  | Marshal struct to JSON           |
+| `pdcore.MarshalWithOptions[T](obj, opts)` | Marshal with options             |
+| `pdcore.Dict[T](obj)`                     | Convert to map[string]any        |
 
 ```go
 // Simple API: automatic defaults, global caching
-user, err := pedantigo.Unmarshal[User](jsonData)
+user, err := pdcore.Unmarshal[User](jsonData)
 
 // Equivalent to:
-validator := pedantigo.New[User](pedantigo.DefaultValidatorOptions())
+validator := pdcore.New[User](pdcore.DefaultValidatorOptions())
 user, err := validator.Unmarshal(jsonData)
 ```
 
@@ -61,8 +61,8 @@ Explicit validator instances with [custom options](#validator-options).
 
 | Function                 | Description                                      |
 |--------------------------|--------------------------------------------------|
-| `pedantigo.New[T]()`     | Create with [defaults](#default-options)         |
-| `pedantigo.New[T](opts)` | Create with [custom options](#validator-options) |
+| `pdcore.New[T]()`     | Create with [defaults](#default-options)         |
+| `pdcore.New[T](opts)` | Create with [custom options](#validator-options) |
 
 ### Validator Methods {#validator-methods}
 
@@ -83,9 +83,9 @@ Explicit validator instances with [custom options](#validator-options).
 
 ```go
 // Create validator with custom options
-validator := pedantigo.New[User](pedantigo.ValidatorOptions{
+validator := pdcore.New[User](pdcore.ValidatorOptions{
 StrictMissingFields: true,
-ExtraFields:         pedantigo.ExtraForbid,
+ExtraFields:         pdcore.ExtraForbid,
 })
 
 // Reuse the same validator multiple times
@@ -113,9 +113,9 @@ For partial/streaming JSON (ideal for LLM outputs).
 
 | Function                                       | Description                                      |
 |------------------------------------------------|--------------------------------------------------|
-| `pedantigo.NewStreamParser[T]()`               | Create with [defaults](#default-options)         |
-| `pedantigo.NewStreamParser[T](opts)`           | Create with [custom options](#validator-options) |
-| `pedantigo.NewStreamParserWithValidator[T](v)` | Use existing validator                           |
+| `pdcore.NewStreamParser[T]()`               | Create with [defaults](#default-options)         |
+| `pdcore.NewStreamParser[T](opts)`           | Create with [custom options](#validator-options) |
+| `pdcore.NewStreamParserWithValidator[T](v)` | Use existing validator                           |
 
 ### Stream Parser Methods {#stream-parser-methods}
 
@@ -133,7 +133,7 @@ For discriminated unions with type switching.
 
 | Function                      | Description            |
 |-------------------------------|------------------------|
-| `pedantigo.NewUnion[T](opts)` | Create union validator |
+| `pdcore.NewUnion[T](opts)` | Create union validator |
 
 ### Union Validator Methods {#union-validator-methods}
 
@@ -176,7 +176,7 @@ TagName string
 The default options are optimized for safety and strictness:
 
 ```go
-pedantigo.DefaultValidatorOptions()
+pdcore.DefaultValidatorOptions()
 // Returns: ValidatorOptions{
 //     StrictMissingFields: true,
 //     ExtraFields:         ExtraIgnore,
@@ -201,7 +201,7 @@ Port int    `json:"port"` // No default
 }
 
 jsonData := []byte(`{"host":"localhost"}`)
-validator := pedantigo.New[Config](pedantigo.ValidatorOptions{
+validator := pdcore.New[Config](pdcore.ValidatorOptions{
 StrictMissingFields: true,
 })
 
@@ -226,7 +226,7 @@ Port int    `json:"port"` // Zero value: 0
 }
 
 jsonData := []byte(`{"host":"localhost"}`)
-validator := pedantigo.New[Config](pedantigo.ValidatorOptions{
+validator := pdcore.New[Config](pdcore.ValidatorOptions{
 StrictMissingFields: false,
 })
 
@@ -363,8 +363,8 @@ jsonData := []byte(`{
     "phone": "555-1234"
 }`)
 
-validator := pedantigo.New[User](pedantigo.ValidatorOptions{
-ExtraFields: pedantigo.ExtraIgnore,
+validator := pdcore.New[User](pdcore.ValidatorOptions{
+ExtraFields: pdcore.ExtraIgnore,
 })
 
 user, err := validator.Unmarshal(jsonData)
@@ -393,13 +393,13 @@ jsonData := []byte(`{
     "age": 30
 }`)
 
-validator := pedantigo.New[User](pedantigo.ValidatorOptions{
-ExtraFields: pedantigo.ExtraForbid,
+validator := pdcore.New[User](pdcore.ValidatorOptions{
+ExtraFields: pdcore.ExtraForbid,
 })
 
 user, err := validator.Unmarshal(jsonData)
 // Error: unknown field "age" in JSON
-var validationErr *pedantigo.ValidationError
+var validationErr *pdcore.ValidationError
 if errors.As(err, &validationErr) {
 fmt.Println(validationErr.Errors[0].Message)
 // Output: unknown field in JSON
@@ -430,8 +430,8 @@ jsonData := []byte(`{
     "phone": "555-1234"
 }`)
 
-validator := pedantigo.New[User](pedantigo.ValidatorOptions{
-ExtraFields: pedantigo.ExtraAllow,
+validator := pdcore.New[User](pdcore.ValidatorOptions{
+ExtraFields: pdcore.ExtraAllow,
 })
 
 user, err := validator.Unmarshal(jsonData)
@@ -518,8 +518,8 @@ Extras map[string]any `json:"-" validate:"extra_fields"`
 
 // Accept requests from V2 clients that include "profile_picture", "preferences", etc.
 // These are captured in Extras for logging/forwarding without breaking V1 logic.
-validator := pedantigo.New[UserV1](pedantigo.ValidatorOptions{
-ExtraFields: pedantigo.ExtraAllow,
+validator := pdcore.New[UserV1](pdcore.ValidatorOptions{
+ExtraFields: pdcore.ExtraAllow,
 })
 
 user, _ := validator.Unmarshal(requestBody)
@@ -549,8 +549,8 @@ Confidence float64        `json:"confidence"`
 Extras     map[string]any `json:"-" validate:"extra_fields"`
 }
 
-validator := pedantigo.New[LLMResponse](pedantigo.ValidatorOptions{
-ExtraFields: pedantigo.ExtraAllow,
+validator := pdcore.New[LLMResponse](pdcore.ValidatorOptions{
+ExtraFields: pdcore.ExtraAllow,
 })
 
 // Parse LLM output
@@ -591,7 +591,7 @@ Override the struct tag name for a specific validator instance.
 
 ```go
 // Use go-playground/validator style tags
-validator := pedantigo.New[User](pedantigo.ValidatorOptions{
+validator := pdcore.New[User](pdcore.ValidatorOptions{
 TagName: "validate",
 })
 
@@ -630,9 +630,9 @@ Name string `json:"name" validate:"required,min=3"`
 ### Most Strict
 
 ```go
-pedantigo.ValidatorOptions{
+pdcore.ValidatorOptions{
 StrictMissingFields: true,
-ExtraFields:         pedantigo.ExtraForbid,
+ExtraFields:         pdcore.ExtraForbid,
 }
 // Best for: REST API validation, ensuring exact schema match
 ```
@@ -640,9 +640,9 @@ ExtraFields:         pedantigo.ExtraForbid,
 ### Most Lenient
 
 ```go
-pedantigo.ValidatorOptions{
+pdcore.ValidatorOptions{
 StrictMissingFields: false,
-ExtraFields:         pedantigo.ExtraIgnore,
+ExtraFields:         pdcore.ExtraIgnore,
 }
 // Best for: Configuration parsing, webhook receivers, flexible APIs
 ```
@@ -650,7 +650,7 @@ ExtraFields:         pedantigo.ExtraIgnore,
 ### Balanced (Default)
 
 ```go
-pedantigo.DefaultValidatorOptions()
+pdcore.DefaultValidatorOptions()
 // StrictMissingFields: true
 // ExtraFields:         ExtraIgnore
 // Best for: General-purpose APIs, good balance of safety and flexibility
@@ -659,9 +659,9 @@ pedantigo.DefaultValidatorOptions()
 ### Capture Everything
 
 ```go
-pedantigo.ValidatorOptions{
+pdcore.ValidatorOptions{
 StrictMissingFields: false,
-ExtraFields:         pedantigo.ExtraAllow,
+ExtraFields:         pdcore.ExtraAllow,
 }
 // Best for: LLM output parsing, API gateways, forward-compatible services
 ```
@@ -679,7 +679,7 @@ import (
 	"errors"
 	"log"
 
-	"github.com/SmrutAI/pedantigo/v2"
+	"github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type CreateUserRequest struct {
@@ -689,17 +689,17 @@ type CreateUserRequest struct {
 }
 
 // API validator: strict about extra fields, requires all fields
-var apiValidator = pedantigo.New[CreateUserRequest](
-	pedantigo.ValidatorOptions{
+var apiValidator = pdcore.New[CreateUserRequest](
+	pdcore.ValidatorOptions{
 		StrictMissingFields: true,
-		ExtraFields:         pedantigo.ExtraForbid,
+		ExtraFields:         pdcore.ExtraForbid,
 	},
 )
 
 func handleCreateUser(jsonData []byte) (*CreateUserRequest, error) {
 	req, err := apiValidator.Unmarshal(jsonData)
 	if err != nil {
-		var validationErr *pedantigo.ValidationError
+		var validationErr *pdcore.ValidationError
 		if errors.As(err, &validationErr) {
 			return nil, validationErr
 		}
@@ -725,10 +725,10 @@ Addr string `json:"addr" validate:"default=0.0.0.0:8080"`
 }
 
 // Config validator: lenient about missing fields, allows extra fields
-var configValidator = pedantigo.New[AppConfig](
-pedantigo.ValidatorOptions{
+var configValidator = pdcore.New[AppConfig](
+pdcore.ValidatorOptions{
 StrictMissingFields: false,
-ExtraFields:         pedantigo.ExtraIgnore,
+ExtraFields:         pdcore.ExtraIgnore,
 },
 )
 ```
@@ -744,10 +744,10 @@ Status   string `json:"status" validate:"default=active"`
 }
 
 // Migration validator: accept both old and new client requests
-var migrationValidator = pedantigo.New[UserV2](
-pedantigo.ValidatorOptions{
+var migrationValidator = pdcore.New[UserV2](
+pdcore.ValidatorOptions{
 StrictMissingFields: false,
-ExtraFields:         pedantigo.ExtraIgnore,
+ExtraFields:         pdcore.ExtraIgnore,
 },
 )
 ```

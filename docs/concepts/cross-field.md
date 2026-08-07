@@ -29,7 +29,7 @@ data := []byte(`{
     "password": "SecurePass123",
     "password_confirm": "SecurePass123"
 }`)
-user, err := pedantigo.Unmarshal[RegisterRequest](data)
+user, err := pdcore.Unmarshal[RegisterRequest](data)
 if err != nil {
     fmt.Println(err) // No error
 }
@@ -40,7 +40,7 @@ badData := []byte(`{
     "password": "SecurePass123",
     "password_confirm": "DifferentPass456"
 }`)
-_, err = pedantigo.Unmarshal[RegisterRequest](badData)
+_, err = pdcore.Unmarshal[RegisterRequest](badData)
 if err != nil {
     // ValidationError: password_confirm must equal Password
 }
@@ -59,14 +59,14 @@ data := []byte(`{
     "current_username": "oldname",
     "new_username": "newname"
 }`)
-update, _ := pedantigo.Unmarshal[UpdateUsername](data)
+update, _ := pdcore.Unmarshal[UpdateUsername](data)
 
 // Invalid - new username is the same
 badData := []byte(`{
     "current_username": "samename",
     "new_username": "samename"
 }`)
-_, err := pedantigo.Unmarshal[UpdateUsername](badData)
+_, err := pdcore.Unmarshal[UpdateUsername](badData)
 // ValidationError: new_username must not equal CurrentUsername
 ```
 
@@ -89,7 +89,7 @@ data := []byte(`{
     "start_date": "2025-06-01T09:00:00Z",
     "end_date": "2025-06-03T17:00:00Z"
 }`)
-booking, _ := pedantigo.Unmarshal[EventBooking](data)
+booking, _ := pdcore.Unmarshal[EventBooking](data)
 
 // Invalid - end date is before start date
 badData := []byte(`{
@@ -97,7 +97,7 @@ badData := []byte(`{
     "start_date": "2025-06-03T17:00:00Z",
     "end_date": "2025-06-01T09:00:00Z"
 }`)
-_, err := pedantigo.Unmarshal[EventBooking](badData)
+_, err := pdcore.Unmarshal[EventBooking](badData)
 // ValidationError: end_date must be greater than StartDate
 ```
 
@@ -118,7 +118,7 @@ data := []byte(`{
     "max_price": 100.0,
     "discount_at": 50.0
 }`)
-product, _ := pedantigo.Unmarshal[ProductListing](data)
+product, _ := pdcore.Unmarshal[ProductListing](data)
 
 // Invalid - discount is outside the price range
 badData := []byte(`{
@@ -127,7 +127,7 @@ badData := []byte(`{
     "max_price": 100.0,
     "discount_at": 150.0
 }`)
-_, err := pedantigo.Unmarshal[ProductListing](badData)
+_, err := pdcore.Unmarshal[ProductListing](badData)
 // ValidationError: discount_at must be less than or equal to MaxPrice
 ```
 
@@ -155,7 +155,7 @@ data := []byte(`{
     "state": "California",
     "postal_code": "90210"
 }`)
-form, _ := pedantigo.Unmarshal[ShippingForm](data)
+form, _ := pdcore.Unmarshal[ShippingForm](data)
 
 // Valid - Country is CA, State is not required
 data = []byte(`{
@@ -163,14 +163,14 @@ data = []byte(`{
     "province": "Ontario",
     "postal_code": "M5H 2N2"
 }`)
-form, _ = pedantigo.Unmarshal[ShippingForm](data)
+form, _ = pdcore.Unmarshal[ShippingForm](data)
 
 // Invalid - Country is US but State is missing
 badData := []byte(`{
     "country": "US",
     "postal_code": "90210"
 }`)
-_, err := pedantigo.Unmarshal[ShippingForm](badData)
+_, err := pdcore.Unmarshal[ShippingForm](badData)
 // ValidationError: state is required when country equals US
 ```
 
@@ -190,20 +190,20 @@ data := []byte(`{
     "business_name": "Acme Corp",
     "business_license": "ACME-2025-001"
 }`)
-form, _ := pedantigo.Unmarshal[SubscriptionForm](data)
+form, _ := pdcore.Unmarshal[SubscriptionForm](data)
 
 // Valid - personal field provided when has_business is false
 data = []byte(`{
     "has_business": false,
     "personal_name": "John Doe"
 }`)
-form, _ = pedantigo.Unmarshal[SubscriptionForm](data)
+form, _ = pdcore.Unmarshal[SubscriptionForm](data)
 
 // Invalid - has_business is false but personal_name is missing
 badData := []byte(`{
     "has_business": false
 }`)
-_, err := pedantigo.Unmarshal[SubscriptionForm](badData)
+_, err := pdcore.Unmarshal[SubscriptionForm](badData)
 // ValidationError: personal_name is required unless has_business equals true
 ```
 
@@ -228,7 +228,7 @@ data := []byte(`{
     "card_number": "4532-1234-5678-9010",
     "cvv": "123"
 }`)
-payment, _ := pedantigo.Unmarshal[PaymentInfo](data)
+payment, _ := pdcore.Unmarshal[PaymentInfo](data)
 
 // Valid - bank transfer with routing number
 data = []byte(`{
@@ -236,14 +236,14 @@ data = []byte(`{
     "bank_account": "123456789",
     "routing_number": "021000021"
 }`)
-payment, _ = pedantigo.Unmarshal[PaymentInfo](data)
+payment, _ = pdcore.Unmarshal[PaymentInfo](data)
 
 // Invalid - has card number but missing CVV
 badData := []byte(`{
     "payment_method": "credit_card",
     "card_number": "4532-1234-5678-9010"
 }`)
-_, err := pedantigo.Unmarshal[PaymentInfo](badData)
+_, err := pdcore.Unmarshal[PaymentInfo](badData)
 // ValidationError: cvv is required when CardNumber is present
 ```
 
@@ -260,19 +260,19 @@ data := []byte(`{
     "two_factor_enabled": false,
     "backup_code": "BACKUP-ABC-123"
 }`)
-settings, _ := pedantigo.Unmarshal[TwoFactorSettings](data)
+settings, _ := pdcore.Unmarshal[TwoFactorSettings](data)
 
 // Valid - no backup code needed when 2FA is enabled
 data = []byte(`{
     "two_factor_enabled": true
 }`)
-settings, _ = pedantigo.Unmarshal[TwoFactorSettings](data)
+settings, _ = pdcore.Unmarshal[TwoFactorSettings](data)
 
 // Invalid - 2FA disabled but no backup code
 badData := []byte(`{
     "two_factor_enabled": false
 }`)
-_, err := pedantigo.Unmarshal[TwoFactorSettings](badData)
+_, err := pdcore.Unmarshal[TwoFactorSettings](badData)
 // ValidationError: backup_code is required when TwoFactorEnabled is absent
 ```
 
@@ -301,13 +301,13 @@ data := []byte(`{
     "type": "express",
     "priority": 5
 }`)
-order, _ := pedantigo.Unmarshal[Order](data) // ✓ Valid
+order, _ := pdcore.Unmarshal[Order](data) // ✓ Valid
 
 badData := []byte(`{
     "type": "express",
     "priority": 15
 }`)
-_, err := pedantigo.Unmarshal[Order](badData)
+_, err := pdcore.Unmarshal[Order](badData)
 // ValidationError: priority must be at most 10
 ```
 
@@ -318,7 +318,7 @@ data := []byte(`{
     "type": "standard",
     "priority": 999
 }`)
-order, _ := pedantigo.Unmarshal[Order](data) // ✓ Valid - priority validation skipped
+order, _ := pdcore.Unmarshal[Order](data) // ✓ Valid - priority validation skipped
 ```
 
 **Use Cases:**
@@ -350,21 +350,21 @@ type DiscountCode struct {
 data := []byte(`{
     "account_id": "premium"
 }`)
-discount, _ := pedantigo.Unmarshal[DiscountCode](data)
+discount, _ := pdcore.Unmarshal[DiscountCode](data)
 
 // Valid - enterprise account (notes required)
 data = []byte(`{
     "account_id": "enterprise",
     "notes": "VIP customer"
 }`)
-discount, _ = pedantigo.Unmarshal[DiscountCode](data)
+discount, _ = pdcore.Unmarshal[DiscountCode](data)
 
 // Invalid - premium account with discount percent
 badData := []byte(`{
     "account_id": "premium",
     "discount_percent": 10
 }`)
-_, err := pedantigo.Unmarshal[DiscountCode](badData)
+_, err := pdcore.Unmarshal[DiscountCode](badData)
 // ValidationError: discount_percent must be empty when account_id equals premium
 ```
 
@@ -384,20 +384,20 @@ type AuthRequest struct {
 data := []byte(`{
     "api_key": "sk-1234567890abcdefghij"
 }`)
-auth, _ := pedantigo.Unmarshal[AuthRequest](data)
+auth, _ := pdcore.Unmarshal[AuthRequest](data)
 
 // Valid - uses token only
 data = []byte(`{
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }`)
-auth, _ = pedantigo.Unmarshal[AuthRequest](data)
+auth, _ = pdcore.Unmarshal[AuthRequest](data)
 
 // Invalid - both API key and token provided
 badData := []byte(`{
     "api_key": "sk-1234567890abcdefghij",
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }`)
-_, err := pedantigo.Unmarshal[AuthRequest](badData)
+_, err := pdcore.Unmarshal[AuthRequest](badData)
 // ValidationError: token must be empty when APIKey is present
 ```
 
@@ -418,7 +418,7 @@ type Validatable interface {
 When a struct implements `Validate()`, Pedantigo automatically calls it after all tag-based validations pass. This allows you to express arbitrary business logic as validation rules.
 
 :::warning Don't call pedantigo inside Validate()
-Since Pedantigo calls your `Validate()` method automatically, calling `pedantigo.Validate()` or `pedantigo.Unmarshal()` on `self` inside `Validate()` causes infinite recursion. Your `Validate()` method should only contain custom business logic.
+Since Pedantigo calls your `Validate()` method automatically, calling `pdcore.Validate()` or `pdcore.Unmarshal()` on `self` inside `Validate()` causes infinite recursion. Your `Validate()` method should only contain custom business logic.
 :::
 
 **Complex Business Rules Example:**
@@ -460,7 +460,7 @@ data := []byte(`{
     "return_date": "2025-12-31T18:00:00Z",
     "is_round_trip": true
 }`)
-booking, err := pedantigo.Unmarshal[FlightBooking](data)
+booking, err := pdcore.Unmarshal[FlightBooking](data)
 // Custom Validate() is called automatically after field validation
 ```
 
@@ -489,7 +489,7 @@ data := []byte(`{
     "email": "not-an-email",
     "age": 15
 }`)
-_, err := pedantigo.Unmarshal[Account](data)
+_, err := pdcore.Unmarshal[Account](data)
 // ValidationError with 4 errors:
 // - username: must be at least 3 characters
 // - email: must be a valid email
@@ -508,7 +508,7 @@ import (
     "fmt"
     "time"
 
-    pedantigo "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type EventRegistration struct {
@@ -570,7 +570,7 @@ func main() {
         "checkin_date": "2025-06-14T15:00:00Z"
     }`)
 
-    registration, err := pedantigo.Unmarshal[EventRegistration](validData)
+    registration, err := pdcore.Unmarshal[EventRegistration](validData)
     if err != nil {
         fmt.Printf("Validation failed: %v\n", err)
         return
@@ -591,9 +591,9 @@ func main() {
         "telegram_handle": "@alice"
     }`)
 
-    _, err = pedantigo.Unmarshal[EventRegistration](invalidData)
+    _, err = pdcore.Unmarshal[EventRegistration](invalidData)
     if err != nil {
-        var ve *pedantigo.ValidationError
+        var ve *pdcore.ValidationError
         if errors.As(err, &ve) {
             for _, fieldErr := range ve.Errors {
                 fmt.Printf("- %s: %s\n", fieldErr.Field, fieldErr.Message)

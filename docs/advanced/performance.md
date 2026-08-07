@@ -38,11 +38,11 @@ type User struct {
 }
 
 // First call: ~10ms (generates schema)
-schema := pedantigo.Schema[User]()
+schema := pdcore.Schema[User]()
 
 // Subsequent calls: <100ns (cached)
 for i := 0; i < 1_000_000; i++ {
-    schema := pedantigo.Schema[User]() // Nearly free
+    schema := pdcore.Schema[User]() // Nearly free
 }
 ```
 
@@ -69,11 +69,11 @@ type Product struct {
 }
 
 // First call: ~1-2ms (creates and caches validator)
-user, err := pedantigo.Unmarshal[Product](data)
+user, err := pdcore.Unmarshal[Product](data)
 
 // Subsequent calls: <100ns lookup + unmarshal time
 for i := 0; i < 100_000; i++ {
-    user, err := pedantigo.Unmarshal[Product](data) // Cache hit
+    user, err := pdcore.Unmarshal[Product](data) // Cache hit
 }
 ```
 
@@ -88,8 +88,8 @@ Both APIs benefit from caching, but with different trade-offs:
 
 ```go
 // Cache lookup: ~700ns total per call
-user, err := pedantigo.Unmarshal[User](jsonData)
-schema := pedantigo.Schema[User]()
+user, err := pdcore.Unmarshal[User](jsonData)
+schema := pdcore.Schema[User]()
 ```
 
 **Performance characteristics**:
@@ -117,7 +117,7 @@ schema := pedantigo.Schema[User]()
 
 ```go
 // No cache lookup - direct validator use: ~500ns
-validator := pedantigo.New[User]()
+validator := pdcore.New[User]()
 user, err := validator.Unmarshal(jsonData)
 ```
 
@@ -187,7 +187,7 @@ package main
 
 import (
     "testing"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type User struct {
@@ -206,13 +206,13 @@ func BenchmarkUnmarshalSimple(b *testing.B) {
 
     b.ResetTimer()
     for i := 0; i < b.N; i++ {
-        _, _ = pedantigo.Unmarshal[User](data)
+        _, _ = pdcore.Unmarshal[User](data)
     }
 }
 
 // Benchmark Validator API Unmarshal
 func BenchmarkUnmarshalValidator(b *testing.B) {
-    validator := pedantigo.New[User]()
+    validator := pdcore.New[User]()
     data := []byte(`{
         "email":"bob@example.com",
         "age":30,
@@ -244,11 +244,11 @@ The global cache is highly optimized. Cache lookup overhead is minimal:
 
 ```go
 // Good - no setup, cache handles everything
-user, err := pedantigo.Unmarshal[User](data)
-schema := pedantigo.Schema[User]()
+user, err := pdcore.Unmarshal[User](data)
+schema := pdcore.Schema[User]()
 
 // Avoid unnecessary complexity
-validator := pedantigo.New[User]() // Only if profiling shows it matters
+validator := pdcore.New[User]() // Only if profiling shows it matters
 ```
 
 ### 2. Avoid Registering Validators in Hot Paths
@@ -258,14 +258,14 @@ Registering custom validators clears the cache. Do this during startup, never in
 ```go
 // Good - register during init
 func init() {
-    pedantigo.RegisterValidator("custom", customValidator)
+    pdcore.RegisterValidator("custom", customValidator)
 }
 
 func handleRequest(w http.ResponseWriter, r *http.Request) {
     // Bad - clears cache on every request!
-    // pedantigo.RegisterValidator("custom", customValidator)
+    // pdcore.RegisterValidator("custom", customValidator)
 
-    user, _ := pedantigo.Unmarshal[User](data) // Uses cache
+    user, _ := pdcore.Unmarshal[User](data) // Uses cache
 }
 ```
 
@@ -276,13 +276,13 @@ If using custom validators per-instance, create validators once and reuse:
 ```go
 // Bad - validator created on every call
 func processItem(item []byte) error {
-    validator := pedantigo.New[User]() // 1-2ms overhead each time
+    validator := pdcore.New[User]() // 1-2ms overhead each time
     user, err := validator.Unmarshal(item)
     return err
 }
 
 // Good - create once, reuse
-var userValidator = pedantigo.New[User]()
+var userValidator = pdcore.New[User]()
 
 func processItem(item []byte) error {
     user, err := userValidator.Unmarshal(item) // No overhead
@@ -303,12 +303,12 @@ Cache schemas when used repeatedly:
 ```go
 // Bad - cache lookup on every call
 func sendSchema(w http.ResponseWriter) {
-    schema := pedantigo.Schema[User]() // Cache hit, but repeated
+    schema := pdcore.Schema[User]() // Cache hit, but repeated
     // ... send schema
 }
 
 // Good - cache schema in application state
-var userSchema = pedantigo.Schema[User]()
+var userSchema = pdcore.Schema[User]()
 
 func sendSchema(w http.ResponseWriter) {
     // Use pre-cached schema
@@ -324,10 +324,10 @@ For very large JSON files, use streaming validation:
 ```go
 // Instead of loading entire file and unmarshaling
 // allData, _ := os.ReadFile("huge-file.json")
-// users, _ := pedantigo.Unmarshal[[]User](allData) // Uses memory for entire file
+// users, _ := pdcore.Unmarshal[[]User](allData) // Uses memory for entire file
 
 // Use streaming parser (Phase 4 feature)
-parser := pedantigo.NewStreamParser[User]()
+parser := pdcore.NewStreamParser[User]()
 // Process items one at a time as they arrive
 ```
 
@@ -341,7 +341,7 @@ go test -cpuprofile=cpu.prof -bench=.
 go tool pprof cpu.prof
 
 # Look for hotspots
-# If pedantigo.(*Validator).Unmarshal is NOT in top 10, don't optimize it
+# If pdcore.(*Validator).Unmarshal is NOT in top 10, don't optimize it
 
 # Memory profiling
 go test -memprofile=mem.prof -bench=.
@@ -357,12 +357,12 @@ For applications handling 100k+ requests per second:
 ```go
 package myapp
 
-import "github.com/SmrutAI/pedantigo/v2"
+import "github.com/SmrutAI/pedantigo/v2/pdcore"
 
 // 1. Pre-create validators at startup
 var (
-    userValidator    = pedantigo.New[User]()
-    productValidator = pedantigo.New[Product]()
+    userValidator    = pdcore.New[User]()
+    productValidator = pdcore.New[Product]()
 )
 
 // 2. Cache schemas
@@ -405,7 +405,7 @@ package main
 import (
     "encoding/json"
     "net/http"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type User struct {
@@ -414,7 +414,7 @@ type User struct {
 }
 
 // Pre-create validator at startup (done once)
-var userValidator = pedantigo.New[User]()
+var userValidator = pdcore.New[User]()
 
 func createUserHandler(w http.ResponseWriter, r *http.Request) {
     // Read request body
@@ -446,7 +446,7 @@ func main() {
 package main
 
 import (
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type Item struct {
@@ -455,7 +455,7 @@ type Item struct {
 }
 
 // Create validator once
-var itemValidator = pedantigo.New[Item]()
+var itemValidator = pdcore.New[Item]()
 
 // Process millions of items efficiently
 func processBatch(items [][]byte) error {
@@ -501,7 +501,7 @@ type Config struct {
 }
 
 // Reuse validator
-var configValidator = pedantigo.New[Config]()
+var configValidator = pdcore.New[Config]()
 
 // Efficient processing
 for _, configData := range configs {

@@ -252,7 +252,7 @@ package main
 
 import (
     "log"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type UserProfile struct {
@@ -303,7 +303,7 @@ func main() {
         "status": "active"
     }`)
 
-    user, err := pedantigo.Unmarshal[UserProfile](jsonData)
+    user, err := pdcore.Unmarshal[UserProfile](jsonData)
     if err != nil {
         log.Fatalf("Validation failed: %v", err)
     }
@@ -318,9 +318,9 @@ func main() {
 When validation fails, Pedantigo returns detailed errors for each field:
 
 ```go
-user, err := pedantigo.Unmarshal[UserProfile](invalidData)
+user, err := pdcore.Unmarshal[UserProfile](invalidData)
 if err != nil {
-    if validationErr, ok := err.(*pedantigo.ValidationError); ok {
+    if validationErr, ok := err.(*pdcore.ValidationError); ok {
         for _, fieldErr := range validationErr.Errors {
             fmt.Printf("Field: %s, Error: %s\n", fieldErr.Field, fieldErr.Message)
         }

@@ -12,7 +12,7 @@ Type-safe JSON validation and schema generation for Go.
 ## Installation
 
 ```bash
-go get github.com/SmrutAI/pedantigo/v2
+go get github.com/SmrutAI/pedantigo/v2/pdcore
 ```
 
 Requires Go 1.21+
@@ -26,10 +26,10 @@ type User struct {
 }
 
 // Parse and validate JSON
-user, err := pedantigo.Unmarshal[User](jsonData)
+user, err := pdcore.Unmarshal[User](jsonData)
 if err != nil {
     // Handle validation errors with field paths and error codes
-    if ve, ok := err.(*pedantigo.ValidationError); ok {
+    if ve, ok := err.(*pdcore.ValidationError); ok {
         for _, fe := range ve.Errors {
             fmt.Printf("%s: %s\n", fe.Field, fe.Message)
         }
@@ -37,7 +37,7 @@ if err != nil {
 }
 
 // Generate JSON Schema for LLM tools (no $schema field)
-schemaBytes, _ := pedantigo.SchemaJSONLLM[User]()
+schemaBytes, _ := pdcore.SchemaJSONLLM[User]()
 ```
 
 ## Features

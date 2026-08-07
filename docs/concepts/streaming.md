@@ -34,7 +34,7 @@ type Message struct {
 }
 
 // Create a parser for streaming messages
-parser := pedantigo.NewStreamParser[Message]()
+parser := pdcore.NewStreamParser[Message]()
 ```
 
 ### With Custom Validator Options
@@ -42,7 +42,7 @@ parser := pedantigo.NewStreamParser[Message]()
 For advanced validation configurations:
 
 ```go
-parser := pedantigo.NewStreamParser[Message](pedantigo.ValidatorOptions{
+parser := pdcore.NewStreamParser[Message](pdcore.ValidatorOptions{
     // Custom options if needed
 })
 ```
@@ -58,10 +58,10 @@ type MessageContent struct {
 }
 
 // Create a validator with custom configuration
-validator := pedantigo.New[MessageContent]()
+validator := pdcore.New[MessageContent]()
 
 // Pass it to the stream parser
-parser := pedantigo.NewStreamParserWithValidator[MessageContent](validator)
+parser := pdcore.NewStreamParserWithValidator[MessageContent](validator)
 ```
 
 ## Feeding Chunks
@@ -128,7 +128,7 @@ for chunk := range streamChan {
 If the stream terminates before sending complete JSON, check the state:
 
 ```go
-parser := pedantigo.NewStreamParser[Message]()
+parser := pdcore.NewStreamParser[Message]()
 
 // Stream closes unexpectedly
 for chunk := range streamChan {
@@ -160,7 +160,7 @@ import (
     "io"
 
     openai "github.com/sashabaranov/go-openai"
-    "pedantigo"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type ChatCompletion struct {
@@ -169,7 +169,7 @@ type ChatCompletion struct {
 }
 
 func handleOpenAIStream(ctx context.Context, client *openai.Client) error {
-    parser := pedantigo.NewStreamParser[ChatCompletion]()
+    parser := pdcore.NewStreamParser[ChatCompletion]()
 
     stream, err := client.CreateChatCompletionStream(ctx, openai.ChatCompletionRequest{
         Model: openai.GPT4,
@@ -228,7 +228,7 @@ import (
     "fmt"
 
     "github.com/anthropics/anthropic-sdk-go"
-    "pedantigo"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type ContentBlock struct {
@@ -237,7 +237,7 @@ type ContentBlock struct {
 }
 
 func handleAnthropicStream(ctx context.Context, client *anthropic.Client) error {
-    parser := pedantigo.NewStreamParser[ContentBlock]()
+    parser := pdcore.NewStreamParser[ContentBlock]()
 
     stream := client.Messages.NewStream(ctx, anthropic.MessageNewParams{
         Model: anthropic.ModelClaude3Sonnet20240229,
@@ -277,7 +277,7 @@ func handleAnthropicStream(ctx context.Context, client *anthropic.Client) error 
 Once a stream completes, reset the parser for the next stream:
 
 ```go
-parser := pedantigo.NewStreamParser[Message]()
+parser := pdcore.NewStreamParser[Message]()
 
 // First stream
 for chunk := range stream1 {
@@ -306,7 +306,7 @@ for chunk := range stream2 {
 For debugging or inspecting accumulated data:
 
 ```go
-parser := pedantigo.NewStreamParser[Message]()
+parser := pdcore.NewStreamParser[Message]()
 
 // Feed some chunks
 parser.Feed(`{"role":"assi`)
@@ -367,7 +367,7 @@ JSON parse errors can be informative:
 result, state, err := parser.Feed(chunk)
 
 if state.IsComplete && err != nil {
-    if validationErr, ok := err.(*pedantigo.ValidationError); ok {
+    if validationErr, ok := err.(*pdcore.ValidationError); ok {
         // Handle field-level validation errors
         for _, fieldErr := range validationErr.Errors {
             fmt.Printf("Field %s: %s\n", fieldErr.Field, fieldErr.Message)
@@ -384,7 +384,7 @@ if state.IsComplete && err != nil {
 Always reset to avoid cross-contamination:
 
 ```go
-parser := pedantigo.NewStreamParser[Message]()
+parser := pdcore.NewStreamParser[Message]()
 
 // Process stream 1
 for chunk := range stream1 {
@@ -419,7 +419,7 @@ if state.BytesReceived > maxStreamSize {
 
 ## Key Differences from Unmarshal
 
-`StreamParser` differs from `pedantigo.Unmarshal()` in important ways:
+`StreamParser` differs from `pdcore.Unmarshal()` in important ways:
 
 | Aspect | Unmarshal | StreamParser |
 |--------|-----------|--------------|
@@ -437,7 +437,7 @@ Choose `Unmarshal` for complete JSON data and `StreamParser` for incremental str
 
 ```go
 // Wrong: two goroutines feeding to same parser
-parser := pedantigo.NewStreamParser[Message]()
+parser := pdcore.NewStreamParser[Message]()
 go func() {
     parser.Feed(stream1Chunk) // Race condition!
 }()
@@ -446,8 +446,8 @@ go func() {
 }()
 
 // Correct: separate parsers per stream
-parser1 := pedantigo.NewStreamParser[Message]()
-parser2 := pedantigo.NewStreamParser[Message]()
+parser1 := pdcore.NewStreamParser[Message]()
+parser2 := pdcore.NewStreamParser[Message]()
 
 go func() {
     parser1.Feed(stream1Chunk)

@@ -11,7 +11,7 @@ sidebar_position: 1
 ## Install
 
 ```bash
-go get github.com/SmrutAI/pedantigo
+go get github.com/SmrutAI/pedantigo/v2/pdcore
 ```
 
 ## Verify Installation
@@ -23,7 +23,7 @@ package main
 
 import (
     "fmt"
-    "github.com/SmrutAI/pedantigo/v2"
+    "github.com/SmrutAI/pedantigo/v2/pdcore"
 )
 
 type User struct {
@@ -31,7 +31,7 @@ type User struct {
 }
 
 func main() {
-    user, err := pedantigo.Unmarshal[User]([]byte(`{"email":"test@example.com"}`))
+    user, err := pdcore.Unmarshal[User]([]byte(`{"email":"test@example.com"}`))
     if err != nil {
         panic(err)
     }
