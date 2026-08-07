@@ -16,7 +16,7 @@ package main
 import (
     "fmt"
     "encoding/json"
-    "github.com/SmrutAI/pedantigo/v2/pdcore"
+    "github.com/SmrutAI/pedantigo/v2/validator"
 )
 
 type User struct {
@@ -27,10 +27,10 @@ type User struct {
 
 func main() {
     // Get schema as object
-    schema := pdcore.Schema[User]()
+    schema := vl.Schema[User]()
 
     // Get schema as JSON bytes
-    schemaBytes, _ := pdcore.SchemaJSON[User]()
+    schemaBytes, _ := validator.SchemaJSON[User]()
     fmt.Println(string(schemaBytes))
 }
 ```
@@ -89,7 +89,7 @@ type User struct {
     Address Address `json:"address"`
 }
 
-schemaBytes, _ := pdcore.SchemaJSON[User]()
+schemaBytes, _ := validator.SchemaJSON[User]()
 ```
 
 **Output (flattened - ready for LLM tools):**
@@ -133,7 +133,7 @@ func Schema[T any]() *jsonschema.Schema
 
 **Example**:
 ```go
-schema := pdcore.Schema[User]()
+schema := vl.Schema[User]()
 fmt.Println("Title:", schema.Title)
 fmt.Println("Required fields:", schema.Required)
 fmt.Println("Properties:", schema.Properties)
@@ -159,7 +159,7 @@ func SchemaJSON[T any]() ([]byte, error)
 
 **Example**:
 ```go
-schemaBytes, err := pdcore.SchemaJSON[User]()
+schemaBytes, err := validator.SchemaJSON[User]()
 if err != nil {
     log.Fatal(err)
 }
@@ -199,7 +199,7 @@ type APIResponse struct {
     Message string `json:"message,omitempty"`
 }
 
-schema := pdcore.SchemaOpenAPI[APIResponse]()
+schema := validator.SchemaOpenAPI[APIResponse]()
 // Use in OpenAPI spec
 ```
 
@@ -217,7 +217,7 @@ func SchemaJSONOpenAPI[T any]() ([]byte, error)
 
 **Example**:
 ```go
-schemaBytes, err := pdcore.SchemaJSONOpenAPI[APIResponse]()
+schemaBytes, err := validator.SchemaJSONOpenAPI[APIResponse]()
 if err != nil {
     log.Fatal(err)
 }
@@ -254,7 +254,7 @@ type ToolArgs struct {
 }
 
 // Get schema for LLM function calling
-schema := pdcore.SchemaLLM[ToolArgs]()
+schema := validator.SchemaLLM[ToolArgs]()
 // schema.Version is "" → no $schema in output
 // schema.ID is ""      → no $id in output
 ```
@@ -278,7 +278,7 @@ type FunctionResponse struct {
     Action  string `json:"action" validate:"required,oneof=search respond,description=Action to take"`
 }
 
-schemaBytes, err := pdcore.SchemaJSONLLM[FunctionResponse]()
+schemaBytes, err := validator.SchemaJSONLLM[FunctionResponse]()
 if err != nil {
     log.Fatal(err)
 }
@@ -332,17 +332,17 @@ Pedantigo schemas are **automatically cached** with a 240x speedup:
 
 ```go
 // First call: ~10ms
-schema1 := pdcore.Schema[User]()
+schema1 := vl.Schema[User]()
 
 // Subsequent calls: <100ns (nearly free)
 for i := 0; i < 1000000; i++ {
-    schema := pdcore.Schema[User]()
+    schema := vl.Schema[User]()
 }
 
 // Different types get separate caches
-schemaUser := pdcore.Schema[User]()      // ~10ms
-schemaProduct := pdcore.Schema[Product]() // ~10ms
-schemaOrder := pdcore.Schema[Order]()    // ~10ms
+schemaUser := vl.Schema[User]()      // ~10ms
+schemaProduct := vl.Schema[Product]() // ~10ms
+schemaOrder := vl.Schema[Order]()    // ~10ms
 ```
 
 ## Constraint Mapping
@@ -555,7 +555,7 @@ package main
 
 import (
     "fmt"
-    "github.com/SmrutAI/pedantigo/v2/pdcore"
+    "github.com/SmrutAI/pedantigo/v2/validator"
 )
 
 type CreateUserRequest struct {
@@ -585,14 +585,14 @@ type CreateUserRequest struct {
 }
 
 func main() {
-    schema := pdcore.Schema[CreateUserRequest]()
+    schema := vl.Schema[CreateUserRequest]()
 
     // Use the schema for API documentation
     fmt.Printf("Title: %s\n", schema.Title)
     fmt.Printf("Required: %v\n", schema.Required)
 
     // Get as JSON
-    schemaJSON, _ := pdcore.SchemaJSON[CreateUserRequest]()
+    schemaJSON, _ := validator.SchemaJSON[CreateUserRequest]()
     fmt.Println(string(schemaJSON))
 }
 ```
@@ -669,7 +669,7 @@ type User struct {
     Address Address `json:"address" validate:"required"`
 }
 
-schema := pdcore.Schema[User]()
+schema := vl.Schema[User]()
 ```
 
 Generated schema (inlined):
@@ -711,7 +711,7 @@ type CreatePostRequest struct {
     Tags    []string `json:"tags" validate:"maxItems=10,unique,description=Post tags"`
 }
 
-schema := pdcore.SchemaJSONOpenAPI[CreatePostRequest]()
+schema := validator.SchemaJSONOpenAPI[CreatePostRequest]()
 // Include in OpenAPI spec components/schemas
 ```
 
@@ -722,7 +722,7 @@ Send schema to frontend for dynamic form building:
 ```go
 // HTTP handler
 func handleGetSchema(w http.ResponseWriter, r *http.Request) {
-    schemaBytes, _ := pdcore.SchemaJSON[CreatePostRequest]()
+    schemaBytes, _ := validator.SchemaJSON[CreatePostRequest]()
 
     w.Header().Set("Content-Type", "application/json")
     w.Write(schemaBytes)
@@ -743,7 +743,7 @@ type TranslationResult struct {
     Confidence float64 `json:"confidence" validate:"min=0,max=1,description=Translation confidence 0-1"`
 }
 
-schema := pdcore.SchemaJSON[TranslationResult]()
+schema := validator.SchemaJSON[TranslationResult]()
 // Pass to Claude, GPT, etc. for structured generation
 ```
 
@@ -753,7 +753,7 @@ Use generated schema to validate before persisting:
 
 ```go
 // Unmarshal validates against constraints
-user, err := pdcore.Unmarshal[User](jsonData)
+user, err := vl.Unmarshal[User](jsonData)
 if err != nil {
     return err // All validation done before database
 }
@@ -767,7 +767,7 @@ db.Insert(user)
 Query the schema at runtime:
 
 ```go
-schema := pdcore.Schema[User]()
+schema := vl.Schema[User]()
 
 // Check which fields are required
 requiredFields := schema.Required
@@ -801,8 +801,8 @@ Both use the same constraints, so they're always in sync:
 
 ```go
 // These use the same constraint definitions:
-schema := pdcore.Schema[User]()           // For documentation
-user, err := pdcore.Unmarshal[User](data) // For validation
+schema := vl.Schema[User]()           // For documentation
+user, err := vl.Unmarshal[User](data) // For validation
 ```
 
 No manual schema maintenance needed - change a constraint, both schema and validation update automatically.

@@ -67,7 +67,7 @@ func (b *BaseModel) Validate() error {
 
 // Usage
 user := &User{Name: "Alice"}
-pdcore.Init(user)  // ← MUST call this
+validator.Init(user)  // ← MUST call this
 user.Validate()
 ```
 
@@ -94,8 +94,8 @@ func (u *User) GetValidationTarget() interface{} {
 var cache sync.Map
 
 func (b *BaseModel) Validate() error {
-    validator := getOrCreateValidator(reflect.TypeOf(b.self))
-    return validator.Validate(b.self)  // Just wraps external validator
+    vl := getOrCreateValidator(reflect.TypeOf(b.self))
+    return vl.Validate(b.self)  // Just wraps external validator
 }
 ```
 
@@ -109,9 +109,9 @@ func (b *BaseModel) Validate() error {
 
 | Feature | External Validator | BaseModel |
 |---------|-------------------|-----------|
-| Validate | `validator.Validate(&user)` | `user.Validate()` |
-| Schema | `validator.Schema()` | `user.Schema()` |
-| Marshal | `validator.Marshal(&user)` | `user.Marshal()` |
+| Validate | `vl.Validate(&user)` | `user.Validate()` |
+| Schema | `vl.Schema()` | `user.Schema()` |
+| Marshal | `vl.Marshal(&user)` | `user.Marshal()` |
 | Dict | `validator.Dict(&user)` | `user.Dict()` |
 
 **All of these are already possible** - just different syntax.
@@ -181,15 +181,15 @@ func (u User) MarshalJSON() ([]byte, error) {
 **BaseModel:**
 ```go
 user := &User{Name: "Alice"}
-pdcore.Init(user)  // ← Initialize EVERY instance
+validator.Init(user)  // ← Initialize EVERY instance
 user.Validate()
 ```
 
 **External Validator:**
 ```go
-validator := pdcore.New[User]()  // ← Initialize ONCE per type
+vl := validator.New[User]()  // ← Initialize ONCE per type
 user := &User{Name: "Alice"}
-validator.Validate(&user)
+vl.Validate(&user)
 ```
 
 **Both require initialization. External is more efficient and clearer.**
@@ -199,18 +199,18 @@ validator.Validate(&user)
 ## What We Provide
 
 ```go
-validator := pdcore.New[User]()
+vl := validator.New[User]()
 
 // Full API
-validator.Validate(&user)
-validator.Unmarshal(data)
-validator.Marshal(&user)
-validator.Schema()
-validator.SchemaJSON()
+vl.Validate(&user)
+vl.Unmarshal(data)
+vl.Marshal(&user)
+vl.Schema()
+vl.SchemaJSON()
 
 // Works with ANY struct
 type ThirdPartyStruct struct { ... }
-validator := pdcore.New[ThirdPartyStruct]()  // ✅ Works!
+vl := validator.New[ThirdPartyStruct]()  // ✅ Works!
 ```
 
 **Computed fields:** Document `MarshalJSON()` pattern (standard Go)
@@ -235,8 +235,8 @@ Go has:
 
 ```go
 // Idiomatic Go
-validator := pdcore.New[User]()
-validator.Validate(&user)
+vl := validator.New[User]()
+vl.Validate(&user)
 ```
 
 Not `user.Validate()` - that's the Python way.

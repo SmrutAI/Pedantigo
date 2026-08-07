@@ -5,7 +5,7 @@ sidebar_position: 1
 # Echo Binder Plugin
 
 Replaces Echo's `DefaultBinder` so every `c.Bind()` call on POST/PUT/PATCH
-runs `pdcore.UnmarshalInto` — enforcing required fields, defaults, and all
+runs `validator.UnmarshalInto` — enforcing required fields, defaults, and all
 `validate` constraints automatically. GET/DELETE/HEAD requests fall back to
 Echo's own `DefaultBinder` (path + query params only) — pedantigo is never
 invoked for those methods.
@@ -28,7 +28,7 @@ e.Binder = pedantigoecho.NewBinder()
 ## How it works
 
 - **POST/PUT/PATCH:** reads the request body → calls
-  `pdcore.UnmarshalInto(body, target)` → enforces required fields, defaults,
+  `validator.UnmarshalInto(body, target)` → enforces required fields, defaults,
   and constraints. Returns an `echo.HTTPError` with status 400 on validation
   failure.
 - **GET/DELETE/HEAD:** falls back to Echo's `DefaultBinder`
@@ -39,10 +39,10 @@ e.Binder = pedantigoecho.NewBinder()
 ## Registration requirement
 
 Every request struct passed to `c.Bind()` must be registered once, at
-package init time, with `pdcore.Register(pdcore.New[T]())`:
+package init time, with `validator.Register(validator.New[T]())`:
 
 ```go
-var _ = pdcore.Register(pdcore.New[CreateRequest]())
+var _ = validator.Register(validator.New[CreateRequest]())
 ```
 
 If a type is never registered, `UnmarshalInto` panics with a message naming
@@ -55,7 +55,7 @@ duplicate call and remove it.
 Before (manual `io.ReadAll` + `Unmarshal`):
 
 ```go
-var createValidator = pdcore.New[CreateRequest]()
+var createValidator = validator.New[CreateRequest]()
 
 func (h *Handler) Create(c echo.Context) error {
 	body, err := io.ReadAll(c.Request().Body)
@@ -73,7 +73,7 @@ func (h *Handler) Create(c echo.Context) error {
 After (with the Echo Binder installed):
 
 ```go
-var _ = pdcore.Register(pdcore.New[CreateRequest]())
+var _ = validator.Register(validator.New[CreateRequest]())
 
 func (h *Handler) Create(c echo.Context) error {
 	var req CreateRequest

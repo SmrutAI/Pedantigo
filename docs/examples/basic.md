@@ -18,7 +18,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/SmrutAI/pedantigo/v2/pdcore"
+    "github.com/SmrutAI/pedantigo/v2/validator"
 )
 
 type User struct {
@@ -37,7 +37,7 @@ func main() {
         "password_confirm": "SecurePass123"
     }`
 
-    user, errs := pdcore.Unmarshal[User]([]byte(validJSON))
+    user, errs := vl.Unmarshal[User]([]byte(validJSON))
     if errs != nil {
         for _, err := range errs {
             fmt.Printf("Validation error: %v\n", err)
@@ -54,7 +54,7 @@ func main() {
         "password_confirm": "SecurePass123"
     }`
 
-    _, errs = pdcore.Unmarshal[User]([]byte(invalidJSON))
+    _, errs = vl.Unmarshal[User]([]byte(invalidJSON))
     if errs != nil {
         fmt.Println("\nValidation errors found:")
         for _, err := range errs {
@@ -70,7 +70,7 @@ func main() {
         "password_confirm": "SecurePass123"
     }`
 
-    _, errs = pdcore.Unmarshal[User]([]byte(invalidEmail))
+    _, errs = vl.Unmarshal[User]([]byte(invalidEmail))
     if errs != nil {
         fmt.Println("\nEmail validation errors:")
         for _, err := range errs {
@@ -99,7 +99,7 @@ import (
     "encoding/json"
     "fmt"
 
-    "github.com/SmrutAI/pedantigo/v2/pdcore"
+    "github.com/SmrutAI/pedantigo/v2/validator"
 )
 
 type Product struct {
@@ -120,7 +120,7 @@ func main() {
         "sku": "WHP-BT5-2024"
     }`
 
-    product, errs := pdcore.Unmarshal[Product]([]byte(validJSON))
+    product, errs := vl.Unmarshal[Product]([]byte(validJSON))
     if errs == nil {
         fmt.Printf("Product: %s - $%.2f (Stock: %d)\n", product.Name, product.Price, product.Quantity)
         fmt.Printf("SKU: %s | Category: %s\n", product.SKU, product.Category)
@@ -135,7 +135,7 @@ func main() {
         "sku": "BRK-ITM-0001"
     }`
 
-    _, errs = pdcore.Unmarshal[Product]([]byte(invalidPrice))
+    _, errs = vl.Unmarshal[Product]([]byte(invalidPrice))
     if errs != nil {
         fmt.Println("\nPrice validation failed:")
         for _, err := range errs {
@@ -152,7 +152,7 @@ func main() {
         "sku": "MYS-TRY-0001"
     }`
 
-    _, errs = pdcore.Unmarshal[Product]([]byte(invalidCategory))
+    _, errs = vl.Unmarshal[Product]([]byte(invalidCategory))
     if errs != nil {
         fmt.Println("\nCategory validation failed:")
         for _, err := range errs {
@@ -169,7 +169,7 @@ func main() {
         "sku": "invalid-sku-format"
     }`
 
-    _, errs = pdcore.Unmarshal[Product]([]byte(invalidSKU))
+    _, errs = vl.Unmarshal[Product]([]byte(invalidSKU))
     if errs != nil {
         fmt.Println("\nSKU format validation failed:")
         for _, err := range errs {
@@ -201,7 +201,7 @@ import (
     "fmt"
     "time"
 
-    "github.com/SmrutAI/pedantigo/v2/pdcore"
+    "github.com/SmrutAI/pedantigo/v2/validator"
 )
 
 type Config struct {
@@ -234,7 +234,7 @@ func main() {
         "timeout": 30000000000
     }`
 
-    config, errs := pdcore.Unmarshal[Config]([]byte(validJSON))
+    config, errs := vl.Unmarshal[Config]([]byte(validJSON))
     if errs == nil {
         fmt.Printf("Server: %s:%d\n", config.Server.Host, config.Server.Port)
         fmt.Printf("Environment: %s\n", config.API.Environment)
@@ -254,7 +254,7 @@ func main() {
         "timeout": 30000000000
     }`
 
-    _, errs = pdcore.Unmarshal[Config]([]byte(invalidPort))
+    _, errs = vl.Unmarshal[Config]([]byte(invalidPort))
     if errs != nil {
         fmt.Println("\nPort validation failed:")
         for _, err := range errs {
@@ -275,7 +275,7 @@ func main() {
         "timeout": 30000000000
     }`
 
-    _, errs = pdcore.Unmarshal[Config]([]byte(invalidKey))
+    _, errs = vl.Unmarshal[Config]([]byte(invalidKey))
     if errs != nil {
         fmt.Println("\nAPI key validation failed:")
         for _, err := range errs {
@@ -305,7 +305,7 @@ import (
     "fmt"
     "time"
 
-    "github.com/SmrutAI/pedantigo/v2/pdcore"
+    "github.com/SmrutAI/pedantigo/v2/validator"
 )
 
 type BlogPost struct {
@@ -327,7 +327,7 @@ func main() {
         "published_at": "2024-12-18T10:30:00Z"
     }`
 
-    post, errs := pdcore.Unmarshal[BlogPost]([]byte(validJSON))
+    post, errs := vl.Unmarshal[BlogPost]([]byte(validJSON))
     if errs == nil {
         fmt.Printf("Title: %s\n", post.Title)
         fmt.Printf("Author: %s\n", post.Author)
@@ -346,7 +346,7 @@ func main() {
         "published_at": null
     }`
 
-    _, errs = pdcore.Unmarshal[BlogPost]([]byte(invalidTitle))
+    _, errs = vl.Unmarshal[BlogPost]([]byte(invalidTitle))
     if errs != nil {
         fmt.Println("\nTitle validation failed:")
         for _, err := range errs {
@@ -363,7 +363,7 @@ func main() {
         "published_at": null
     }`
 
-    _, errs = pdcore.Unmarshal[BlogPost]([]byte(duplicateTags))
+    _, errs = vl.Unmarshal[BlogPost]([]byte(duplicateTags))
     if errs != nil {
         fmt.Println("\nTag validation failed:")
         for _, err := range errs {
@@ -380,7 +380,7 @@ func main() {
         "published_at": null
     }`
 
-    _, errs = pdcore.Unmarshal[BlogPost]([]byte(noTags))
+    _, errs = vl.Unmarshal[BlogPost]([]byte(noTags))
     if errs != nil {
         fmt.Println("\nTag count validation failed:")
         for _, err := range errs {
@@ -410,7 +410,7 @@ import (
     "encoding/json"
     "fmt"
 
-    "github.com/SmrutAI/pedantigo/v2/pdcore"
+    "github.com/SmrutAI/pedantigo/v2/validator"
 )
 
 type Address struct {
@@ -431,7 +431,7 @@ func main() {
         "country": "US"
     }`
 
-    address, errs := pdcore.Unmarshal[Address]([]byte(validJSON))
+    address, errs := vl.Unmarshal[Address]([]byte(validJSON))
     if errs == nil {
         fmt.Printf("Address: %s\n", address.Street)
         fmt.Printf("City, State Zip: %s, %s %s\n", address.City, address.State, address.ZipCode)
@@ -447,7 +447,7 @@ func main() {
         "country": "US"
     }`
 
-    addr, errs := pdcore.Unmarshal[Address]([]byte(extendedZip))
+    addr, errs := vl.Unmarshal[Address]([]byte(extendedZip))
     if errs == nil {
         fmt.Printf("\nExtended ZIP: %s-%s\n", addr.City, addr.ZipCode)
     }
@@ -461,7 +461,7 @@ func main() {
         "country": "US"
     }`
 
-    _, errs = pdcore.Unmarshal[Address]([]byte(invalidState))
+    _, errs = vl.Unmarshal[Address]([]byte(invalidState))
     if errs != nil {
         fmt.Println("\nState validation failed:")
         for _, err := range errs {
@@ -478,7 +478,7 @@ func main() {
         "country": "US"
     }`
 
-    _, errs = pdcore.Unmarshal[Address]([]byte(invalidCity))
+    _, errs = vl.Unmarshal[Address]([]byte(invalidCity))
     if errs != nil {
         fmt.Println("\nCity validation failed:")
         for _, err := range errs {
@@ -495,7 +495,7 @@ func main() {
         "country": "US"
     }`
 
-    _, errs = pdcore.Unmarshal[Address]([]byte(invalidZip))
+    _, errs = vl.Unmarshal[Address]([]byte(invalidZip))
     if errs != nil {
         fmt.Println("\nZIP code validation failed:")
         for _, err := range errs {
@@ -512,7 +512,7 @@ func main() {
         "country": "INVALID"
     }`
 
-    _, errs = pdcore.Unmarshal[Address]([]byte(invalidCountry))
+    _, errs = vl.Unmarshal[Address]([]byte(invalidCountry))
     if errs != nil {
         fmt.Println("\nCountry validation failed:")
         for _, err := range errs {
@@ -542,7 +542,7 @@ import (
     "encoding/json"
     "fmt"
 
-    "github.com/SmrutAI/pedantigo/v2/pdcore"
+    "github.com/SmrutAI/pedantigo/v2/validator"
 )
 
 type Payment struct {
@@ -563,7 +563,7 @@ func main() {
         "card_holder": "John Smith"
     }`
 
-    payment, errs := pdcore.Unmarshal[Payment]([]byte(validJSON))
+    payment, errs := vl.Unmarshal[Payment]([]byte(validJSON))
     if errs == nil {
         fmt.Printf("Amount: %.2f %s\n", payment.Amount, payment.Currency)
         fmt.Printf("Cardholder: %s\n", payment.CardHolder)
@@ -578,7 +578,7 @@ func main() {
         "card_holder": "Jane Doe"
     }`
 
-    amex, errs := pdcore.Unmarshal[Payment]([]byte(amexJSON))
+    amex, errs := vl.Unmarshal[Payment]([]byte(amexJSON))
     if errs == nil {
         fmt.Printf("\nAmEx Payment: %.2f %s\n", amex.Amount, amex.Currency)
     }
@@ -592,7 +592,7 @@ func main() {
         "card_holder": "Test User"
     }`
 
-    _, errs = pdcore.Unmarshal[Payment]([]byte(zeroAmount))
+    _, errs = vl.Unmarshal[Payment]([]byte(zeroAmount))
     if errs != nil {
         fmt.Println("\nAmount validation failed:")
         for _, err := range errs {
@@ -609,7 +609,7 @@ func main() {
         "card_holder": "Test User"
     }`
 
-    _, errs = pdcore.Unmarshal[Payment]([]byte(invalidCurrency))
+    _, errs = vl.Unmarshal[Payment]([]byte(invalidCurrency))
     if errs != nil {
         fmt.Println("\nCurrency validation failed:")
         for _, err := range errs {
@@ -626,7 +626,7 @@ func main() {
         "card_holder": "Test User"
     }`
 
-    _, errs = pdcore.Unmarshal[Payment]([]byte(invalidCard))
+    _, errs = vl.Unmarshal[Payment]([]byte(invalidCard))
     if errs != nil {
         fmt.Println("\nCard number validation failed:")
         for _, err := range errs {
@@ -643,7 +643,7 @@ func main() {
         "card_holder": "Test User"
     }`
 
-    _, errs = pdcore.Unmarshal[Payment]([]byte(invalidCVV))
+    _, errs = vl.Unmarshal[Payment]([]byte(invalidCVV))
     if errs != nil {
         fmt.Println("\nCVV validation failed:")
         for _, err := range errs {
@@ -660,7 +660,7 @@ func main() {
         "card_holder": "Test User 123"
     }`
 
-    _, errs = pdcore.Unmarshal[Payment]([]byte(invalidHolder))
+    _, errs = vl.Unmarshal[Payment]([]byte(invalidHolder))
     if errs != nil {
         fmt.Println("\nCardholder validation failed:")
         for _, err := range errs {

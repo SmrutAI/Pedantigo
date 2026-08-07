@@ -79,7 +79,7 @@ user.age = -5  # ❌ Raises ValidationError immediately
 **Workaround:**
 ```go
 user.Age = -5
-if err := validator.Validate(&user); err != nil {
+if err := vl.Validate(&user); err != nil {
     // Handle validation error
 }
 ```
@@ -109,7 +109,7 @@ class User(BaseModel):
 **Workaround:**
 ```go
 // Use NewModel() which can transform data
-user, err := validator.NewModel(input)
+user, err := vl.NewModel(input)
 
 // Or implement custom UnmarshalJSON
 func (u *User) UnmarshalJSON(data []byte) error {
@@ -191,8 +191,8 @@ type OrderResponse struct {
 }
 
 // Both work with Pedantigo
-userValidator := pdcore.New[UserResponse]()
-orderValidator := pdcore.New[OrderResponse]()
+userValidator := validator.New[UserResponse]()
+orderValidator := validator.New[OrderResponse]()
 ```
 
 ---
@@ -240,14 +240,14 @@ var user User
 db.First(&user, 1)
 
 // Validate directly - no conversion!
-err := validator.Validate(&user)
+err := vl.Validate(&user)
 
 // Marshal directly - no conversion!
-data, _ := validator.Marshal(user)
+data, _ := vl.Marshal(user)
 
 // Unmarshal from API, validate, save to DB - same struct throughout
 var newUser User
-validator.Unmarshal(jsonData)  // Validates during unmarshal
+vl.Unmarshal(jsonData)  // Validates during unmarshal
 db.Create(&newUser)
 ```
 
@@ -325,7 +325,7 @@ result = adapter.validate_python([1, 2, "3"])  # Validates + coerces
 // Define type explicitly
 type IntList []int
 
-validator := pdcore.New[IntList]()
+vl := validator.New[IntList]()
 ```
 
 ---
@@ -354,7 +354,7 @@ type UserList struct {
 }
 
 // Or validate slice directly
-validator := pdcore.New[[]User]()
+vl := validator.New[[]User]()
 ```
 
 ---

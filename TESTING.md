@@ -46,10 +46,10 @@ func TestMin(t *testing.T) {
 		},
 	}
 
-	validator := New[MinTest]()
+	vl := New[MinTest]()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validator.Validate(tt.data)
+			err := vl.Validate(tt.data)
 			if tt.expectErr && err == nil {
 				t.Error("expected validation error, got nil")
 			}
@@ -134,7 +134,7 @@ func TestFeatureName(t *testing.T) {
 	}
 
 	// 2. Create reusable validators (optional)
-	validator := New[TestStruct]()
+	vl := New[TestStruct]()
 
 	// 3. Define test cases
 	tests := []struct {
@@ -165,7 +165,7 @@ func TestFeatureName(t *testing.T) {
 	// 4. Execute tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validator.Validate(tt.data)
+			err := vl.Validate(tt.data)
 
 			// Check error existence
 			if tt.expectErr && err == nil {
@@ -408,10 +408,10 @@ make all
 
 ```go
 // Cache validators outside loops
-validator := New[User]()
+vl := New[User]()
 for _, tt := range tests {
 	t.Run(tt.name, func(t *testing.T) {
-		err := validator.Validate(tt.data)
+		err := vl.Validate(tt.data)
 		// ...
 	})
 }
@@ -449,10 +449,10 @@ func TestEmail(t *testing.T) {
 		{name: "empty string", email: "", expectErr: false},
 	}
 
-	validator := New[EmailTest]()
+	vl := New[EmailTest]()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validator.Validate(&EmailTest{Email: tt.email})
+			err := vl.Validate(&EmailTest{Email: tt.email})
 			if tt.expectErr && err == nil {
 				t.Error("expected error")
 			}
@@ -500,10 +500,10 @@ func TestEqField(t *testing.T) {
 		},
 	}
 
-	validator := New[PasswordConfirm]()
+	vl := New[PasswordConfirm]()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validator.Validate(tt.data)
+			err := vl.Validate(tt.data)
 			if tt.expectErr && err == nil {
 				t.Error("expected error")
 				return

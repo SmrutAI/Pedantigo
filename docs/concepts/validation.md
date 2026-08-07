@@ -58,10 +58,10 @@ type User struct {
 }
 
 jsonData := []byte(`{"email":"alice@example.com","age":25}`)
-user, err := pdcore.Unmarshal[User](jsonData)
+user, err := vl.Unmarshal[User](jsonData)
 if err != nil {
     // Handle validation errors
-    var ve *pdcore.ValidationError
+    var ve *validator.ValidationError
     if errors.As(err, &ve) {
         for _, fieldErr := range ve.Errors {
             fmt.Printf("Field %s: %s\n", fieldErr.Field, fieldErr.Message)
@@ -74,7 +74,7 @@ if err != nil {
 
 #### Validate Existing Structs
 
-For structs created manually (not from JSON), use `pdcore.Validate()`:
+For structs created manually (not from JSON), use `vl.Validate()`:
 
 ```go
 user := &User{
@@ -82,7 +82,7 @@ user := &User{
     Age:   30,
 }
 
-if err := pdcore.Validate(user); err != nil {
+if err := vl.Validate(user); err != nil {
     // Handle validation errors
 }
 ```
@@ -95,11 +95,11 @@ userMap := map[string]any{
     "email": "charlie@example.com",
     "age":   35,
 }
-user, err := pdcore.NewModel[User](userMap)
+user, err := vl.NewModel[User](userMap)
 
 // From a struct
 user2 := User{Email: "dave@example.com", Age: 40}
-user3, err := pdcore.NewModel[User](user2)
+user3, err := vl.NewModel[User](user2)
 ```
 
 ### Advanced: Validator Object API
@@ -108,13 +108,13 @@ For advanced features or performance-critical code that creates validators once:
 
 ```go
 // Create once, reuse many times
-validator := pdcore.New[User]()
+vl := validator.New[User]()
 
 // Unmarshal with this validator
-user, err := validator.Unmarshal(jsonData)
+user, err := vl.Unmarshal(jsonData)
 
 // Get cached schema
-schema := validator.Schema()
+schema := vl.Schema()
 
 // Validate existing structs
 err = validator.ValidateValue(user)
@@ -146,15 +146,15 @@ type Config struct {
 }
 
 // This passes (Unmarshal): JSON key is present
-config, _ := pdcore.Unmarshal[Config]([]byte(`{"apiKey":""}`))
+config, _ := vl.Unmarshal[Config]([]byte(`{"apiKey":""}`))
 
 // This fails (Unmarshal): JSON key is missing
-config, err := pdcore.Unmarshal[Config]([]byte(`{}`))
+config, err := vl.Unmarshal[Config]([]byte(`{}`))
 // Error: APIKey is required
 
 // This passes (Validate): required not checked on existing struct
 config := &Config{APIKey: ""}
-pdcore.Validate(config) // No error for empty string
+vl.Validate(config) // No error for empty string
 ```
 
 ## Field-Level vs Cross-Field Validation
@@ -217,7 +217,7 @@ jsonData := []byte(`{
     "name": "A"
 }`)
 
-user, err := pdcore.Unmarshal[User](jsonData)
+user, err := vl.Unmarshal[User](jsonData)
 // err contains 4 validation errors:
 // - email: invalid email format
 // - email: must be at most 100 characters

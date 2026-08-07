@@ -92,15 +92,15 @@ package main
 import (
     "errors"
     "strings"
-    "github.com/SmrutAI/pedantigo/v2/pdcore"
+    "github.com/SmrutAI/pedantigo/v2/validator"
 )
 
 func init() {
     // Register US phone validator
-    pdcore.RegisterValidation("us_phone", ValidateUSPhone)
+    validator.RegisterValidation("us_phone", ValidateUSPhone)
 
     // Register credit card validator
-    pdcore.RegisterValidation("credit_card", ValidateCreditCard)
+    validator.RegisterValidation("credit_card", ValidateCreditCard)
 }
 
 // Validates US phone numbers: 10 digits
@@ -154,7 +154,7 @@ Once registered, use custom validators in the `pedantigo` struct tag:
 ```go
 package main
 
-import "github.com/SmrutAI/pedantigo/v2/pdcore"
+import "github.com/SmrutAI/pedantigo/v2/validator"
 
 type User struct {
     Email      string `json:"email" validate:"required,email"`
@@ -172,7 +172,7 @@ func main() {
         "phone": "5551234567"
     }`)
 
-    user, err := pdcore.Unmarshal[User](data)
+    user, err := vl.Unmarshal[User](data)
     if err != nil {
         // Handle validation errors
     }
@@ -204,7 +204,7 @@ func ValidateLength(value any, param string) error {
 }
 
 // Register and use with parameter
-pdcore.RegisterValidation("length", ValidateLength)
+validator.RegisterValidation("length", ValidateLength)
 
 type Product struct {
     SKU string `json:"sku" validate:"length=12"` // Exactly 12 chars
@@ -231,7 +231,7 @@ type ValidationFuncCtx func(ctx context.Context, value any, param string) error
 type ctxKey string
 const ctxKeyDB ctxKey = "db"
 
-pdcore.RegisterValidationCtx("db_unique", func(ctx context.Context, value any, param string) error {
+validator.RegisterValidationCtx("db_unique", func(ctx context.Context, value any, param string) error {
     db, ok := ctx.Value(ctxKeyDB).(*sql.DB)
     if !ok || db == nil {
         return errors.New("database connection required")
@@ -267,13 +267,13 @@ type User struct {
 }
 
 func CreateUser(ctx context.Context, data []byte) (*User, error) {
-    user, err := pdcore.Unmarshal[User](data)
+    user, err := vl.Unmarshal[User](data)
     if err != nil {
         return nil, err
     }
 
     // Validate with context (for db_unique check)
-    if err := pdcore.ValidateCtx(ctx, user); err != nil {
+    if err := validator.ValidateCtx(ctx, user); err != nil {
         return nil, err
     }
 
@@ -309,7 +309,7 @@ func RegisterAlias(alias, tags string) error
 
 ```go
 // Create a "username" alias for common username validation
-err := pdcore.RegisterAlias("username", "required,alphanum,min=3,max=20")
+err := validator.RegisterAlias("username", "required,alphanum,min=3,max=20")
 if err != nil {
     log.Fatal(err)
 }
@@ -324,7 +324,7 @@ type User struct {
 
 ```go
 // Create an alias for multiple allowed formats (OR constraint)
-err := pdcore.RegisterAlias("color", "hexcolor|rgb|rgba")
+err := validator.RegisterAlias("color", "hexcolor|rgb|rgba")
 if err != nil {
     log.Fatal(err)
 }
@@ -396,7 +396,7 @@ data := []byte(`{
     "confirm": "NewPass123"
 }`)
 
-change, err := pdcore.Unmarshal[PasswordChange](data)
+change, err := vl.Unmarshal[PasswordChange](data)
 // Validate() is called automatically after field validation passes
 ```
 
@@ -436,7 +436,7 @@ type OrderItem struct {
 
 // Register struct-level validation
 func init() {
-    pdcore.RegisterStructValidation[Order](ValidateOrder)
+    validator.RegisterStructValidation[Order](ValidateOrder)
 }
 
 // Validates cross-struct relationships and business rules
@@ -469,7 +469,7 @@ func main() {
         "discount_percent": 0
     }`)
 
-    order, err := pdcore.Unmarshal[Order](data)
+    order, err := vl.Unmarshal[Order](data)
     // ValidateOrder is called automatically after field validation
 }
 ```
@@ -641,7 +641,7 @@ import (
     "regexp"
     "strconv"
     "strings"
-    "github.com/SmrutAI/pedantigo/v2/pdcore"
+    "github.com/SmrutAI/pedantigo/v2/validator"
 )
 
 // Custom field validators
@@ -716,9 +716,9 @@ type UserProfile struct {
 
 func init() {
     // Register custom field validators
-    pdcore.RegisterValidation("us_phone", ValidateUSPhone)
-    pdcore.RegisterValidation("hex_color", ValidateHexColor)
-    pdcore.RegisterValidation("slug", ValidateSlug)
+    validator.RegisterValidation("us_phone", ValidateUSPhone)
+    validator.RegisterValidation("hex_color", ValidateHexColor)
+    validator.RegisterValidation("slug", ValidateSlug)
 }
 
 func main() {
@@ -735,7 +735,7 @@ func main() {
         "bio": "Software engineer and open source enthusiast"
     }`)
 
-    profile, err := pdcore.Unmarshal[UserProfile](validData)
+    profile, err := vl.Unmarshal[UserProfile](validData)
     if err == nil {
         fmt.Printf("Profile created: %s\n", profile.Email)
     }
@@ -752,9 +752,9 @@ func main() {
         }
     }`)
 
-    _, err = pdcore.Unmarshal[UserProfile](invalidData)
+    _, err = vl.Unmarshal[UserProfile](invalidData)
     if err != nil {
-        var ve *pdcore.ValidationError
+        var ve *validator.ValidationError
         if errors.As(err, &ve) {
             fmt.Println("Validation errors:")
             for _, fieldErr := range ve.Errors {

@@ -1,9 +1,9 @@
 # pedantigo — root orchestrator Makefile
 # This Makefile holds NO build/test/lint logic itself. Every action has exactly
-# two targets: <action>-core (dispatches to pdcore/Makefile) and
+# two targets: <action>-core (dispatches to validator/Makefile) and
 # <action>-plugins (dispatches to plugins/Makefile). Each target is a single,
 # direct dispatch — no loop, no fan-out, no bare composite target that runs
-# both. Real logic lives in pdcore/Makefile and plugins/Makefile.
+# both. Real logic lives in validator/Makefile and plugins/Makefile.
 
 .PHONY: help \
         build-core build-plugins \
@@ -36,7 +36,7 @@ help: ## Show this help message
 	@echo "Pedantigo — orchestrator Makefile"
 	@echo ""
 	@echo "Every action has exactly two targets: <action>-core, <action>-plugins."
-	@echo "Each is a single direct dispatch to pdcore/Makefile or plugins/Makefile."
+	@echo "Each is a single direct dispatch to validator/Makefile or plugins/Makefile."
 	@echo "No loops, no fan-out, no combined target."
 	@echo ""
 	@echo "Usage: make [target]"
@@ -48,8 +48,8 @@ help: ## Show this help message
 # BUILD
 # ============================================
 
-build-core: ## Build pdcore
-	@$(MAKE) -C pdcore build
+build-core: ## Build validator
+	@$(MAKE) -C validator build
 
 build-plugins: ## Build plugins
 	@$(MAKE) -C plugins build
@@ -58,32 +58,32 @@ build-plugins: ## Build plugins
 # TEST
 # ============================================
 
-test-core: ## Run tests in pdcore
-	@$(MAKE) -C pdcore test
+test-core: ## Run tests in validator
+	@$(MAKE) -C validator test
 
 test-plugins: ## Run tests in plugins
 	@$(MAKE) -C plugins test
 
-test-verbose-core: ## Run tests (verbose) in pdcore
-	@$(MAKE) -C pdcore test-verbose
+test-verbose-core: ## Run tests (verbose) in validator
+	@$(MAKE) -C validator test-verbose
 
 test-verbose-plugins: ## Run tests (verbose) in plugins
 	@$(MAKE) -C plugins test-verbose
 
-test-run-core: ## Flexible test runner in pdcore (RUN=TestName PKG=./path TIMEOUT=5m)
-	@$(MAKE) -C pdcore test-run RUN=$(RUN) PKG=$(PKG) TIMEOUT=$(TIMEOUT)
+test-run-core: ## Flexible test runner in validator (RUN=TestName PKG=./path TIMEOUT=5m)
+	@$(MAKE) -C validator test-run RUN=$(RUN) PKG=$(PKG) TIMEOUT=$(TIMEOUT)
 
 test-run-plugins: ## Flexible test runner in plugins (RUN=TestName PKG=./path TIMEOUT=5m)
 	@$(MAKE) -C plugins test-run RUN=$(RUN) PKG=$(PKG) TIMEOUT=$(TIMEOUT)
 
-test-clean-cache-core: ## Clean Go test cache in pdcore
-	@$(MAKE) -C pdcore test-clean-cache
+test-clean-cache-core: ## Clean Go test cache in validator
+	@$(MAKE) -C validator test-clean-cache
 
 test-clean-cache-plugins: ## Clean Go test cache in plugins
 	@$(MAKE) -C plugins test-clean-cache
 
-test-coverage-core: ## Run tests with coverage in pdcore
-	@$(MAKE) -C pdcore test-coverage
+test-coverage-core: ## Run tests with coverage in validator
+	@$(MAKE) -C validator test-coverage
 
 test-coverage-plugins: ## Run tests with coverage in plugins
 	@$(MAKE) -C plugins test-coverage
@@ -92,14 +92,14 @@ test-coverage-plugins: ## Run tests with coverage in plugins
 # CI TARGETS
 # ============================================
 
-test-ci-core: ## CI: run tests with JUnit XML output in pdcore
-	@$(MAKE) -C pdcore test-ci
+test-ci-core: ## CI: run tests with JUnit XML output in validator
+	@$(MAKE) -C validator test-ci
 
 test-ci-plugins: ## CI: run tests with JUnit XML output in plugins
 	@$(MAKE) -C plugins test-ci
 
-test-ci-cov-core: ## CI: run tests with coverage + JUnit XML output in pdcore
-	@$(MAKE) -C pdcore test-ci-cov
+test-ci-cov-core: ## CI: run tests with coverage + JUnit XML output in validator
+	@$(MAKE) -C validator test-ci-cov
 
 test-ci-cov-plugins: ## CI: run tests with coverage + JUnit XML output in plugins
 	@$(MAKE) -C plugins test-ci-cov
@@ -108,32 +108,32 @@ test-ci-cov-plugins: ## CI: run tests with coverage + JUnit XML output in plugin
 # QUALITY
 # ============================================
 
-vet-core: ## Run go vet in pdcore
-	@$(MAKE) -C pdcore vet
+vet-core: ## Run go vet in validator
+	@$(MAKE) -C validator vet
 
 vet-plugins: ## Run go vet in plugins
 	@$(MAKE) -C plugins vet
 
-fmt-core: ## Format code in pdcore
-	@$(MAKE) -C pdcore fmt
+fmt-core: ## Format code in validator
+	@$(MAKE) -C validator fmt
 
 fmt-plugins: ## Format code in plugins
 	@$(MAKE) -C plugins fmt
 
-lint-core: ## Run golangci-lint in pdcore
-	@$(MAKE) -C pdcore lint
+lint-core: ## Run golangci-lint in validator
+	@$(MAKE) -C validator lint
 
 lint-plugins: ## Run golangci-lint in plugins
 	@$(MAKE) -C plugins lint
 
-deps-core: ## Download and tidy Go dependencies in pdcore
-	@$(MAKE) -C pdcore deps
+deps-core: ## Download and tidy Go dependencies in validator
+	@$(MAKE) -C validator deps
 
 deps-plugins: ## Download and tidy Go dependencies in plugins
 	@$(MAKE) -C plugins deps
 
-check-core: ## Run lint + test in pdcore
-	@$(MAKE) -C pdcore check
+check-core: ## Run lint + test in validator
+	@$(MAKE) -C validator check
 
 check-plugins: ## Run lint + test in plugins
 	@$(MAKE) -C plugins check
@@ -142,26 +142,26 @@ check-plugins: ## Run lint + test in plugins
 # BENCHMARKS & MISC
 # ============================================
 
-bench-core: ## Run benchmarks in pdcore
-	@$(MAKE) -C pdcore bench
+bench-core: ## Run benchmarks in validator
+	@$(MAKE) -C validator bench
 
 bench-plugins: ## Run benchmarks in plugins
 	@$(MAKE) -C plugins bench
 
-clean-core: ## Clean build artifacts in pdcore
-	@$(MAKE) -C pdcore clean
+clean-core: ## Clean build artifacts in validator
+	@$(MAKE) -C validator clean
 
 clean-plugins: ## Clean build artifacts in plugins
 	@$(MAKE) -C plugins clean
 
-install-core: ## Install/update dependencies in pdcore
-	@$(MAKE) -C pdcore install
+install-core: ## Install/update dependencies in validator
+	@$(MAKE) -C validator install
 
 install-plugins: ## Install/update dependencies in plugins
 	@$(MAKE) -C plugins install
 
-all-core: ## Run fmt, vet, and test in pdcore
-	@$(MAKE) -C pdcore all
+all-core: ## Run fmt, vet, and test in validator
+	@$(MAKE) -C validator all
 
 all-plugins: ## Run fmt, vet, and test in plugins
 	@$(MAKE) -C plugins all

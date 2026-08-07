@@ -57,15 +57,15 @@ Each variant struct:
 
 ## Creating a UnionValidator
 
-Unlike the Simple API, discriminated unions require explicit creation with `pdcore.NewUnion()`:
+Unlike the Simple API, discriminated unions require explicit creation with `validator.NewUnion()`:
 
 ```go
-validator, err := pdcore.NewUnion[any](pdcore.UnionOptions{
+validator, err := validator.NewUnion[any](validator.UnionOptions{
     DiscriminatorField: "type",
-    Variants: []pdcore.UnionVariant{
-        pdcore.VariantFor[CreditCard]("credit_card"),
-        pdcore.VariantFor[BankTransfer]("bank_transfer"),
-        pdcore.VariantFor[DigitalWallet]("digital_wallet"),
+    Variants: []validator.UnionVariant{
+        validator.VariantFor[CreditCard]("credit_card"),
+        validator.VariantFor[BankTransfer]("bank_transfer"),
+        validator.VariantFor[DigitalWallet]("digital_wallet"),
     },
 })
 
@@ -94,7 +94,7 @@ type UnionOptions struct {
 Each variant is created with `VariantFor[T]()`:
 
 ```go
-pdcore.VariantFor[CreditCard]("credit_card")
+validator.VariantFor[CreditCard]("credit_card")
 ```
 
 The generic type parameter is the Go struct, and the string argument is the discriminator value to match in the JSON.
@@ -115,10 +115,10 @@ jsonData := []byte(`{
     "expiryDate": "12/25"
 }`)
 
-result, err := validator.Unmarshal(jsonData)
+result, err := vl.Unmarshal(jsonData)
 if err != nil {
     // Handle validation errors
-    var ve *pdcore.ValidationError
+    var ve *validator.ValidationError
     if errors.As(err, &ve) {
         for _, fieldErr := range ve.Errors {
             fmt.Printf("Field %s: %s\n", fieldErr.Field, fieldErr.Message)
@@ -158,9 +158,9 @@ jsonData := []byte(`{
     "cvc": "12"
 }`)
 
-_, err := validator.Unmarshal(jsonData)
+_, err := vl.Unmarshal(jsonData)
 if err != nil {
-    var ve *pdcore.ValidationError
+    var ve *validator.ValidationError
     if errors.As(err, &ve) {
         for _, fieldErr := range ve.Errors {
             // Example: Field "cardNumber" error
@@ -188,7 +188,7 @@ card := CreditCard{
 }
 
 // Validate the existing value
-err := validator.Validate(card)
+err := vl.Validate(card)
 if err != nil {
     // Handle validation errors
 }
@@ -199,7 +199,7 @@ if err != nil {
 Discriminated unions generate OpenAPI-compatible JSON Schema using `oneOf` with a discriminator:
 
 ```go
-schema := validator.Schema()
+schema := vl.Schema()
 
 // This produces a JSON Schema like:
 // {
@@ -271,7 +271,7 @@ package main
 import (
     "errors"
     "fmt"
-    "github.com/SmrutAI/pedantigo/v2/pdcore"
+    "github.com/SmrutAI/pedantigo/v2/validator"
 )
 
 // Define payment method variants
@@ -304,12 +304,12 @@ type DigitalWallet struct {
 
 func main() {
     // Create union validator once
-    validator, err := pdcore.NewUnion[any](pdcore.UnionOptions{
+    validator, err := validator.NewUnion[any](validator.UnionOptions{
         DiscriminatorField: "type",
-        Variants: []pdcore.UnionVariant{
-            pdcore.VariantFor[CreditCard]("credit_card"),
-            pdcore.VariantFor[BankTransfer]("bank_transfer"),
-            pdcore.VariantFor[DigitalWallet]("digital_wallet"),
+        Variants: []validator.UnionVariant{
+            validator.VariantFor[CreditCard]("credit_card"),
+            validator.VariantFor[BankTransfer]("bank_transfer"),
+            validator.VariantFor[DigitalWallet]("digital_wallet"),
         },
     })
 
@@ -325,7 +325,7 @@ func main() {
         "expiryDate": "12/25"
     }`)
 
-    result, err := validator.Unmarshal(creditCardJSON)
+    result, err := vl.Unmarshal(creditCardJSON)
     if err != nil {
         fmt.Printf("Credit card validation failed: %v\n", err)
         return
@@ -342,7 +342,7 @@ func main() {
         "routingNumber": "987654321"
     }`)
 
-    result, err = validator.Unmarshal(bankJSON)
+    result, err = vl.Unmarshal(bankJSON)
     if err != nil {
         fmt.Printf("Bank transfer validation failed: %v\n", err)
         return
@@ -359,7 +359,7 @@ func main() {
         "provider": "apple_pay"
     }`)
 
-    result, err = validator.Unmarshal(walletJSON)
+    result, err = vl.Unmarshal(walletJSON)
     if err != nil {
         fmt.Printf("Digital wallet validation failed: %v\n", err)
         return
@@ -377,9 +377,9 @@ func main() {
         "expiryDate": "12/25"
     }`)
 
-    _, err = validator.Unmarshal(invalidJSON)
+    _, err = vl.Unmarshal(invalidJSON)
     if err != nil {
-        var ve *pdcore.ValidationError
+        var ve *validator.ValidationError
         if errors.As(err, &ve) {
             fmt.Println("Validation errors:")
             for _, fieldErr := range ve.Errors {
@@ -396,12 +396,12 @@ For LLM outputs or streaming APIs, you can use `StreamParser` with unions:
 
 ```go
 // Create stream parser for union types
-parser := pdcore.NewStreamUnionParser[any](pdcore.UnionOptions{
+parser := validator.NewStreamUnionParser[any](validator.UnionOptions{
     DiscriminatorField: "type",
-    Variants: []pdcore.UnionVariant{
-        pdcore.VariantFor[CreditCard]("credit_card"),
-        pdcore.VariantFor[BankTransfer]("bank_transfer"),
-        pdcore.VariantFor[DigitalWallet]("digital_wallet"),
+    Variants: []validator.UnionVariant{
+        validator.VariantFor[CreditCard]("credit_card"),
+        validator.VariantFor[BankTransfer]("bank_transfer"),
+        validator.VariantFor[DigitalWallet]("digital_wallet"),
     },
 })
 
@@ -473,7 +473,7 @@ type Suite struct {
 ### Example Usage
 
 ```go
-validator := pdcore.New[Suite]()
+vl := validator.New[Suite]()
 
 // TV mode - TV is validated, Fan is skipped
 tvData := Suite{
@@ -481,7 +481,7 @@ tvData := Suite{
     TV:        TV{Channel: 42},
     Fan:       Fan{Speed: 0}, // Would fail min=1, but is skipped
 }
-err := validator.Validate(&tvData) // ✓ Valid
+err := vl.Validate(&tvData) // ✓ Valid
 
 // Fan mode - Fan is validated, TV is skipped
 fanData := Suite{
@@ -489,7 +489,7 @@ fanData := Suite{
     TV:        TV{Channel: 0}, // Would fail min=1, but is skipped
     Fan:       Fan{Speed: 3},
 }
-err = validator.Validate(&fanData) // ✓ Valid
+err = vl.Validate(&fanData) // ✓ Valid
 
 // TV mode with invalid TV - fails validation
 invalidData := Suite{
@@ -497,7 +497,7 @@ invalidData := Suite{
     TV:        TV{Channel: 0}, // Fails: min=1
     Fan:       Fan{Speed: 0},
 }
-err = validator.Validate(&invalidData) // ✗ Error: tv.channel must be at least 1
+err = vl.Validate(&invalidData) // ✗ Error: tv.channel must be at least 1
 ```
 
 ### When to Use skip_unless vs UnionValidator
@@ -530,7 +530,7 @@ Discriminated unions cannot use the Simple API because:
 - They require explicit variant registration
 - They need detailed configuration (discriminator field, variant mapping)
 
-This is why `pdcore.NewUnion()` is required instead of `pdcore.Unmarshal[T]()`.
+This is why `validator.NewUnion()` is required instead of `vl.Unmarshal[T]()`.
 
 ## See Also
 
