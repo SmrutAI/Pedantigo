@@ -1,171 +1,137 @@
-# pedantigo Makefile
-# Run `make help` for available targets
+# pedantigo — root orchestrator Makefile
+# This Makefile holds NO build/test/lint logic itself. It fans out every target
+# to each module's own Makefile (pdcore/Makefile, plugins/Makefile, ...).
+# Each module owns its own real implementation of these targets.
 
-# Use bash for PIPESTATUS support (required for test-run target)
-SHELL := /bin/bash
+MODULES := pdcore plugins
 
 .PHONY: help build test test-verbose test-run test-clean-cache test-coverage \
-        test-ci test-ci-cov vet fmt lint deps check clean install bench
+        test-ci test-ci-cov vet fmt lint deps check clean install bench all pre-commit \
+        $(MODULES)
 
 # Default target
 .DEFAULT_GOAL := help
 
-# ============================================
-# HELP
-# ============================================
-
 help: ## Show this help message
-	@echo "Pedantigo - Pydantic-inspired validation library for Go"
+	@echo "Pedantigo — orchestrator Makefile"
+	@echo ""
+	@echo "This Makefile fans out every target to: $(MODULES)"
+	@echo "Real logic lives in each module's own Makefile (e.g. pdcore/Makefile)."
 	@echo ""
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "Targets:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
-	@echo ""
-	@echo "\033[1mTest Runner Examples (make test-run):\033[0m"
-	@echo "  make test-run                                  # All tests"
-	@echo "  make test-run RUN=TestMyFunction               # Single test by name"
-	@echo "  make test-run RUN=TestUnmarshal                # Tests matching pattern"
-	@echo "  make test-run PKG=./internal/constraints/...   # Tests in specific package"
-	@echo "  make test-run TIMEOUT=5m                       # Custom timeout"
 
 # ============================================
-# FLEXIBLE TEST RUNNER
-# ============================================
-# Usage Examples:
-#   make test-run                                  # All tests
-#   make test-run RUN=TestMyFunction               # Single test by name
-#   make test-run PKG=./internal/constraints/...   # Tests in specific package
-#   make test-run TIMEOUT=5m                       # Custom timeout
-
-# Test runner defaults
-RUN ?=
-PKG ?= ./...
-TIMEOUT ?= 10m
-
-# Common go test flags
-GO_TEST_FLAGS := -v -race -count=1
-
-test-run: ## Flexible test runner (use RUN=TestName PKG=./path TIMEOUT=5m)
-	@echo "═══════════════════════════════════════════════════════"
-	@echo "Test Run: $$(date)"
-	@echo "═══════════════════════════════════════════════════════"
-	@echo "Config:"
-	@echo "  RUN:     $(if $(RUN),$(RUN),(all tests))"
-	@echo "  PKG:     $(PKG)"
-	@echo "  TIMEOUT: $(TIMEOUT)"
-	@echo "═══════════════════════════════════════════════════════"
-	@echo ""
-	@go test $(GO_TEST_FLAGS) \
-		$(if $(RUN),-run=$(RUN),) \
-		-timeout $(TIMEOUT) \
-		$(PKG) 2>&1 | tee /tmp/pedantigo_test_output.log; \
-		EXIT_CODE=$${PIPESTATUS[0]}; \
-		echo ""; \
-		echo "═══════════════════════════════════════════════════════"; \
-		echo "Exit code: $$EXIT_CODE"; \
-		echo "Output saved to: /tmp/pedantigo_test_output.log"; \
-		echo "═══════════════════════════════════════════════════════"; \
-		exit $$EXIT_CODE
-
-# ============================================
-# BUILD & QUALITY
+# FAN-OUT TARGETS
+# Each target below runs the same-named target in every module's Makefile,
+# via `make -C <module> <target>`, stopping on the first module that fails.
 # ============================================
 
-build: ## Build the project
-	@echo "Building..."
-	go build -v ./...
+build: ## Build all modules
+	@for m in $(MODULES); do \
+		echo "=== build: $$m ==="; \
+		$(MAKE) -C $$m build || exit 1; \
+	done
 
-vet: ## Run go vet
-	@echo "Running go vet..."
-	go vet ./...
+test: ## Run tests in all modules
+	@for m in $(MODULES); do \
+		echo "=== test: $$m ==="; \
+		$(MAKE) -C $$m test || exit 1; \
+	done
 
-fmt: ## Format code with goimports + gofmt
-	@echo "Formatting code..."
-	@which goimports > /dev/null || (echo "goimports not installed. Install with: go install golang.org/x/tools/cmd/goimports@latest" && exit 1)
-	goimports -w -local github.com/SmrutAI/pedantigo .
-	gofmt -s -w .
+test-verbose: ## Run tests (verbose) in all modules
+	@for m in $(MODULES); do \
+		echo "=== test-verbose: $$m ==="; \
+		$(MAKE) -C $$m test-verbose || exit 1; \
+	done
 
-lint: ## Run golangci-lint
-	@echo "Running golangci-lint..."
-	@which golangci-lint > /dev/null || (echo "golangci-lint not installed. Install with: brew install golangci-lint" && exit 1)
-	# golangci-lint's binary is built with go1.25 and doesn't yet support go1.26
-	# (tracked upstream: golangci/golangci-lint#6272). Force its internal `go`
-	# subprocess calls to use go1.25 so package analysis doesn't panic, while
-	# the rest of the toolchain (build, vet, test) stays on go1.26.
-	GOTOOLCHAIN=go1.25.12 golangci-lint run ./...
+test-run: ## Flexible test runner in all modules (use RUN=TestName PKG=./path TIMEOUT=5m)
+	@for m in $(MODULES); do \
+		echo "=== test-run: $$m ==="; \
+		$(MAKE) -C $$m test-run RUN=$(RUN) PKG=$(PKG) TIMEOUT=$(TIMEOUT) || exit 1; \
+	done
 
-deps: ## Download and tidy Go dependencies
-	@echo "Tidying dependencies..."
-	go mod download
-	go mod tidy
-	@echo "Dependencies up to date"
+test-clean-cache: ## Clean Go test cache in all modules
+	@for m in $(MODULES); do \
+		$(MAKE) -C $$m test-clean-cache || exit 1; \
+	done
 
-check: lint test ## Run lint + all tests
+test-coverage: ## Run tests with coverage in all modules
+	@for m in $(MODULES); do \
+		echo "=== test-coverage: $$m ==="; \
+		$(MAKE) -C $$m test-coverage || exit 1; \
+	done
 
-# ============================================
-# TESTING
-# ============================================
+test-ci: ## CI: run tests with JUnit XML output in all modules
+	@for m in $(MODULES); do \
+		echo "=== test-ci: $$m ==="; \
+		$(MAKE) -C $$m test-ci || exit 1; \
+	done
 
-test: ## Run all tests (parallel with race detection)
-	@echo "Running tests (parallel, race detection enabled)..."
-	go test -race -parallel 8 -count=1 ./...
+test-ci-cov: ## CI: run tests with coverage + JUnit XML output in all modules
+	@for m in $(MODULES); do \
+		echo "=== test-ci-cov: $$m ==="; \
+		$(MAKE) -C $$m test-ci-cov || exit 1; \
+	done
 
-test-verbose: ## Run tests with verbose output
-	@echo "Running tests (verbose)..."
-	go test -v -race -parallel 8 -count=1 ./...
+vet: ## Run go vet in all modules
+	@for m in $(MODULES); do \
+		echo "=== vet: $$m ==="; \
+		$(MAKE) -C $$m vet || exit 1; \
+	done
 
-test-clean-cache: ## Clean Go test cache (forces recompilation)
-	go clean -testcache
-	@echo "Test cache cleaned"
+fmt: ## Format code in all modules
+	@for m in $(MODULES); do \
+		echo "=== fmt: $$m ==="; \
+		$(MAKE) -C $$m fmt || exit 1; \
+	done
 
-test-coverage: ## Run tests with coverage report and threshold check
-	@echo "Running tests with coverage..."
-	go test -race -parallel 8 -cover -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out -o coverage.html
-	@echo "Coverage report: coverage.html"
-	@echo "Checking coverage threshold..."
-	@COVERAGE=$$(go tool cover -func=coverage.out | grep total | awk '{print $$3}' | sed 's/%//'); \
-	THRESHOLD=85.0; \
-	echo "Current coverage: $${COVERAGE}%"; \
-	echo "Target coverage: $${THRESHOLD}%"; \
-	if awk -v cov="$$COVERAGE" -v thresh="$$THRESHOLD" 'BEGIN {exit !(cov >= thresh)}'; then \
-		echo "Coverage check passed"; \
-	else \
-		echo "Coverage below target: $${COVERAGE}% < $${THRESHOLD}%"; \
-		exit 1; \
-	fi
+lint: ## Run golangci-lint in all modules
+	@for m in $(MODULES); do \
+		echo "=== lint: $$m ==="; \
+		$(MAKE) -C $$m lint || exit 1; \
+	done
 
-# ============================================
-# CI TARGETS
-# ============================================
+deps: ## Download and tidy Go dependencies in all modules
+	@for m in $(MODULES); do \
+		echo "=== deps: $$m ==="; \
+		$(MAKE) -C $$m deps || exit 1; \
+	done
 
-test-ci: ## CI: Run tests with JUnit XML output
-	@echo "Running tests (CI mode, JUnit XML output)..."
-	go test -race -parallel 8 -count=1 -v ./... 2>&1 | go-junit-report -set-exit-code > test-results.xml
+check: ## Run lint + test in all modules
+	@for m in $(MODULES); do \
+		echo "=== check: $$m ==="; \
+		$(MAKE) -C $$m check || exit 1; \
+	done
 
-test-ci-cov: ## CI: Run tests with coverage + JUnit XML output
-	@echo "Running tests with coverage (CI mode)..."
-	go test -race -parallel 8 -v -coverprofile=coverage.out -covermode=atomic ./... 2>&1 | go-junit-report -set-exit-code > test-results.xml
-	go tool cover -func=coverage.out | grep total | awk '{print $$3}' > coverage.txt
+bench: ## Run benchmarks in all modules
+	@for m in $(MODULES); do \
+		echo "=== bench: $$m ==="; \
+		$(MAKE) -C $$m bench || exit 1; \
+	done
 
-# ============================================
-# BENCHMARKS & MISC
-# ============================================
+clean: ## Clean build artifacts in all modules
+	@for m in $(MODULES); do \
+		$(MAKE) -C $$m clean || exit 1; \
+	done
 
-bench: ## Run benchmarks
-	@echo "Running benchmarks..."
-	go test -bench=. -benchmem ./...
+install: ## Install/update dependencies in all modules
+	@for m in $(MODULES); do \
+		$(MAKE) -C $$m install || exit 1; \
+	done
 
-clean: ## Clean build artifacts
-	@echo "Cleaning..."
-	go clean
-	rm -f coverage.out coverage.html coverage.txt test-results.xml coverage.xml
-
-install: deps ## Install/update dependencies (alias for deps)
-
-all: fmt vet test ## Run fmt, vet, and test
+all: ## Run fmt, vet, and test in all modules
+	@for m in $(MODULES); do \
+		echo "=== all: $$m ==="; \
+		$(MAKE) -C $$m all || exit 1; \
+	done
 	@echo "All checks passed!"
 
-pre-commit: fmt vet test-coverage ## Quick check before commit
+pre-commit: ## Quick check before commit, in all modules
+	@for m in $(MODULES); do \
+		echo "=== pre-commit: $$m ==="; \
+		$(MAKE) -C $$m pre-commit || exit 1; \
+	done
 	@echo "Pre-commit checks passed!"
