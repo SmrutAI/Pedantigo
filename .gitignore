@@ -18,7 +18,7 @@ coverage.*
 profile.cov
 test-results.xml
 code-coverage-results.md
-pdcore-coverage-results.md
+validator-coverage-results.md
 plugin-coverage-results.md
 test-results-comment.md
 

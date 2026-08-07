@@ -8,15 +8,15 @@ description: What changed in Pedantigo v2 and how to upgrade
 
 Two things change when you move from v1 to v2:
 
-1. **Import path and package name.** v1's `github.com/SmrutAI/pedantigo` (package `pedantigo`) becomes `github.com/SmrutAI/pedantigo/v2/pdcore` (package `pdcore`).
+1. **Import path and package name.** v1's `github.com/SmrutAI/pedantigo` (package `pedantigo`) becomes `github.com/SmrutAI/pedantigo/v2/validator` (package `validator`).
 2. **Default struct tag.** v1's implicit default tag `pedantigo` becomes `validate`.
 
 Everything else — constraint syntax, the Simple API, the Core API — is unchanged.
 
 ## What you need to do
 
-1. Update your import: `github.com/SmrutAI/pedantigo` → `github.com/SmrutAI/pedantigo/v2/pdcore`.
-2. Update your package qualifier in code: `pedantigo.` → `pdcore.` (find-and-replace across your codebase; watch for the `pedantigo` struct tag name literal, which is unrelated and must NOT be renamed).
+1. Update your import: `github.com/SmrutAI/pedantigo` → `github.com/SmrutAI/pedantigo/v2/validator`.
+2. Update your package qualifier in code: `pedantigo.` → `validator.` (find-and-replace across your codebase; watch for the `pedantigo` struct tag name literal, which is unrelated and must NOT be renamed).
 3. Handle the tag rename — pick Option A or Option B below.
 4. (Optional) Adopt new v2-only capabilities — `UnmarshalInto`/`Register` for framework integrations, or the Echo Binder plugin — see [New in v2](#new-in-v2).
 
@@ -33,16 +33,16 @@ Per [Go's module versioning rules](https://go.dev/ref/mod), a v2+ release requir
 import "github.com/SmrutAI/pedantigo"
 
 // v2
-import "github.com/SmrutAI/pedantigo/v2/pdcore"
+import "github.com/SmrutAI/pedantigo/v2/validator"
 ```
 
 ```bash
-go get github.com/SmrutAI/pedantigo/v2/pdcore
+go get github.com/SmrutAI/pedantigo/v2/validator
 ```
 
 **New projects must start with v2.** v1 (`v1.1.4` and earlier) remains available and frozen at its last tag purely for existing users already depending on it — no further v1.x.x patches or features are planned, and all new feature development happens in v2 only. There is no forced upgrade timeline for existing v1 users; move to v2 when ready.
 
-All of v2's code lives in the `pdcore` sub-package (`github.com/SmrutAI/pedantigo/v2/pdcore`, package qualifier `pdcore`) — never at the bare `github.com/SmrutAI/pedantigo/v2` path. This keeps the core validation library free of any framework dependency; optional framework integrations (like the [Echo Binder](/plugins/web/echo)) live in their own separately-versioned modules under `plugins/`. Do NOT use import aliases — use `pdcore` directly.
+All of v2's code lives in the `validator` sub-package (`github.com/SmrutAI/pedantigo/v2/validator`, package qualifier `validator`) — never at the bare `github.com/SmrutAI/pedantigo/v2` path. This keeps the core validation library free of any framework dependency; optional framework integrations (like the [Echo Binder](/plugins/web/echo)) live in their own separately-versioned modules under `plugins/`. Do NOT use import aliases — use `validator` directly.
 
 ---
 
@@ -82,7 +82,7 @@ Email string `json:"email" validate:"required,email"`
 
 ```go
 func init() {
-    pdcore.SetTagName("pedantigo")
+    validator.SetTagName("pedantigo")
 }
 ```
 
@@ -92,7 +92,7 @@ Option A is the better long-term choice — it gets you the tooling compatibilit
 
 ## Everything else is unchanged
 
-Constraint syntax, the Simple API (`pdcore.Unmarshal`, `pdcore.Validate`), the Core API (`pdcore.New[T]()`), schema generation, and custom validator registration all work exactly as they did in v1 — just under the `pdcore` package name.
+Constraint syntax, the Simple API (`vl.Unmarshal`, `vl.Validate`), the Core API (`validator.New[T]()`), schema generation, and custom validator registration all work exactly as they did in v1 — just under the `validator` package name.
 
 ---
 
@@ -102,16 +102,16 @@ These are optional. Nothing below is required to migrate — adopt them when use
 
 ### UnmarshalInto and Register
 
-`pdcore.UnmarshalInto(data []byte, target any) error` is a non-generic variant of `Unmarshal` for framework integrations that only have a `reflect.Type`/`any` at the call site (e.g. a web framework's binder). It looks up the validator registered for `target`'s concrete type and validates against it.
+`validator.UnmarshalInto(data []byte, target any) error` is a non-generic variant of `Unmarshal` for framework integrations that only have a `reflect.Type`/`any` at the call site (e.g. a web framework's binder). It looks up the validator registered for `target`'s concrete type and validates against it.
 
 To make a type visible to `UnmarshalInto`, register it once, at package init time:
 
 ```go
-var _ = pdcore.Register(pdcore.New[MyRequest]())
+var _ = validator.Register(validator.New[MyRequest]())
 ```
 
-`pdcore.New[T]()` alone does NOT populate the cache `UnmarshalInto` reads from — only wrapping it in `pdcore.Register(...)` does. `Register` may be called exactly once per type; a second call for the same type panics.
+`validator.New[T]()` alone does NOT populate the cache `UnmarshalInto` reads from — only wrapping it in `validator.Register(...)` does. `Register` may be called exactly once per type; a second call for the same type panics.
 
 ### Echo Binder plugin
 
-A plugin at `github.com/SmrutAI/pedantigo/v2/plugins/web/echo` replaces Echo's `DefaultBinder` with one that calls `pdcore.UnmarshalInto` on POST/PUT/PATCH bodies, so `c.Bind()` validates automatically. See [Echo Binder Plugin](/plugins/web/echo) for full details.
+A plugin at `github.com/SmrutAI/pedantigo/v2/plugins/web/echo` replaces Echo's `DefaultBinder` with one that calls `validator.UnmarshalInto` on POST/PUT/PATCH bodies, so `c.Bind()` validates automatically. See [Echo Binder Plugin](/plugins/web/echo) for full details.

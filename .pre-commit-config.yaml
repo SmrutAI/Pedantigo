@@ -43,7 +43,7 @@ repos:
   # ============================================
   - repo: local
     hooks:
-      # --- CORE (pdcore) — runs first ---
+      # --- CORE (validator) — runs first ---
 
       - id: go-vet-core
         name: Go vet (core)

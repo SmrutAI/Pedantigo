@@ -22,9 +22,9 @@ validate := validator.New()
 err := validate.Struct(user)
 
 // pedantigo Simple API — drop-in, no setup (internally cached per type via sync.Map)
-err := pdcore.Validate(user)
+err := vl.Validate(user)
 // or, to parse + validate in one step:
-user, err := pdcore.Unmarshal[User](jsonBytes)
+user, err := vl.Unmarshal[User](jsonBytes)
 ```
 
 This is a near-rename: no validator to construct, no cache to manage. Benchmarked cost is a ~200ns `sync.Map` lookup per call, ~2-5µs total with unmarshal — negligible below roughly 100k req/sec. This is the recommended default for 99% of applications ([full benchmarks](/docs/advanced/performance)).
@@ -33,7 +33,7 @@ This is a near-rename: no validator to construct, no cache to manage. Benchmarke
 
 ```go
 // Declare once, at package/startup scope
-var userValidator = pdcore.New[User]()
+var userValidator = validator.New[User]()
 
 // Call directly — skips the Simple API's cache lookup
 err := userValidator.Validate(user)
@@ -60,7 +60,7 @@ See [omitempty as a Validation Constraint](/docs/api/initialization#pedantigo-om
 validate.RegisterValidation("custom", customFunc)
 
 // pedantigo
-pdcore.RegisterConstraint("custom", func(value string) (constraints.Constraint, bool) {
+validator.RegisterConstraint("custom", func(value string) (constraints.Constraint, bool) {
     return &myCustomConstraint{}, true
 })
 ```
@@ -82,7 +82,7 @@ These validator-only tags are silently ignored by pedantigo — harmless to leav
 validate.RegisterAlias("is_active", "oneof=active enabled")
 
 // pedantigo (identical)
-pdcore.RegisterAlias("is_active", "oneof=active enabled")
+validator.RegisterAlias("is_active", "oneof=active enabled")
 ```
 
 (See "API difference" above for custom validator registration via `RegisterConstraint`.)
@@ -100,7 +100,7 @@ These validator APIs have slightly different signatures in Pedantigo:
 err := validate.Var(email, "required,email")
 
 // pedantigo
-err := pdcore.Var(email, "required,email")
+err := validator.Var(email, "required,email")
 ```
 
 ### StructPartial / StructExcept
@@ -111,8 +111,8 @@ err := validate.StructPartial(user, "Username", "Email")
 err := validate.StructExcept(user, "Password")
 
 // pedantigo
-err := pdcore.StructPartial(&user, "Username", "Email")
-err := pdcore.StructExcept(&user, "Password")
+err := validator.StructPartial(&user, "Username", "Email")
+err := validator.StructExcept(&user, "Password")
 ```
 
 ### RegisterValidationCtx - Context-Aware Validators
@@ -124,13 +124,13 @@ validate.RegisterValidationCtx("db_unique", func(ctx context.Context, fl validat
 })
 
 // pedantigo
-pdcore.RegisterValidationCtx("db_unique", func(ctx context.Context, value any, param string) error {
+validator.RegisterValidationCtx("db_unique", func(ctx context.Context, value any, param string) error {
     // Return error instead of bool
     return nil
 })
 
 // Usage
-err := pdcore.ValidateCtx(ctx, &user)
+err := validator.ValidateCtx(ctx, &user)
 ```
 
 ### RegisterTagNameFunc
@@ -142,7 +142,7 @@ validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 })
 
 // pedantigo
-pdcore.RegisterTagNameFunc(func(field reflect.StructField) string {
+validator.RegisterTagNameFunc(func(field reflect.StructField) string {
     return field.Tag.Get("json")
 })
 ```
@@ -155,8 +155,8 @@ Pedantigo provides features not available in validator:
 
 | Feature                | Description                                    |
 |------------------------|------------------------------------------------|
-| JSON Schema generation | `pdcore.Schema[User]()`                     |
-| Unmarshal + Validate   | Single step: `pdcore.Unmarshal[User](json)` |
+| JSON Schema generation | `vl.Schema[User]()`                     |
+| Unmarshal + Validate   | Single step: `vl.Unmarshal[User](json)` |
 | Streaming validation   | Parse partial JSON for LLM output              |
 | Discriminated unions   | `Union[TypeA, TypeB, TypeC]`                   |
 | ExtraAllow mode        | Capture unknown JSON fields                    |

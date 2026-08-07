@@ -154,7 +154,7 @@ type Config struct {
 }
 
 json := `{"port": "8080"}`
-validator.Unmarshal([]byte(json))  // ❌ Error: cannot unmarshal string into int
+vl.Unmarshal([]byte(json))  // ❌ Error: cannot unmarshal string into int
 ```
 
 You must provide the correct type in JSON. Use `json.Number` if you need flexible numeric parsing.
@@ -300,15 +300,15 @@ func (d Dog) GetType() string { return "dog" }
 Discriminated union support is now available via `NewUnion()`:
 
 ```go
-validator, _ := pdcore.NewUnion[any](pdcore.UnionOptions{
+validator, _ := validator.NewUnion[any](validator.UnionOptions{
     DiscriminatorField: "pet_type",
-    Variants: []pdcore.UnionVariant{
-        pdcore.VariantFor[Cat]("cat"),
-        pdcore.VariantFor[Dog]("dog"),
+    Variants: []validator.UnionVariant{
+        validator.VariantFor[Cat]("cat"),
+        validator.VariantFor[Dog]("dog"),
     },
 })
 
-result, _ := validator.Unmarshal(jsonData)
+result, _ := vl.Unmarshal(jsonData)
 ```
 
 ---
@@ -334,7 +334,7 @@ class User(BaseModel):
 **Pedantigo:** Sensible defaults built into library - no config class needed
 
 ```go
-validator := pdcore.New[User]()  // Uses sensible defaults
+vl := validator.New[User]()  // Uses sensible defaults
 ```
 
 ---
@@ -383,8 +383,8 @@ except ValidationError as e:
 **Pedantigo:** Returns `*ValidationError` with `Errors []FieldError`
 
 ```go
-_, err := validator.Unmarshal(jsonData)
-if ve, ok := err.(*pdcore.ValidationError); ok {
+_, err := vl.Unmarshal(jsonData)
+if ve, ok := err.(*validator.ValidationError); ok {
     for _, fe := range ve.Errors {
         fmt.Printf("%s: %s (code: %s)\n", fe.Field, fe.Message, fe.Code)
     }

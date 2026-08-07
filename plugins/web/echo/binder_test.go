@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/SmrutAI/pedantigo/v2/pdcore"
+	"github.com/SmrutAI/pedantigo/v2/validator"
 )
 
 type TestRequest struct {
@@ -19,7 +19,7 @@ type TestRequest struct {
 	Email string `json:"email" query:"email" validate:"required,email"`
 }
 
-var _ = pdcore.Register(pdcore.New[TestRequest]())
+var _ = validator.Register(validator.New[TestRequest]())
 
 type unregisteredRequest struct {
 	Name string `json:"name"`
@@ -151,7 +151,7 @@ type pathParamTestRequest struct {
 	Name string `json:"name" validate:"required"`
 }
 
-var _ = pdcore.Register(pdcore.New[pathParamTestRequest]())
+var _ = validator.Register(validator.New[pathParamTestRequest]())
 
 // TestBind_PathParamBindError covers the BindPathParams error branch: a
 // non-numeric path value bound to an int field fails type conversion.
@@ -230,18 +230,18 @@ func TestRegister_Behavior(t *testing.T) {
 		Name string `json:"name" validate:"required"`
 	}
 
-	var registered *pdcore.Validator[registrationTestRequest]
+	var registered *validator.Validator[registrationTestRequest]
 
 	t.Run("first registration succeeds", func(t *testing.T) {
 		require.NotPanics(t, func() {
-			registered = pdcore.Register(pdcore.New[registrationTestRequest]())
+			registered = validator.Register(validator.New[registrationTestRequest]())
 		})
 		require.NotNil(t, registered)
 	})
 
 	t.Run("second registration for the same type panics", func(t *testing.T) {
 		assert.Panics(t, func() {
-			pdcore.Register(pdcore.New[registrationTestRequest]())
+			validator.Register(validator.New[registrationTestRequest]())
 		})
 	})
 }

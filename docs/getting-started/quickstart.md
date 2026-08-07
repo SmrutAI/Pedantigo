@@ -12,7 +12,7 @@ Get started with Pedantigo in minutes. This guide shows you the essential patter
 ## Step 1: Install Pedantigo
 
 ```bash
-go get github.com/SmrutAI/pedantigo/v2/pdcore
+go get github.com/SmrutAI/pedantigo/v2/validator
 ```
 
 ## Step 2: Define Your Struct
@@ -22,7 +22,7 @@ Add `validate` struct tags to define validation rules:
 ```go
 package main
 
-import "github.com/SmrutAI/pedantigo/v2/pdcore"
+import "github.com/SmrutAI/pedantigo/v2/validator"
 
 type User struct {
     Email    string `json:"email" validate:"required,email"`
@@ -47,7 +47,7 @@ jsonData := []byte(`{
     "username": "johndoe"
 }`)
 
-user, err := pdcore.Unmarshal[User](jsonData)
+user, err := vl.Unmarshal[User](jsonData)
 if err != nil {
     // Handle validation errors
 }
@@ -59,10 +59,10 @@ Use when you have maps, structs, or want maximum flexibility:
 
 ```go
 // From JSON bytes
-user, err := pdcore.NewModel[User](jsonData)
+user, err := vl.NewModel[User](jsonData)
 
 // From map (great for testing!)
-user, err := pdcore.NewModel[User](map[string]any{
+user, err := vl.NewModel[User](map[string]any{
     "email":    "user@example.com",
     "age":      25,
     "username": "johndoe",
@@ -70,7 +70,7 @@ user, err := pdcore.NewModel[User](map[string]any{
 
 // From existing struct (validates and returns copy)
 existingUser := User{Email: "test@example.com", Age: 25, Username: "test"}
-user, err := pdcore.NewModel[User](existingUser)
+user, err := vl.NewModel[User](existingUser)
 ```
 
 :::info When to Use Each
@@ -90,22 +90,22 @@ Pedantigo provides two APIs: a Simple API for most use cases, and a Validator AP
 ```go
 package main
 
-import "github.com/SmrutAI/pedantigo/v2/pdcore"
+import "github.com/SmrutAI/pedantigo/v2/validator"
 
 func main() {
     // Global functions with automatic caching - no setup needed
 
     // Unmarshal and validate JSON
-    user, err := pdcore.Unmarshal[User](jsonData)
+    user, err := vl.Unmarshal[User](jsonData)
 
     // Create from any input
-    user, err := pdcore.NewModel[User](inputData)
+    user, err := vl.NewModel[User](inputData)
 
     // Get JSON Schema
-    schema := pdcore.Schema[User]()
+    schema := vl.Schema[User]()
 
     // Validate existing struct
-    errs := pdcore.Validate(user)
+    errs := vl.Validate(user)
 }
 ```
 
@@ -117,19 +117,19 @@ func main() {
 ```go
 package main
 
-import "github.com/SmrutAI/pedantigo/v2/pdcore"
+import "github.com/SmrutAI/pedantigo/v2/validator"
 
 func main() {
     // Explicit validator for custom options
-    validator := pdcore.New[User](pdcore.ValidatorOptions{
+    vl := validator.New[User](validator.Options{
         StrictMissingFields: true,
-        ExtraFields:         pdcore.ExtraForbid,
+        ExtraFields:         validator.ExtraForbid,
     })
 
     // Use validator methods
-    user, err := validator.Unmarshal(jsonData)
-    schema := validator.Schema()
-    errs := validator.Validate(&user)
+    user, err := vl.Unmarshal(jsonData)
+    schema := vl.Schema()
+    errs := vl.Validate(&user)
 }
 ```
 
@@ -151,9 +151,9 @@ See [Initialization & Configuration](../api/initialization) for all initializati
 Pedantigo returns detailed validation errors with field paths:
 
 ```go
-user, err := pdcore.Unmarshal[User](jsonData)
+user, err := vl.Unmarshal[User](jsonData)
 if err != nil {
-    if validationErr, ok := err.(*pdcore.ValidationError); ok {
+    if validationErr, ok := err.(*validator.ValidationError); ok {
         // Get all validation errors
         for _, fieldErr := range validationErr.Errors {
             fmt.Printf("Field: %s, Error: %s\n", fieldErr.Field, fieldErr.Message)
@@ -201,7 +201,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/SmrutAI/pedantigo/v2/pdcore"
+    "github.com/SmrutAI/pedantigo/v2/validator"
 )
 
 type User struct {
@@ -222,7 +222,7 @@ func main() {
         "role": "user"
     }`)
 
-    user, err := pdcore.Unmarshal[User](jsonData)
+    user, err := vl.Unmarshal[User](jsonData)
     if err != nil {
         log.Fatalf("Validation failed: %v", err)
     }
@@ -236,14 +236,14 @@ func main() {
         "role":     "admin",
     }
 
-    user2, err := pdcore.NewModel[User](userData)
+    user2, err := vl.NewModel[User](userData)
     if err != nil {
         log.Fatalf("Validation failed: %v", err)
     }
     fmt.Printf("Valid user: %+v\n", user2)
 
     // Example 3: Get JSON Schema
-    schema := pdcore.Schema[User]()
+    schema := vl.Schema[User]()
     schemaJSON, _ := json.MarshalIndent(schema, "", "  ")
     fmt.Printf("JSON Schema:\n%s\n", schemaJSON)
 }

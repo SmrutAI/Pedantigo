@@ -27,7 +27,7 @@ The Validator API creates reusable validator instances with custom configuration
 ### Default Options
 
 ```go
-import "github.com/SmrutAI/pedantigo/v2/pdcore"
+import "github.com/SmrutAI/pedantigo/v2/validator"
 
 type User struct {
     Email string `validate:"required,email"`
@@ -35,7 +35,7 @@ type User struct {
 }
 
 // Create validator with default options
-validator := pdcore.New[User]()
+vl := validator.New[User]()
 ```
 
 Default options:
@@ -45,19 +45,19 @@ Default options:
 ### Custom Options
 
 ```go
-import "github.com/SmrutAI/pedantigo/v2/pdcore"
+import "github.com/SmrutAI/pedantigo/v2/validator"
 
 // Create with custom options
-validator := pdcore.New[User](pdcore.ValidatorOptions{
+vl := validator.New[User](validator.Options{
     StrictMissingFields: false,  // Allow missing fields (use pointers for optional)
-    ExtraFields:         pdcore.ExtraForbid,  // Reject unknown fields
+    ExtraFields:         validator.ExtraForbid,  // Reject unknown fields
 })
 ```
 
-#### ValidatorOptions
+#### Options
 
 ```go
-type ValidatorOptions struct {
+type Options struct {
     // StrictMissingFields controls whether missing fields without defaults cause errors
     // Default: true (missing fields are errors)
     // Set to false if using pointers for optional fields
@@ -80,7 +80,7 @@ Unmarshal JSON data and validate it in a single operation.
 
 ```go
 // Unmarshal JSON and validate
-user, err := validator.Unmarshal([]byte(`{"email": "test@example.com", "age": 25}`))
+user, err := vl.Unmarshal([]byte(`{"email": "test@example.com", "age": 25}`))
 if err != nil {
     // Handle validation error
     fmt.Printf("Validation failed: %v\n", err)
@@ -106,7 +106,7 @@ user := &User{
     Age: 15,
 }
 
-err := validator.Validate(user)
+err := vl.Validate(user)
 if err != nil {
     // Handle validation error
     fmt.Printf("Validation failed: %v\n", err)
@@ -121,21 +121,21 @@ Create a validated instance from various input types.
 
 ```go
 // From JSON bytes
-user, err := validator.NewModel([]byte(`{"email": "test@example.com", "age": 25}`))
+user, err := vl.NewModel([]byte(`{"email": "test@example.com", "age": 25}`))
 
 // From map (kwargs pattern)
-user, err := validator.NewModel(map[string]any{
+user, err := vl.NewModel(map[string]any{
     "email": "test@example.com",
     "age": 25,
 })
 
 // From existing struct (validates it)
 existing := User{Email: "test@example.com", Age: 25}
-user, err := validator.NewModel(existing)
+user, err := vl.NewModel(existing)
 
 // From pointer
 existing := &User{Email: "test@example.com", Age: 25}
-user, err := validator.NewModel(existing)
+user, err := vl.NewModel(existing)
 ```
 
 **Accepts:**
@@ -151,7 +151,7 @@ user, err := validator.NewModel(existing)
 Get the JSON Schema as a Go object.
 
 ```go
-schema := validator.Schema()
+schema := vl.Schema()
 // schema is *jsonschema.Schema
 
 // Access schema properties
@@ -166,7 +166,7 @@ fmt.Printf("Type: %s\n", schema.Type)
 Get the JSON Schema as JSON bytes.
 
 ```go
-schemaBytes, err := validator.SchemaJSON()
+schemaBytes, err := vl.SchemaJSON()
 if err != nil {
     // Handle error
 }
@@ -180,7 +180,7 @@ fmt.Println(string(schemaBytes))
 Get OpenAPI 3.1 compatible component schema.
 
 ```go
-schema := validator.SchemaOpenAPI()
+schema := vl.SchemaOpenAPI()
 // Returns component schema with $defs (OpenAPI 3.1 / JSON Schema Draft 2020-12)
 ```
 
@@ -189,7 +189,7 @@ schema := validator.SchemaOpenAPI()
 Get OpenAPI 3.1 compatible component schema as JSON bytes.
 
 ```go
-schemaBytes, err := validator.SchemaJSONOpenAPI()
+schemaBytes, err := vl.SchemaJSONOpenAPI()
 if err != nil {
     // Handle error
 }
@@ -212,7 +212,7 @@ Both `$schema` and `$id` are cleared because some LLMs (like Groq) echo schema m
 Get JSON Schema as JSON bytes for LLM APIs.
 
 ```go
-schemaBytes, err := validator.SchemaJSONLLM()
+schemaBytes, err := vl.SchemaJSONLLM()
 if err != nil {
     // Handle error
 }
@@ -230,13 +230,13 @@ user := &User{
 }
 
 // With default options
-jsonData, err := validator.Marshal(user)
+jsonData, err := vl.Marshal(user)
 if err != nil {
     // Handle validation or marshal error
 }
 
 // With custom options (context-based field exclusion)
-opts := pdcore.ForContext("api")  // Excludes fields marked with exclude:api
+opts := validator.ForContext("api")  // Excludes fields marked with exclude:api
 jsonData, err := validator.MarshalWithOptions(user, opts)
 ```
 
@@ -275,14 +275,14 @@ Create once, use many times for best performance:
 
 ```go
 // At initialization
-validator := pdcore.New[User]()
+vl := validator.New[User]()
 
 // In request handler
 func handleUserCreation(w http.ResponseWriter, r *http.Request) {
     var data []byte
     // ... read request body ...
 
-    user, err := validator.Unmarshal(data)
+    user, err := vl.Unmarshal(data)
     if err != nil {
         // Handle error
     }
@@ -294,7 +294,7 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
     var data []byte
     // ... read request body ...
 
-    user, err := validator.Unmarshal(data)
+    user, err := vl.Unmarshal(data)
     if err != nil {
         // Handle error
     }
@@ -308,15 +308,15 @@ Use different validators with different configurations:
 
 ```go
 // Strict validation for admin operations
-adminValidator := pdcore.New[User](pdcore.ValidatorOptions{
+adminValidator := validator.New[User](validator.Options{
     StrictMissingFields: true,
-    ExtraFields:         pdcore.ExtraForbid,
+    ExtraFields:         validator.ExtraForbid,
 })
 
 // Lenient validation for imports
-importValidator := pdcore.New[User](pdcore.ValidatorOptions{
+importValidator := validator.New[User](validator.Options{
     StrictMissingFields: false,
-    ExtraFields:         pdcore.ExtraIgnore,
+    ExtraFields:         validator.ExtraIgnore,
 })
 
 // Use as appropriate
@@ -330,10 +330,10 @@ Validators cache schemas internally per type:
 
 ```go
 // First call - generates schema (~10ms)
-schema1 := validator.Schema()
+schema1 := vl.Schema()
 
 // Subsequent calls - from cache (<100ns)
-schema2 := validator.Schema()
+schema2 := vl.Schema()
 
 // Same cached schema is returned
 fmt.Println(schema1 == schema2)  // true
@@ -380,7 +380,7 @@ Memory overhead is minimal (~10-50KB per validator instance).
 | Performance | Fastest (no cache lookup) | Fast (global cache) |
 | Reusability | Manual management | Automatic |
 | Use Case | High-throughput, custom config | General purpose |
-| Code Example | `validator.Unmarshal(data)` | `pdcore.Unmarshal[User](data)` |
+| Code Example | `vl.Unmarshal(data)` | `vl.Unmarshal[User](data)` |
 
 ### When to Switch to Simple API
 
@@ -404,7 +404,7 @@ If any of these apply, use the Validator API:
 Both methods return errors on validation failure:
 
 ```go
-user, err := validator.Unmarshal(data)
+user, err := vl.Unmarshal(data)
 if err != nil {
     // err is a validation error
     fmt.Printf("Validation failed: %v\n", err)
@@ -426,9 +426,9 @@ See [Errors](./errors.md) for detailed error handling.
 Register custom validation functions per validator instance:
 
 ```go
-validator := pdcore.New[User]()
+vl := validator.New[User]()
 // Custom validators can be registered at validator creation
-// See ValidatorOptions for details
+// See Options for details
 ```
 
 ### Discriminated Unions
@@ -437,7 +437,7 @@ For complex validation scenarios with union types:
 
 ```go
 // Create union validator (advanced feature)
-validator := pdcore.NewUnion[T](opts...)
+vl := validator.NewUnion[T](opts...)
 ```
 
 Refer to advanced examples for union validation patterns.
@@ -449,7 +449,7 @@ package main
 
 import (
     "fmt"
-    "github.com/SmrutAI/pedantigo/v2/pdcore"
+    "github.com/SmrutAI/pedantigo/v2/validator"
 )
 
 type User struct {
@@ -460,9 +460,9 @@ type User struct {
 
 func main() {
     // Create validator with custom options
-    validator := pdcore.New[User](pdcore.ValidatorOptions{
+    vl := validator.New[User](validator.Options{
         StrictMissingFields: true,
-        ExtraFields:         pdcore.ExtraForbid,
+        ExtraFields:         validator.ExtraForbid,
     })
 
     // Example 1: Unmarshal JSON
@@ -472,7 +472,7 @@ func main() {
         "username": "alice_wonder"
     }`)
 
-    user, err := validator.Unmarshal(jsonData)
+    user, err := vl.Unmarshal(jsonData)
     if err != nil {
         fmt.Printf("Validation error: %v\n", err)
         return
@@ -486,13 +486,13 @@ func main() {
         Username: "ab",
     }
 
-    err = validator.Validate(invalidUser)
+    err = vl.Validate(invalidUser)
     if err != nil {
         fmt.Printf("Validation error: %v\n", err)
     }
 
     // Example 3: Get schema
-    schema := validator.Schema()
+    schema := vl.Schema()
     fmt.Printf("Schema: %+v\n", schema)
 
     // Example 4: Marshal to JSON
@@ -502,7 +502,7 @@ func main() {
         Username: "bob_builder",
     }
 
-    jsonOutput, err := validator.Marshal(validUser)
+    jsonOutput, err := vl.Marshal(validUser)
     if err != nil {
         fmt.Printf("Marshal error: %v\n", err)
         return

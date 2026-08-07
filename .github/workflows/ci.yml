@@ -49,8 +49,8 @@ jobs:
         run: pre-commit run --all-files
 
       - name: Run tests with coverage
-        # pdcore and plugins/web/echo are separate Go modules (the plugin has
-        # its own go.mod with a replace back to pdcore), so there is no single
+        # validator and plugins/web/echo are separate Go modules (the plugin has
+        # its own go.mod with a replace back to validator), so there is no single
         # `make test-ci-cov` target — each module's coverage.out/test-results.xml
         # stays scoped to its own directory and can't be merged by concatenation
         # across the module boundary. Run both explicitly.
@@ -100,9 +100,9 @@ jobs:
 
           with open("test-results-comment.md", "w") as f:
               f.write("## Test Results\n\n")
-              f.write("### pdcore\n")
+              f.write("### validator\n")
               f.write("Core validation library.\n\n")
-              f.write(summarize("pdcore/test-results.xml") + "\n\n")
+              f.write(summarize("validator/test-results.xml") + "\n\n")
               f.write("### plugins/web/echo\n")
               f.write("Echo framework Binder integration.\n\n")
               f.write(summarize("plugins/web/echo/test-results.xml") + "\n")
@@ -118,27 +118,27 @@ jobs:
 
       - name: Generate coverage report
         # The coverage badge/threshold gate (used for the "Update coverage
-        # badge" step below) tracks pdcore only, matching the 90%/96%
-        # thresholds tuned before the pdcore/plugins module split.
+        # badge" step below) tracks validator only, matching the 90%/96%
+        # thresholds tuned before the validator/plugins module split.
         #
-        # The PR comment itself covers BOTH modules: pdcore's table is
+        # The PR comment itself covers BOTH modules: validator's table is
         # generated from the repo root (its module), and the plugin's table
         # is generated with cwd inside plugins/web/echo, since `go tool
         # cover -func` resolves each profile's packages via that package's
-        # OWN module — it can't see plugins/web/echo's packages from pdcore's
+        # OWN module — it can't see plugins/web/echo's packages from validator's
         # module root (nested go.mod dirs aren't part of the parent module's
         # package graph). Both reports are appended into one comment file.
         run: |
           chmod +x .github/scripts/coverage-report.sh
-          .github/scripts/coverage-report.sh pdcore/coverage.out pdcore-coverage-results.md 90 96
+          .github/scripts/coverage-report.sh validator/coverage.out validator-coverage-results.md 90 96
           (cd plugins/web/echo && "$GITHUB_WORKSPACE/.github/scripts/coverage-report.sh" coverage.out "$GITHUB_WORKSPACE/plugin-coverage-results.md" 90 96)
           {
             echo "## Code Coverage"
             echo ""
-            echo "### pdcore"
+            echo "### validator"
             echo "Core validation library."
             echo ""
-            cat pdcore-coverage-results.md
+            cat validator-coverage-results.md
             echo ""
             echo "### plugins/web/echo"
             echo "Echo framework Binder integration."
