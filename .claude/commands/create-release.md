@@ -50,27 +50,37 @@ Ask the user to confirm the version before proceeding.
 
 ### 3. Generate release notes
 
-Format the release notes to match the established project style:
+Do NOT list commits one-per-line. Read every commit since the last tag (subject + body), group them
+by what they mean to a consumer of the library, and write a short prose/bullet summary of the major
+features and bug fixes. Pure tooling/CI/chore/internal-process commits (e.g. lint config, CI workflow
+tweaks, adding this slash command) are still read but generally omitted from the summary unless they
+affect consumers.
+
+Format:
 
 ```
 ## What's Changed
-* <commit subject> by @<author> in <commit-hash-short>
-* <commit subject> by @<author> in <commit-hash-short>
+* <summary of a feature or group of related commits, in your own words> by @<author>
+* <summary of a bug fix> by @<author>
+* ...
 
 **Full Changelog**: https://github.com/SmrutAI/pedantigo/compare/<last-tag>...<new-tag>
 ```
 
-To get author and hash per commit:
+To read the commits to summarize:
 ```bash
-git log <last-tag>..HEAD --format="%h %an %s"
+git log <last-tag>..HEAD --format="%h %an %s%n%b"
 ```
 
-Map GitHub usernames from git author names (for this repo: Tushar Gupta → @tushar2708).
+Map GitHub usernames from git author names (for this repo: Tushar Dwivedi → @tushar2708).
 
-If a commit has an associated PR number in the subject or body, link to the PR instead of the commit hash:
+If a summarized change has an associated PR, link to the PR:
 ```
-* feat(schema): add SchemaLLM by @tushar2708 in https://github.com/SmrutAI/pedantigo/pull/14
+* Added `SchemaLLM` for LLM-friendly JSON schema generation by @tushar2708 in https://github.com/SmrutAI/pedantigo/pull/14
 ```
+
+The `**Full Changelog**` compare link still covers the complete commit range, so no commit is lost —
+only the prose summary is curated, not the underlying diff.
 
 ### 4. Show the user the plan
 
