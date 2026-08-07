@@ -67,11 +67,27 @@ jobs:
           check_name: Test Results
 
       - name: Generate coverage report
-        # Coverage badge/threshold tracks pdcore (the library) only, matching
-        # the 90%/96% thresholds tuned before the pdcore/plugins module split.
+        # The coverage badge/threshold gate (used for the "Update coverage
+        # badge" step below) tracks pdcore only, matching the 90%/96%
+        # thresholds tuned before the pdcore/plugins module split.
+        #
+        # The PR comment itself covers BOTH modules: pdcore's table is
+        # generated from the repo root (its module), and the plugin's table
+        # is generated with cwd inside plugins/web/echo, since `go tool
+        # cover -func` resolves each profile's packages via that package's
+        # OWN module — it can't see plugins/web/echo's packages from pdcore's
+        # module root (nested go.mod dirs aren't part of the parent module's
+        # package graph). Both reports are appended into one comment file.
         run: |
           chmod +x .github/scripts/coverage-report.sh
           .github/scripts/coverage-report.sh pdcore/coverage.out code-coverage-results.md 90 96
+          (cd plugins/web/echo && "$GITHUB_WORKSPACE/.github/scripts/coverage-report.sh" coverage.out "$GITHUB_WORKSPACE/plugin-coverage-results.md" 90 96)
+          {
+            echo ""
+            echo "### plugins/web/echo"
+            echo ""
+            cat plugin-coverage-results.md
+          } >> code-coverage-results.md
 
       - name: Add coverage PR comment
         uses: marocchino/sticky-pull-request-comment@v2
