@@ -5,39 +5,12 @@ import (
 	"errors"
 	"reflect"
 	"strings"
-	"sync"
 
 	"github.com/invopop/jsonschema"
 
 	"github.com/SmrutAI/pedantigo/v2/pdcore/internal/constraints"
 	"github.com/SmrutAI/pedantigo/v2/pdcore/internal/tags"
 )
-
-var (
-	// validatorCache stores cached validators per type.
-	// Stores map[reflect.Type]any (*Validator[T]).
-	validatorCache sync.Map
-)
-
-// getOrCreateValidator returns a cached validator for type T, creating one if needed.
-// This is an internal helper used by the simple API functions.
-// Thread-safe: uses LoadOrStore to ensure only one validator is created per type.
-func getOrCreateValidator[T any]() *Validator[T] {
-	var zero T
-	typ := reflect.TypeOf(zero)
-
-	// Fast path: check if already cached
-	if cached, ok := validatorCache.Load(typ); ok {
-		return cached.(*Validator[T])
-	}
-
-	// Slow path: create new validator
-	validator := New[T]()
-
-	// Atomically store and return the existing value if another goroutine beat us
-	actual, _ := validatorCache.LoadOrStore(typ, validator)
-	return actual.(*Validator[T])
-}
 
 // Unmarshal unmarshals JSON data into a validated struct of type T.
 // It uses a cached validator for type T, creating one if necessary.

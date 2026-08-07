@@ -64,9 +64,67 @@ var (
 	// Stores map[string]string where key is alias name, value is expansion.
 	aliases sync.Map
 
+	// validatorCache stores cached validators per type.
+	// Stores map[reflect.Type]any (*Validator[T]).
+	validatorCache sync.Map
+
 	// tagNameFunc stores the custom tag name resolution function.
 	tagNameFunc atomic.Pointer[TagNameFunc]
 )
+
+// getOrCreateValidator returns a cached validator for type T, creating one if needed.
+// Thread-safe: uses LoadOrStore to ensure only one validator is created per type.
+func getOrCreateValidator[T any]() *Validator[T] {
+	var zero T
+	typ := reflect.TypeOf(zero)
+
+	if cached, ok := validatorCache.Load(typ); ok {
+		return cached.(*Validator[T])
+	}
+
+	validator := New[T]()
+	actual, _ := validatorCache.LoadOrStore(typ, validator) //nolint:not-an-error // LoadOrStore returns bool, not error
+	return actual.(*Validator[T])
+}
+
+// UnmarshalInto unmarshals JSON data into the target using the cached validator
+// for target's type. target must be a non-nil pointer to a struct whose type has
+// been registered via New[T]() (which populates the validator cache).
+//
+// If no validator is cached for target's type, UnmarshalInto panics with a message
+// naming the missing type and the registration call needed.
+//
+// This function enables framework integrations (Echo Binder, Gin middleware) where
+// the target type is known only at runtime via reflect.Type, not at compile time via T.
+//
+// Example:
+//
+//	var _ = pdcore.New[MyRequest]()  // register at init time
+//
+//	// later, at runtime:
+//	var req MyRequest
+//	err := pdcore.UnmarshalInto(jsonBody, &req)
+func UnmarshalInto(data []byte, target any) error {
+	rv := reflect.ValueOf(target)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		panic("pdcore: UnmarshalInto target must be a non-nil pointer")
+	}
+	typ := rv.Elem().Type()
+	cached, ok := validatorCache.Load(typ)
+	if !ok {
+		panic(fmt.Sprintf(
+			"pdcore: no validator registered for type %s.%s. "+
+				"Add: var _ = pdcore.New[%s]()",
+			typ.PkgPath(), typ.Name(), typ.Name()))
+	}
+	return cached.(unmarshalable).unmarshalInto(data, target)
+}
+
+// unmarshalable is a non-generic interface that allows type-erased unmarshal.
+// Implemented by Validator[T] (see validator.go) to enable UnmarshalInto.
+type unmarshalable interface {
+	unmarshalInto(data []byte, target any) error
+}
 
 // Built-in aliases for validator compatibility.
 func init() {

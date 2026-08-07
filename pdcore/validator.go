@@ -1334,3 +1334,15 @@ func (v *Validator[T]) validateContextOnly(ctx context.Context, obj *T) error {
 	}
 	return nil
 }
+
+// unmarshalInto implements the unmarshalable interface for type-erased unmarshal.
+// It calls Unmarshal (which enforces required + defaults + constraints) and copies
+// the result into the target pointer.
+func (v *Validator[T]) unmarshalInto(data []byte, target any) error {
+	result, err := v.Unmarshal(data)
+	if err != nil {
+		return err
+	}
+	*target.(*T) = *result
+	return nil
+}
