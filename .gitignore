@@ -24,6 +24,7 @@ test-results-comment.md
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+others/
 
 # Go workspace file
 go.work
