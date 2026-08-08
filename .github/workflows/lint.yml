@@ -1,0 +1,31 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Install golangci-lint
+        # GOTOOLCHAIN=go1.25.12 matches the Go version upstream's official
+        # v2.12.2 release binaries are built with (see the GOTOOLCHAIN scoping
+        # in the Makefile's lint target), so this build stays equivalent to
+        # the release binary the official installer would have fetched.
+        run: GOTOOLCHAIN=go1.25.12 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
+
+      - name: Run golangci-lint (validator)
+        run: make lint-core
+
+      - name: Run golangci-lint (plugins)
+        run: make lint-plugins
