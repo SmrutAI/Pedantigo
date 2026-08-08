@@ -1,8 +1,8 @@
 # Pedantigo
 
 [![CI](https://github.com/SmrutAI/pedantigo/actions/workflows/ci.yml/badge.svg)](https://github.com/SmrutAI/pedantigo/actions/workflows/ci.yml)
+[![Lint](https://github.com/SmrutAI/pedantigo/actions/workflows/lint.yml/badge.svg)](https://github.com/SmrutAI/pedantigo/actions/workflows/lint.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tushar2708/67408111d1830ed523e2661d9ee2a442/raw/pedantigo-coverage.json)](https://github.com/SmrutAI/pedantigo)
-[![Go Report Card](https://goreportcard.com/badge/github.com/SmrutAI/pedantigo)](https://goreportcard.com/report/github.com/SmrutAI/pedantigo)
 
 Type-safe JSON validation and schema generation for Go.
 
@@ -17,7 +17,7 @@ Type-safe JSON validation and schema generation for Go.
 go get github.com/SmrutAI/pedantigo/v2/validator
 ```
 
-Requires Go 1.21+
+Requires Go 1.21+ ([nuances](contrib-docs/nuances/go_version_behavior.md))
 
 ## Quick Example
 
