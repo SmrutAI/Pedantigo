@@ -149,7 +149,7 @@ func ValidateCreditCard(value any, param string) error {
 
 ### Using Custom Validators in Struct Tags
 
-Once registered, use custom validators in the `pedantigo` struct tag:
+Once registered, use custom validators in the `validate` struct tag:
 
 ```go
 package main
@@ -172,7 +172,7 @@ func main() {
         "phone": "5551234567"
     }`)
 
-    user, err := vl.Unmarshal[User](data)
+    user, err := validator.Unmarshal[User](data)
     if err != nil {
         // Handle validation errors
     }
@@ -267,7 +267,7 @@ type User struct {
 }
 
 func CreateUser(ctx context.Context, data []byte) (*User, error) {
-    user, err := vl.Unmarshal[User](data)
+    user, err := validator.Unmarshal[User](data)
     if err != nil {
         return nil, err
     }
@@ -396,7 +396,7 @@ data := []byte(`{
     "confirm": "NewPass123"
 }`)
 
-change, err := vl.Unmarshal[PasswordChange](data)
+change, err := validator.Unmarshal[PasswordChange](data)
 // Validate() is called automatically after field validation passes
 ```
 
@@ -469,7 +469,7 @@ func main() {
         "discount_percent": 0
     }`)
 
-    order, err := vl.Unmarshal[Order](data)
+    order, err := validator.Unmarshal[Order](data)
     // ValidateOrder is called automatically after field validation
 }
 ```
@@ -735,7 +735,7 @@ func main() {
         "bio": "Software engineer and open source enthusiast"
     }`)
 
-    profile, err := vl.Unmarshal[UserProfile](validData)
+    profile, err := validator.Unmarshal[UserProfile](validData)
     if err == nil {
         fmt.Printf("Profile created: %s\n", profile.Email)
     }
@@ -752,7 +752,7 @@ func main() {
         }
     }`)
 
-    _, err = vl.Unmarshal[UserProfile](invalidData)
+    _, err = validator.Unmarshal[UserProfile](invalidData)
     if err != nil {
         var ve *validator.ValidationError
         if errors.As(err, &ve) {

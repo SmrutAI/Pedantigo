@@ -11,7 +11,7 @@ Integrate Pedantigo with HTTP APIs for request and response validation. This gui
 Pedantigo works with any Go HTTP framework. The pattern is simple:
 
 1. **Read the request body**
-2. **Pass to `vl.Unmarshal[T]`** to parse and validate
+2. **Pass to `validator.Unmarshal[T]`** to parse and validate
 3. **Return validation errors as JSON** if validation fails
 4. **Process the validated data** if validation succeeds
 
@@ -23,7 +23,7 @@ type CreateUserRequest struct {
 }
 
 // Works with any HTTP framework
-user, err := vl.Unmarshal[CreateUserRequest](body)
+user, err := validator.Unmarshal[CreateUserRequest](body)
 if err != nil {
     // Return validation error as JSON
     return
@@ -68,7 +68,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     // Parse and validate
-    req, err := vl.Unmarshal[CreateUserRequest](body)
+    req, err := validator.Unmarshal[CreateUserRequest](body)
     if err != nil {
         w.Header().Set("Content-Type", "application/json")
         w.WriteHeader(http.StatusBadRequest)
@@ -169,7 +169,7 @@ func CreateUserHandler(c *gin.Context) {
     defer c.Request.Body.Close()
 
     // Parse and validate
-    req, err := vl.Unmarshal[CreateUserRequest](body)
+    req, err := validator.Unmarshal[CreateUserRequest](body)
     if err != nil {
         var validationErr *validator.ValidationError
         if errors.As(err, &validationErr) {
@@ -245,7 +245,7 @@ func CreateUserHandler(c echo.Context) error {
     defer c.Request().Body.Close()
 
     // Parse and validate
-    req, err := vl.Unmarshal[CreateUserRequest](body)
+    req, err := validator.Unmarshal[CreateUserRequest](body)
     if err != nil {
         var validationErr *validator.ValidationError
         if errors.As(err, &validationErr) {
@@ -408,7 +408,7 @@ func CreateProductHandler(w http.ResponseWriter, r *http.Request) {
     body, _ := io.ReadAll(r.Body)
     defer r.Body.Close()
 
-    req, err := vl.Unmarshal[CreateProductRequest](body)
+    req, err := validator.Unmarshal[CreateProductRequest](body)
     if err != nil {
         w.WriteHeader(http.StatusBadRequest)
         json.NewEncoder(w).Encode(map[string]any{
@@ -435,7 +435,7 @@ func CreateProductHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     // Validate response before sending
-    if err := vl.Validate(&response); err != nil {
+    if err := validator.Validate(&response); err != nil {
         // Log the error - response construction failed validation
         // This catches bugs in your response building logic
         w.WriteHeader(http.StatusInternalServerError)
@@ -575,7 +575,7 @@ type ErrorResponse struct {
 
 // ValidateRequest unmarshals and validates JSON request body
 func ValidateRequest[T any](w http.ResponseWriter, body []byte) (*T, bool) {
-    data, err := vl.Unmarshal[T](body)
+    data, err := validator.Unmarshal[T](body)
     if err != nil {
         w.Header().Set("Content-Type", "application/json")
         w.WriteHeader(http.StatusBadRequest)
@@ -699,7 +699,7 @@ func CreateProductHandler(w http.ResponseWriter, r *http.Request) {
     body, _ := io.ReadAll(r.Body)
     defer r.Body.Close()
 
-    req, err := vl.Unmarshal[CreateProductRequest](body)
+    req, err := validator.Unmarshal[CreateProductRequest](body)
     if err != nil {
         writeValidationError(w, err)
         return
@@ -719,7 +719,7 @@ func CreateProductHandler(w http.ResponseWriter, r *http.Request) {
         Success: true,
         Data:    product,
     }
-    if err := vl.Validate(&response); err != nil {
+    if err := validator.Validate(&response); err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         return
     }
@@ -744,7 +744,7 @@ func GetAllProductsHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     // Validate response
-    if err := vl.Validate(&response); err != nil {
+    if err := validator.Validate(&response); err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         return
     }
@@ -759,7 +759,7 @@ func UpdateProductHandler(w http.ResponseWriter, r *http.Request) {
     body, _ := io.ReadAll(r.Body)
     defer r.Body.Close()
 
-    req, err := vl.Unmarshal[UpdateProductRequest](body)
+    req, err := validator.Unmarshal[UpdateProductRequest](body)
     if err != nil {
         writeValidationError(w, err)
         return
@@ -824,7 +824,7 @@ func main() {
 
 ## Best Practices
 
-1. **Always use `pedantigo` struct tag (not `validate`)** - This is required for the Simple API
+1. **Always use `validate` struct tag (not `pedantigo`)** - This is required for the Simple API
 2. **Handle validation errors explicitly** - Don't ignore errors; return them to the client
 3. **Validate responses** - Catch bugs in response building before they reach clients
 4. **Organize nested errors** - Group errors by field for better frontend integration

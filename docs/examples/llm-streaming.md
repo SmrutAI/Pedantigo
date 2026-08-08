@@ -214,19 +214,19 @@ func processAgentAction(jsonData []byte) {
     switch action["action"] {
     case "search":
         var searchReq SearchAction
-        if result, errs := vl.Unmarshal[SearchAction](jsonData); errs == nil {
+        if result, errs := validator.Unmarshal[SearchAction](jsonData); errs == nil {
             performSearch(result.Query, result.Limit)
         }
 
     case "calculate":
         var calcReq CalculateAction
-        if result, errs := vl.Unmarshal[CalculateAction](jsonData); errs == nil {
+        if result, errs := validator.Unmarshal[CalculateAction](jsonData); errs == nil {
             computeExpression(result.Expression)
         }
 
     case "respond":
         var respReq RespondAction
-        if result, errs := vl.Unmarshal[RespondAction](jsonData); errs == nil {
+        if result, errs := validator.Unmarshal[RespondAction](jsonData); errs == nil {
             sendResponse(result.Response)
         }
     }
@@ -366,11 +366,11 @@ type LLMResponse struct {
 }
 
 func processLLMOutput(output []byte) {
-    vl := validator.New[LLMResponse](validator.Options{
+    llmResponseValidator := validator.New[LLMResponse](validator.Options{
         ExtraFields: validator.ExtraAllow,  // Capture, don't reject
     })
 
-    response, err := vl.Unmarshal(output)
+    response, err := llmResponseValidator.Unmarshal(output)
     if err != nil {
         log.Printf("Validation failed: %v", err)
         return
@@ -399,7 +399,7 @@ See [ExtraAllow Use Cases](../api/initialization#extra-allow-use-cases) for more
 ## Performance Tips
 
 1. **Reuse Parsers**: Create the parser once and call `Reset()` between streams
-2. **Schema Caching**: `vl.Schema[T]()` is cached after first call (240x faster)
+2. **Schema Caching**: `validator.Schema[T]()` is cached after first call (240x faster)
 3. **Error Context**: `StreamState` provides bytes received and parse attempts for debugging
 4. **Non-Blocking**: `Feed()` returns immediately with incomplete state, don't wait for completion
 
@@ -411,7 +411,7 @@ Use `StreamParser` when:
 - Want to detect malformed JSON early
 - Processing large responses where latency matters
 
-Use Simple API (`vl.Unmarshal`) when:
+Use Simple API (`validator.Unmarshal`) when:
 - You already have complete JSON
 - Parsing from request bodies or files
 - Simplicity is preferred over streaming semantics

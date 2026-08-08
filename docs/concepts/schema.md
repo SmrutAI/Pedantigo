@@ -27,7 +27,7 @@ type User struct {
 
 func main() {
     // Get schema as object
-    schema := vl.Schema[User]()
+    schema := validator.Schema[User]()
 
     // Get schema as JSON bytes
     schemaBytes, _ := validator.SchemaJSON[User]()
@@ -133,7 +133,7 @@ func Schema[T any]() *jsonschema.Schema
 
 **Example**:
 ```go
-schema := vl.Schema[User]()
+schema := validator.Schema[User]()
 fmt.Println("Title:", schema.Title)
 fmt.Println("Required fields:", schema.Required)
 fmt.Println("Properties:", schema.Properties)
@@ -332,17 +332,17 @@ Pedantigo schemas are **automatically cached** with a 240x speedup:
 
 ```go
 // First call: ~10ms
-schema1 := vl.Schema[User]()
+schema1 := validator.Schema[User]()
 
 // Subsequent calls: <100ns (nearly free)
 for i := 0; i < 1000000; i++ {
-    schema := vl.Schema[User]()
+    schema := validator.Schema[User]()
 }
 
 // Different types get separate caches
-schemaUser := vl.Schema[User]()      // ~10ms
-schemaProduct := vl.Schema[Product]() // ~10ms
-schemaOrder := vl.Schema[Order]()    // ~10ms
+schemaUser := validator.Schema[User]()      // ~10ms
+schemaProduct := validator.Schema[Product]() // ~10ms
+schemaOrder := validator.Schema[Order]()    // ~10ms
 ```
 
 ## Constraint Mapping
@@ -410,7 +410,7 @@ All standard formats map to `format` keyword:
 
 ## Schema Metadata Tags
 
-Control schema generation with metadata tags in the `pedantigo` struct tag:
+Control schema generation with metadata tags in the `validate` struct tag:
 
 ### Title
 
@@ -585,7 +585,7 @@ type CreateUserRequest struct {
 }
 
 func main() {
-    schema := vl.Schema[CreateUserRequest]()
+    schema := validator.Schema[CreateUserRequest]()
 
     // Use the schema for API documentation
     fmt.Printf("Title: %s\n", schema.Title)
@@ -669,7 +669,7 @@ type User struct {
     Address Address `json:"address" validate:"required"`
 }
 
-schema := vl.Schema[User]()
+schema := validator.Schema[User]()
 ```
 
 Generated schema (inlined):
@@ -753,7 +753,7 @@ Use generated schema to validate before persisting:
 
 ```go
 // Unmarshal validates against constraints
-user, err := vl.Unmarshal[User](jsonData)
+user, err := validator.Unmarshal[User](jsonData)
 if err != nil {
     return err // All validation done before database
 }
@@ -767,7 +767,7 @@ db.Insert(user)
 Query the schema at runtime:
 
 ```go
-schema := vl.Schema[User]()
+schema := validator.Schema[User]()
 
 // Check which fields are required
 requiredFields := schema.Required
@@ -801,8 +801,8 @@ Both use the same constraints, so they're always in sync:
 
 ```go
 // These use the same constraint definitions:
-schema := vl.Schema[User]()           // For documentation
-user, err := vl.Unmarshal[User](data) // For validation
+schema := validator.Schema[User]()           // For documentation
+user, err := validator.Unmarshal[User](data) // For validation
 ```
 
 No manual schema maintenance needed - change a constraint, both schema and validation update automatically.

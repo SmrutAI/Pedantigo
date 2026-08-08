@@ -314,7 +314,7 @@ func main() {
         "warranty_months": 24
     }`)
 
-    product, err := vl.Unmarshal[ECommerceProduct](productJSON)
+    product, err := validator.Unmarshal[ECommerceProduct](productJSON)
     if err != nil {
         fmt.Printf("Validation failed: %v\n", err)
         return
@@ -336,7 +336,7 @@ func main() {
         "warranty_months": 25
     }`)
 
-    _, err = vl.Unmarshal[ECommerceProduct](invalidJSON)
+    _, err = validator.Unmarshal[ECommerceProduct](invalidJSON)
     if err != nil {
         fmt.Printf("Validation errors:\n%v\n", err)
         // Output will show all numeric constraint violations:

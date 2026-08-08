@@ -47,7 +47,7 @@ jsonData := []byte(`{
     "username": "johndoe"
 }`)
 
-user, err := vl.Unmarshal[User](jsonData)
+user, err := validator.Unmarshal[User](jsonData)
 if err != nil {
     // Handle validation errors
 }
@@ -59,10 +59,10 @@ Use when you have maps, structs, or want maximum flexibility:
 
 ```go
 // From JSON bytes
-user, err := vl.NewModel[User](jsonData)
+user, err := validator.NewModel[User](jsonData)
 
 // From map (great for testing!)
-user, err := vl.NewModel[User](map[string]any{
+user, err := validator.NewModel[User](map[string]any{
     "email":    "user@example.com",
     "age":      25,
     "username": "johndoe",
@@ -70,7 +70,7 @@ user, err := vl.NewModel[User](map[string]any{
 
 // From existing struct (validates and returns copy)
 existingUser := User{Email: "test@example.com", Age: 25, Username: "test"}
-user, err := vl.NewModel[User](existingUser)
+user, err := validator.NewModel[User](existingUser)
 ```
 
 :::info When to Use Each
@@ -96,16 +96,16 @@ func main() {
     // Global functions with automatic caching - no setup needed
 
     // Unmarshal and validate JSON
-    user, err := vl.Unmarshal[User](jsonData)
+    user, err := validator.Unmarshal[User](jsonData)
 
     // Create from any input
-    user, err := vl.NewModel[User](inputData)
+    user, err := validator.NewModel[User](inputData)
 
     // Get JSON Schema
-    schema := vl.Schema[User]()
+    schema := validator.Schema[User]()
 
     // Validate existing struct
-    errs := vl.Validate(user)
+    errs := validator.Validate(user)
 }
 ```
 
@@ -121,15 +121,15 @@ import "github.com/SmrutAI/pedantigo/v2/validator"
 
 func main() {
     // Explicit validator for custom options
-    vl := validator.New[User](validator.Options{
+    userValidator := validator.New[User](validator.Options{
         StrictMissingFields: true,
         ExtraFields:         validator.ExtraForbid,
     })
 
     // Use validator methods
-    user, err := vl.Unmarshal(jsonData)
-    schema := vl.Schema()
-    errs := vl.Validate(&user)
+    user, err := userValidator.Unmarshal(jsonData)
+    schema := userValidator.Schema()
+    errs := userValidator.Validate(user)
 }
 ```
 
@@ -151,7 +151,7 @@ See [Initialization & Configuration](../api/initialization) for all initializati
 Pedantigo returns detailed validation errors with field paths:
 
 ```go
-user, err := vl.Unmarshal[User](jsonData)
+user, err := validator.Unmarshal[User](jsonData)
 if err != nil {
     if validationErr, ok := err.(*validator.ValidationError); ok {
         // Get all validation errors
@@ -222,7 +222,7 @@ func main() {
         "role": "user"
     }`)
 
-    user, err := vl.Unmarshal[User](jsonData)
+    user, err := validator.Unmarshal[User](jsonData)
     if err != nil {
         log.Fatalf("Validation failed: %v", err)
     }
@@ -236,14 +236,14 @@ func main() {
         "role":     "admin",
     }
 
-    user2, err := vl.NewModel[User](userData)
+    user2, err := validator.NewModel[User](userData)
     if err != nil {
         log.Fatalf("Validation failed: %v", err)
     }
     fmt.Printf("Valid user: %+v\n", user2)
 
     // Example 3: Get JSON Schema
-    schema := vl.Schema[User]()
+    schema := validator.Schema[User]()
     schemaJSON, _ := json.MarshalIndent(schema, "", "  ")
     fmt.Printf("JSON Schema:\n%s\n", schemaJSON)
 }

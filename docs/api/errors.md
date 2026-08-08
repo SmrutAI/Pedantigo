@@ -73,7 +73,7 @@ type User struct {
     Email string `json:"email" validate:"required,email"`
 }
 
-_, err := vl.Unmarshal[User]([]byte(`{"email": "not-valid"}`))
+_, err := validator.Unmarshal[User]([]byte(`{"email": "not-valid"}`))
 fmt.Println(err)
 // Output: email: must be a valid email address
 ```
@@ -86,7 +86,7 @@ type User struct {
     Age   int    `json:"age" validate:"min=18"`
 }
 
-_, err := vl.Unmarshal[User]([]byte(`{"email": "bad", "age": 5}`))
+_, err := validator.Unmarshal[User]([]byte(`{"email": "bad", "age": 5}`))
 fmt.Println(err)
 // Output: email: must be a valid email address (and 1 more errors)
 ```
@@ -108,7 +108,7 @@ if ve, ok := err.(*validator.ValidationError); ok {
 
 ```go
 func handleRequest(w http.ResponseWriter, r *http.Request) {
-    user, err := vl.Unmarshal[User](body)
+    user, err := validator.Unmarshal[User](body)
     if err != nil {
         var ve *validator.ValidationError
         if errors.As(err, &ve) {
@@ -157,7 +157,7 @@ The `Field` string describes the location of the error:
 Check if an error is a validation error using type assertion:
 
 ```go
-user, err := vl.Unmarshal[User](jsonData)
+user, err := validator.Unmarshal[User](jsonData)
 if err != nil {
     if validationErr, ok := err.(*validator.ValidationError); ok {
         // Handle validation errors
@@ -181,7 +181,7 @@ import (
     "github.com/SmrutAI/pedantigo/v2/validator"
 )
 
-user, err := vl.Unmarshal[User](jsonData)
+user, err := validator.Unmarshal[User](jsonData)
 if err != nil {
     var validationErr *validator.ValidationError
     if errors.As(err, &validationErr) {
@@ -205,7 +205,7 @@ type User struct {
     Username string `json:"username" validate:"required,min=3,max=20"`
 }
 
-user, err := vl.Unmarshal[User](jsonData)
+user, err := validator.Unmarshal[User](jsonData)
 if err != nil {
     var validationErr *validator.ValidationError
     if errors.As(err, &validationErr) {
@@ -342,7 +342,7 @@ func main() {
         }
     }`)
 
-    user, err := vl.Unmarshal[User](jsonData)
+    user, err := validator.Unmarshal[User](jsonData)
     if err != nil {
         handleValidationError(err)
         return
@@ -359,11 +359,11 @@ Pedantigo can also return non-validation errors in certain cases:
 
 ```go
 // JSON syntax error
-_, err := vl.Unmarshal[User]([]byte(`{invalid json}`))
+_, err := validator.Unmarshal[User]([]byte(`{invalid json}`))
 // err will be a json.SyntaxError (not ValidationError)
 
 // Type mismatch (if type conversion fails)
-_, err := vl.Unmarshal[User]([]byte(`{"age": "not a number"}`))
+_, err := validator.Unmarshal[User]([]byte(`{"age": "not a number"}`))
 // err will be a json.UnmarshalTypeError (not ValidationError)
 ```
 
@@ -376,7 +376,7 @@ Always check the actual error type before assuming it's a `ValidationError`.
 Returns both validation errors and JSON parsing errors:
 
 ```go
-user, err := vl.Unmarshal[User](jsonData)
+user, err := validator.Unmarshal[User](jsonData)
 if err != nil {
     // Could be ValidationError, json.SyntaxError, or json.UnmarshalTypeError
 }
@@ -387,7 +387,7 @@ if err != nil {
 Returns only validation errors:
 
 ```go
-err := vl.Validate(user)
+err := validator.Validate(user)
 if err != nil {
     // Always a ValidationError (if non-nil)
     var validationErr *validator.ValidationError
@@ -400,7 +400,7 @@ if err != nil {
 Returns both validation errors and type conversion errors:
 
 ```go
-user, err := vl.NewModel[User](data)
+user, err := validator.NewModel[User](data)
 if err != nil {
     // Could be ValidationError or type conversion error
 }
@@ -420,7 +420,7 @@ func handleUserCreation(w http.ResponseWriter, r *http.Request) {
     var jsonData []byte
     // ... read request body into jsonData ...
 
-    user, err := vl.Unmarshal[User](jsonData)
+    user, err := validator.Unmarshal[User](jsonData)
     if err != nil {
         var validationErr *validator.ValidationError
         if errors.As(err, &validationErr) {

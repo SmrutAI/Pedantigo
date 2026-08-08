@@ -25,10 +25,10 @@ types once, at startup, with `validator.Register(validator.New[T]())`.
 
 ## Categories
 
-- **[Web Frameworks](/plugins/web)** — HTTP framework integrations (Echo
+- **[Web Frameworks](./web/echo)** — HTTP framework integrations (Echo
   available today).
-- **[RPC](/plugins/rpc)** — coming soon.
-- **[LLM](/plugins/llm)** — coming soon.
+- **[RPC](./rpc)** — coming soon.
+- **[LLM](./llm)** — coming soon.
 
 ## Roadmap
 

@@ -23,30 +23,30 @@ The default struct tag (and `TagName`/`SetTagName` default, described below) cha
 
 ## Simple API {#simple-api}
 
-Global functions with automatic caching. Uses [DefaultValidatorOptions()](#default-options).
+Global functions with automatic caching. Uses [DefaultOptions()](#default-options).
 
 | Function                                     | Description                      |
 |----------------------------------------------|----------------------------------|
-| `vl.Unmarshal[T](data)`               | Unmarshal JSON and validate      |
-| `vl.Validate[T](obj)`                 | Validate existing struct         |
-| `vl.NewModel[T](input)`               | Create from map/struct           |
-| `vl.Schema[T]()`                      | Get JSON Schema                  |
+| `validator.Unmarshal[T](data)`               | Unmarshal JSON and validate      |
+| `validator.Validate[T](obj)`                 | Validate existing struct         |
+| `validator.NewModel[T](input)`               | Create from map/struct           |
+| `validator.Schema[T]()`                      | Get JSON Schema                  |
 | `validator.SchemaJSON[T]()`                  | Get JSON Schema as bytes         |
 | `validator.SchemaLLM[T]()`                   | Get JSON Schema for LLM APIs (no `$schema` or `$id`) |
 | `validator.SchemaJSONLLM[T]()`               | LLM schema as bytes (no `$schema` or `$id`) |
 | `validator.SchemaOpenAPI[T]()`               | Get OpenAPI 3.1 component schema |
 | `validator.SchemaJSONOpenAPI[T]()`           | OpenAPI 3.1 schema as bytes      |
-| `vl.Marshal[T](obj)`                  | Marshal struct to JSON           |
+| `validator.Marshal[T](obj)`                  | Marshal struct to JSON           |
 | `validator.MarshalWithOptions[T](obj, opts)` | Marshal with options             |
 | `validator.Dict[T](obj)`                     | Convert to map[string]any        |
 
 ```go
 // Simple API: automatic defaults, global caching
-user, err := vl.Unmarshal[User](jsonData)
+user, err := validator.Unmarshal[User](jsonData)
 
 // Equivalent to:
-vl := validator.New[User](validator.DefaultValidatorOptions())
-user, err := vl.Unmarshal(jsonData)
+userValidator := validator.New[User](validator.DefaultOptions())
+user, err := userValidator.Unmarshal(jsonData)
 ```
 
 See [Simple API Reference](/docs/api/simple-api) for detailed examples.
@@ -83,17 +83,17 @@ Explicit validator instances with [custom options](#validator-options).
 
 ```go
 // Create validator with custom options
-vl := validator.New[User](validator.Options{
+userValidator := validator.New[User](validator.Options{
 StrictMissingFields: true,
 ExtraFields:         validator.ExtraForbid,
 })
 
 // Reuse the same validator multiple times
-user1, err := vl.Unmarshal(data1)
-user2, err := vl.Unmarshal(data2)
+user1, err := userValidator.Unmarshal(data1)
+user2, err := userValidator.Unmarshal(data2)
 
 // Schema is cached, so subsequent calls are very fast
-schema := vl.Schema()
+schema := userValidator.Schema()
 ```
 
 Use the Validator API when you need:
@@ -176,7 +176,7 @@ TagName string
 The default options are optimized for safety and strictness:
 
 ```go
-validator.DefaultValidatorOptions()
+validator.DefaultOptions()
 // Returns: Options{
 //     StrictMissingFields: true,
 //     ExtraFields:         ExtraIgnore,
@@ -201,11 +201,11 @@ Port int    `json:"port"` // No default
 }
 
 jsonData := []byte(`{"host":"localhost"}`)
-vl := validator.New[Config](validator.Options{
+configValidator := validator.New[Config](validator.Options{
 StrictMissingFields: true,
 })
 
-config, err := vl.Unmarshal(jsonData)
+config, err := configValidator.Unmarshal(jsonData)
 // Error: port field is missing and has no default
 ```
 
@@ -226,11 +226,11 @@ Port int    `json:"port"` // Zero value: 0
 }
 
 jsonData := []byte(`{"host":"localhost"}`)
-vl := validator.New[Config](validator.Options{
+configValidator := validator.New[Config](validator.Options{
 StrictMissingFields: false,
 })
 
-config, err := vl.Unmarshal(jsonData)
+config, err := configValidator.Unmarshal(jsonData)
 // Success: Port is set to 0 (zero value)
 fmt.Println(config.Port) // Output: 0
 ```
@@ -287,7 +287,7 @@ See [Schema Generation](/docs/concepts/schema) to understand how these tags affe
 ### `omitempty` as a Pedantigo Validation Constraint {#pedantigo-omitempty}
 
 In addition to Go's `json:",omitempty"` marshaling tag, Pedantigo supports `omitempty` as a **validation constraint** in
-the pedantigo struct tag itself.
+the `validate` struct tag itself.
 
 ```go
 type SearchRequest struct {
@@ -363,11 +363,11 @@ jsonData := []byte(`{
     "phone": "555-1234"
 }`)
 
-vl := validator.New[User](validator.Options{
+userValidator := validator.New[User](validator.Options{
 ExtraFields: validator.ExtraIgnore,
 })
 
-user, err := vl.Unmarshal(jsonData)
+user, err := userValidator.Unmarshal(jsonData)
 // Success: age and phone fields are ignored
 ```
 
@@ -393,11 +393,11 @@ jsonData := []byte(`{
     "age": 30
 }`)
 
-vl := validator.New[User](validator.Options{
+userValidator := validator.New[User](validator.Options{
 ExtraFields: validator.ExtraForbid,
 })
 
-user, err := vl.Unmarshal(jsonData)
+user, err := userValidator.Unmarshal(jsonData)
 // Error: unknown field "age" in JSON
 var validationErr *validator.ValidationError
 if errors.As(err, &validationErr) {
@@ -430,11 +430,11 @@ jsonData := []byte(`{
     "phone": "555-1234"
 }`)
 
-vl := validator.New[User](validator.Options{
+userValidator := validator.New[User](validator.Options{
 ExtraFields: validator.ExtraAllow,
 })
 
-user, err := vl.Unmarshal(jsonData)
+user, err := userValidator.Unmarshal(jsonData)
 // Success: unknown fields are captured
 fmt.Println(user.Extras["age"]) // Output: 30
 fmt.Println(user.Extras["phone"]) // Output: 555-1234
@@ -489,10 +489,14 @@ still requires the field when `ExtraAllow` is set).
 Extra fields are preserved during marshaling:
 
 ```go
-user, _ := vl.Unmarshal(jsonData)
+userValidator := validator.New[User](validator.Options{
+ExtraFields: validator.ExtraAllow,
+})
+
+user, _ := userValidator.Unmarshal(jsonData)
 // user.Extras contains captured extras
 
-roundTripJSON, _ := vl.Marshal(user)
+roundTripJSON, _ := userValidator.Marshal(user)
 // roundTripJSON includes both struct fields AND extras
 ```
 
@@ -518,11 +522,11 @@ Extras map[string]any `json:"-" validate:"extra_fields"`
 
 // Accept requests from V2 clients that include "profile_picture", "preferences", etc.
 // These are captured in Extras for logging/forwarding without breaking V1 logic.
-vl := validator.New[UserV1](validator.Options{
+userV1Validator := validator.New[UserV1](validator.Options{
 ExtraFields: validator.ExtraAllow,
 })
 
-user, _ := vl.Unmarshal(requestBody)
+user, _ := userV1Validator.Unmarshal(requestBody)
 if len(user.Extras) > 0 {
 log.Printf("Client sent unknown fields: %v", maps.Keys(user.Extras))
 // Forward to downstream service that may understand these fields
@@ -549,12 +553,12 @@ Confidence float64        `json:"confidence"`
 Extras     map[string]any `json:"-" validate:"extra_fields"`
 }
 
-vl := validator.New[LLMResponse](validator.Options{
+llmResponseValidator := validator.New[LLMResponse](validator.Options{
 ExtraFields: validator.ExtraAllow,
 })
 
 // Parse LLM output
-response, err := vl.Unmarshal(llmOutput)
+response, err := llmResponseValidator.Unmarshal(llmOutput)
 if err != nil {
 // Handle validation error (missing required fields, etc.)
 }
@@ -591,7 +595,7 @@ Override the struct tag name for a specific validator instance.
 
 ```go
 // Use go-playground/validator style tags
-vl := validator.New[User](validator.Options{
+userValidator := validator.New[User](validator.Options{
 TagName: "validate",
 })
 
@@ -650,7 +654,7 @@ ExtraFields:         validator.ExtraIgnore,
 ### Balanced (Default)
 
 ```go
-validator.DefaultValidatorOptions()
+validator.DefaultOptions()
 // StrictMissingFields: true
 // ExtraFields:         ExtraIgnore
 // Best for: General-purpose APIs, good balance of safety and flexibility

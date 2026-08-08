@@ -9,7 +9,7 @@ import TabItem from '@theme/TabItem';
 # Welcome to Pedantigo
 
 :::note v2: default tag changed to `validate`
-This is v2 documentation. The default struct tag changed from `pedantigo` to `validate` — no other behavior changed. If you're upgrading from v1, read the [migration guide](./migration/v1-to-v2) first.
+This is v2 documentation. The default struct tag changed from `pedantigo` to `validate`, and v2 adds a new [plugin system](./plugins) (framework integrations like the [Echo Binder](./plugins/web/echo)) — everything else is unchanged. If you're upgrading from v1, read the [migration guide](./migration/v1-to-v2) first.
 
 **New to Pedantigo? Start here with v2.** v1 is maintained only for existing users and receives no new features — all new development happens in v2.
 :::
@@ -17,6 +17,8 @@ This is v2 documentation. The default struct tag changed from `pedantigo` to `va
 **Type-safe JSON validation for Go, inspired by Pydantic**
 
 Pedantigo brings Pydantic's elegant validation patterns to Go with a reflection-based design that feels natural in the Go ecosystem.
+
+<p style={{fontSize: '1.25rem'}}>[Check out how pedantigo is so fast, and how to make the best out of it](./advanced/performance)</p>
 
 ## Why Pedantigo?
 
@@ -49,7 +51,7 @@ func main() {
     jsonData := []byte(`{"email": "user@example.com", "age": 25, "role": "admin"}`)
 
     // Parse, validate, and unmarshal in one call
-    user, err := vl.Unmarshal[User](jsonData)
+    user, err := validator.Unmarshal[User](jsonData)
     if err != nil {
         fmt.Println("Validation failed:", err)
         return
@@ -70,16 +72,16 @@ Pedantigo offers two API styles to match your use case:
 
 ```go
 // Parse JSON + validate
-user, err := vl.Unmarshal[User](jsonData)
+user, err := validator.Unmarshal[User](jsonData)
 
 // Create from JSON/map/struct with validation
-user, err := vl.NewModel[User](input)
+user, err := validator.NewModel[User](input)
 
 // Validate existing struct
-err := vl.Validate[User](existingUser)
+err := validator.Validate(&existingUser)
 
 // Get cached JSON Schema
-schema := vl.Schema[User]()
+schema := validator.Schema[User]()
 ```
 
 The Simple API uses a global schema cache that's automatically managed. Perfect for typical validation workflows.
@@ -91,11 +93,11 @@ The Simple API uses a global schema cache that's automatically managed. Perfect 
 
 ```go
 // Create validator instance
-vl := validator.New[User]()
+userValidator := validator.New[User]()
 
 // Use validator methods
-user, err := vl.Unmarshal(jsonData)
-schema := validator.JSONSchema()
+user, err := userValidator.Unmarshal(jsonData)
+schema := userValidator.Schema()
 ```
 
 Use the Validator API when you need:

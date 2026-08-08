@@ -42,7 +42,7 @@ go get github.com/SmrutAI/pedantigo/v2/validator
 
 **New projects must start with v2.** v1 (`v1.1.4` and earlier) remains available and frozen at its last tag purely for existing users already depending on it — no further v1.x.x patches or features are planned, and all new feature development happens in v2 only. There is no forced upgrade timeline for existing v1 users; move to v2 when ready.
 
-All of v2's code lives in the `validator` sub-package (`github.com/SmrutAI/pedantigo/v2/validator`, package qualifier `validator`) — never at the bare `github.com/SmrutAI/pedantigo/v2` path. This keeps the core validation library free of any framework dependency; optional framework integrations (like the [Echo Binder](/plugins/web/echo)) live in their own separately-versioned modules under `plugins/`. Do NOT use import aliases — use `validator` directly.
+All of v2's code lives in the `validator` sub-package (`github.com/SmrutAI/pedantigo/v2/validator`, package qualifier `validator`) — never at the bare `github.com/SmrutAI/pedantigo/v2` path. This keeps the core validation library free of any framework dependency; optional framework integrations (like the [Echo Binder](../plugins/web/echo)) live in their own separately-versioned modules under `plugins/`.
 
 ---
 
@@ -92,7 +92,7 @@ Option A is the better long-term choice — it gets you the tooling compatibilit
 
 ## Everything else is unchanged
 
-Constraint syntax, the Simple API (`vl.Unmarshal`, `vl.Validate`), the Core API (`validator.New[T]()`), schema generation, and custom validator registration all work exactly as they did in v1 — just under the `validator` package name.
+Constraint syntax, the Simple API (`validator.Unmarshal`, `validator.Validate`), the Core API (`validator.New[T]()`), schema generation, and custom validator registration all work exactly as they did in v1 — just under the `validator` package name.
 
 ---
 
@@ -114,4 +114,4 @@ var _ = validator.Register(validator.New[MyRequest]())
 
 ### Echo Binder plugin
 
-A plugin at `github.com/SmrutAI/pedantigo/v2/plugins/web/echo` replaces Echo's `DefaultBinder` with one that calls `validator.UnmarshalInto` on POST/PUT/PATCH bodies, so `c.Bind()` validates automatically. See [Echo Binder Plugin](/plugins/web/echo) for full details.
+A plugin at `github.com/SmrutAI/pedantigo/v2/plugins/web/echo` replaces Echo's `DefaultBinder` with one that calls `validator.UnmarshalInto` on POST/PUT/PATCH bodies, so `c.Bind()` validates automatically. See [Echo Binder Plugin](../plugins/web/echo) for full details.

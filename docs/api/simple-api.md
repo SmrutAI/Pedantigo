@@ -12,15 +12,14 @@ The Simple API provides zero-setup validation through automatic caching. Call an
 
 ```go
 // No setup needed - just call the function
-user, err := vl.Unmarshal[User](jsonData)
-schema := vl.Schema[User]()
-err := vl.Validate(user)
+user, err := validator.Unmarshal[User](jsonData)
+schema := validator.Schema[User]()
+err = validator.Validate(&user)
 ```
 
-All functions use `sync.Map` to cache validators per type:
-- **First call**: Creates validator, generates schema (~10ms)
-- **Subsequent calls**: Returns from cache (under 100ns, 240x faster)
-- **Thread-safe**: Concurrent goroutines safely share the cache
+All functions use `sync.Map` to cache validators per type — see [Performance
+Optimization](../advanced/performance.md) for the measured cost of the first call vs. cached calls. Concurrent
+goroutines safely share the cache.
 
 See [Initialization & Configuration](./initialization) for comparison with other APIs and custom options.
 
@@ -47,7 +46,7 @@ type User struct {
 }
 
 data := []byte(`{"name":"Alice","email":"alice@example.com","age":25}`)
-user, err := vl.Unmarshal[User](data)
+user, err := validator.Unmarshal[User](data)
 if err != nil {
     // Handle validation errors
     log.Printf("Validation failed: %v", err)
@@ -106,7 +105,7 @@ config := &Config{
     Port: 8080,
 }
 
-if err := vl.Validate(config); err != nil {
+if err := validator.Validate(config); err != nil {
     log.Printf("Config invalid: %v", err)
     return
 }
@@ -138,12 +137,12 @@ type User struct {
     Age   int    `json:"age" validate:"min=18"`
 }
 
-user, err := vl.NewModel[User]([]byte(`{"email":"bob@example.com","age":30}`))
+user, err := validator.NewModel[User]([]byte(`{"email":"bob@example.com","age":30}`))
 ```
 
 **Example - From Map (kwargs)**:
 ```go
-user, err := vl.NewModel[User](map[string]any{
+user, err := validator.NewModel[User](map[string]any{
     "email": "charlie@example.com",
     "age":   25,
 })
@@ -152,7 +151,7 @@ user, err := vl.NewModel[User](map[string]any{
 **Example - From Struct**:
 ```go
 existing := User{Email: "david@example.com", Age: 35}
-user, err := vl.NewModel[User](existing) // Validates and returns pointer
+user, err := validator.NewModel[User](existing) // Validates and returns pointer
 ```
 
 ---
@@ -176,7 +175,7 @@ type Product struct {
     Price float64 `json:"price" validate:"min=0"`
 }
 
-schema := vl.Schema[Product]()
+schema := validator.Schema[Product]()
 
 // Use the schema object
 fmt.Println("Product schema title:", schema.Title)
@@ -330,7 +329,7 @@ user := &User{
     Age:   28,
 }
 
-jsonData, err := vl.Marshal(user)
+jsonData, err := validator.Marshal(user)
 if err != nil {
     log.Printf("Marshal failed: %v", err)
     return
@@ -450,32 +449,14 @@ if dict["age"].(int) >= 18 {
 
 ## Performance Characteristics
 
-All Simple API functions benefit from automatic caching:
-
-| Operation | Time | Notes |
-|-----------|------|-------|
-| First call (validator creation) | ~10ms | Includes tag parsing and reflection |
-| Schema generation (first call) | ~10ms | Reflection-based generation |
-| Schema generation (cached) | ~100ns | 240x faster with cache |
-| Validation (cached) | ~500ns | Per-struct validation |
-| Unmarshal (cached) | ~2-5µs | JSON parsing + validation |
-
-**Example benchmark**:
-```go
-// First call: ~10-15ms
-schema1 := vl.Schema[User]()
-
-// Subsequent calls: <100ns
-for i := 0; i < 1000000; i++ {
-    schema := vl.Schema[User]() // Nearly free
-}
-```
+All Simple API functions benefit from automatic caching — see [Performance
+Optimization](../advanced/performance.md) for verified benchmark numbers and how the caching works.
 
 ---
 
 ## Struct Tags
 
-Use the `pedantigo` struct tag (not `validate`) for Simple API:
+Use the `validate` struct tag for Simple API:
 
 ```go
 type User struct {
@@ -528,12 +509,12 @@ The Simple API covers 80% of use cases. Use the [Validator API](./validator.md) 
 
 ```go
 // Simple API (80% of cases)
-user, err := vl.Unmarshal[User](data)
+user, err := validator.Unmarshal[User](data)
 
 // Validator API (advanced cases)
-vl := validator.New[User]()
-user, err := vl.Unmarshal(data)
-schema := vl.Schema()
+userValidator := validator.New[User]()
+user, err := userValidator.Unmarshal(data)
+schema := userValidator.Schema()
 // ... customize schema ...
 ```
 
@@ -554,7 +535,7 @@ validation error: field "age": constraint "min" failed (minimum: 18, actual: 10)
 
 Handle errors appropriately:
 ```go
-user, err := vl.Unmarshal[User](data)
+user, err := validator.Unmarshal[User](data)
 if err != nil {
     // Log the error
     log.Errorf("Validation failed: %v", err)
@@ -578,7 +559,7 @@ for i := 0; i < 100; i++ {
     wg.Add(1)
     go func() {
         defer wg.Done()
-        user, err := vl.Unmarshal[User](data)
+        user, err := validator.Unmarshal[User](data)
         // ...
     }()
 }

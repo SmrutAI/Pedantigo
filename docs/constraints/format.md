@@ -944,7 +944,7 @@ func main() {
         "jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
     }`)
 
-    user, err := vl.Unmarshal[UserAccount](userJSON)
+    user, err := validator.Unmarshal[UserAccount](userJSON)
     if err != nil {
         fmt.Printf("User validation failed: %v\n", err)
         return
@@ -968,7 +968,7 @@ func main() {
         "version": "1.2.3"
     }`)
 
-    company, err := vl.Unmarshal[CompanyInfo](companyJSON)
+    company, err := validator.Unmarshal[CompanyInfo](companyJSON)
     if err != nil {
         fmt.Printf("Company validation failed: %v\n", err)
         return

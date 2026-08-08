@@ -58,10 +58,10 @@ type MessageContent struct {
 }
 
 // Create a validator with custom configuration
-vl := validator.New[MessageContent]()
+messageContentValidator := validator.New[MessageContent]()
 
 // Pass it to the stream parser
-parser := validator.NewStreamParserWithValidator[MessageContent](validator)
+parser := validator.NewStreamParserWithValidator[MessageContent](messageContentValidator)
 ```
 
 ## Feeding Chunks
@@ -419,7 +419,7 @@ if state.BytesReceived > maxStreamSize {
 
 ## Key Differences from Unmarshal
 
-`StreamParser` differs from `vl.Unmarshal()` in important ways:
+`StreamParser` differs from `Validator.Unmarshal()` in important ways:
 
 | Aspect | Unmarshal | StreamParser |
 |--------|-----------|--------------|

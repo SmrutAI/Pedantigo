@@ -25,7 +25,7 @@ This means **all validation errors are collected at once** - you don't get just 
 
 ## Using Struct Tags
 
-Validation is controlled with the `pedantigo` struct tag:
+Validation is controlled with the `validate` struct tag:
 
 ```go
 type User struct {
@@ -58,7 +58,7 @@ type User struct {
 }
 
 jsonData := []byte(`{"email":"alice@example.com","age":25}`)
-user, err := vl.Unmarshal[User](jsonData)
+user, err := validator.Unmarshal[User](jsonData)
 if err != nil {
     // Handle validation errors
     var ve *validator.ValidationError
@@ -74,7 +74,7 @@ if err != nil {
 
 #### Validate Existing Structs
 
-For structs created manually (not from JSON), use `vl.Validate()`:
+For structs created manually (not from JSON), use `validator.Validate()`:
 
 ```go
 user := &User{
@@ -82,7 +82,7 @@ user := &User{
     Age:   30,
 }
 
-if err := vl.Validate(user); err != nil {
+if err := validator.Validate(user); err != nil {
     // Handle validation errors
 }
 ```
@@ -95,11 +95,11 @@ userMap := map[string]any{
     "email": "charlie@example.com",
     "age":   35,
 }
-user, err := vl.NewModel[User](userMap)
+user, err := validator.NewModel[User](userMap)
 
 // From a struct
 user2 := User{Email: "dave@example.com", Age: 40}
-user3, err := vl.NewModel[User](user2)
+user3, err := validator.NewModel[User](user2)
 ```
 
 ### Advanced: Validator Object API
@@ -108,16 +108,16 @@ For advanced features or performance-critical code that creates validators once:
 
 ```go
 // Create once, reuse many times
-vl := validator.New[User]()
+userValidator := validator.New[User]()
 
 // Unmarshal with this validator
-user, err := vl.Unmarshal(jsonData)
+user, err := userValidator.Unmarshal(jsonData)
 
 // Get cached schema
-schema := vl.Schema()
+schema := userValidator.Schema()
 
 // Validate existing structs
-err = validator.ValidateValue(user)
+err = userValidator.Validate(user)
 ```
 
 ## Understanding `required`
@@ -146,15 +146,15 @@ type Config struct {
 }
 
 // This passes (Unmarshal): JSON key is present
-config, _ := vl.Unmarshal[Config]([]byte(`{"apiKey":""}`))
+config, _ := validator.Unmarshal[Config]([]byte(`{"apiKey":""}`))
 
 // This fails (Unmarshal): JSON key is missing
-config, err := vl.Unmarshal[Config]([]byte(`{}`))
+config, err := validator.Unmarshal[Config]([]byte(`{}`))
 // Error: APIKey is required
 
 // This passes (Validate): required not checked on existing struct
 config := &Config{APIKey: ""}
-vl.Validate(config) // No error for empty string
+validator.Validate(config) // No error for empty string
 ```
 
 ## Field-Level vs Cross-Field Validation
@@ -217,7 +217,7 @@ jsonData := []byte(`{
     "name": "A"
 }`)
 
-user, err := vl.Unmarshal[User](jsonData)
+user, err := validator.Unmarshal[User](jsonData)
 // err contains 4 validation errors:
 // - email: invalid email format
 // - email: must be at most 100 characters

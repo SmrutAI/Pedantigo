@@ -73,7 +73,7 @@ type Config struct {
 ### Accessing the Value
 
 ```go
-config, err := vl.Unmarshal[Config](jsonData)
+config, err := validator.Unmarshal[Config](jsonData)
 if err != nil {
     return err
 }
@@ -115,7 +115,7 @@ config := &Config{
 }
 
 // Marshal for API response
-jsonData, err := vl.Marshal(config)
+jsonData, err := validator.Marshal(config)
 if err != nil {
     return err
 }
@@ -160,7 +160,7 @@ func main() {
         "app_name": "MyApp"
     }`)
 
-    config, err := vl.Unmarshal[AppConfig](jsonInput)
+    config, err := validator.Unmarshal[AppConfig](jsonInput)
     if err != nil {
         log.Fatalf("Failed to load config: %v", err)
     }
@@ -178,7 +178,7 @@ func main() {
     setupExternalAPI(apiKey)
 
     // 4. Marshal back to JSON - secrets are masked
-    response, _ := vl.Marshal(config)
+    response, _ := validator.Marshal(config)
     fmt.Println(string(response))
     // Output: {"database_url":"**********","external_api_key":"**********","app_name":"MyApp"}
 
@@ -240,13 +240,13 @@ jsonInput := []byte(`{
     "encryption_key": "aGVsbG8gd29ybGQ="  // base64 for "hello world"
 }`)
 
-config, _ := vl.Unmarshal[EncryptionConfig](jsonInput)
+config, _ := validator.Unmarshal[EncryptionConfig](jsonInput)
 
 // Access actual bytes
 key := config.EncryptionKey.Value()  // []byte("hello world")
 
 // Marshal back to JSON - masked
-output, _ := vl.Marshal(config)
+output, _ := validator.Marshal(config)
 // {"encryption_key":"**********"}
 ```
 
@@ -291,7 +291,7 @@ func main() {
     }`, encKeyB64, hmacKeyB64))
 
     // Load config
-    config, err := vl.Unmarshal[SecurityConfig](jsonInput)
+    config, err := validator.Unmarshal[SecurityConfig](jsonInput)
     if err != nil {
         fmt.Printf("Failed to load security config: %v\n", err)
         return
@@ -312,7 +312,7 @@ func main() {
     fmt.Printf("Encrypted data: %s\n", base64.StdEncoding.EncodeToString(ciphertext))
 
     // 3. Marshal config - keys are masked
-    output, _ := vl.Marshal(config)
+    output, _ := validator.Marshal(config)
     // Safe to store or transmit: {"encryption_key":"**********","hmac_key":"**********","level":"high"}
 }
 ```
@@ -368,7 +368,7 @@ func main() {
     }`)
 
     // Parse and validate
-    config, err := vl.Unmarshal[ServerConfig](configJSON)
+    config, err := validator.Unmarshal[ServerConfig](configJSON)
     if err != nil {
         log.Fatalf("Invalid config: %v", err)
     }
@@ -404,7 +404,7 @@ func main() {
 
     mux.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
         // Safe to return config - secrets are masked
-        configJSON, _ := vl.Marshal(config)
+        configJSON, _ := validator.Marshal(config)
         w.Header().Set("Content-Type", "application/json")
         w.Write(configJSON)
         // Secrets are "**********" - no data leaks!
@@ -513,7 +513,7 @@ type Config struct {
 
 // If validation fails, error message won't contain the actual secret
 jsonInput := []byte(`{"api_key": "short"}`)
-_, err := vl.Unmarshal[Config](jsonInput)
+_, err := validator.Unmarshal[Config](jsonInput)
 
 // Error: validation error: field "api_key": constraint "min" failed
 // The actual value "short" is NOT in the error message

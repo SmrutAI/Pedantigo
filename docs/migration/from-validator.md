@@ -22,9 +22,9 @@ validate := validator.New()
 err := validate.Struct(user)
 
 // pedantigo Simple API — drop-in, no setup (internally cached per type via sync.Map)
-err := vl.Validate(user)
+err := validator.Validate(&user)
 // or, to parse + validate in one step:
-user, err := vl.Unmarshal[User](jsonBytes)
+user, err := validator.Unmarshal[User](jsonBytes)
 ```
 
 This is a near-rename: no validator to construct, no cache to manage. Benchmarked cost is a ~200ns `sync.Map` lookup per call, ~2-5µs total with unmarshal — negligible below roughly 100k req/sec. This is the recommended default for 99% of applications ([full benchmarks](/docs/advanced/performance)).
@@ -155,8 +155,8 @@ Pedantigo provides features not available in validator:
 
 | Feature                | Description                                    |
 |------------------------|------------------------------------------------|
-| JSON Schema generation | `vl.Schema[User]()`                     |
-| Unmarshal + Validate   | Single step: `vl.Unmarshal[User](json)` |
+| JSON Schema generation | `validator.Schema[User]()`                     |
+| Unmarshal + Validate   | Single step: `validator.Unmarshal[User](json)` |
 | Streaming validation   | Parse partial JSON for LLM output              |
 | Discriminated unions   | `Union[TypeA, TypeB, TypeC]`                   |
 | ExtraAllow mode        | Capture unknown JSON fields                    |

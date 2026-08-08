@@ -60,7 +60,7 @@ Each variant struct:
 Unlike the Simple API, discriminated unions require explicit creation with `validator.NewUnion()`:
 
 ```go
-validator, err := validator.NewUnion[any](validator.UnionOptions{
+unionValidator, err := validator.NewUnion[any](validator.UnionOptions{
     DiscriminatorField: "type",
     Variants: []validator.UnionVariant{
         validator.VariantFor[CreditCard]("credit_card"),
@@ -115,7 +115,7 @@ jsonData := []byte(`{
     "expiryDate": "12/25"
 }`)
 
-result, err := vl.Unmarshal(jsonData)
+result, err := unionValidator.Unmarshal(jsonData)
 if err != nil {
     // Handle validation errors
     var ve *validator.ValidationError
@@ -158,7 +158,7 @@ jsonData := []byte(`{
     "cvc": "12"
 }`)
 
-_, err := vl.Unmarshal(jsonData)
+_, err := unionValidator.Unmarshal(jsonData)
 if err != nil {
     var ve *validator.ValidationError
     if errors.As(err, &ve) {
@@ -188,7 +188,7 @@ card := CreditCard{
 }
 
 // Validate the existing value
-err := vl.Validate(card)
+err := unionValidator.Validate(card)
 if err != nil {
     // Handle validation errors
 }
@@ -199,7 +199,7 @@ if err != nil {
 Discriminated unions generate OpenAPI-compatible JSON Schema using `oneOf` with a discriminator:
 
 ```go
-schema := vl.Schema()
+schema := unionValidator.Schema()
 
 // This produces a JSON Schema like:
 // {
@@ -304,7 +304,7 @@ type DigitalWallet struct {
 
 func main() {
     // Create union validator once
-    validator, err := validator.NewUnion[any](validator.UnionOptions{
+    unionValidator, err := validator.NewUnion[any](validator.UnionOptions{
         DiscriminatorField: "type",
         Variants: []validator.UnionVariant{
             validator.VariantFor[CreditCard]("credit_card"),
@@ -325,7 +325,7 @@ func main() {
         "expiryDate": "12/25"
     }`)
 
-    result, err := vl.Unmarshal(creditCardJSON)
+    result, err := unionValidator.Unmarshal(creditCardJSON)
     if err != nil {
         fmt.Printf("Credit card validation failed: %v\n", err)
         return
@@ -342,7 +342,7 @@ func main() {
         "routingNumber": "987654321"
     }`)
 
-    result, err = vl.Unmarshal(bankJSON)
+    result, err = unionValidator.Unmarshal(bankJSON)
     if err != nil {
         fmt.Printf("Bank transfer validation failed: %v\n", err)
         return
@@ -359,7 +359,7 @@ func main() {
         "provider": "apple_pay"
     }`)
 
-    result, err = vl.Unmarshal(walletJSON)
+    result, err = unionValidator.Unmarshal(walletJSON)
     if err != nil {
         fmt.Printf("Digital wallet validation failed: %v\n", err)
         return
@@ -377,7 +377,7 @@ func main() {
         "expiryDate": "12/25"
     }`)
 
-    _, err = vl.Unmarshal(invalidJSON)
+    _, err = unionValidator.Unmarshal(invalidJSON)
     if err != nil {
         var ve *validator.ValidationError
         if errors.As(err, &ve) {
@@ -473,7 +473,7 @@ type Suite struct {
 ### Example Usage
 
 ```go
-vl := validator.New[Suite]()
+suiteValidator := validator.New[Suite]()
 
 // TV mode - TV is validated, Fan is skipped
 tvData := Suite{
@@ -481,7 +481,7 @@ tvData := Suite{
     TV:        TV{Channel: 42},
     Fan:       Fan{Speed: 0}, // Would fail min=1, but is skipped
 }
-err := vl.Validate(&tvData) // ✓ Valid
+err := suiteValidator.Validate(&tvData) // ✓ Valid
 
 // Fan mode - Fan is validated, TV is skipped
 fanData := Suite{
@@ -489,7 +489,7 @@ fanData := Suite{
     TV:        TV{Channel: 0}, // Would fail min=1, but is skipped
     Fan:       Fan{Speed: 3},
 }
-err = vl.Validate(&fanData) // ✓ Valid
+err = suiteValidator.Validate(&fanData) // ✓ Valid
 
 // TV mode with invalid TV - fails validation
 invalidData := Suite{
@@ -497,7 +497,7 @@ invalidData := Suite{
     TV:        TV{Channel: 0}, // Fails: min=1
     Fan:       Fan{Speed: 0},
 }
-err = vl.Validate(&invalidData) // ✗ Error: tv.channel must be at least 1
+err = suiteValidator.Validate(&invalidData) // ✗ Error: tv.channel must be at least 1
 ```
 
 ### When to Use skip_unless vs UnionValidator
@@ -530,7 +530,7 @@ Discriminated unions cannot use the Simple API because:
 - They require explicit variant registration
 - They need detailed configuration (discriminator field, variant mapping)
 
-This is why `validator.NewUnion()` is required instead of `vl.Unmarshal[T]()`.
+This is why `validator.NewUnion()` is required instead of `validator.Unmarshal[T]()`.
 
 ## See Also
 

@@ -31,7 +31,7 @@ type User struct {
 }
 
 func main() {
-    user, err := vl.Unmarshal[User]([]byte(`{"email":"test@example.com"}`))
+    user, err := validator.Unmarshal[User]([]byte(`{"email":"test@example.com"}`))
     if err != nil {
         panic(err)
     }

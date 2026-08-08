@@ -360,7 +360,7 @@ func main() {
         ]
     }`)
 
-    post, err := vl.Unmarshal[BlogPost](postJSON)
+    post, err := validator.Unmarshal[BlogPost](postJSON)
     if err != nil {
         fmt.Printf("Validation failed: %v\n", err)
         return
@@ -399,7 +399,7 @@ func main() {
         ]
     }`)
 
-    _, err = vl.Unmarshal[BlogPost](invalidJSON)
+    _, err = validator.Unmarshal[BlogPost](invalidJSON)
     if err != nil {
         fmt.Printf("Validation errors:\n%v\n", err)
         // Output will show:

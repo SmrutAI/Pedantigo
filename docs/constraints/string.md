@@ -317,7 +317,7 @@ func main() {
         "account_id": "1234567890"
     }`)
 
-    profile, err := vl.Unmarshal[UserProfile](profileJSON)
+    profile, err := validator.Unmarshal[UserProfile](profileJSON)
     if err != nil {
         fmt.Printf("Validation failed: %v\n", err)
         return
@@ -336,7 +336,7 @@ func main() {
         "account_id": "abc123"
     }`)
 
-    _, err = vl.Unmarshal[UserProfile](invalidJSON)
+    _, err = validator.Unmarshal[UserProfile](invalidJSON)
     if err != nil {
         fmt.Printf("Validation errors:\n%v\n", err)
         // Output will show all constraint violations:

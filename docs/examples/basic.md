@@ -37,7 +37,7 @@ func main() {
         "password_confirm": "SecurePass123"
     }`
 
-    user, errs := vl.Unmarshal[User]([]byte(validJSON))
+    user, errs := validator.Unmarshal[User]([]byte(validJSON))
     if errs != nil {
         for _, err := range errs {
             fmt.Printf("Validation error: %v\n", err)
@@ -54,7 +54,7 @@ func main() {
         "password_confirm": "SecurePass123"
     }`
 
-    _, errs = vl.Unmarshal[User]([]byte(invalidJSON))
+    _, errs = validator.Unmarshal[User]([]byte(invalidJSON))
     if errs != nil {
         fmt.Println("\nValidation errors found:")
         for _, err := range errs {
@@ -70,7 +70,7 @@ func main() {
         "password_confirm": "SecurePass123"
     }`
 
-    _, errs = vl.Unmarshal[User]([]byte(invalidEmail))
+    _, errs = validator.Unmarshal[User]([]byte(invalidEmail))
     if errs != nil {
         fmt.Println("\nEmail validation errors:")
         for _, err := range errs {
@@ -120,7 +120,7 @@ func main() {
         "sku": "WHP-BT5-2024"
     }`
 
-    product, errs := vl.Unmarshal[Product]([]byte(validJSON))
+    product, errs := validator.Unmarshal[Product]([]byte(validJSON))
     if errs == nil {
         fmt.Printf("Product: %s - $%.2f (Stock: %d)\n", product.Name, product.Price, product.Quantity)
         fmt.Printf("SKU: %s | Category: %s\n", product.SKU, product.Category)
@@ -135,7 +135,7 @@ func main() {
         "sku": "BRK-ITM-0001"
     }`
 
-    _, errs = vl.Unmarshal[Product]([]byte(invalidPrice))
+    _, errs = validator.Unmarshal[Product]([]byte(invalidPrice))
     if errs != nil {
         fmt.Println("\nPrice validation failed:")
         for _, err := range errs {
@@ -152,7 +152,7 @@ func main() {
         "sku": "MYS-TRY-0001"
     }`
 
-    _, errs = vl.Unmarshal[Product]([]byte(invalidCategory))
+    _, errs = validator.Unmarshal[Product]([]byte(invalidCategory))
     if errs != nil {
         fmt.Println("\nCategory validation failed:")
         for _, err := range errs {
@@ -169,7 +169,7 @@ func main() {
         "sku": "invalid-sku-format"
     }`
 
-    _, errs = vl.Unmarshal[Product]([]byte(invalidSKU))
+    _, errs = validator.Unmarshal[Product]([]byte(invalidSKU))
     if errs != nil {
         fmt.Println("\nSKU format validation failed:")
         for _, err := range errs {
@@ -234,7 +234,7 @@ func main() {
         "timeout": 30000000000
     }`
 
-    config, errs := vl.Unmarshal[Config]([]byte(validJSON))
+    config, errs := validator.Unmarshal[Config]([]byte(validJSON))
     if errs == nil {
         fmt.Printf("Server: %s:%d\n", config.Server.Host, config.Server.Port)
         fmt.Printf("Environment: %s\n", config.API.Environment)
@@ -254,7 +254,7 @@ func main() {
         "timeout": 30000000000
     }`
 
-    _, errs = vl.Unmarshal[Config]([]byte(invalidPort))
+    _, errs = validator.Unmarshal[Config]([]byte(invalidPort))
     if errs != nil {
         fmt.Println("\nPort validation failed:")
         for _, err := range errs {
@@ -275,7 +275,7 @@ func main() {
         "timeout": 30000000000
     }`
 
-    _, errs = vl.Unmarshal[Config]([]byte(invalidKey))
+    _, errs = validator.Unmarshal[Config]([]byte(invalidKey))
     if errs != nil {
         fmt.Println("\nAPI key validation failed:")
         for _, err := range errs {
@@ -327,7 +327,7 @@ func main() {
         "published_at": "2024-12-18T10:30:00Z"
     }`
 
-    post, errs := vl.Unmarshal[BlogPost]([]byte(validJSON))
+    post, errs := validator.Unmarshal[BlogPost]([]byte(validJSON))
     if errs == nil {
         fmt.Printf("Title: %s\n", post.Title)
         fmt.Printf("Author: %s\n", post.Author)
@@ -346,7 +346,7 @@ func main() {
         "published_at": null
     }`
 
-    _, errs = vl.Unmarshal[BlogPost]([]byte(invalidTitle))
+    _, errs = validator.Unmarshal[BlogPost]([]byte(invalidTitle))
     if errs != nil {
         fmt.Println("\nTitle validation failed:")
         for _, err := range errs {
@@ -363,7 +363,7 @@ func main() {
         "published_at": null
     }`
 
-    _, errs = vl.Unmarshal[BlogPost]([]byte(duplicateTags))
+    _, errs = validator.Unmarshal[BlogPost]([]byte(duplicateTags))
     if errs != nil {
         fmt.Println("\nTag validation failed:")
         for _, err := range errs {
@@ -380,7 +380,7 @@ func main() {
         "published_at": null
     }`
 
-    _, errs = vl.Unmarshal[BlogPost]([]byte(noTags))
+    _, errs = validator.Unmarshal[BlogPost]([]byte(noTags))
     if errs != nil {
         fmt.Println("\nTag count validation failed:")
         for _, err := range errs {
@@ -431,7 +431,7 @@ func main() {
         "country": "US"
     }`
 
-    address, errs := vl.Unmarshal[Address]([]byte(validJSON))
+    address, errs := validator.Unmarshal[Address]([]byte(validJSON))
     if errs == nil {
         fmt.Printf("Address: %s\n", address.Street)
         fmt.Printf("City, State Zip: %s, %s %s\n", address.City, address.State, address.ZipCode)
@@ -447,7 +447,7 @@ func main() {
         "country": "US"
     }`
 
-    addr, errs := vl.Unmarshal[Address]([]byte(extendedZip))
+    addr, errs := validator.Unmarshal[Address]([]byte(extendedZip))
     if errs == nil {
         fmt.Printf("\nExtended ZIP: %s-%s\n", addr.City, addr.ZipCode)
     }
@@ -461,7 +461,7 @@ func main() {
         "country": "US"
     }`
 
-    _, errs = vl.Unmarshal[Address]([]byte(invalidState))
+    _, errs = validator.Unmarshal[Address]([]byte(invalidState))
     if errs != nil {
         fmt.Println("\nState validation failed:")
         for _, err := range errs {
@@ -478,7 +478,7 @@ func main() {
         "country": "US"
     }`
 
-    _, errs = vl.Unmarshal[Address]([]byte(invalidCity))
+    _, errs = validator.Unmarshal[Address]([]byte(invalidCity))
     if errs != nil {
         fmt.Println("\nCity validation failed:")
         for _, err := range errs {
@@ -495,7 +495,7 @@ func main() {
         "country": "US"
     }`
 
-    _, errs = vl.Unmarshal[Address]([]byte(invalidZip))
+    _, errs = validator.Unmarshal[Address]([]byte(invalidZip))
     if errs != nil {
         fmt.Println("\nZIP code validation failed:")
         for _, err := range errs {
@@ -512,7 +512,7 @@ func main() {
         "country": "INVALID"
     }`
 
-    _, errs = vl.Unmarshal[Address]([]byte(invalidCountry))
+    _, errs = validator.Unmarshal[Address]([]byte(invalidCountry))
     if errs != nil {
         fmt.Println("\nCountry validation failed:")
         for _, err := range errs {
@@ -563,7 +563,7 @@ func main() {
         "card_holder": "John Smith"
     }`
 
-    payment, errs := vl.Unmarshal[Payment]([]byte(validJSON))
+    payment, errs := validator.Unmarshal[Payment]([]byte(validJSON))
     if errs == nil {
         fmt.Printf("Amount: %.2f %s\n", payment.Amount, payment.Currency)
         fmt.Printf("Cardholder: %s\n", payment.CardHolder)
@@ -578,7 +578,7 @@ func main() {
         "card_holder": "Jane Doe"
     }`
 
-    amex, errs := vl.Unmarshal[Payment]([]byte(amexJSON))
+    amex, errs := validator.Unmarshal[Payment]([]byte(amexJSON))
     if errs == nil {
         fmt.Printf("\nAmEx Payment: %.2f %s\n", amex.Amount, amex.Currency)
     }
@@ -592,7 +592,7 @@ func main() {
         "card_holder": "Test User"
     }`
 
-    _, errs = vl.Unmarshal[Payment]([]byte(zeroAmount))
+    _, errs = validator.Unmarshal[Payment]([]byte(zeroAmount))
     if errs != nil {
         fmt.Println("\nAmount validation failed:")
         for _, err := range errs {
@@ -609,7 +609,7 @@ func main() {
         "card_holder": "Test User"
     }`
 
-    _, errs = vl.Unmarshal[Payment]([]byte(invalidCurrency))
+    _, errs = validator.Unmarshal[Payment]([]byte(invalidCurrency))
     if errs != nil {
         fmt.Println("\nCurrency validation failed:")
         for _, err := range errs {
@@ -626,7 +626,7 @@ func main() {
         "card_holder": "Test User"
     }`
 
-    _, errs = vl.Unmarshal[Payment]([]byte(invalidCard))
+    _, errs = validator.Unmarshal[Payment]([]byte(invalidCard))
     if errs != nil {
         fmt.Println("\nCard number validation failed:")
         for _, err := range errs {
@@ -643,7 +643,7 @@ func main() {
         "card_holder": "Test User"
     }`
 
-    _, errs = vl.Unmarshal[Payment]([]byte(invalidCVV))
+    _, errs = validator.Unmarshal[Payment]([]byte(invalidCVV))
     if errs != nil {
         fmt.Println("\nCVV validation failed:")
         for _, err := range errs {
@@ -660,7 +660,7 @@ func main() {
         "card_holder": "Test User 123"
     }`
 
-    _, errs = vl.Unmarshal[Payment]([]byte(invalidHolder))
+    _, errs = validator.Unmarshal[Payment]([]byte(invalidHolder))
     if errs != nil {
         fmt.Println("\nCardholder validation failed:")
         for _, err := range errs {
