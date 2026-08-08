@@ -42,6 +42,20 @@ if err != nil {
 schemaBytes, _ := validator.SchemaJSONLLM[User]()
 ```
 
+## Framework Plugins
+
+Plugins wire pedantigo directly into a web framework's own request-binding
+step, so validation runs automatically instead of requiring manual
+`io.ReadAll` + `Unmarshal` calls in every handler. Using Echo? Two lines
+of setup gets you automatic validation on every request:
+
+```go
+import pedantigoecho "github.com/SmrutAI/pedantigo/v2/plugins/web/echo"
+
+e := echo.New()
+e.Binder = pedantigoecho.NewBinder()
+```
+
 ## Features
 
 | Feature | Description |
@@ -53,6 +67,12 @@ schemaBytes, _ := validator.SchemaJSONLLM[User]()
 | **Discriminated Unions** | Type-safe polymorphic data handling |
 | **Cross-Field Validation** | Validate relationships between fields |
 | **Zero Dependencies** | Only `invopop/jsonschema` + Go stdlib |
+
+## Plugins
+
+| Plugin | Framework | Description |
+|--------|-----------|-------------|
+| [Echo Binder](docs/plugins/web/echo.md) | [Echo](https://echo.labstack.com/) | Drop-in `echo.Binder` — automatic validation on every `c.Bind()` call |
 
 ## Documentation
 
