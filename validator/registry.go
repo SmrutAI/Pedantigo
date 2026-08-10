@@ -64,9 +64,30 @@ var (
 	// Stores map[string]string where key is alias name, value is expansion.
 	aliases sync.Map
 
-	// validatorCache stores cached validators per type.
+	// simpleAPICache stores validators lazily built for the Simple API's package-level
+	// convenience functions (Validate, Unmarshal[T], Schema[T], etc.). Every entry is
+	// disposable: losing one costs a single New[T]() rebuild on next use, invisible to
+	// the caller. RegisterValidation/RegisterValidationCtx/RegisterTagNameFunc/RegisterAlias
+	// wipe this cache (via clearValidatorCache) because a new custom validator, alias, or
+	// tag-name function may make an already-built entry's field cache stale, and there is
+	// no cheap way to know which entries are affected.
 	// Stores map[reflect.Type]any (*Validator[T]).
-	validatorCache sync.Map
+	simpleAPICache sync.Map
+
+	// registeredValidators stores validators explicitly bound via Register[T](), for
+	// framework-plugin lookup (UnmarshalInto, ValidateInto, the Echo Binder, Gin's
+	// NewBinder). Entries here are permanent for the process's lifetime — Register[T]()
+	// may be called exactly once per type, and nothing else may ever remove an entry.
+	// This is a deliberately separate map from simpleAPICache: the two have incompatible
+	// lifetimes, and sharing storage let RegisterValidation/RegisterAlias/etc. silently
+	// evict Register()'d bindings as a side effect neither side intended.
+	// Stores map[reflect.Type]any (*Validator[T]).
+	registeredValidators sync.Map
+
+	// registeredTagName stores the single effective tag name used by all
+	// Register()-visible validators in this process. nil means nothing has
+	// been registered/required yet.
+	registeredTagName atomic.Pointer[string]
 
 	// tagNameFunc stores the custom tag name resolution function.
 	tagNameFunc atomic.Pointer[TagNameFunc]
@@ -78,12 +99,12 @@ func getOrCreateValidator[T any]() *Validator[T] {
 	var zero T
 	typ := reflect.TypeOf(zero)
 
-	if cached, ok := validatorCache.Load(typ); ok {
+	if cached, ok := simpleAPICache.Load(typ); ok {
 		return cached.(*Validator[T])
 	}
 
 	vl := New[T]()
-	actual, _ := validatorCache.LoadOrStore(typ, vl) //nolint:not-an-error // LoadOrStore returns bool, not error
+	actual, _ := simpleAPICache.LoadOrStore(typ, vl) //nolint:not-an-error // LoadOrStore returns bool, not error
 	return actual.(*Validator[T])
 }
 
@@ -110,7 +131,7 @@ func UnmarshalInto(data []byte, target any) error {
 		panic("validator: UnmarshalInto target must be a non-nil pointer")
 	}
 	typ := rv.Elem().Type()
-	cached, ok := validatorCache.Load(typ)
+	cached, ok := registeredValidators.Load(typ)
 	if !ok {
 		panic(fmt.Sprintf(
 			"validator: no validator registered for type %s.%s. "+
@@ -121,6 +142,33 @@ func UnmarshalInto(data []byte, target any) error {
 			typ.PkgPath(), typ.Name(), typ.Name()))
 	}
 	return cached.(unmarshalable).unmarshalInto(data, target)
+}
+
+// ValidateInto looks up the registered Validator[T] for obj's concrete type and validates it.
+// obj must be a non-nil pointer — every real caller (Gin's binding functions populate the
+// target via reflection, which requires addressability) already guarantees this, so a caller
+// that violates it has a bug, and ValidateInto returns a clear error rather than silently
+// reporting success. It does not panic (unlike UnmarshalInto's equivalent check), because the
+// StructValidator interface this feeds into must never panic — returning a non-nil error is
+// fully compatible with that contract.
+//
+// Unlike UnmarshalInto, ValidateInto does not error when the pointed-to type was never
+// registered — it returns nil, since this is called from framework validator adapters for
+// every value they see, not just ones a caller deliberately registered via Register().
+func ValidateInto(obj any) error {
+	rv := reflect.ValueOf(obj)
+	if rv.Kind() != reflect.Pointer {
+		return fmt.Errorf("validator: ValidateInto requires a pointer, got %T", obj)
+	}
+	if rv.IsNil() {
+		return fmt.Errorf("validator: ValidateInto requires a non-nil pointer, got nil %T", obj)
+	}
+	typ := rv.Elem().Type()
+	cached, ok := registeredValidators.Load(typ)
+	if !ok {
+		return nil
+	}
+	return cached.(validatableInto).validateInto(obj)
 }
 
 // Register makes v the instance that framework-plugin binders (UnmarshalInto,
@@ -134,8 +182,10 @@ func UnmarshalInto(data []byte, target any) error {
 // differently-configured validators (different Options), and only
 // one of them can be "the" plugin-visible instance.
 func Register[T any](v *Validator[T]) *Validator[T] {
+	checkOrSeedTagName(v.tagName)
+
 	typ := v.typ
-	_, loaded := validatorCache.LoadOrStore(typ, v)
+	_, loaded := registeredValidators.LoadOrStore(typ, v)
 	if loaded {
 		panic(fmt.Sprintf(
 			"validator: validator for type %s.%s is already registered. "+
@@ -152,10 +202,46 @@ func Register[T any](v *Validator[T]) *Validator[T] {
 	return v
 }
 
+// RequireSingleRegisteredTagName is called once by a framework plugin's setup.
+// If a type was already Register()'d, it verifies the tag name matches want.
+// If nothing has been Register()'d yet, it seeds want as the required tag name.
+func RequireSingleRegisteredTagName(want string) {
+	checkOrSeedTagName(want)
+}
+
+// checkOrSeedTagName is the single race-free entry point for registeredTagName.
+// CompareAndSwap(nil, &name) atomically claims the "nothing registered yet" state —
+// exactly one concurrent caller can ever win that transition. Every other caller
+// (whether it lost the race or the tag was already set long ago) falls through and
+// compares against whatever is now there. A plain Load-then-Store here would leave a
+// window where two concurrent callers with different tag names could both observe nil
+// and both store, silently defeating the single-tag-name-per-process guarantee.
+func checkOrSeedTagName(name string) {
+	if registeredTagName.CompareAndSwap(nil, &name) {
+		return
+	}
+	got := registeredTagName.Load()
+	if *got != name {
+		panic(fmt.Sprintf(
+			"pedantigo: registered tag name %q does not match this framework setup's expected tag name %q",
+			*got, name))
+	}
+}
+
 // unmarshalable is a non-generic interface that allows type-erased unmarshal.
 // Implemented by Validator[T] (see validator.go) to enable UnmarshalInto.
 type unmarshalable interface {
 	unmarshalInto(data []byte, target any) error
+}
+
+// validatableInto is a non-generic interface that allows type-erased validation.
+// Implemented by Validator[T] to enable ValidateInto.
+type validatableInto interface {
+	validateInto(obj any) error
+}
+
+func resetRegisteredTagNameForTesting() {
+	registeredTagName.Store(nil)
 }
 
 // Built-in aliases for validator compatibility.
@@ -195,7 +281,7 @@ func RegisterStructValidation[T any](fn StructLevelFunc[T]) error {
 	var zero T
 	t := reflect.TypeOf(zero)
 	structValidators.Store(t, fn)
-	validatorCache.Delete(t)
+	simpleAPICache.Delete(t)
 	return nil
 }
 
@@ -298,11 +384,13 @@ func GetAlias(name string) (string, bool) {
 	return "", false
 }
 
-// clearValidatorCache clears all cached validators to pick up new registrations.
-// This ensures that newly registered validators are used by existing validator instances.
+// clearValidatorCache clears the Simple API's disposable cache to pick up new registrations.
+// This ensures that newly registered custom validators/aliases/tag-name functions are used
+// by validators built after this call. It deliberately never touches registeredValidators —
+// Register()'d bindings must survive this unconditionally; see registeredValidators' doc comment.
 func clearValidatorCache() {
-	validatorCache.Range(func(key, value any) bool {
-		validatorCache.Delete(key)
+	simpleAPICache.Range(func(key, value any) bool {
+		simpleAPICache.Delete(key)
 		return true
 	})
 }

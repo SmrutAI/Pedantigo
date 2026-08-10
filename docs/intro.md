@@ -101,7 +101,7 @@ schema := userValidator.Schema()
 ```
 
 Use the Validator API when you need:
-- Discriminated unions (`NewUnion[T](opts...)`)
+- Discriminated unions (`NewUnion[T](opts)`)
 - Custom validator registration per instance
 - Fine-grained control over caching
 - Plugin integration (advanced)
@@ -120,7 +120,7 @@ Use the Validator API when you need:
 | **Discriminated Unions** | Type-safe union handling with discriminator fields |
 | **Cross-Field Validation** | Implement `Validate()` interface for complex multi-field rules |
 | **Custom Validators** | Register your own constraints globally or per-validator |
-| **Zero Dependencies** | Only uses `invopop/jsonschema` + Go standard library |
+| **Minimal Dependencies** | `invopop/jsonschema`, `santhosh-tekuri/jsonschema/v6`, `golang.org/x/text`, plus Go standard library |
 
 ## What You'll Learn
 

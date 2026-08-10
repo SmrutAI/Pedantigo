@@ -20,7 +20,7 @@ type User struct {
 
     // Constraints with parameters
     Age      int    `json:"age" validate:"required,min=18,max=120"`
-    Username string `json:"username" validate:"minLength=3,maxLength=20,pattern=^[a-z0-9_]+$"`
+    Username string `json:"username" validate:"min=3,max=20,regexp=^[a-z0-9_]+$"`
 }
 ```
 
@@ -55,8 +55,6 @@ Specialized constraints for string validation:
 
 | Constraint | Parameter | Description | Example |
 |-----------|-----------|-------------|---------|
-| `minLength` | Numeric | Minimum string length | `validate:"minLength=3"` |
-| `maxLength` | Numeric | Maximum string length | `validate:"maxLength=100"` |
 | `alpha` | None | Only alphabetic characters | `validate:"alpha"` |
 | `alphanum` | None | Only letters and numbers | `validate:"alphanum"` |
 | `ascii` | None | Only ASCII characters | `validate:"ascii"` |
@@ -67,8 +65,7 @@ Specialized constraints for string validation:
 | `startswith` | String | Must start with prefix | `validate:"startswith=https://"` |
 | `endswith` | String | Must end with suffix | `validate:"endswith=.com"` |
 | `strip_whitespace` | None | No leading/trailing whitespace | `validate:"strip_whitespace"` |
-| `pattern` | Regex | Match regex pattern | `validate:"pattern=^[a-z]+$"` |
-| `regexp` | Regex | Match regex pattern (alias) | `validate:"regexp=^[a-z]+$"` |
+| `regexp` | Regex | Match regex pattern | `validate:"regexp=^[a-z]+$"` |
 
 See the [String Constraints](/docs/constraints/string) page for detailed string validation examples.
 
@@ -195,17 +192,17 @@ Constraints for ISO standard codes and formats:
 
 | Constraint | Parameter | Description | Example |
 |-----------|-----------|-------------|---------|
-| `iso3166_alpha2` | None | ISO 3166-1 alpha-2 country code | `validate:"iso3166_alpha2"` |
+| `iso3166_1_alpha2` | None | ISO 3166-1 alpha-2 country code | `validate:"iso3166_1_alpha2"` |
 | `iso3166_alpha2_eu` | None | ISO 3166-1 alpha-2 EU country code | `validate:"iso3166_alpha2_eu"` |
-| `iso3166_alpha3` | None | ISO 3166-1 alpha-3 country code | `validate:"iso3166_alpha3"` |
+| `iso3166_1_alpha3` | None | ISO 3166-1 alpha-3 country code | `validate:"iso3166_1_alpha3"` |
 | `iso3166_alpha3_eu` | None | ISO 3166-1 alpha-3 EU country code | `validate:"iso3166_alpha3_eu"` |
-| `iso3166_numeric` | None | ISO 3166-1 numeric country code | `validate:"iso3166_numeric"` |
+| `iso3166_1_alpha_numeric` | None | ISO 3166-1 numeric country code | `validate:"iso3166_1_alpha_numeric"` |
 | `iso3166_2` | None | ISO 3166-2 subdivision code | `validate:"iso3166_2"` |
 | `iso4217` | None | ISO 4217 currency code | `validate:"iso4217"` |
 | `iso4217_numeric` | None | ISO 4217 numeric currency code | `validate:"iso4217_numeric"` |
 | `postcode` | Country code | Postal code for specific country | `validate:"postcode=US"` |
 | `postcode_iso3166_alpha2` | Country code | Postal code (alias for `postcode`) | `validate:"postcode_iso3166_alpha2=GB"` |
-| `bcp47` | None | BCP 47 language tag | `validate:"bcp47"` |
+| `bcp47_language_tag` | None | BCP 47 language tag | `validate:"bcp47_language_tag"` |
 
 ### Filesystem Constraints
 
@@ -224,8 +221,8 @@ Constraints for arrays, slices, and maps:
 
 | Constraint | Parameter | Description | Example |
 |-----------|-----------|-------------|---------|
-| `minItems` | Numeric | Minimum number of items | `validate:"minItems=1"` |
-| `maxItems` | Numeric | Maximum number of items | `validate:"maxItems=100"` |
+| `min` | Numeric | Minimum number of items | `validate:"min=1"` |
+| `max` | Numeric | Maximum number of items | `validate:"max=100"` |
 | `unique` | None | All items must be unique | `validate:"unique"` |
 
 See the [Collection Constraints](/docs/constraints/collection) page for detailed collection validation examples.
@@ -259,10 +256,10 @@ type UserProfile struct {
     // Core constraints
     ID       string `json:"id" validate:"required,uuid"`
     Email    string `json:"email" validate:"required,email"`
-    Username string `json:"username" validate:"required,minLength=3,maxLength=20,alphanum"`
+    Username string `json:"username" validate:"required,min=3,max=20,alphanum"`
 
     // String constraints
-    Bio      string `json:"bio,omitempty" validate:"maxLength=500"`
+    Bio      string `json:"bio,omitempty" validate:"max=500"`
     Website  string `json:"website,omitempty" validate:"url"`
 
     // Numeric constraints
@@ -274,12 +271,12 @@ type UserProfile struct {
     Longitude float64 `json:"longitude,omitempty" validate:"longitude"`
 
     // ISO constraints
-    Country  string `json:"country,omitempty" validate:"iso3166_alpha2"`
+    Country  string `json:"country,omitempty" validate:"iso3166_1_alpha2"`
     Currency string `json:"currency,omitempty" validate:"iso4217"`
 
     // Collection constraints
-    Tags     []string `json:"tags,omitempty" validate:"maxItems=10,unique"`
-    Roles    []string `json:"roles" validate:"minItems=1,oneof=admin moderator user"`
+    Tags     []string `json:"tags,omitempty" validate:"max=10,unique"`
+    Roles    []string `json:"roles" validate:"min=1,oneof=admin moderator user"`
 
     // Enum constraint
     Status   string `json:"status" validate:"required,oneof=active inactive suspended"`

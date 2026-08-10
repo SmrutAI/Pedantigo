@@ -14,9 +14,8 @@ User registration forms often need email validation, password confirmation, and 
 package main
 
 import (
-    "encoding/json"
+    "errors"
     "fmt"
-    "log"
 
     "github.com/SmrutAI/pedantigo/v2/validator"
 )
@@ -37,10 +36,11 @@ func main() {
         "password_confirm": "SecurePass123"
     }`
 
-    user, errs := validator.Unmarshal[User]([]byte(validJSON))
-    if errs != nil {
-        for _, err := range errs {
-            fmt.Printf("Validation error: %v\n", err)
+    user, err := validator.Unmarshal[User]([]byte(validJSON))
+    var ve *validator.ValidationError
+    if err != nil && errors.As(err, &ve) {
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("Validation error: %v\n", fieldErr)
         }
     } else {
         fmt.Printf("User created: %s (%s)\n", user.Username, user.Email)
@@ -54,11 +54,11 @@ func main() {
         "password_confirm": "SecurePass123"
     }`
 
-    _, errs = validator.Unmarshal[User]([]byte(invalidJSON))
-    if errs != nil {
+    _, err = validator.Unmarshal[User]([]byte(invalidJSON))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nValidation errors found:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 
@@ -70,11 +70,11 @@ func main() {
         "password_confirm": "SecurePass123"
     }`
 
-    _, errs = validator.Unmarshal[User]([]byte(invalidEmail))
-    if errs != nil {
+    _, err = validator.Unmarshal[User]([]byte(invalidEmail))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nEmail validation errors:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 }
@@ -84,7 +84,7 @@ func main() {
 - `required` - Field must be present and non-empty
 - `alphanum` - Only alphanumeric characters (letters and numbers)
 - `min=3,max=20` - String length between 3 and 20 characters
-- `email` - Valid email format (RFC 5322)
+- `email` - Valid email format (simplified regex, not full RFC 5322)
 
 ---
 
@@ -96,7 +96,7 @@ Product validation requires price constraints, category enumeration, and pattern
 package main
 
 import (
-    "encoding/json"
+    "errors"
     "fmt"
 
     "github.com/SmrutAI/pedantigo/v2/validator"
@@ -106,11 +106,13 @@ type Product struct {
     Name     string  `json:"name" validate:"required,max=200"`
     Price    float64 `json:"price" validate:"required,positive"`
     Quantity int     `json:"quantity" validate:"required,gte=0"`
-    Category string  `json:"category" validate:"required,oneof=electronics|clothing|books|home"`
-    SKU      string  `json:"sku" validate:"required,pattern=^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{4}$"`
+    Category string  `json:"category" validate:"required,oneof=electronics clothing books home"`
+    SKU      string  `json:"sku" validate:"required,regexp=^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{4}$"`
 }
 
 func main() {
+    var ve *validator.ValidationError
+
     // Valid product
     validJSON := `{
         "name": "Wireless Headphones",
@@ -120,8 +122,8 @@ func main() {
         "sku": "WHP-BT5-2024"
     }`
 
-    product, errs := validator.Unmarshal[Product]([]byte(validJSON))
-    if errs == nil {
+    product, err := validator.Unmarshal[Product]([]byte(validJSON))
+    if err == nil {
         fmt.Printf("Product: %s - $%.2f (Stock: %d)\n", product.Name, product.Price, product.Quantity)
         fmt.Printf("SKU: %s | Category: %s\n", product.SKU, product.Category)
     }
@@ -135,11 +137,11 @@ func main() {
         "sku": "BRK-ITM-0001"
     }`
 
-    _, errs = validator.Unmarshal[Product]([]byte(invalidPrice))
-    if errs != nil {
+    _, err = validator.Unmarshal[Product]([]byte(invalidPrice))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nPrice validation failed:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 
@@ -152,11 +154,11 @@ func main() {
         "sku": "MYS-TRY-0001"
     }`
 
-    _, errs = validator.Unmarshal[Product]([]byte(invalidCategory))
-    if errs != nil {
+    _, err = validator.Unmarshal[Product]([]byte(invalidCategory))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nCategory validation failed:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 
@@ -169,11 +171,11 @@ func main() {
         "sku": "invalid-sku-format"
     }`
 
-    _, errs = validator.Unmarshal[Product]([]byte(invalidSKU))
-    if errs != nil {
+    _, err = validator.Unmarshal[Product]([]byte(invalidSKU))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nSKU format validation failed:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 }
@@ -184,8 +186,8 @@ func main() {
 - `max=200` - Maximum 200 characters
 - `positive` - Must be greater than 0
 - `gte=0` - Greater than or equal to 0 (allows zero)
-- `oneof=...` - Value must match one of the options
-- `pattern=...` - Regular expression matching (3-4 alphanumeric segments separated by hyphens)
+- `oneof=...` - Value must match one of the space-separated options
+- `regexp=...` - Regular expression matching (3-4 alphanumeric segments separated by hyphens)
 
 ---
 
@@ -197,7 +199,7 @@ Configuration validation ensures type safety, port ranges, and security for API 
 package main
 
 import (
-    "encoding/json"
+    "errors"
     "fmt"
     "time"
 
@@ -217,10 +219,12 @@ type ServerConfig struct {
 
 type APIConfig struct {
     Key         string `json:"key" validate:"required,min=32"`
-    Environment string `json:"env" validate:"required,oneof=development|staging|production"`
+    Environment string `json:"env" validate:"required,oneof=development staging production"`
 }
 
 func main() {
+    var ve *validator.ValidationError
+
     // Valid configuration
     validJSON := `{
         "server": {
@@ -234,8 +238,8 @@ func main() {
         "timeout": 30000000000
     }`
 
-    config, errs := validator.Unmarshal[Config]([]byte(validJSON))
-    if errs == nil {
+    config, err := validator.Unmarshal[Config]([]byte(validJSON))
+    if err == nil {
         fmt.Printf("Server: %s:%d\n", config.Server.Host, config.Server.Port)
         fmt.Printf("Environment: %s\n", config.API.Environment)
         fmt.Printf("Timeout: %v\n", config.Timeout)
@@ -254,11 +258,11 @@ func main() {
         "timeout": 30000000000
     }`
 
-    _, errs = validator.Unmarshal[Config]([]byte(invalidPort))
-    if errs != nil {
+    _, err = validator.Unmarshal[Config]([]byte(invalidPort))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nPort validation failed:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 
@@ -275,11 +279,11 @@ func main() {
         "timeout": 30000000000
     }`
 
-    _, errs = validator.Unmarshal[Config]([]byte(invalidKey))
-    if errs != nil {
+    _, err = validator.Unmarshal[Config]([]byte(invalidKey))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nAPI key validation failed:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 }
@@ -287,7 +291,7 @@ func main() {
 
 **Key Constraints:**
 - `hostname` - Valid hostname format
-- `port` - Valid port number (1-65535)
+- `port` - Valid port number (0-65535, integer field only)
 - `min=32` - Minimum 32 characters (suitable for API keys)
 - `oneof=...` - Must be one of the specified environments
 
@@ -301,7 +305,7 @@ Blog validation includes content length requirements, tag management with unique
 package main
 
 import (
-    "encoding/json"
+    "errors"
     "fmt"
     "time"
 
@@ -317,8 +321,9 @@ type BlogPost struct {
 }
 
 func main() {
+    var ve *validator.ValidationError
+
     // Valid blog post
-    now := time.Now()
     validJSON := `{
         "title": "Getting Started with Go Validation",
         "content": "This comprehensive guide covers the fundamentals of validation in Go applications. We'll explore various techniques and best practices for ensuring data integrity throughout your application lifecycle. Proper validation is crucial for maintaining system security and reliability.",
@@ -327,8 +332,8 @@ func main() {
         "published_at": "2024-12-18T10:30:00Z"
     }`
 
-    post, errs := validator.Unmarshal[BlogPost]([]byte(validJSON))
-    if errs == nil {
+    post, err := validator.Unmarshal[BlogPost]([]byte(validJSON))
+    if err == nil {
         fmt.Printf("Title: %s\n", post.Title)
         fmt.Printf("Author: %s\n", post.Author)
         fmt.Printf("Tags: %v\n", post.Tags)
@@ -346,11 +351,11 @@ func main() {
         "published_at": null
     }`
 
-    _, errs = validator.Unmarshal[BlogPost]([]byte(invalidTitle))
-    if errs != nil {
+    _, err = validator.Unmarshal[BlogPost]([]byte(invalidTitle))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nTitle validation failed:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 
@@ -363,11 +368,11 @@ func main() {
         "published_at": null
     }`
 
-    _, errs = validator.Unmarshal[BlogPost]([]byte(duplicateTags))
-    if errs != nil {
+    _, err = validator.Unmarshal[BlogPost]([]byte(duplicateTags))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nTag validation failed:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 
@@ -380,11 +385,11 @@ func main() {
         "published_at": null
     }`
 
-    _, errs = validator.Unmarshal[BlogPost]([]byte(noTags))
-    if errs != nil {
+    _, err = validator.Unmarshal[BlogPost]([]byte(noTags))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nTag count validation failed:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 }
@@ -407,7 +412,7 @@ Address validation uses country codes, state abbreviations, and postal code patt
 package main
 
 import (
-    "encoding/json"
+    "errors"
     "fmt"
 
     "github.com/SmrutAI/pedantigo/v2/validator"
@@ -417,11 +422,13 @@ type Address struct {
     Street  string `json:"street" validate:"required,min=5,max=100"`
     City    string `json:"city" validate:"required,alpha,min=2"`
     State   string `json:"state" validate:"required,len=2,alpha"`
-    ZipCode string `json:"zip_code" validate:"required,pattern=^[0-9]{5}(-[0-9]{4})?$"`
-    Country string `json:"country" validate:"required,iso3166_alpha2"`
+    ZipCode string `json:"zip_code" validate:"required,regexp=^[0-9]{5}(-[0-9]{4})?$"`
+    Country string `json:"country" validate:"required,iso3166_1_alpha2"`
 }
 
 func main() {
+    var ve *validator.ValidationError
+
     // Valid US address
     validJSON := `{
         "street": "123 Main Street",
@@ -431,8 +438,8 @@ func main() {
         "country": "US"
     }`
 
-    address, errs := validator.Unmarshal[Address]([]byte(validJSON))
-    if errs == nil {
+    address, err := validator.Unmarshal[Address]([]byte(validJSON))
+    if err == nil {
         fmt.Printf("Address: %s\n", address.Street)
         fmt.Printf("City, State Zip: %s, %s %s\n", address.City, address.State, address.ZipCode)
         fmt.Printf("Country: %s\n", address.Country)
@@ -447,8 +454,8 @@ func main() {
         "country": "US"
     }`
 
-    addr, errs := validator.Unmarshal[Address]([]byte(extendedZip))
-    if errs == nil {
+    addr, err := validator.Unmarshal[Address]([]byte(extendedZip))
+    if err == nil {
         fmt.Printf("\nExtended ZIP: %s-%s\n", addr.City, addr.ZipCode)
     }
 
@@ -461,11 +468,11 @@ func main() {
         "country": "US"
     }`
 
-    _, errs = validator.Unmarshal[Address]([]byte(invalidState))
-    if errs != nil {
+    _, err = validator.Unmarshal[Address]([]byte(invalidState))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nState validation failed:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 
@@ -478,11 +485,11 @@ func main() {
         "country": "US"
     }`
 
-    _, errs = validator.Unmarshal[Address]([]byte(invalidCity))
-    if errs != nil {
+    _, err = validator.Unmarshal[Address]([]byte(invalidCity))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nCity validation failed:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 
@@ -495,11 +502,11 @@ func main() {
         "country": "US"
     }`
 
-    _, errs = validator.Unmarshal[Address]([]byte(invalidZip))
-    if errs != nil {
+    _, err = validator.Unmarshal[Address]([]byte(invalidZip))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nZIP code validation failed:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 
@@ -512,11 +519,11 @@ func main() {
         "country": "INVALID"
     }`
 
-    _, errs = validator.Unmarshal[Address]([]byte(invalidCountry))
-    if errs != nil {
+    _, err = validator.Unmarshal[Address]([]byte(invalidCountry))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nCountry validation failed:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 }
@@ -526,8 +533,8 @@ func main() {
 - `min=5,max=100` - Street address length
 - `alpha` - Only alphabetic characters (no numbers or special characters)
 - `len=2` - Exactly 2 characters for state code
-- `pattern=...` - ZIP code format with optional ZIP+4 extension
-- `iso3166_alpha2` - Valid ISO 3166-1 alpha-2 country code (e.g., US, GB, CA)
+- `regexp=...` - ZIP code format with optional ZIP+4 extension
+- `iso3166_1_alpha2` - Valid ISO 3166-1 alpha-2 country code (e.g., US, GB, CA)
 
 ---
 
@@ -539,7 +546,7 @@ Payment validation requires card number validation, currency codes, and amount c
 package main
 
 import (
-    "encoding/json"
+    "errors"
     "fmt"
 
     "github.com/SmrutAI/pedantigo/v2/validator"
@@ -549,11 +556,13 @@ type Payment struct {
     Amount      float64 `json:"amount" validate:"required,positive"`
     Currency    string  `json:"currency" validate:"required,iso4217"`
     CardNumber  string  `json:"card_number" validate:"required,credit_card"`
-    CVV         string  `json:"cvv" validate:"required,oneof=len:3|len:4"`
-    CardHolder  string  `json:"card_holder" validate:"required,alpha"`
+    CVV         string  `json:"cvv" validate:"required,regexp=^[0-9]{3,4}$"`
+    CardHolder  string  `json:"card_holder" validate:"required,regexp=^[a-zA-Z ]+$"`
 }
 
 func main() {
+    var ve *validator.ValidationError
+
     // Valid Visa payment
     validJSON := `{
         "amount": 99.99,
@@ -563,8 +572,8 @@ func main() {
         "card_holder": "John Smith"
     }`
 
-    payment, errs := validator.Unmarshal[Payment]([]byte(validJSON))
-    if errs == nil {
+    payment, err := validator.Unmarshal[Payment]([]byte(validJSON))
+    if err == nil {
         fmt.Printf("Amount: %.2f %s\n", payment.Amount, payment.Currency)
         fmt.Printf("Cardholder: %s\n", payment.CardHolder)
     }
@@ -578,8 +587,8 @@ func main() {
         "card_holder": "Jane Doe"
     }`
 
-    amex, errs := validator.Unmarshal[Payment]([]byte(amexJSON))
-    if errs == nil {
+    amex, err := validator.Unmarshal[Payment]([]byte(amexJSON))
+    if err == nil {
         fmt.Printf("\nAmEx Payment: %.2f %s\n", amex.Amount, amex.Currency)
     }
 
@@ -592,11 +601,11 @@ func main() {
         "card_holder": "Test User"
     }`
 
-    _, errs = validator.Unmarshal[Payment]([]byte(zeroAmount))
-    if errs != nil {
+    _, err = validator.Unmarshal[Payment]([]byte(zeroAmount))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nAmount validation failed:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 
@@ -609,11 +618,11 @@ func main() {
         "card_holder": "Test User"
     }`
 
-    _, errs = validator.Unmarshal[Payment]([]byte(invalidCurrency))
-    if errs != nil {
+    _, err = validator.Unmarshal[Payment]([]byte(invalidCurrency))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nCurrency validation failed:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 
@@ -626,11 +635,11 @@ func main() {
         "card_holder": "Test User"
     }`
 
-    _, errs = validator.Unmarshal[Payment]([]byte(invalidCard))
-    if errs != nil {
+    _, err = validator.Unmarshal[Payment]([]byte(invalidCard))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nCard number validation failed:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 
@@ -643,11 +652,11 @@ func main() {
         "card_holder": "Test User"
     }`
 
-    _, errs = validator.Unmarshal[Payment]([]byte(invalidCVV))
-    if errs != nil {
+    _, err = validator.Unmarshal[Payment]([]byte(invalidCVV))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nCVV validation failed:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 
@@ -660,11 +669,11 @@ func main() {
         "card_holder": "Test User 123"
     }`
 
-    _, errs = validator.Unmarshal[Payment]([]byte(invalidHolder))
-    if errs != nil {
+    _, err = validator.Unmarshal[Payment]([]byte(invalidHolder))
+    if err != nil && errors.As(err, &ve) {
         fmt.Println("\nCardholder validation failed:")
-        for _, err := range errs {
-            fmt.Printf("  - %v\n", err)
+        for _, fieldErr := range ve.Errors {
+            fmt.Printf("  - %v\n", fieldErr)
         }
     }
 }
@@ -675,8 +684,8 @@ func main() {
 - `positive` - Amount must be greater than 0
 - `iso4217` - Valid ISO 4217 currency code (e.g., USD, EUR, GBP)
 - `credit_card` - Valid credit card number (Luhn algorithm validation)
-- `oneof=len:3|len:4` - CVV must be exactly 3 or 4 digits
-- `alpha` - Only alphabetic characters (cardholder name)
+- `regexp=^[0-9]{3,4}$` - CVV must be exactly 3 or 4 digits
+- `regexp=^[a-zA-Z ]+$` - Letters and spaces only (cardholder name)
 
 ---
 

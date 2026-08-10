@@ -179,14 +179,12 @@ Field: username, Error: field is required
 | `required` | `validate:"required"` | Field must be present (not missing) |
 | `email` | `validate:"email"` | Must be valid email format |
 | `url` | `validate:"url"` | Must be valid URL |
-| `min`/`max` | `validate:"min=0,max=100"` | Numeric range (int, float) |
-| `minLength`/`maxLength` | `validate:"minLength=3,maxLength=20"` | String length |
-| `minItems`/`maxItems` | `validate:"minItems=1,maxItems=10"` | Array/slice size |
-| `pattern` | `validate:"pattern=^[a-z]+$"` | Regex pattern match |
-| `oneof` | `validate:"oneof=red green blue"` | Must be one of values |
+| `min`/`max` | `validate:"min=0,max=100"` | Numeric range, or string/array/slice/map length |
+| `regexp` | `validate:"regexp=^[a-z]+$"` | Regex pattern match |
+| `oneof` | `validate:"oneof=red green blue"` | Must be one of space-separated values |
 | `uuid` | `validate:"uuid"` | Valid UUID format |
 | `alpha` | `validate:"alpha"` | Only letters |
-| `alphanumeric` | `validate:"alphanumeric"` | Letters and numbers only |
+| `alphanum` | `validate:"alphanum"` | Letters and numbers only |
 | `numeric` | `validate:"numeric"` | Only numbers (string) |
 
 See the [Constraints Reference](/docs/concepts/constraints) for the complete list.
@@ -207,7 +205,7 @@ import (
 type User struct {
     Email    string `json:"email" validate:"required,email"`
     Age      int    `json:"age" validate:"required,min=18,max=120"`
-    Username string `json:"username" validate:"required,minLength=3,maxLength=20,alphanumeric"`
+    Username string `json:"username" validate:"required,min=3,max=20,alphanum"`
     Website  string `json:"website,omitempty" validate:"url"`
     Role     string `json:"role" validate:"required,oneof=admin user guest"`
 }

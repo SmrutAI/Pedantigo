@@ -46,8 +46,8 @@ schemaBytes, _ := validator.SchemaJSONLLM[User]()
 
 Plugins wire pedantigo directly into a web framework's own request-binding
 step, so validation runs automatically instead of requiring manual
-`io.ReadAll` + `Unmarshal` calls in every handler. Using Echo? Two lines
-of setup gets you automatic validation on every request:
+`io.ReadAll` + `Unmarshal` calls in every handler. Echo replaces the binder
+directly; Gin installs into both its JSON codec and validation hooks.
 
 ```go
 import pedantigoecho "github.com/SmrutAI/pedantigo/v2/plugins/web/echo"
@@ -73,6 +73,7 @@ e.Binder = pedantigoecho.NewBinder()
 | Plugin | Framework | Description |
 |--------|-----------|-------------|
 | [Echo Binder](docs/plugins/web/echo.md) | [Echo](https://echo.labstack.com/) | Drop-in `echo.Binder` — automatic validation on every `c.Bind()` call |
+| [Gin Request Plugin](docs/plugins/web/gin.md) | [Gin](https://gin-gonic.com/) | Installs Pedantigo into `codec/json.API` + `binding.Validator` for automatic request binding validation |
 
 ## Documentation
 

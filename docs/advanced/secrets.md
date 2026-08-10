@@ -55,6 +55,8 @@ func (s *SecretStr) UnmarshalJSON(data []byte) error
 | `MarshalJSON()` | "**********" | JSON serialization, API responses |
 | `UnmarshalJSON()` | Stores actual value | JSON deserialization, form input |
 
+**Length constraints don't work directly on `SecretStr`/`SecretBytes` fields.** These types are Go structs (not strings), so `validate:"min=N"`/`max=N"` on a `SecretStr` field route to the numeric-value check rather than a string-length check, and a struct value always fails that check — the field would never validate. To enforce a minimum/maximum secret length, check `.Value()`'s length in a custom `Validate() error` method instead.
+
 ### Example: In Struct Definitions
 
 ```go
@@ -63,7 +65,7 @@ type Config struct {
     DatabaseURL SecretStr `json:"database_url" validate:"required"`
 
     // API authentication token
-    APIToken SecretStr `json:"api_token" validate:"required,min=20"`
+    APIToken SecretStr `json:"api_token" validate:"required"`
 
     // Webhook secret for signature verification
     WebhookSecret SecretStr `json:"webhook_secret" validate:"required"`
@@ -146,7 +148,7 @@ type AppConfig struct {
     DatabaseURL SecretStr `json:"database_url" validate:"required"`
 
     // External service API key
-    ExternalAPIKey SecretStr `json:"external_api_key" validate:"required,min=20"`
+    ExternalAPIKey SecretStr `json:"external_api_key" validate:"required"`
 
     // Application name (not sensitive)
     AppName string `json:"app_name" validate:"required,min=1"`
@@ -342,7 +344,7 @@ type ServerConfig struct {
     Port int    `json:"port" validate:"required,min=1,max=65535"`
 
     // Secrets - string-based
-    JWTSecret  SecretStr `json:"jwt_secret" validate:"required,min=32"`
+    JWTSecret  SecretStr `json:"jwt_secret" validate:"required"`
     APIKey     SecretStr `json:"api_key" validate:"required"`
 
     // Secrets - binary (base64-encoded)
@@ -479,7 +481,7 @@ type Config struct {
 ```go
 // Good: Add validation constraints
 type Config struct {
-    APIKey SecretStr `json:"api_key" validate:"required,min=20,max=100"`
+    APIKey SecretStr `json:"api_key" validate:"required"`
     Secret SecretStr `json:"secret" validate:"required"`
 }
 
@@ -508,7 +510,7 @@ Both `SecretStr` and `SecretBytes` report validation errors without exposing sec
 
 ```go
 type Config struct {
-    APIKey SecretStr `json:"api_key" validate:"required,min=32"`
+    APIKey SecretStr `json:"api_key" validate:"required"`
 }
 
 // If validation fails, error message won't contain the actual secret

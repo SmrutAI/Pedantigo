@@ -376,8 +376,8 @@ type Validatable interface {
 
 ```go
 type PasswordChange struct {
-    CurrentPassword string `json:"current_password" validate:"required,minLength=8"`
-    NewPassword     string `json:"new_password" validate:"required,minLength=8"`
+    CurrentPassword string `json:"current_password" validate:"required,min=8"`
+    NewPassword     string `json:"new_password" validate:"required,min=8"`
     Confirm         string `json:"confirm" validate:"required,eqfield=NewPassword"`
 }
 
@@ -542,7 +542,7 @@ Design validators to be independent and composable with other constraints:
 ```go
 // These work together
 type Username struct {
-    Name string `json:"name" validate:"required,alphanumeric,minLength=3,maxLength=20,username_available"`
+    Name string `json:"name" validate:"required,alphanum,min=3,max=20,username_available"`
 }
 
 // username_available checks if the username is not in the reserved list
@@ -692,7 +692,7 @@ func ValidateSlug(value any, param string) error {
 }
 
 type ThemeConfig struct {
-    Name          string `json:"name" validate:"required,minLength=3,maxLength=50"`
+    Name          string `json:"name" validate:"required,min=3,max=50"`
     Slug          string `json:"slug" validate:"required,slug"`
     PrimaryColor  string `json:"primary_color" validate:"required,hex_color"`
     SecondaryColor string `json:"secondary_color" validate:"hex_color"`
@@ -711,7 +711,7 @@ type UserProfile struct {
     Email      string `json:"email" validate:"required,email"`
     Phone      string `json:"phone" validate:"us_phone"`
     Theme      ThemeConfig `json:"theme" validate:"required"`
-    Bio        string `json:"bio" validate:"maxLength=500"`
+    Bio        string `json:"bio" validate:"max=500"`
 }
 
 func init() {

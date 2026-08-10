@@ -75,7 +75,34 @@ var u User
 err := validator.UnmarshalInto(data, &u)
 ```
 
-The target type must have been registered first via `validator.Register(validator.New[T]())` — `UnmarshalInto` panics with an actionable message naming the missing type if it wasn't. This is the mechanism the Echo Binder plugin (`docs/plugins/web/echo.md`) uses internally.
+The target type must have been registered first via `validator.Register(validator.New[T]())` — `UnmarshalInto` panics with an actionable message naming the missing type if it wasn't. This is the mechanism the Echo Binder plugin (`docs/plugins/web/echo.md`) and the Gin request plugin's JSON path (`docs/plugins/web/gin.md`) use internally.
+
+---
+
+### ValidateInto
+
+`ValidateInto(target any) error` is the runtime-typed companion to `Validate`.
+It exists for framework integrations that only know the destination object at
+runtime after the framework has already populated it.
+
+```go
+var _ = validator.Register(validator.New[QueryRequest](validator.Options{TagName: "binding"}))
+
+var req QueryRequest
+err := validator.ValidateInto(&req)
+```
+
+Behavior:
+
+- looks up the registered validator for the concrete element type behind `target`
+- returns `nil` for `nil`, non-pointer values, and unregistered types
+- returns `*ValidationError` for ordinary validation failures
+
+This is the mechanism the Gin request plugin (`docs/plugins/web/gin.md`) uses
+for query/form/header/URI validation after Gin's own binders populate the
+struct.
+
+When using framework plugins or other runtime type lookups, all registered validators in the same process must share one effective tag name. For example, registering one request type with `TagName: "validate"` and another with `TagName: "binding"` will panic once both are made visible through `Register()`.
 
 ---
 
@@ -123,7 +150,6 @@ func NewModel[T any](input any) (*T, error)
 
 Accepts multiple input formats and creates a validated struct:
 - `[]byte` - JSON data
-- `string` - JSON string
 - `map[string]any` - Key-value map (kwargs pattern)
 - `T` - Struct value (validates it)
 - `*T` - Struct pointer (validates it)
@@ -470,10 +496,10 @@ type User struct {
     Age int `json:"age" validate:"min=0,max=150"`
 
     // Pattern matching
-    Phone string `json:"phone" validate:"pattern=^\\d{10}$"`
+    Phone string `json:"phone" validate:"regexp=^\\d{10}$"`
 
     // Field exclusion by context
-    Password string `json:"password" validate:"exclude:api,exclude:logs"`
+    Password string `json:"password" validate:"exclude:api|logs"`
 
     // Zero value omission
     Score int `json:"score" validate:"omitzero"`
@@ -488,8 +514,8 @@ Common constraints:
 - `email` - Valid email format
 - `min=N` - Minimum numeric value or string length
 - `max=N` - Maximum numeric value or string length
-- `pattern=REGEX` - Regex pattern match
-- `exclude:CONTEXT` - Omit in MarshalWithOptions for that context
+- `regexp=REGEX` - Regex pattern match
+- `exclude:CONTEXT` - Omit in MarshalWithOptions for that context (pipe-separate multiple: `exclude:api|logs`)
 - `omitzero` - Omit zero values in Marshal
 - `default=VALUE` - Default value if missing
 

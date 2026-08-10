@@ -10,7 +10,7 @@ Format validation rules for emails, URLs, UUIDs, network addresses, cryptographi
 
 ### `email`
 
-Validates that a string is a **valid email address** following RFC 5322 specifications.
+Validates that a string is a **valid email address** using a simplified format regex (`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`) — not a full RFC 5322 parser.
 
 ```go
 type Contact struct {
@@ -237,19 +237,17 @@ type DomainConfig struct {
 
 ### `port`
 
-Validates that a string or integer is a **valid port number** (1-65535).
+Validates that an integer field (int/uint types only — NOT string) is a **valid port number** (0-65535).
 
 ```go
 type ServiceEndpoint struct {
-    // Port number must be in valid range
+    // Port number must be in valid range; field must be int/uint, not string
     Port int `json:"port" validate:"required,port"`
-    // Also works with strings
-    PortString string `json:"port_string" validate:"required,port"`
 }
 ```
 
-**Valid examples:** "80", "443", "8080", "65535"
-**Invalid examples:** "0" (port 0 invalid), "65536" (exceeds max), "-1" (negative), "99999" (out of range)
+**Valid examples:** 0, 80, 443, 8080, 65535
+**Invalid examples:** 65536 (exceeds max), -1 (negative, int fields only), a string-typed field (constraint requires an integer type)
 
 ### `tcp_addr`
 
@@ -538,16 +536,16 @@ type MongoDocument struct {
 
 ## ISO Standard Formats
 
-### `iso3166_alpha2` / `iso3166_alpha3`
+### `iso3166_1_alpha2` / `iso3166_1_alpha3`
 
 Validates that a string is a **valid ISO 3166-1 country code**.
 
 ```go
 type Address struct {
     // ISO 3166-1 alpha-2 code (US, GB, FR, etc.)
-    CountryCode2 string `json:"country_code_2" validate:"required,iso3166_alpha2"`
+    CountryCode2 string `json:"country_code_2" validate:"required,iso3166_1_alpha2"`
     // ISO 3166-1 alpha-3 code (USA, GBR, FRA, etc.)
-    CountryCode3 string `json:"country_code_3" validate:"required,iso3166_alpha3"`
+    CountryCode3 string `json:"country_code_3" validate:"required,iso3166_1_alpha3"`
 }
 ```
 
@@ -557,19 +555,19 @@ type Address struct {
 
 **Invalid examples:** "XX", "USAA", "U.S.", "United States"
 
-### `iso3166_numeric`
+### `iso3166_1_alpha_numeric`
 
 Validates that a string is a **valid ISO 3166-1 numeric country code**.
 
 ```go
 type CountryNumeric struct {
-    // ISO 3166-1 numeric code (840 for USA, 826 for GB, etc.)
-    Code string `json:"code" validate:"required,iso3166_numeric"`
+    // ISO 3166-1 numeric code (840 for USA, 826 for GB, etc.) — must be an int/uint field, not string
+    Code int `json:"code" validate:"required,iso3166_1_alpha_numeric"`
 }
 ```
 
-**Valid examples:** "840" (USA), "826" (UK), "392" (Japan), "356" (India)
-**Invalid examples:** "999" (non-existent), "99" (too short), "USAA" (not numeric)
+**Valid examples:** 840 (USA), 826 (UK), 392 (Japan), 356 (India)
+**Invalid examples:** 999 (non-existent), a string-typed field (constraint requires an integer type)
 
 ### `iso3166_2`
 
@@ -642,14 +640,14 @@ type InternationalAddress struct {
 
 **Invalid examples:** "ABCDE" (US invalid), "invalid" (all invalid), "12345-67890" (US too long)
 
-### `bcp47`
+### `bcp47_language_tag`
 
 Validates that a string is a **valid BCP 47 language tag**.
 
 ```go
 type LocalizationSettings struct {
     // BCP 47 language tag (en, fr-CA, zh-Hans-CN, etc.)
-    Language string `json:"language" validate:"required,bcp47"`
+    Language string `json:"language" validate:"required,bcp47_language_tag"`
 }
 ```
 
@@ -879,10 +877,10 @@ type UserAccount struct {
     Phone string `json:"phone" validate:"required,e164"`
 
     // Country location
-    Country string `json:"country" validate:"required,iso3166_alpha2"`
+    Country string `json:"country" validate:"required,iso3166_1_alpha2"`
 
     // Preferred language
-    Language string `json:"language" validate:"required,bcp47"`
+    Language string `json:"language" validate:"required,bcp47_language_tag"`
 
     // Birth coordinates
     BirthLatitude float64 `json:"birth_latitude,omitempty" validate:"latitude"`
@@ -1023,9 +1021,9 @@ func main() {
 | `sha384` | `sha384` | SHA384 hash format |
 | `sha512` | `sha512` | SHA512 hash format |
 | `mongodb` | `mongodb` | MongoDB ObjectID |
-| `iso3166_alpha2` | `iso3166_alpha2` | ISO country code (2-letter) |
-| `iso3166_alpha3` | `iso3166_alpha3` | ISO country code (3-letter) |
-| `iso3166_numeric` | `iso3166_numeric` | ISO country code (numeric) |
+| `iso3166_1_alpha2` | `iso3166_1_alpha2` | ISO country code (2-letter) |
+| `iso3166_1_alpha3` | `iso3166_1_alpha3` | ISO country code (3-letter) |
+| `iso3166_1_alpha_numeric` | `iso3166_1_alpha_numeric` | ISO country code (numeric, int/uint field) |
 | `iso3166_2` | `iso3166_2` | ISO subdivision code |
 | `iso3166_alpha2_eu` | `iso3166_alpha2_eu` | ISO code (EU countries only) |
 | `iso3166_alpha3_eu` | `iso3166_alpha3_eu` | ISO code (EU, 3-letter) |
@@ -1033,7 +1031,7 @@ func main() {
 | `iso4217_numeric` | `iso4217_numeric` | ISO currency code (numeric) |
 | `postcode=CC` | `postcode=US` | Postal code for country |
 | `postcode_iso3166_alpha2=CC` | `postcode_iso3166_alpha2=GB` | Postal code (alias) |
-| `bcp47` | `bcp47` | BCP 47 language tag |
+| `bcp47_language_tag` | `bcp47_language_tag` | BCP 47 language tag |
 | `latitude` | `latitude` | Valid latitude (-90 to 90) |
 | `longitude` | `longitude` | Valid longitude (-180 to 180) |
 | `hexcolor` | `hexcolor` | Hexadecimal color |

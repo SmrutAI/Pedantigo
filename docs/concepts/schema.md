@@ -367,9 +367,9 @@ Pedantigo validation constraints are automatically mapped to JSON Schema keyword
 
 | Constraint | JSON Schema | Example |
 |-----------|-----------|---------|
-| `minLength` | `minLength` | `validate:"minLength=3"` |
-| `maxLength` | `maxLength` | `validate:"maxLength=255"` |
-| `pattern` | `pattern` | `validate:"pattern=^[a-z]+$"` |
+| `min` | `minLength` | `validate:"min=3"` |
+| `max` | `maxLength` | `validate:"max=255"` |
+| `regexp` | `pattern` | `validate:"regexp=^[a-z]+$"` |
 | `email` | `format: "email"` | `validate:"email"` |
 | `url` | `format: "uri"` | `validate:"url"` |
 | `uuid` | `format: "uuid"` | `validate:"uuid"` |
@@ -404,8 +404,8 @@ All standard formats map to `format` keyword:
 
 | Constraint | JSON Schema | Example |
 |-----------|-----------|---------|
-| `minItems` | `minItems` | `validate:"minItems=1"` |
-| `maxItems` | `maxItems` | `validate:"maxItems=100"` |
+| `min` | `minItems` | `validate:"min=1"` |
+| `max` | `maxItems` | `validate:"max=100"` |
 | `unique` | `uniqueItems: true` | `validate:"unique"` |
 
 ## Schema Metadata Tags
@@ -572,10 +572,10 @@ type CreateUserRequest struct {
     Status string `json:"status" validate:"required,oneof=active inactive suspended,description=Account status"`
 
     // Optional field with description
-    Bio string `json:"bio,omitempty" validate:"maxLength=500,description=User biography"`
+    Bio string `json:"bio,omitempty" validate:"max=500,description=User biography"`
 
     // Tags/roles array
-    Tags []string `json:"tags,omitempty" validate:"maxItems=10,unique,description=User interests and skills"`
+    Tags []string `json:"tags,omitempty" validate:"max=10,unique,description=User interests and skills"`
 
     // URL field
     Website string `json:"website,omitempty" validate:"url,description=User's personal website"`
@@ -708,7 +708,7 @@ Generate OpenAPI/Swagger specs automatically:
 type CreatePostRequest struct {
     Title   string `json:"title" validate:"required,min=5,max=200,description=Post title"`
     Content string `json:"content" validate:"required,min=10,max=10000,description=Post content"`
-    Tags    []string `json:"tags" validate:"maxItems=10,unique,description=Post tags"`
+    Tags    []string `json:"tags" validate:"max=10,unique,description=Post tags"`
 }
 
 schema := validator.SchemaJSONOpenAPI[CreatePostRequest]()

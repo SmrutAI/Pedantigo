@@ -67,7 +67,7 @@ type Options struct {
     // Options:
     //   - ExtraIgnore (default): Unknown fields are silently ignored
     //   - ExtraForbid: Unknown fields cause validation errors
-    //   - ExtraAllow: Reserved for future use
+    //   - ExtraAllow: Unknown fields are captured into a struct field tagged `extra_fields` (a map[string]any), recursively into nested structs
     ExtraFields ExtraFieldsMode
 }
 ```
@@ -94,8 +94,8 @@ fmt.Printf("Email: %s, Age: %d\n", user.Email, user.Age)
 
 **Behavior:**
 - Parses JSON and validates fields according to struct tags
-- Applies defaults and defaultFactory functions
-- Returns error slice on validation failure
+- Applies static `default=VALUE` defaults for missing fields
+- Returns a `*ValidationError` (whose `.Errors` field holds the individual `FieldError`s) on validation failure, not an error slice directly
 - Reuses field deserializers for efficiency
 
 ### Validate
@@ -216,7 +216,7 @@ if err != nil {
 Get JSON Schema optimized for LLM APIs (no `$schema` or `$id` fields).
 
 ```go
-schema := validator.SchemaLLM()
+schema := userValidator.SchemaLLM()
 // Returns schema without $schema or $id fields for LLM tool calling
 ```
 
@@ -408,9 +408,11 @@ if err != nil {
 }
 
 // Check specific validation errors
-errs := user, err  // err is a FieldError slice
-for _, fieldErr := range errs {
-    fmt.Printf("Field %s: %s\n", fieldErr.Field, fieldErr.Message)
+var ve *validator.ValidationError
+if errors.As(err, &ve) {
+    for _, fieldErr := range ve.Errors {
+        fmt.Printf("Field %s: %s\n", fieldErr.Field, fieldErr.Message)
+    }
 }
 ```
 
@@ -434,7 +436,9 @@ For complex validation scenarios with union types:
 
 ```go
 // Create union validator (advanced feature)
-unionValidator := validator.NewUnion[T](opts...)
+unionValidator, err := validator.NewUnion[T](validator.UnionOptions{
+    // ... variant definitions
+})
 ```
 
 Refer to advanced examples for union validation patterns.

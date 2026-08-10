@@ -31,22 +31,22 @@ Each variant in your union should be a separate struct with appropriate validati
 ```go
 type CreditCard struct {
     Type       string `json:"type" validate:"required"`
-    CardNumber string `json:"cardNumber" validate:"required,pattern=^[0-9]{16}$"`
-    CVC        string `json:"cvc" validate:"required,pattern=^[0-9]{3}$"`
-    ExpiryDate string `json:"expiryDate" validate:"required,pattern=^[0-9]{2}/[0-9]{2}$"`
+    CardNumber string `json:"cardNumber" validate:"required,regexp=^[0-9]{16}$"`
+    CVC        string `json:"cvc" validate:"required,regexp=^[0-9]{3}$"`
+    ExpiryDate string `json:"expiryDate" validate:"required,regexp=^[0-9]{2}/[0-9]{2}$"`
 }
 
 type BankTransfer struct {
     Type           string `json:"type" validate:"required"`
-    AccountNumber  string `json:"accountNumber" validate:"required,pattern=^[0-9]{10,12}$"`
-    RoutingNumber  string `json:"routingNumber" validate:"required,pattern=^[0-9]{9}$"`
+    AccountNumber  string `json:"accountNumber" validate:"required,regexp=^[0-9]{10,12}$"`
+    RoutingNumber  string `json:"routingNumber" validate:"required,regexp=^[0-9]{9}$"`
     AccountHolderName string `json:"accountHolderName" validate:"required,min=2"`
 }
 
 type DigitalWallet struct {
     Type     string `json:"type" validate:"required"`
     WalletID string `json:"walletId" validate:"required,min=1"`
-    Provider string `json:"provider" validate:"required,enum=apple_pay|google_pay|paypal"`
+    Provider string `json:"provider" validate:"required,oneof=apple_pay google_pay paypal"`
 }
 ```
 
@@ -277,8 +277,8 @@ import (
 // Define payment method variants
 type CreditCard struct {
     Type       string `json:"type" validate:"required"`
-    CardNumber string `json:"cardNumber" validate:"required,pattern=^[0-9]{16}$"`
-    CVC        string `json:"cvc" validate:"required,pattern=^[0-9]{3}$"`
+    CardNumber string `json:"cardNumber" validate:"required,regexp=^[0-9]{16}$"`
+    CVC        string `json:"cvc" validate:"required,regexp=^[0-9]{3}$"`
     ExpiryDate string `json:"expiryDate" validate:"required"`
 }
 
@@ -292,14 +292,14 @@ func (c CreditCard) Validate() error {
 
 type BankTransfer struct {
     Type           string `json:"type" validate:"required"`
-    AccountNumber  string `json:"accountNumber" validate:"required,pattern=^[0-9]{10,12}$"`
-    RoutingNumber  string `json:"routingNumber" validate:"required,pattern=^[0-9]{9}$"`
+    AccountNumber  string `json:"accountNumber" validate:"required,regexp=^[0-9]{10,12}$"`
+    RoutingNumber  string `json:"routingNumber" validate:"required,regexp=^[0-9]{9}$"`
 }
 
 type DigitalWallet struct {
     Type     string `json:"type" validate:"required"`
     WalletID string `json:"walletId" validate:"required,min=1"`
-    Provider string `json:"provider" validate:"required,enum=apple_pay|google_pay|paypal"`
+    Provider string `json:"provider" validate:"required,oneof=apple_pay google_pay paypal"`
 }
 
 func main() {
@@ -392,29 +392,7 @@ func main() {
 
 ## Streaming Discriminated Unions
 
-For LLM outputs or streaming APIs, you can use `StreamParser` with unions:
-
-```go
-// Create stream parser for union types
-parser := validator.NewStreamUnionParser[any](validator.UnionOptions{
-    DiscriminatorField: "type",
-    Variants: []validator.UnionVariant{
-        validator.VariantFor[CreditCard]("credit_card"),
-        validator.VariantFor[BankTransfer]("bank_transfer"),
-        validator.VariantFor[DigitalWallet]("digital_wallet"),
-    },
-})
-
-// Feed streaming data
-parser.Feed(`{"type": "credit_card"`)
-parser.Feed(`, "cardNumber": "411111`)
-parser.Feed(`1111111111"`)
-parser.Feed(`, "cvc": "123"`)
-parser.Feed(`, "expiryDate": "12/25"}`)
-
-// Get validated result
-result, err := parser.Complete()
-```
+Combining `StreamParser` with discriminated unions (streaming a payload whose shape isn't known until the discriminator field arrives) is not currently supported. `NewUnion[T]` validates a complete, already-decoded payload; `StreamParser[T]` is generic over one fixed type `T` and has no union-aware variant. There is no `NewStreamUnionParser` or similar constructor in the library today.
 
 ## Best Practices
 

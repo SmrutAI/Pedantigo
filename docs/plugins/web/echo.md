@@ -13,7 +13,7 @@ invoked for those methods.
 ## Install
 
 ```bash
-go get github.com/SmrutAI/pedantigo/v2/plugins/web/echo@v2.0.0
+go get github.com/SmrutAI/pedantigo/v2/plugins/web/echo@v2.0.1
 ```
 
 ## Setup
