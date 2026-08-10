@@ -56,11 +56,10 @@ Every `FieldError` includes a machine-readable `Code` for programmatic handling:
 | `MAX_VALUE` | `max=N` (numeric) | Number above maximum |
 | `MIN_LENGTH` | `min=N` (string) | String shorter than minimum |
 | `MAX_LENGTH` | `max=N` (string) | String longer than maximum |
-| `PATTERN_MISMATCH` | `regexp=`, `pattern=` | Regex pattern not matched |
+| `PATTERN_MISMATCH` | `regexp=` | Regex pattern not matched |
 | `INVALID_ENUM` | `oneof=` | Value not in allowed set |
-| `EXTRA_FIELD` | `ExtraForbid` mode | Unknown field in JSON |
-| `GT_FIELD` | `gtfield=OtherField` | Not greater than other field |
-| `LT_FIELD` | `ltfield=OtherField` | Not less than other field |
+| `MUST_BE_GT_FIELD` | `gtfield=OtherField` | Not greater than other field |
+| `MUST_BE_LT_FIELD` | `ltfield=OtherField` | Not less than other field |
 
 ## What Errors Look Like
 
@@ -255,7 +254,7 @@ if errors.As(err, &validationErr) {
 | `max=N` | `must be at most N characters` | String too long |
 | `alpha` | `must contain only alphabetic characters` | Contains non-letters |
 | `alphanum` | `must contain only alphanumeric characters` | Contains special chars |
-| `pattern` | `must match pattern .*` | Regex pattern mismatch |
+| `regexp` | `must match pattern .*` | Regex pattern mismatch |
 
 ### Numeric Constraints
 
@@ -272,8 +271,8 @@ if errors.As(err, &validationErr) {
 
 | Constraint | Error Message | Example |
 |------------|---------------|---------|
-| `minItems=N` | `must have at least N items` | Array too short |
-| `maxItems=N` | `must have at most N items` | Array too long |
+| `min=N` | `must have at least N items` | Array too short |
+| `max=N` | `must have at most N items` | Array too long |
 | `unique` | `items must be unique` | Duplicate items |
 
 ## Error Handling Example

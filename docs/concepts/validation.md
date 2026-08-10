@@ -17,7 +17,7 @@ Validation follows a clear, predictable pipeline:
 1. **Tag Parsing** - Struct tags are parsed to extract validation constraints (fail-fast at creation time)
 2. **Deserialization** - JSON is unmarshaled to a map, preserving which keys were present
 3. **Field Validation** - Each field's constraints are checked (required, min, max, format, etc.)
-4. **Default Application** - Missing fields get default values or `defaultFactory` results
+4. **Default Application** - Missing fields get default values from the `default` constraint
 5. **Cross-Field Validation** - If your struct implements `Validatable`, its `Validate()` method is called
 6. **Error Collection** - All errors are gathered and returned as a `ValidationError`
 
@@ -32,7 +32,7 @@ type User struct {
     Name     string `json:"name" validate:"required,min=2,max=50"`
     Email    string `json:"email" validate:"required,email"`
     Age      int    `json:"age" validate:"min=0,max=150"`
-    Status   string `json:"status" validate:"required,enum=active|inactive|pending"`
+    Status   string `json:"status" validate:"required,oneof=active inactive pending"`
     Verified bool   `json:"verified" validate:"default=false"`
 }
 ```
@@ -40,7 +40,7 @@ type User struct {
 **Key syntax rules:**
 - Constraints are comma-separated: `validate:"constraint1,constraint2=value"`
 - Constraints with values use `=`: `min=2`, `max=50`, `default=false`
-- Enum values are pipe-separated: `enum=active|inactive|pending`
+- `oneof` values are space-separated: `oneof=active inactive pending`
 - Multiple constraints stack: `required,email,max=100`
 
 ## Validation Methods
@@ -280,24 +280,7 @@ type APIKeyRequest struct {
 // Missing "scopes" field → defaults to ["read", "write"]
 ```
 
-Defaults are applied only for missing fields during `Unmarshal`. For dynamic defaults, use `defaultFactory`:
-
-```go
-type Session struct {
-    Token   string    `json:"token" validate:"required,defaultFactory=generateToken"`
-    Created time.Time `json:"created" validate:"defaultFactory=now"`
-}
-
-func generateToken() string {
-    return uuid.New().String()
-}
-
-func now() time.Time {
-    return time.Now()
-}
-```
-
-The factory function is called only if the field is missing in the JSON.
+Defaults are applied only for missing fields during `Unmarshal`. Only static values are supported via `default=VALUE` — there is no dynamic/function-based default mechanism (e.g. a "call this function to generate a default" feature) in pedantigo today.
 
 ## Common Validation Patterns
 
@@ -340,7 +323,7 @@ type Post struct {
 
 ```go
 type Order struct {
-    Status string `json:"status" validate:"required,enum=pending|processing|shipped|delivered"`
+    Status string `json:"status" validate:"required,oneof=pending processing shipped delivered"`
 }
 ```
 

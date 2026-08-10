@@ -19,7 +19,7 @@ Use `eqfield` to require a field to equal another field, and `nefield` to requir
 ```go
 type RegisterRequest struct {
     Email            string `json:"email" validate:"required,email"`
-    Password         string `json:"password" validate:"required,minLength=8"`
+    Password         string `json:"password" validate:"required,min=8"`
     PasswordConfirm  string `json:"password_confirm" validate:"required,eqfield=Password"`
 }
 
@@ -376,8 +376,8 @@ Use `excluded_with` to forbid a field when another field is present. Use `exclud
 
 ```go
 type AuthRequest struct {
-    APIKey string `json:"api_key" validate:"minLength=20,maxLength=50"`
-    Token  string `json:"token" validate:"excluded_with=APIKey,minLength=20,maxLength=100"`
+    APIKey string `json:"api_key" validate:"min=20,max=50"`
+    Token  string `json:"token" validate:"excluded_with=APIKey,min=20,max=100"`
 }
 
 // Valid - uses API key only
@@ -470,7 +470,7 @@ If your `Validate()` method returns an error, it will be collected in the `Valid
 
 ```go
 type Account struct {
-    Username string `json:"username" validate:"required,minLength=3,maxLength=20"`
+    Username string `json:"username" validate:"required,min=3,max=20"`
     Email    string `json:"email" validate:"required,email"`
     Age      int    `json:"age" validate:"min=18"`
 }
@@ -505,6 +505,7 @@ Here's a comprehensive example combining all cross-field validation techniques:
 package main
 
 import (
+    "errors"
     "fmt"
     "time"
 
@@ -514,10 +515,10 @@ import (
 type EventRegistration struct {
     // Basic fields
     Email           string    `json:"email" validate:"required,email"`
-    FullName        string    `json:"full_name" validate:"required,minLength=2"`
+    FullName        string    `json:"full_name" validate:"required,min=2"`
 
     // Field comparisons
-    Password        string    `json:"password" validate:"required,minLength=12"`
+    Password        string    `json:"password" validate:"required,min=12"`
     PasswordConfirm string    `json:"password_confirm" validate:"required,eqfield=Password"`
 
     // Conditional requirements

@@ -118,16 +118,16 @@ curl -X POST http://localhost:8080/users \
   "error": "validation_failed",
   "errors": [
     {
-      "field": "email",
-      "code": "INVALID_EMAIL",
-      "message": "must be a valid email address",
-      "value": "invalid"
+      "Field": "email",
+      "Code": "INVALID_EMAIL",
+      "Message": "must be a valid email address",
+      "Value": "invalid"
     },
     {
-      "field": "username",
-      "code": "MIN_LENGTH",
-      "message": "must be at least 3 characters",
-      "value": "ab"
+      "Field": "username",
+      "Code": "MIN_LENGTH",
+      "Message": "must be at least 3 characters",
+      "Value": "ab"
     }
   ]
 }
@@ -322,7 +322,7 @@ For nested structs, field paths include the full path:
 type Address struct {
     Street string `json:"street" validate:"required,min=5"`
     City   string `json:"city" validate:"required,min=2"`
-    Zip    string `json:"zip" validate:"required,pattern=^\\d{5}$"`
+    Zip    string `json:"zip" validate:"required,regexp=^\\d{5}$"`
 }
 
 type CreateUserRequest struct {
@@ -349,7 +349,7 @@ For validation errors in array elements, the field path includes the index:
 
 ```go
 type CreateOrderRequest struct {
-    Items []OrderItem `json:"items" validate:"required,minItems=1,maxItems=100"`
+    Items []OrderItem `json:"items" validate:"required,min=1,max=100"`
 }
 
 type OrderItem struct {
@@ -384,7 +384,7 @@ type CreateProductRequest struct {
     Name        string  `json:"name" validate:"required,min=1,max=200"`
     Description string  `json:"description" validate:"max=2000"`
     Price       float64 `json:"price" validate:"required,gt=0"`
-    SKU         string  `json:"sku" validate:"required,pattern=^[A-Z0-9-]+$"`
+    SKU         string  `json:"sku" validate:"required,regexp=^[A-Z0-9-]+$"`
 }
 
 // Response types

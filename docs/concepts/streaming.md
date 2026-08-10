@@ -29,7 +29,7 @@ The simplest way to create a stream parser:
 
 ```go
 type Message struct {
-    Role    string `json:"role" validate:"required,enum=user|assistant|system"`
+    Role    string `json:"role" validate:"required,oneof=user assistant system"`
     Content string `json:"content" validate:"required,min=1"`
 }
 
@@ -53,7 +53,7 @@ If you need discriminated union support or other advanced features, create a cus
 
 ```go
 type MessageContent struct {
-    Type string `json:"type" validate:"required,enum=text|image|video"`
+    Type string `json:"type" validate:"required,oneof=text image video"`
     Body string `json:"body" validate:"required"`
 }
 
@@ -131,8 +131,10 @@ If the stream terminates before sending complete JSON, check the state:
 parser := validator.NewStreamParser[Message]()
 
 // Stream closes unexpectedly
+var lastState *validator.StreamState
 for chunk := range streamChan {
-    result, state, err := parser.Feed(chunk)
+    result, state, err := parser.Feed([]byte(chunk))
+    lastState = state
     if state.IsComplete {
         // Got valid JSON before stream closed
         break
@@ -140,7 +142,7 @@ for chunk := range streamChan {
 }
 
 // After stream closes, check if we have incomplete data
-state := parser.CurrentState()
+state := lastState
 if !state.IsComplete && state.BytesReceived > 0 {
     fmt.Printf("Stream ended with incomplete JSON (%d bytes)\n", state.BytesReceived)
     fmt.Printf("Last parse error: %v\n", state.LastError)
@@ -185,12 +187,12 @@ func handleOpenAIStream(ctx context.Context, client *openai.Client) error {
     }
     defer stream.Close()
 
+    var lastState *validator.StreamState
     for {
         response, err := stream.Recv()
         if err == io.EOF {
             // Stream ended
-            state := parser.CurrentState()
-            if !state.IsComplete {
+            if lastState != nil && !lastState.IsComplete {
                 fmt.Printf("Warning: Stream ended with incomplete JSON\n")
             }
             break
@@ -202,7 +204,8 @@ func handleOpenAIStream(ctx context.Context, client *openai.Client) error {
         // The response chunks need to be assembled into JSON
         chunk := response.Choices[0].Delta.Content
 
-        result, state, parseErr := parser.Feed(chunk)
+        result, state, parseErr := parser.Feed([]byte(chunk))
+        lastState = state
 
         if state.IsComplete {
             if parseErr != nil {
@@ -232,7 +235,7 @@ import (
 )
 
 type ContentBlock struct {
-    Type string `json:"type" validate:"required,enum=text|image"`
+    Type string `json:"type" validate:"required,oneof=text image"`
     Text string `json:"text" validate:"required,min=1"`
 }
 
@@ -255,7 +258,7 @@ func handleAnthropicStream(ctx context.Context, client *anthropic.Client) error 
         if event.Type == "content_block_delta" {
             delta := event.Delta
 
-            result, state, parseErr := parser.Feed(delta)
+            result, state, parseErr := parser.Feed([]byte(delta))
 
             if state.IsComplete {
                 if parseErr != nil {
@@ -309,12 +312,12 @@ For debugging or inspecting accumulated data:
 parser := validator.NewStreamParser[Message]()
 
 // Feed some chunks
-parser.Feed(`{"role":"assi`)
-parser.Feed(`stant","content":"Hello`)
+parser.Feed([]byte(`{"role":"assi`))
+parser.Feed([]byte(`stant","content":"Hello`))
 
 // Get current buffer
 buffer := parser.Buffer()
-fmt.Println(buffer) // {"role":"assistant","content":"Hello
+fmt.Println(string(buffer)) // {"role":"assistant","content":"Hello
 ```
 
 This is useful for logging or understanding why a stream failed to complete.

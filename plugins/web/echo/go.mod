@@ -3,7 +3,7 @@ module github.com/SmrutAI/pedantigo/v2/plugins/web/echo
 go 1.23.0
 
 require (
-	github.com/SmrutAI/pedantigo/v2 v2.0.0
+	github.com/SmrutAI/pedantigo/v2 v2.0.1
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/stretchr/testify v1.11.1
 )

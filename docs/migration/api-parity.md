@@ -19,7 +19,7 @@ How Pedantigo compares to Pydantic v2 and go-playground/validator v10.
 | Required fields             |     ✓     |    ✓     |     ✓     |  [Validation](../concepts/validation#understanding-required)  |                                                |
 | Optional fields             |     ✓     |    ✓     |     ✓     |  [Validation](../concepts/validation#understanding-required)  |                                                |
 | Default values (static)     |     ✓     |    ✓     |     ✗     |     [Constraints](../concepts/constraints#default-values)     |                                                |
-| Default values (dynamic)    |     ✓     |    ✓     |     ✗     |  [Validation](../concepts/validation#defaults-and-factories)  |                                                |
+| Default values (dynamic)    |     ✗     |    ✓     |     ✗     |                              —                                | Pedantigo only supports static `default=VALUE`; no factory/function-based defaults |
 | Field presence detection    |     ✓     |    ✓     |     ✓     | [Initialization](../api/initialization#strict-missing-fields) |                                                |
 | Zero vs missing distinction |     ✓     |    ✓     |     ~     | [Initialization](../api/initialization#strict-missing-fields) | validator: requires `omitempty` tag workaround |
 
@@ -265,12 +265,12 @@ How Pedantigo compares to Pydantic v2 and go-playground/validator v10.
 
 ## Summary
 
-**127/147 features** — Full parity with go-playground/validator. Strong parity with Pydantic v2 for features applicable
+**126/147 features** — Full parity with go-playground/validator. Strong parity with Pydantic v2 for features applicable
 to Go's type system.
 
 | Category               | Coverage |
 |------------------------|:--------:|
-| Validation Basics      |   6/6    |
+| Validation Basics      |   5/6    |
 | String Constraints     |  16/16   |
 | Numeric Constraints    |   7/8    |
 | Format Validators      |  46/46   |

@@ -35,7 +35,7 @@ type ToolCall struct {
 }
 
 type FunctionResponse struct {
-    ToolCalls []ToolCall `json:"tool_calls" validate:"min_items=1,max_items=5"`
+    ToolCalls []ToolCall `json:"tool_calls" validate:"min=1,max=5"`
 }
 
 func main() {
@@ -120,8 +120,8 @@ Include the JSON schema in your LLM prompt so it knows the expected format:
 type ExtractedData struct {
     Title       string   `json:"title" validate:"required,max=200"`
     Description string   `json:"description" validate:"max=2000"`
-    Tags        []string `json:"tags" validate:"max_items=10"`
-    Confidence  float64  `json:"confidence" validate:"ge=0,le=1"`
+    Tags        []string `json:"tags" validate:"max=10"`
+    Confidence  float64  `json:"confidence" validate:"gte=0,lte=1"`
 }
 
 func getSystemPrompt() string {
@@ -150,7 +150,7 @@ LLMs occasionally generate invalid JSON. Implement graceful error handling:
 ```go
 type ExtractionResult struct {
     Content string `json:"content" validate:"required"`
-    Score   float64 `json:"score" validate:"ge=0,le=1"`
+    Score   float64 `json:"score" validate:"gte=0,lte=1"`
 }
 
 func extractWithRetry(llm *LLMClient, text string, maxRetries int) (*ExtractionResult, error) {

@@ -232,10 +232,10 @@ Use `keys` and `endkeys` to apply constraints specifically to map keys (not valu
 ```go
 type AppConfig struct {
     // All keys must be lowercase alphanumeric
-    Settings map[string]string `json:"settings" validate:"required,keys,lowercase,alphanum,endkeys"`
+    Settings map[string]string `json:"settings" validate:"required,dive,keys,lowercase,alphanum,endkeys"`
 
     // All keys must be valid email addresses
-    UserPreferences map[string]any `json:"preferences" validate:"keys,email,endkeys"`
+    UserPreferences map[string]any `json:"preferences" validate:"dive,keys,email,endkeys"`
 }
 ```
 
@@ -251,7 +251,7 @@ type AppConfig struct {
 ```go
 type EnvironmentVars struct {
     // Keys must be uppercase, values must be non-empty strings
-    Variables map[string]string `json:"variables" validate:"required,keys,uppercase,alphanum,endkeys,dive,min=1"`
+    Variables map[string]string `json:"variables" validate:"required,dive,keys,uppercase,alphanum,endkeys,min=1"`
 }
 ```
 
@@ -307,7 +307,7 @@ type BlogPost struct {
 
     // Map of translations: keys must be language codes (2 chars uppercase)
     // Values must be 10+ characters
-    Translations map[string]string `json:"translations" validate:"keys,len=2,uppercase,alphanum,endkeys,dive,min=10"`
+    Translations map[string]string `json:"translations" validate:"dive,keys,len=2,uppercase,alphanum,endkeys,min=10"`
 
     // Each comment must be valid
     Comments []Comment `json:"comments" validate:"max=500,dive"`

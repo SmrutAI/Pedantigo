@@ -60,8 +60,8 @@ See [omitempty as a Validation Constraint](/docs/api/initialization#pedantigo-om
 validate.RegisterValidation("custom", customFunc)
 
 // pedantigo
-validator.RegisterConstraint("custom", func(value string) (constraints.Constraint, bool) {
-    return &myCustomConstraint{}, true
+validator.RegisterValidation("custom", func(value any, param string) error {
+    return nil // return an error to fail validation
 })
 ```
 
@@ -85,7 +85,7 @@ validate.RegisterAlias("is_active", "oneof=active enabled")
 validator.RegisterAlias("is_active", "oneof=active enabled")
 ```
 
-(See "API difference" above for custom validator registration via `RegisterConstraint`.)
+(See "API difference" above for custom validator registration via `RegisterValidation`.)
 
 ---
 
@@ -111,8 +111,8 @@ err := validate.StructPartial(user, "Username", "Email")
 err := validate.StructExcept(user, "Password")
 
 // pedantigo
-err := validator.StructPartial(&user, "Username", "Email")
-err := validator.StructExcept(&user, "Password")
+err := validator.ValidatePartial(&user, "Username", "Email")
+err := validator.ValidateExcept(&user, "Password")
 ```
 
 ### RegisterValidationCtx - Context-Aware Validators

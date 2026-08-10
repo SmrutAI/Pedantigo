@@ -1324,3 +1324,12 @@ func (v *Validator[T]) unmarshalInto(data []byte, target any) error {
 	*target.(*T) = *result
 	return nil
 }
+
+// validateInto implements the validatableInto interface for type-erased validation.
+func (v *Validator[T]) validateInto(obj any) error {
+	typed, ok := obj.(*T)
+	if !ok {
+		return fmt.Errorf("validator: ValidateInto got %T, want *%T", obj, *new(T))
+	}
+	return v.Validate(typed)
+}

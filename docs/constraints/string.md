@@ -253,7 +253,7 @@ type Zipcode struct {
 These constraints validate common string formats (documented in detail in [Format Constraints](/docs/constraints/format)):
 
 - `email` - Valid email format
-- `url` - Valid URL (http/https)
+- `url` - Valid URL (any scheme)
 - `uuid` - Valid UUID format
 - `uri` - Valid URI format
 - `ipv4` - Valid IPv4 address
@@ -405,5 +405,5 @@ type SlugURL struct {
 | `strip_whitespace` | `strip_whitespace` | No leading/trailing whitespace |
 | `regexp=pattern` | `regexp=^[0-9]{5}$` | Match regex pattern |
 | `email` | `email` | Valid email format |
-| `url` | `url` | Valid URL (http/https) |
+| `url` | `url` | Valid URL (any scheme) |
 | `uuid` | `uuid` | Valid UUID format |

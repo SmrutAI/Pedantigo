@@ -24,7 +24,7 @@ type Product struct {
 **Behavior:**
 - Works with all numeric types (int, int8-64, uint, uint8-64, float32, float64)
 - Both bounds are inclusive
-- Empty/zero values skip validation (only `required` constraint enforces non-zero)
+- Zero values are still validated against `min`/`max` unless the JSON tag has `omitempty` (then a zero-value field skips regular constraints)
 - Comparison uses numeric value, not string representation
 
 ### `gt` / `gte` / `lt` / `lte`
@@ -355,7 +355,7 @@ func main() {
 
 ## Validation Behavior Notes
 
-- **Zero values:** Most numeric constraints skip validation for zero. Use `required` to enforce non-zero values, or `positive`/`negative` for sign constraints.
+- **Zero values:** Numeric constraints are still checked at zero value unless the JSON tag has `omitempty`. Use `positive`/`negative` for sign constraints.
 - **Type safety:** Constraints work with all numeric types (signed/unsigned integers, floating-point numbers).
 - **Precision:** Floating-point comparisons use standard Go arithmetic; be cautious with `decimal_places` and extremely small values due to floating-point precision limits.
 - **Nil values:** Nil pointers are skipped in validation; use `required` to enforce non-nil.

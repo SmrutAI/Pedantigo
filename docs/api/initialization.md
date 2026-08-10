@@ -192,12 +192,12 @@ Controls whether missing fields (fields not present in JSON) cause validation er
 
 ### StrictMissingFields: true (Default) {#strict-missing-true}
 
-Missing fields without defaults are validation errors:
+Missing fields tagged `required` (and without a `default`) are validation errors. `StrictMissingFields: true` alone does not make every missing field an error — only fields that also carry the `required` constraint:
 
 ```go
 type Config struct {
 Host string `json:"host" validate:"required"`
-Port int    `json:"port"` // No default
+Port int    `json:"port" validate:"required"` // No default, and tagged required
 }
 
 jsonData := []byte(`{"host":"localhost"}`)
@@ -211,8 +211,8 @@ config, err := configValidator.Unmarshal(jsonData)
 
 Use this mode when you want to:
 
-- Catch missing fields as validation errors
-- Ensure all fields are explicitly provided in JSON
+- Catch missing `required` fields as validation errors
+- Ensure all `required` fields are explicitly provided in JSON
 - Enforce strict API contracts
 
 ### StrictMissingFields: false {#strict-missing-false}
