@@ -3,7 +3,7 @@ module github.com/SmrutAI/pedantigo/plugins/web/pedantigogin/v2
 go 1.25.0
 
 require (
-	github.com/SmrutAI/pedantigo/v2 v2.1.0
+	github.com/SmrutAI/pedantigo/v2 v2.1.1
 	github.com/gin-gonic/gin v1.12.0
 	github.com/stretchr/testify v1.11.1
 )
