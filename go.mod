@@ -3,6 +3,7 @@ module github.com/SmrutAI/pedantigo/v2
 go 1.21
 
 retract v2.0.0 // published with a stale layout (pre validator/ restructure) that was permanently cached on the module proxy before the fix landed; use v2.0.1 or later
+retract v2.1.0 // README/docs pointed at plugins/web/echo and plugins/web/gin v2.1.0 tags whose module paths broke Go's major-version-suffix rule (v2 not at the end of the path); those tags have been deleted, so following this version's own install instructions fails; use v2.1.1 or later with plugins/web/pedantigoecho/v2 and plugins/web/pedantigogin/v2
 
 require (
 	github.com/invopop/jsonschema v0.13.0
