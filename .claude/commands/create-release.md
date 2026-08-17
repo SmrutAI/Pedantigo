@@ -27,6 +27,30 @@ The full release chain after this command runs:
 
 So getting the release right matters: the release notes become part of the changelog in pedantigo-docs.
 
+## Hard Invariant: All Three Modules Always Release at the Same Version, Together
+
+This repository contains **three separate Go modules**, and every release MUST cover all three, at
+the exact same version number, every time — there is no such thing as a partial release:
+
+1. **Root module** — `github.com/SmrutAI/pedantigo/v2` (repo root, tag: `v<version>`)
+2. **Echo plugin** — `github.com/SmrutAI/pedantigo/v2/plugins/web/echo` (tag: `plugins/web/echo/v<version>`)
+3. **Gin plugin** — `github.com/SmrutAI/pedantigo/v2/plugins/web/gin` (tag: `plugins/web/gin/v<version>`)
+
+Two things must both be true for every release, or it is incomplete:
+
+- **All three modules must be tagged**, using the module-specific tag prefix for the two nested ones.
+  A tag at the repo root only ever versions the root module — Go's own module resolution rules require
+  a separately-prefixed tag (`<subdirectory>/v<version>`) for every nested module, full stop, with no
+  exception. Tagging only the root leaves both plugins permanently uninstallable at that version.
+- **Both plugin `go.mod` files must require the same version** of the root module that is being
+  released, committed *before* any tag is created. A tag is immutable — if a plugin's `go.mod` still
+  points at an older root version at tag time, that mismatch is frozen into the release forever, and a
+  fresh `go get` of that plugin can silently resolve an outdated (possibly buggy) root module while the
+  consumer believes they installed the latest version.
+
+If a third plugin module is ever added under `plugins/`, it joins this same list automatically — the
+loops in Step 5 below use `plugins/*/*/go.mod` and require no manual list to maintain.
+
 ## Steps
 
 ### 1. Discover current state
@@ -98,16 +122,38 @@ Before executing, show:
 
 Get confirmation before creating the tag or release.
 
-### 5. Create the tag and release
+### 5. Release all three modules together, in this exact order
+
+This step enforces the invariant above. Do not reorder, skip, or partially execute these sub-steps —
+each one depends on the previous one having actually happened.
+
+**5a. Bump both plugin modules' `go.mod` to require the new root version, and commit — before any
+tag exists.** This has to come first because a tag is a permanent, immutable pointer to a commit; if
+the `go.mod` bump happens after tagging, the mismatch is frozen into the release forever.
+
+```bash
+for gomod in plugins/*/*/go.mod; do
+  moddir=$(dirname "$gomod")
+  sed -i.bak "s#github.com/SmrutAI/pedantigo/v2 v[0-9.]*#github.com/SmrutAI/pedantigo/v2 v<version>#" "$gomod"
+  rm "$gomod.bak"
+  make -C "$moddir" deps   # go mod tidy, regenerates go.sum for the bumped requirement
+done
+git add plugins/*/*/go.mod plugins/*/*/go.sum
+git commit -m "chore(release): bump plugin modules to require pedantigo v<version>"
+```
+
+**5b. Tag the root module**, pointing at the commit from 5a (so the root tag and both plugin
+`go.mod` bumps are the same commit):
 
 ```bash
 git tag -a v<version> -m "Release v<version>"
 git push origin v<version>
 ```
 
-Then tag every nested plugin module at the same commit, so `go get .../plugins/<path>@v<version>`
-resolves. This is mandatory, not optional — skipping it silently breaks installation for every
-plugin module, exactly as happened with `plugins/web/echo` in `v2.0.0`/`v2.0.1`:
+**5c. Tag both plugin modules, at that same commit**, using each module's own path-prefixed tag.
+This is mandatory, not optional — skipping it silently breaks installation for that plugin, exactly
+as happened with `plugins/web/echo` in `v2.0.0`/`v2.0.1`. The loop below covers every nested module
+under `plugins/`, so this never needs to be updated by hand when a new plugin is added:
 
 ```bash
 for gomod in plugins/*/*/go.mod; do
@@ -117,7 +163,16 @@ for gomod in plugins/*/*/go.mod; do
 done
 ```
 
-Then create the GitHub release with the notes:
+**5d. Verify all three tags exist and point at the same commit** before creating the GitHub release:
+
+```bash
+git rev-list -n 1 v<version>
+git rev-list -n 1 plugins/web/echo/v<version>
+git rev-list -n 1 plugins/web/gin/v<version>
+# all three commit hashes above must be identical — if not, stop and investigate before continuing
+```
+
+**5e. Create the GitHub release** with the notes:
 ```bash
 gh release create v<version> \
   --title "v<version>" \
