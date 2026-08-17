@@ -35,7 +35,15 @@ So getting the release right matters: the release notes become part of the chang
 git describe --tags --abbrev=0          # last tag (e.g. v1.1.3)
 git log <last-tag>..HEAD --oneline      # commits to include in release
 gh release view <last-tag>              # see format of the previous release notes
+git tag -l 'plugins/*'                  # existing nested plugin-module tags — check for gaps
 ```
+
+The last check matters: `plugins/*/go.mod` files are separate Go modules from the repo root. Tagging
+the root (`v<version>`) does NOT make `go get .../plugins/web/echo@v<version>` resolve — each nested
+module needs its own tag, `plugins/<path>/v<version>`, at the same commit. If a prior release's root
+tag has no matching `plugins/*/v<that-version>` tags, that release is currently uninstallable for
+anyone depending on a plugin module. Step 5 below tags every nested module automatically so this
+can't recur, but check history here in case an earlier release still needs backfilling.
 
 ### 2. Determine the new version
 
@@ -95,6 +103,18 @@ Get confirmation before creating the tag or release.
 ```bash
 git tag -a v<version> -m "Release v<version>"
 git push origin v<version>
+```
+
+Then tag every nested plugin module at the same commit, so `go get .../plugins/<path>@v<version>`
+resolves. This is mandatory, not optional — skipping it silently breaks installation for every
+plugin module, exactly as happened with `plugins/web/echo` in `v2.0.0`/`v2.0.1`:
+
+```bash
+for gomod in plugins/*/*/go.mod; do
+  moddir=$(dirname "$gomod")
+  git tag "$moddir/v<version>" "v<version>"
+  git push origin "$moddir/v<version>"
+done
 ```
 
 Then create the GitHub release with the notes:
