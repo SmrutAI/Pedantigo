@@ -1,4 +1,4 @@
-module github.com/SmrutAI/pedantigo/v2/plugins/web/gin
+module github.com/SmrutAI/pedantigo/plugins/web/pedantigogin/v2
 
 go 1.25.0
 
@@ -48,4 +48,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/SmrutAI/pedantigo/v2 => ../../../
+replace github.com/SmrutAI/pedantigo/v2 => ../../../../

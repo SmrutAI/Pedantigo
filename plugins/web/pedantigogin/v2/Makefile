@@ -1,4 +1,4 @@
-# pedantigo/plugins/web/echo Makefile
+# pedantigo/plugins/web/pedantigogin/v2 Makefile
 # Run `make help` for available targets
 
 # Use bash for PIPESTATUS support (required for test-run target)
@@ -7,15 +7,10 @@ SHELL := /bin/bash
 .PHONY: help build test test-verbose test-run test-clean-cache test-coverage \
         test-ci test-ci-cov vet fmt lint deps check clean install bench all pre-commit
 
-# Default target
 .DEFAULT_GOAL := help
 
-# ============================================
-# HELP
-# ============================================
-
 help: ## Show this help message
-	@echo "pedantigo/plugins/web/echo - Echo Binder plugin for pedantigo"
+	@echo "pedantigo/plugins/web/pedantigogin/v2 - Gin request plugin for pedantigo"
 	@echo ""
 	@echo "Usage: make [target]"
 	@echo ""
@@ -27,16 +22,10 @@ help: ## Show this help message
 	@echo "  make test-run RUN=TestMyFunction               # Single test by name"
 	@echo "  make test-run TIMEOUT=5m                       # Custom timeout"
 
-# ============================================
-# FLEXIBLE TEST RUNNER
-# ============================================
-
-# Test runner defaults
 RUN ?=
 PKG ?= ./...
 TIMEOUT ?= 10m
 
-# Common go test flags
 GO_TEST_FLAGS := -v -race -count=1
 
 test-run: ## Flexible test runner (use RUN=TestName PKG=./path TIMEOUT=5m)
@@ -52,18 +41,14 @@ test-run: ## Flexible test runner (use RUN=TestName PKG=./path TIMEOUT=5m)
 	@go test $(GO_TEST_FLAGS) \
 		$(if $(RUN),-run=$(RUN),) \
 		-timeout $(TIMEOUT) \
-		$(PKG) 2>&1 | tee /tmp/pedantigo_echo_test_output.log; \
+		$(PKG) 2>&1 | tee /tmp/pedantigo_gin_test_output.log; \
 		EXIT_CODE=$${PIPESTATUS[0]}; \
 		echo ""; \
 		echo "═══════════════════════════════════════════════════════"; \
 		echo "Exit code: $$EXIT_CODE"; \
-		echo "Output saved to: /tmp/pedantigo_echo_test_output.log"; \
+		echo "Output saved to: /tmp/pedantigo_gin_test_output.log"; \
 		echo "═══════════════════════════════════════════════════════"; \
 		exit $$EXIT_CODE
-
-# ============================================
-# BUILD & QUALITY
-# ============================================
 
 build: ## Build the project
 	@echo "Building..."
@@ -79,10 +64,6 @@ fmt: ## Format code with goimports + gofmt
 	goimports -w -local github.com/SmrutAI/pedantigo .
 	gofmt -s -w .
 
-# Pinned to match the exact version CI installs (see .github/workflows/ci.yml) —
-# invoked by direct path, not via PATH resolution, so a stale golangci-lint
-# elsewhere on PATH (e.g. an older Homebrew install) can never silently shadow
-# it and let a local `make lint` pass on issues CI would catch.
 GOLANGCI_LINT_VERSION := v2.12.2
 GOLANGCI_LINT_BIN := $(shell go env GOPATH)/bin/golangci-lint
 
@@ -104,10 +85,6 @@ deps: ## Download and tidy Go dependencies
 
 check: lint test ## Run lint + all tests
 
-# ============================================
-# TESTING
-# ============================================
-
 test: ## Run all tests (parallel with race detection)
 	@echo "Running tests (parallel, race detection enabled)..."
 	go test -race -parallel 8 -count=1 ./...
@@ -126,10 +103,6 @@ test-coverage: ## Run tests with coverage report and threshold check
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report: coverage.html"
 
-# ============================================
-# CI TARGETS
-# ============================================
-
 test-ci: ## CI: Run tests with JUnit XML output
 	@echo "Running tests (CI mode, JUnit XML output)..."
 	go test -race -parallel 8 -count=1 -v ./... 2>&1 | go-junit-report -set-exit-code > test-results.xml
@@ -138,10 +111,6 @@ test-ci-cov: ## CI: Run tests with coverage + JUnit XML output
 	@echo "Running tests with coverage (CI mode)..."
 	go test -race -parallel 8 -v -coverprofile=coverage.out -covermode=atomic ./... 2>&1 | go-junit-report -set-exit-code > test-results.xml
 	go tool cover -func=coverage.out | grep total | awk '{print $$3}' > coverage.txt
-
-# ============================================
-# BENCHMARKS & MISC
-# ============================================
 
 bench: ## Run benchmarks
 	@echo "Running benchmarks..."

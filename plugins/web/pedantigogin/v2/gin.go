@@ -1,4 +1,4 @@
-// Package gin installs Pedantigo into Gin's request binding pipeline.
+// Package pedantigogin installs Pedantigo into Gin's request binding pipeline.
 //
 // Gin splits request binding across two seams:
 //   - JSON body decoding goes through codec/json.API.
@@ -6,7 +6,7 @@
 //
 // Replacing only one of those seams would leave part of Gin's request pipeline
 // outside Pedantigo. NewBinder wires both hooks at setup time.
-package gin
+package pedantigogin
 
 import (
 	"errors"

@@ -114,4 +114,4 @@ var _ = validator.Register(validator.New[MyRequest]())
 
 ### Echo Binder plugin
 
-A plugin at `github.com/SmrutAI/pedantigo/v2/plugins/web/echo` replaces Echo's `DefaultBinder` with one that calls `validator.UnmarshalInto` on POST/PUT/PATCH bodies, so `c.Bind()` validates automatically. See [Echo Binder Plugin](../plugins/web/echo) for full details.
+A plugin at `github.com/SmrutAI/pedantigo/plugins/web/pedantigoecho/v2` replaces Echo's `DefaultBinder` with one that calls `validator.UnmarshalInto` on POST/PUT/PATCH bodies, so `c.Bind()` validates automatically. See [Echo Binder Plugin](../plugins/web/echo) for full details.

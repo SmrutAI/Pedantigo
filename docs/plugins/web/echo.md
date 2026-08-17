@@ -13,13 +13,13 @@ invoked for those methods.
 ## Install
 
 ```bash
-go get github.com/SmrutAI/pedantigo/v2/plugins/web/echo@v2.0.1
+go get github.com/SmrutAI/pedantigo/plugins/web/pedantigoecho/v2@v2.1.0
 ```
 
 ## Setup
 
 ```go
-import pedantigoecho "github.com/SmrutAI/pedantigo/v2/plugins/web/echo"
+import "github.com/SmrutAI/pedantigo/plugins/web/pedantigoecho/v2"
 
 e := echo.New()
 e.Binder = pedantigoecho.NewBinder()

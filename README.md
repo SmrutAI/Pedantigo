@@ -50,7 +50,7 @@ step, so validation runs automatically instead of requiring manual
 directly; Gin installs into both its JSON codec and validation hooks.
 
 ```go
-import pedantigoecho "github.com/SmrutAI/pedantigo/v2/plugins/web/echo"
+import "github.com/SmrutAI/pedantigo/plugins/web/pedantigoecho/v2"
 
 e := echo.New()
 e.Binder = pedantigoecho.NewBinder()

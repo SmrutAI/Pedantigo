@@ -8,7 +8,7 @@ integration can use, for both request decoding and response encoding.
 
 | Framework | Direction | Hook(s) | Automatic? | Details |
 |---|---|---|---|---|
-| Echo | Request | `Binder` | Yes | Built — `plugins/web/echo` |
+| Echo | Request | `Binder` | Yes | Built — `plugins/web/pedantigoecho/v2` |
 | Echo | Response | `JSONSerializer` | Yes | [1](#1-echo-response-plugin) |
 | Gin | Request | `codec/json.API` + `binding.Validator` | Yes, needs both overridden | [2](#2-gin-request-plugin) |
 | Gin | Response | `codec/json.API` | Yes | [3](#3-gin-response-renderers) |
@@ -187,7 +187,7 @@ func (v *Validator[T]) validateInto(obj any) error {
 }
 ```
 
-**Gin adapter (`plugins/web/gin`)** — calls `ValidateInto`, recovering any
+**Gin adapter (`plugins/web/pedantigogin/v2`)** — calls `ValidateInto`, recovering any
 internal panic into an explanatory `error` rather than letting it cross the
 `StructValidator` boundary:
 

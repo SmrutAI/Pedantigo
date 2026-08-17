@@ -1,12 +1,12 @@
-// Package echo provides a pedantigo-backed Binder for the Echo web framework.
+// Package pedantigoecho provides a pedantigo-backed Binder for the Echo web framework.
 //
 // Usage:
 //
-//	import pedantigoecho "github.com/SmrutAI/pedantigo/v2/plugins/web/echo"
+//	import "github.com/SmrutAI/pedantigo/plugins/web/pedantigoecho/v2"
 //
 //	e := echo.New()
 //	e.Binder = pedantigoecho.NewBinder()
-package echo
+package pedantigoecho
 
 import (
 	"io"

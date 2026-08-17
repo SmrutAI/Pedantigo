@@ -1,4 +1,4 @@
-package gin
+package pedantigogin
 
 import (
 	"bytes"

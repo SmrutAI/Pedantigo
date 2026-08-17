@@ -15,7 +15,7 @@ one hook would leave part of Gin's binding pipeline outside Pedantigo.
 ## Install
 
 ```bash
-go get github.com/SmrutAI/pedantigo/v2/plugins/web/gin@v2.0.0
+go get github.com/SmrutAI/pedantigo/plugins/web/pedantigogin/v2@v2.1.0
 ```
 
 ## Setup
@@ -24,7 +24,7 @@ go get github.com/SmrutAI/pedantigo/v2/plugins/web/gin@v2.0.0
 import (
 	"github.com/gin-gonic/gin"
 
-	pedantigogin "github.com/SmrutAI/pedantigo/v2/plugins/web/gin"
+	"github.com/SmrutAI/pedantigo/plugins/web/pedantigogin/v2"
 )
 
 func main() {

@@ -1,8 +1,9 @@
 # pedantigo/plugins — Makefile
 #
 # Dispatches each target to the concrete web plugin modules that actually exist:
-# plugins/web/echo/Makefile and plugins/web/gin/Makefile. Each target below is
-# an explicit pair of direct dispatches — no loop, no wildcard fan-out.
+# plugins/web/pedantigoecho/v2/Makefile and plugins/web/pedantigogin/v2/Makefile.
+# Each target below is an explicit pair of direct dispatches — no loop, no
+# wildcard fan-out.
 #
 # When plugins/rpc/ or plugins/llm/ gain a real go.mod, do NOT turn these
 # targets into loops. Add new, separately-named targets instead (e.g.
@@ -15,76 +16,76 @@
 .DEFAULT_GOAL := help
 
 help: ## Show this help message
-	@echo "pedantigo/plugins — dispatches to plugins/web/{echo,gin}/Makefile"
+	@echo "pedantigo/plugins — dispatches to plugins/web/{pedantigoecho,pedantigogin}/v2/Makefile"
 
-build: ## Build plugins/web/{echo,gin}
-	@$(MAKE) -C web/echo build
-	@$(MAKE) -C web/gin build
+build: ## Build plugins/web/{pedantigoecho,pedantigogin}/v2
+	@$(MAKE) -C web/pedantigoecho/v2 build
+	@$(MAKE) -C web/pedantigogin/v2 build
 
-test: ## Run tests in plugins/web/{echo,gin}
-	@$(MAKE) -C web/echo test
-	@$(MAKE) -C web/gin test
+test: ## Run tests in plugins/web/{pedantigoecho,pedantigogin}/v2
+	@$(MAKE) -C web/pedantigoecho/v2 test
+	@$(MAKE) -C web/pedantigogin/v2 test
 
-test-verbose: ## Run tests (verbose) in plugins/web/{echo,gin}
-	@$(MAKE) -C web/echo test-verbose
-	@$(MAKE) -C web/gin test-verbose
+test-verbose: ## Run tests (verbose) in plugins/web/{pedantigoecho,pedantigogin}/v2
+	@$(MAKE) -C web/pedantigoecho/v2 test-verbose
+	@$(MAKE) -C web/pedantigogin/v2 test-verbose
 
-test-run: ## Flexible test runner in plugins/web/{echo,gin} (RUN=TestName PKG=./path TIMEOUT=5m)
-	@$(MAKE) -C web/echo test-run RUN=$(RUN) PKG=$(PKG) TIMEOUT=$(TIMEOUT)
-	@$(MAKE) -C web/gin test-run RUN=$(RUN) PKG=$(PKG) TIMEOUT=$(TIMEOUT)
+test-run: ## Flexible test runner in plugins/web/{pedantigoecho,pedantigogin}/v2 (RUN=TestName PKG=./path TIMEOUT=5m)
+	@$(MAKE) -C web/pedantigoecho/v2 test-run RUN=$(RUN) PKG=$(PKG) TIMEOUT=$(TIMEOUT)
+	@$(MAKE) -C web/pedantigogin/v2 test-run RUN=$(RUN) PKG=$(PKG) TIMEOUT=$(TIMEOUT)
 
-test-clean-cache: ## Clean Go test cache in plugins/web/{echo,gin}
-	@$(MAKE) -C web/echo test-clean-cache
-	@$(MAKE) -C web/gin test-clean-cache
+test-clean-cache: ## Clean Go test cache in plugins/web/{pedantigoecho,pedantigogin}/v2
+	@$(MAKE) -C web/pedantigoecho/v2 test-clean-cache
+	@$(MAKE) -C web/pedantigogin/v2 test-clean-cache
 
-test-coverage: ## Run tests with coverage in plugins/web/{echo,gin}
-	@$(MAKE) -C web/echo test-coverage
-	@$(MAKE) -C web/gin test-coverage
+test-coverage: ## Run tests with coverage in plugins/web/{pedantigoecho,pedantigogin}/v2
+	@$(MAKE) -C web/pedantigoecho/v2 test-coverage
+	@$(MAKE) -C web/pedantigogin/v2 test-coverage
 
-test-ci: ## CI: run tests with JUnit XML output in plugins/web/{echo,gin}
-	@$(MAKE) -C web/echo test-ci
-	@$(MAKE) -C web/gin test-ci
+test-ci: ## CI: run tests with JUnit XML output in plugins/web/{pedantigoecho,pedantigogin}/v2
+	@$(MAKE) -C web/pedantigoecho/v2 test-ci
+	@$(MAKE) -C web/pedantigogin/v2 test-ci
 
-test-ci-cov: ## CI: run tests with coverage + JUnit XML output in plugins/web/{echo,gin}
-	@$(MAKE) -C web/echo test-ci-cov
-	@$(MAKE) -C web/gin test-ci-cov
+test-ci-cov: ## CI: run tests with coverage + JUnit XML output in plugins/web/{pedantigoecho,pedantigogin}/v2
+	@$(MAKE) -C web/pedantigoecho/v2 test-ci-cov
+	@$(MAKE) -C web/pedantigogin/v2 test-ci-cov
 
-vet: ## Run go vet in plugins/web/{echo,gin}
-	@$(MAKE) -C web/echo vet
-	@$(MAKE) -C web/gin vet
+vet: ## Run go vet in plugins/web/{pedantigoecho,pedantigogin}/v2
+	@$(MAKE) -C web/pedantigoecho/v2 vet
+	@$(MAKE) -C web/pedantigogin/v2 vet
 
-fmt: ## Format code in plugins/web/{echo,gin}
-	@$(MAKE) -C web/echo fmt
-	@$(MAKE) -C web/gin fmt
+fmt: ## Format code in plugins/web/{pedantigoecho,pedantigogin}/v2
+	@$(MAKE) -C web/pedantigoecho/v2 fmt
+	@$(MAKE) -C web/pedantigogin/v2 fmt
 
-lint: ## Run golangci-lint in plugins/web/{echo,gin}
-	@$(MAKE) -C web/echo lint
-	@$(MAKE) -C web/gin lint
+lint: ## Run golangci-lint in plugins/web/{pedantigoecho,pedantigogin}/v2
+	@$(MAKE) -C web/pedantigoecho/v2 lint
+	@$(MAKE) -C web/pedantigogin/v2 lint
 
-deps: ## Download and tidy Go dependencies in plugins/web/{echo,gin}
-	@$(MAKE) -C web/echo deps
-	@$(MAKE) -C web/gin deps
+deps: ## Download and tidy Go dependencies in plugins/web/{pedantigoecho,pedantigogin}/v2
+	@$(MAKE) -C web/pedantigoecho/v2 deps
+	@$(MAKE) -C web/pedantigogin/v2 deps
 
-check: ## Run lint + test in plugins/web/{echo,gin}
-	@$(MAKE) -C web/echo check
-	@$(MAKE) -C web/gin check
+check: ## Run lint + test in plugins/web/{pedantigoecho,pedantigogin}/v2
+	@$(MAKE) -C web/pedantigoecho/v2 check
+	@$(MAKE) -C web/pedantigogin/v2 check
 
-bench: ## Run benchmarks in plugins/web/{echo,gin}
-	@$(MAKE) -C web/echo bench
-	@$(MAKE) -C web/gin bench
+bench: ## Run benchmarks in plugins/web/{pedantigoecho,pedantigogin}/v2
+	@$(MAKE) -C web/pedantigoecho/v2 bench
+	@$(MAKE) -C web/pedantigogin/v2 bench
 
-clean: ## Clean build artifacts in plugins/web/{echo,gin}
-	@$(MAKE) -C web/echo clean
-	@$(MAKE) -C web/gin clean
+clean: ## Clean build artifacts in plugins/web/{pedantigoecho,pedantigogin}/v2
+	@$(MAKE) -C web/pedantigoecho/v2 clean
+	@$(MAKE) -C web/pedantigogin/v2 clean
 
-install: ## Install/update dependencies in plugins/web/{echo,gin}
-	@$(MAKE) -C web/echo install
-	@$(MAKE) -C web/gin install
+install: ## Install/update dependencies in plugins/web/{pedantigoecho,pedantigogin}/v2
+	@$(MAKE) -C web/pedantigoecho/v2 install
+	@$(MAKE) -C web/pedantigogin/v2 install
 
-all: ## Run fmt, vet, and test in plugins/web/{echo,gin}
-	@$(MAKE) -C web/echo all
-	@$(MAKE) -C web/gin all
+all: ## Run fmt, vet, and test in plugins/web/{pedantigoecho,pedantigogin}/v2
+	@$(MAKE) -C web/pedantigoecho/v2 all
+	@$(MAKE) -C web/pedantigogin/v2 all
 
-pre-commit: ## Quick check before commit, in plugins/web/{echo,gin}
-	@$(MAKE) -C web/echo pre-commit
-	@$(MAKE) -C web/gin pre-commit
+pre-commit: ## Quick check before commit, in plugins/web/{pedantigoecho,pedantigogin}/v2
+	@$(MAKE) -C web/pedantigoecho/v2 pre-commit
+	@$(MAKE) -C web/pedantigogin/v2 pre-commit

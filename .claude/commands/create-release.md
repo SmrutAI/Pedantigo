@@ -33,8 +33,8 @@ This repository contains **three separate Go modules**, and every release MUST c
 the exact same version number, every time — there is no such thing as a partial release:
 
 1. **Root module** — `github.com/SmrutAI/pedantigo/v2` (repo root, tag: `v<version>`)
-2. **Echo plugin** — `github.com/SmrutAI/pedantigo/v2/plugins/web/echo` (tag: `plugins/web/echo/v<version>`)
-3. **Gin plugin** — `github.com/SmrutAI/pedantigo/v2/plugins/web/gin` (tag: `plugins/web/gin/v<version>`)
+2. **Echo plugin** — `github.com/SmrutAI/pedantigo/plugins/web/pedantigoecho/v2` (directory: `plugins/web/pedantigoecho/v2/`, tag: `plugins/web/pedantigoecho/v<version>`)
+3. **Gin plugin** — `github.com/SmrutAI/pedantigo/plugins/web/pedantigogin/v2` (directory: `plugins/web/pedantigogin/v2/`, tag: `plugins/web/pedantigogin/v<version>`)
 
 Two things must both be true for every release, or it is incomplete:
 
@@ -132,13 +132,13 @@ tag exists.** This has to come first because a tag is a permanent, immutable poi
 the `go.mod` bump happens after tagging, the mismatch is frozen into the release forever.
 
 ```bash
-for gomod in plugins/*/*/go.mod; do
+for gomod in plugins/*/*/v2/go.mod; do
   moddir=$(dirname "$gomod")
   sed -i.bak "s#github.com/SmrutAI/pedantigo/v2 v[0-9.]*#github.com/SmrutAI/pedantigo/v2 v<version>#" "$gomod"
   rm "$gomod.bak"
   make -C "$moddir" deps   # go mod tidy, regenerates go.sum for the bumped requirement
 done
-git add plugins/*/*/go.mod plugins/*/*/go.sum
+git add plugins/*/*/v2/go.mod plugins/*/*/v2/go.sum
 git commit -m "chore(release): bump plugin modules to require pedantigo v<version>"
 ```
 
@@ -156,10 +156,11 @@ as happened with `plugins/web/echo` in `v2.0.0`/`v2.0.1`. The loop below covers 
 under `plugins/`, so this never needs to be updated by hand when a new plugin is added:
 
 ```bash
-for gomod in plugins/*/*/go.mod; do
+for gomod in plugins/*/*/v2/go.mod; do
   moddir=$(dirname "$gomod")
-  git tag "$moddir/v<version>" "v<version>"
-  git push origin "$moddir/v<version>"
+  tagprefix="${moddir%/v2}"
+  git tag "$tagprefix/v<version>" "v<version>"
+  git push origin "$tagprefix/v<version>"
 done
 ```
 
@@ -167,8 +168,8 @@ done
 
 ```bash
 git rev-list -n 1 v<version>
-git rev-list -n 1 plugins/web/echo/v<version>
-git rev-list -n 1 plugins/web/gin/v<version>
+git rev-list -n 1 plugins/web/pedantigoecho/v<version>
+git rev-list -n 1 plugins/web/pedantigogin/v<version>
 # all three commit hashes above must be identical — if not, stop and investigate before continuing
 ```
 

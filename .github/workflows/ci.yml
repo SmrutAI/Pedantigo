@@ -49,7 +49,7 @@ jobs:
         run: pre-commit run --all-files
 
       - name: Run tests with coverage
-        # validator and plugins/web/echo are separate Go modules (the plugin has
+        # validator and plugins/web/pedantigoecho/v2 are separate Go modules (the plugin has
         # its own go.mod with a replace back to validator), so there is no single
         # `make test-ci-cov` target — each module's coverage.out/test-results.xml
         # stays scoped to its own directory and can't be merged by concatenation
@@ -78,13 +78,13 @@ jobs:
           check_name: Test Results (validator)
           comment_mode: off
 
-      - name: Test results — plugins/web/echo
+      - name: Test results — plugins/web/pedantigoecho/v2
         id: test-results-plugins
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
-          files: 'plugins/web/echo/test-results.xml'
-          check_name: Test Results (plugins/web/echo)
+          files: 'plugins/web/pedantigoecho/v2/test-results.xml'
+          check_name: Test Results (plugins/web/pedantigoecho/v2)
           comment_mode: off
 
       - name: Build combined test results comment
@@ -104,7 +104,7 @@ jobs:
             echo ""
             echo '${{ fromJSON(steps.test-results-core.outputs.json).summary }}'
             echo ""
-            echo "### plugins/web/echo"
+            echo "### plugins/web/pedantigoecho/v2"
             echo "Echo framework Binder integration."
             echo ""
             echo '${{ fromJSON(steps.test-results-plugins.outputs.json).summary }}'
@@ -125,15 +125,15 @@ jobs:
         #
         # The PR comment itself covers BOTH modules: validator's table is
         # generated from the repo root (its module), and the plugin's table
-        # is generated with cwd inside plugins/web/echo, since `go tool
+        # is generated with cwd inside plugins/web/pedantigoecho/v2, since `go tool
         # cover -func` resolves each profile's packages via that package's
-        # OWN module — it can't see plugins/web/echo's packages from validator's
+        # OWN module — it can't see plugins/web/pedantigoecho/v2's packages from validator's
         # module root (nested go.mod dirs aren't part of the parent module's
         # package graph). Both reports are appended into one comment file.
         run: |
           chmod +x .github/scripts/coverage-report.sh
           .github/scripts/coverage-report.sh validator/coverage.out validator-coverage-results.md 90 96
-          (cd plugins/web/echo && "$GITHUB_WORKSPACE/.github/scripts/coverage-report.sh" coverage.out "$GITHUB_WORKSPACE/plugin-coverage-results.md" 90 96)
+          (cd plugins/web/pedantigoecho/v2 && "$GITHUB_WORKSPACE/.github/scripts/coverage-report.sh" coverage.out "$GITHUB_WORKSPACE/plugin-coverage-results.md" 90 96)
           {
             echo "## Code Coverage"
             echo ""
@@ -142,7 +142,7 @@ jobs:
             echo ""
             cat validator-coverage-results.md
             echo ""
-            echo "### plugins/web/echo"
+            echo "### plugins/web/pedantigoecho/v2"
             echo "Echo framework Binder integration."
             echo ""
             cat plugin-coverage-results.md
