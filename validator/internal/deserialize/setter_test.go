@@ -1066,9 +1066,9 @@ func TestSetDefaultValue_SliceDefaults(t *testing.T) {
 // ==================== Helper Functions ====================
 
 // recursiveSetFuncNoop is a no-op recursive set function for testing.
-func recursiveSetFuncNoop(fieldValue reflect.Value, inValue any, fieldType reflect.Type) error {
-	// For primitive types, delegate to SetFieldValue
-	return SetFieldValue(fieldValue, inValue, fieldType, recursiveSetFuncNoop)
+func recursiveSetFuncNoop(fieldValue reflect.Value, inValue any, fieldType reflect.Type, opts FieldOptions) error {
+	// For primitive types, delegate to SetFieldValueWithOptions
+	return SetFieldValueWithOptions(fieldValue, inValue, fieldType, recursiveSetFuncNoop, opts)
 }
 
 // recursiveSetDefault is a helper for SetDefaultValue recursive calls.
@@ -1124,9 +1124,9 @@ func TestSetFieldValue_Duration(t *testing.T) {
 			resultVal := reflect.ValueOf(&result).Elem()
 			fieldVal := resultVal.Field(0)
 
-			var recursiveSetFunc func(fv reflect.Value, iv any, ft reflect.Type) error
-			recursiveSetFunc = func(fv reflect.Value, iv any, ft reflect.Type) error {
-				return SetFieldValue(fv, iv, ft, recursiveSetFunc)
+			var recursiveSetFunc func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error
+			recursiveSetFunc = func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error {
+				return SetFieldValueWithOptions(fv, iv, ft, recursiveSetFunc, callOpts)
 			}
 
 			err := SetFieldValue(fieldVal, tt.input, reflect.TypeOf(time.Duration(0)), recursiveSetFunc)
@@ -1305,9 +1305,9 @@ func TestSetFieldValueWithOptions_RequiredFields(t *testing.T) {
 			v := reflect.ValueOf(s).Elem()
 			field := v.FieldByName("Address")
 
-			var recursiveSet func(reflect.Value, any, reflect.Type) error
-			recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
-				return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, tt.opts)
+			var recursiveSet func(reflect.Value, any, reflect.Type, FieldOptions) error
+			recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error {
+				return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, callOpts)
 			}
 
 			err := SetFieldValueWithOptions(field, tt.value, field.Type(), recursiveSet, tt.opts)
@@ -1384,9 +1384,9 @@ func TestSetFieldValueWithOptions_SliceWithRequiredFields(t *testing.T) {
 			v := reflect.ValueOf(s).Elem()
 			field := v.FieldByName("Items")
 
-			var recursiveSet func(reflect.Value, any, reflect.Type) error
-			recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
-				return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, tt.opts)
+			var recursiveSet func(reflect.Value, any, reflect.Type, FieldOptions) error
+			recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error {
+				return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, callOpts)
 			}
 
 			err := SetFieldValueWithOptions(field, tt.value, field.Type(), recursiveSet, tt.opts)
@@ -1461,9 +1461,9 @@ func TestSetFieldValueWithOptions_MapWithRequiredFields(t *testing.T) {
 			v := reflect.ValueOf(s).Elem()
 			field := v.FieldByName("Records")
 
-			var recursiveSet func(reflect.Value, any, reflect.Type) error
-			recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
-				return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, tt.opts)
+			var recursiveSet func(reflect.Value, any, reflect.Type, FieldOptions) error
+			recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error {
+				return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, callOpts)
 			}
 
 			err := SetFieldValueWithOptions(field, tt.value, field.Type(), recursiveSet, tt.opts)
@@ -1485,9 +1485,9 @@ func TestSetFieldValueWithOptions_NilToNonPointer(t *testing.T) {
 	out := Sample{Name: "original"}
 	field := reflect.ValueOf(&out).Elem().Field(0)
 
-	var recursiveSet func(reflect.Value, any, reflect.Type) error
-	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
-		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	var recursiveSet func(reflect.Value, any, reflect.Type, FieldOptions) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error {
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, callOpts)
 	}
 
 	// Set nil value to a non-pointer string field
@@ -1508,9 +1508,9 @@ func TestSetFieldValueWithOptions_NestedMapNotMapStringAny(t *testing.T) {
 	out := Outer{}
 	field := reflect.ValueOf(&out).Elem().Field(0)
 
-	var recursiveSet func(reflect.Value, any, reflect.Type) error
-	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
-		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	var recursiveSet func(reflect.Value, any, reflect.Type, FieldOptions) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error {
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, callOpts)
 	}
 
 	// Provide a map[string]any
@@ -1533,9 +1533,9 @@ func TestDeserializeStructFields_UnexportedField(t *testing.T) {
 		"internal": "ignored",
 	}
 
-	var recursiveSet func(reflect.Value, any, reflect.Type) error
-	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
-		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	var recursiveSet func(reflect.Value, any, reflect.Type, FieldOptions) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error {
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, callOpts)
 	}
 
 	err := deserializeStructFields(reflect.ValueOf(&out).Elem(), reflect.TypeOf(out), inputMap, recursiveSet, FieldOptions{})
@@ -1556,9 +1556,9 @@ func TestDeserializeStructFields_JSONTagWithComma(t *testing.T) {
 		"value": 42,
 	}
 
-	var recursiveSet func(reflect.Value, any, reflect.Type) error
-	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
-		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	var recursiveSet func(reflect.Value, any, reflect.Type, FieldOptions) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error {
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, callOpts)
 	}
 
 	err := deserializeStructFields(reflect.ValueOf(&out).Elem(), reflect.TypeOf(out), inputMap, recursiveSet, FieldOptions{})
@@ -1581,13 +1581,13 @@ func TestSetFieldValueWithOptions_PointerRecursiveError(t *testing.T) {
 	field := reflect.ValueOf(&out).Elem().Field(0)
 
 	// Create a recursive func that always returns an error for nested calls
-	var recursiveSet func(reflect.Value, any, reflect.Type) error
-	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+	var recursiveSet func(reflect.Value, any, reflect.Type, FieldOptions) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error {
 		// Return error for nested struct types
 		if ft.Kind() == reflect.Struct && ft.Name() == "Nested" {
 			return fmt.Errorf("forced error in nested struct")
 		}
-		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, callOpts)
 	}
 
 	// Input that will trigger pointer allocation and nested deserialization
@@ -1607,12 +1607,12 @@ func TestSetSliceField_RecursiveError(t *testing.T) {
 	field := reflect.ValueOf(&out).Elem().Field(0)
 
 	// Create a recursive func that returns error for int types
-	var recursiveSet func(reflect.Value, any, reflect.Type) error
-	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+	var recursiveSet func(reflect.Value, any, reflect.Type, FieldOptions) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error {
 		if ft.Kind() == reflect.Int {
 			return fmt.Errorf("forced error for int")
 		}
-		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, callOpts)
 	}
 
 	input := []any{1, 2, 3}
@@ -1631,9 +1631,9 @@ func TestSetMapField_KeyConversion(t *testing.T) {
 	out := WithMap{}
 	field := reflect.ValueOf(&out).Elem().Field(0)
 
-	var recursiveSet func(reflect.Value, any, reflect.Type) error
-	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
-		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	var recursiveSet func(reflect.Value, any, reflect.Type, FieldOptions) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error {
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, callOpts)
 	}
 
 	input := map[string]any{"key1": 100, "key2": 200}
@@ -1653,12 +1653,12 @@ func TestSetMapField_RecursiveError(t *testing.T) {
 	field := reflect.ValueOf(&out).Elem().Field(0)
 
 	// Create a recursive func that returns error for int types
-	var recursiveSet func(reflect.Value, any, reflect.Type) error
-	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+	var recursiveSet func(reflect.Value, any, reflect.Type, FieldOptions) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error {
 		if ft.Kind() == reflect.Int {
 			return fmt.Errorf("forced error for int map value")
 		}
-		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, callOpts)
 	}
 
 	input := map[string]any{"key1": 100}
@@ -1677,7 +1677,7 @@ func TestDeserializeStructFields_RecursiveError(t *testing.T) {
 	inputMap := map[string]any{"value": 42}
 
 	// Create a recursive func that returns a regular error (not MultiRequiredFieldError)
-	recursiveSet := func(fv reflect.Value, iv any, ft reflect.Type) error {
+	recursiveSet := func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error {
 		return fmt.Errorf("forced type conversion error")
 	}
 
@@ -1700,12 +1700,9 @@ func TestDeserializeStructFields_MultiRequiredErrorPropagation(t *testing.T) {
 		"nested": map[string]any{}, // empty map - missing required field "name"
 	}
 
-	var recursiveSet func(reflect.Value, any, reflect.Type) error
-	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
-		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{
-			StrictMissingFields: true,
-			TagName:             "validate",
-		})
+	var recursiveSet func(reflect.Value, any, reflect.Type, FieldOptions) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error {
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, callOpts)
 	}
 
 	err := deserializeStructFields(reflect.ValueOf(&out).Elem(), reflect.TypeOf(out), inputMap, recursiveSet, FieldOptions{
@@ -1729,9 +1726,9 @@ func TestSetSliceField_NonMapStructError(t *testing.T) {
 	out := Parent{}
 	field := reflect.ValueOf(&out).Elem().Field(0)
 
-	var recursiveSet func(reflect.Value, any, reflect.Type) error
-	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
-		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	var recursiveSet func(reflect.Value, any, reflect.Type, FieldOptions) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error {
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, callOpts)
 	}
 
 	// Input has struct elements but with non-map type - will be handled by recursiveSetFunc
@@ -1754,9 +1751,9 @@ func TestSetMapField_NonMapStructError(t *testing.T) {
 	out := Parent{}
 	field := reflect.ValueOf(&out).Elem().Field(0)
 
-	var recursiveSet func(reflect.Value, any, reflect.Type) error
-	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
-		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+	var recursiveSet func(reflect.Value, any, reflect.Type, FieldOptions) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error {
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, callOpts)
 	}
 
 	// Input has struct values but with non-map type
@@ -1778,12 +1775,12 @@ func TestSetSliceField_OtherErrorInStructDeserialization(t *testing.T) {
 	field := reflect.ValueOf(&out).Elem().Field(0)
 
 	// Create a recursiveSet that returns a non-MultiRequiredFieldError
-	var recursiveSet func(reflect.Value, any, reflect.Type) error
-	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+	var recursiveSet func(reflect.Value, any, reflect.Type, FieldOptions) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error {
 		if ft.Kind() == reflect.Int {
 			return fmt.Errorf("forced int conversion error")
 		}
-		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, callOpts)
 	}
 
 	input := []any{map[string]any{"value": 42}}
@@ -1805,12 +1802,12 @@ func TestSetMapField_OtherErrorInStructDeserialization(t *testing.T) {
 	field := reflect.ValueOf(&out).Elem().Field(0)
 
 	// Create a recursiveSet that returns a non-MultiRequiredFieldError
-	var recursiveSet func(reflect.Value, any, reflect.Type) error
-	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
+	var recursiveSet func(reflect.Value, any, reflect.Type, FieldOptions) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type, callOpts FieldOptions) error {
 		if ft.Kind() == reflect.Int {
 			return fmt.Errorf("forced int conversion error")
 		}
-		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, FieldOptions{})
+		return SetFieldValueWithOptions(fv, iv, ft, recursiveSet, callOpts)
 	}
 
 	input := map[string]any{"key1": map[string]any{"value": 42}}

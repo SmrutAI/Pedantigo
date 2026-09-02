@@ -284,10 +284,13 @@ func (v *Validator[T]) setFieldValue(fieldValue reflect.Value, inValue any, fiel
 		TagName:             v.tagName,
 		FieldName:           goFieldName,
 	}
-	// Create a recursive function that passes the options
-	var recursiveSet func(reflect.Value, any, reflect.Type) error
-	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type) error {
-		return deserialize.SetFieldValueWithOptions(fv, iv, ft, recursiveSet, opts)
+	// Create a recursive function that uses whatever opts it's called with (callOpts),
+	// not the opts captured above — so nested required-field errors report a
+	// fully-qualified path as callers thread progressively-accumulated Path through
+	// each recursive call, mirroring validateWithCache's explicit path parameter.
+	var recursiveSet func(reflect.Value, any, reflect.Type, deserialize.FieldOptions) error
+	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type, callOpts deserialize.FieldOptions) error {
+		return deserialize.SetFieldValueWithOptions(fv, iv, ft, recursiveSet, callOpts)
 	}
 	return deserialize.SetFieldValueWithOptions(fieldValue, inValue, fieldType, recursiveSet, opts)
 }

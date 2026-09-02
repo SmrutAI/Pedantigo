@@ -43,8 +43,12 @@ RUN ?=
 PKG ?= ./...
 TIMEOUT ?= 10m
 
+# Single source of truth for test parallelism — every go test invocation below
+# uses $(PARALLEL) so the value can never drift between targets.
+PARALLEL := 8
+
 # Common go test flags
-GO_TEST_FLAGS := -v -race -count=1
+GO_TEST_FLAGS := -v -race -parallel $(PARALLEL) -count=1
 
 test-run: ## Flexible test runner (use RUN=TestName PKG=./path TIMEOUT=5m)
 	@echo "═══════════════════════════════════════════════════════"
@@ -121,11 +125,11 @@ check: lint test ## Run lint + all tests
 
 test: ## Run all tests (parallel with race detection)
 	@echo "Running tests (parallel, race detection enabled)..."
-	go test -race -parallel 8 -count=1 ./...
+	go test -race -parallel $(PARALLEL) -count=1 ./...
 
 test-verbose: ## Run tests with verbose output
 	@echo "Running tests (verbose)..."
-	go test -v -race -parallel 8 -count=1 ./...
+	go test -v -race -parallel $(PARALLEL) -count=1 ./...
 
 test-clean-cache: ## Clean Go test cache (forces recompilation)
 	go clean -testcache
@@ -133,7 +137,7 @@ test-clean-cache: ## Clean Go test cache (forces recompilation)
 
 test-coverage: ## Run tests with coverage report and threshold check
 	@echo "Running tests with coverage..."
-	go test -race -parallel 8 -cover -coverprofile=coverage.out ./...
+	go test -race -parallel $(PARALLEL) -cover -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report: coverage.html"
 	@echo "Checking coverage threshold..."
@@ -154,11 +158,11 @@ test-coverage: ## Run tests with coverage report and threshold check
 
 test-ci: ## CI: Run tests with JUnit XML output
 	@echo "Running tests (CI mode, JUnit XML output)..."
-	go test -race -parallel 8 -count=1 -v ./... 2>&1 | go-junit-report -set-exit-code > test-results.xml
+	go test -race -parallel $(PARALLEL) -count=1 -v ./... 2>&1 | go-junit-report -set-exit-code > test-results.xml
 
 test-ci-cov: ## CI: Run tests with coverage + JUnit XML output
 	@echo "Running tests with coverage (CI mode)..."
-	go test -race -parallel 8 -v -coverprofile=coverage.out -covermode=atomic ./... 2>&1 | go-junit-report -set-exit-code > test-results.xml
+	go test -race -parallel $(PARALLEL) -v -coverprofile=coverage.out -covermode=atomic ./... 2>&1 | go-junit-report -set-exit-code > test-results.xml
 	go tool cover -func=coverage.out | grep total | awk '{print $$3}' > coverage.txt
 
 # ============================================
