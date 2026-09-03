@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+
+	"github.com/SmrutAI/pedantigo/v2/validator/internal/constraints"
 )
 
 // validateContext holds reusable buffers for a single Validate() call.
@@ -11,6 +13,14 @@ import (
 type validateContext struct {
 	pathBuf []byte       // Reusable buffer for building field paths
 	errs    []FieldError // Reusable error slice
+	// Phase B: current-path pointer identities for cycle detection (a real
+	// in-memory pointer cycle repeats the same address; distinct nodes differ).
+	visited map[uintptr]struct{}
+	// Phase B: current-path re-entry count per cache node, for the self-referential
+	// recursion depth cap. Keyed by the *constraints.FieldCache node reached.
+	depth map[*constraints.FieldCache]int
+	// Phase B: max self-referential recursion depth (Options.MaxRecursionDepth), set per call.
+	maxDepth int
 }
 
 // validateContextPool is the global pool for validation contexts.
@@ -20,6 +30,8 @@ var validateContextPool = sync.Pool{
 		return &validateContext{
 			pathBuf: make([]byte, 0, 128),
 			errs:    make([]FieldError, 0, 8),
+			visited: make(map[uintptr]struct{}, 8),
+			depth:   make(map[*constraints.FieldCache]int, 8),
 		}
 	},
 }

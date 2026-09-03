@@ -20,10 +20,9 @@ import (
 
 // Validator validates structs of type T.
 type Validator[T any] struct {
-	typ                reflect.Type
-	options            Options
-	tagName            string // Resolved tag name (instance override or global)
-	fieldDeserializers map[string]deserialize.FieldDeserializer
+	typ     reflect.Type
+	options Options
+	tagName string // Resolved tag name (instance override or global)
 
 	// Cached field constraints (built at creation time)
 	fieldCache *constraints.FieldCache
@@ -39,6 +38,11 @@ type Validator[T any] struct {
 
 	// Extra fields support (nil when ExtraAllow disabled)
 	extraFieldInfo *deserialize.ExtraFieldInfo
+
+	// Precomputed deserialize plan (Phase A): a type-indexed graph built once at
+	// New[T]() so Unmarshal does zero per-call reflection. rootPlan is the plan for T.
+	planIndex map[reflect.Type]*deserialize.TypePlan
+	rootPlan  *deserialize.TypePlan
 
 	// Re-entrancy guard for Validatable.Validate() calls (#15)
 	// Tracks object pointers currently being validated to prevent infinite recursion
@@ -59,33 +63,33 @@ func New[T any](opts ...Options) *Validator[T] {
 		options = opts[0]
 	}
 
+	if options.MaxRecursionDepth <= 0 {
+		options.MaxRecursionDepth = DefaultMaxRecursionDepth
+	}
+
 	// Resolve tag name (instance override or global)
 	tagName := resolveTagName(options)
 
 	vl := &Validator[T]{
-		typ:                typ,
-		options:            options,
-		tagName:            tagName,
-		fieldDeserializers: make(map[string]deserialize.FieldDeserializer),
+		typ:     typ,
+		options: options,
+		tagName: tagName,
 	}
 
-	// Build field deserializers at creation time (fail-fast)
-	vl.fieldDeserializers = deserialize.BuildFieldDeserializers(
-		typ,
-		deserialize.BuilderOptions{
-			StrictMissingFields: options.StrictMissingFields,
-			TagName:             tagName,
-		},
-		vl.setFieldValue,
-		vl.setDefaultValue,
-	)
+	// Build the precomputed deserialize plan (type-indexed graph) at creation time.
+	vl.planIndex = map[reflect.Type]*deserialize.TypePlan{}
+	vl.rootPlan = deserialize.BuildTypePlan(typ, tagName, vl.planIndex)
+
+	// Fail-fast validation of default=/defaultUsingMethod= tags (must run
+	// after the plan is built so every reachable type is in planIndex).
+	deserialize.ValidatePlanDefaults(vl.planIndex, options.StrictMissingFields)
 
 	// Validate dive/keys/endkeys tag usage at creation time (fail-fast)
 	vl.validateDiveTags(typ, tagName)
 
 	// Build field constraints at creation time (the key optimization)
-	// Pass visited set to detect circular type references (#15)
-	vl.fieldCache = vl.buildFieldConstraints(typ, tagName, make(map[reflect.Type]bool))
+	// Pass inProgress map to detect circular type references with back-edges (#15)
+	vl.fieldCache = vl.buildFieldConstraints(typ, tagName, make(map[reflect.Type]*constraints.FieldCache))
 
 	// Detect extra_fields for ExtraAllow mode
 	if options.ExtraFields == ExtraAllow {
@@ -99,8 +103,8 @@ func New[T any](opts ...Options) *Validator[T] {
 }
 
 // buildFieldConstraints builds and caches all field constraints at creation time.
-// visited tracks types already being processed to detect circular references (#15).
-func (v *Validator[T]) buildFieldConstraints(typ reflect.Type, tagName string, visited map[reflect.Type]bool) *constraints.FieldCache {
+// inProgress tracks types being built, enabling back-edge cycles for recursive types (#15).
+func (v *Validator[T]) buildFieldConstraints(typ reflect.Type, tagName string, inProgress map[reflect.Type]*constraints.FieldCache) *constraints.FieldCache {
 	// Handle pointer types
 	if typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
@@ -110,101 +114,94 @@ func (v *Validator[T]) buildFieldConstraints(typ reflect.Type, tagName string, v
 		return nil
 	}
 
-	// Detect circular type references: if we're already building constraints
-	// for this type, return nil to break the cycle. At validation time, nil
-	// NestedCache means "don't recurse" which is correct — the parent type's
-	// validator already covers its own fields.
-	if visited[typ] {
-		return nil
-	}
-	visited[typ] = true
+	// Use BuildNode to handle circular type references. inProgress registers the
+	// cache before populating its fields, so self-referential types (e.g., Node{Children []Node})
+	// get a back-edge to the in-progress cache rather than nil. This allows validation
+	// to follow recursive types to their full data depth.
+	return deserialize.BuildNode(typ, inProgress, constraints.NewFieldCache, func(cache *constraints.FieldCache) {
+		for i := 0; i < typ.NumField(); i++ {
+			field := typ.Field(i)
 
-	cache := constraints.NewFieldCache()
+			// Skip unexported fields
+			if !field.IsExported() {
+				continue
+			}
 
-	for i := 0; i < typ.NumField(); i++ {
-		field := typ.Field(i)
+			// Parse tags once using the configured tag name
+			parsedTag := tags.ParseTagWithDiveAndName(field.Tag, tagName)
 
-		// Skip unexported fields
-		if !field.IsExported() {
-			continue
+			// Field type info
+			fieldType := field.Type
+			if fieldType.Kind() == reflect.Pointer {
+				fieldType = fieldType.Elem()
+			}
+			isCollection := fieldType.Kind() == reflect.Slice || fieldType.Kind() == reflect.Map
+			isMap := fieldType.Kind() == reflect.Map
+
+			// Resolve field name using custom function or default (json tag or field name)
+			jsonName := resolveFieldName(&field)
+
+			cached := constraints.CachedField{
+				Name:         field.Name,
+				JSONName:     jsonName,
+				FieldIndex:   i,
+				IsCollection: isCollection,
+				IsMap:        isMap,
+			}
+
+			if parsedTag != nil {
+				cached.HasDive = parsedTag.DivePresent
+
+				// Check for required tag
+				if _, hasRequired := parsedTag.CollectionConstraints["required"]; hasRequired {
+					cached.IsRequired = true
+				}
+
+				// Check for omitempty tag
+				if _, hasOmitEmpty := parsedTag.CollectionConstraints["omitempty"]; hasOmitEmpty {
+					cached.IsOmitEmpty = true
+				}
+
+				// Constraints before dive (or regular field constraints)
+				if len(parsedTag.CollectionConstraints) > 0 {
+					cached.Constraints = constraints.BuildConstraints(parsedTag.CollectionConstraints, field.Type)
+					// Extract context-aware validators (called during ValidateCtx)
+					cached.ContextConstraints = constraints.ExtractContextValidators(parsedTag.CollectionConstraints)
+				}
+
+				// Element constraints after dive
+				if parsedTag.DivePresent && len(parsedTag.ElementConstraints) > 0 {
+					cached.ElementConstraints = constraints.BuildConstraints(parsedTag.ElementConstraints, field.Type.Elem())
+				}
+
+				// Map key constraints
+				if isMap && len(parsedTag.KeyConstraints) > 0 {
+					cached.KeyConstraints = constraints.BuildConstraints(parsedTag.KeyConstraints, field.Type.Key())
+				}
+
+				// Cross-field constraints (eqfield, gtfield, etc.) and skip constraints
+				cached.CrossFieldConstraints, cached.SkipConstraints = constraints.BuildCrossFieldConstraintsForField(
+					parsedTag.CollectionConstraints, typ, i)
+				cached.HasSkipConstraints = len(cached.SkipConstraints) > 0
+			}
+
+			// Recurse for nested structs (passing inProgress map for cycle detection with back-edges)
+			switch fieldType.Kind() {
+			case reflect.Struct:
+				cached.NestedCache = v.buildFieldConstraints(fieldType, tagName, inProgress)
+			case reflect.Slice, reflect.Map:
+				elemType := fieldType.Elem()
+				if elemType.Kind() == reflect.Pointer {
+					elemType = elemType.Elem()
+				}
+				if elemType.Kind() == reflect.Struct {
+					cached.NestedCache = v.buildFieldConstraints(elemType, tagName, inProgress)
+				}
+			}
+
+			cache.Fields = append(cache.Fields, cached)
 		}
-
-		// Parse tags once using the configured tag name
-		parsedTag := tags.ParseTagWithDiveAndName(field.Tag, tagName)
-
-		// Field type info
-		fieldType := field.Type
-		if fieldType.Kind() == reflect.Pointer {
-			fieldType = fieldType.Elem()
-		}
-		isCollection := fieldType.Kind() == reflect.Slice || fieldType.Kind() == reflect.Map
-		isMap := fieldType.Kind() == reflect.Map
-
-		// Resolve field name using custom function or default (json tag or field name)
-		jsonName := resolveFieldName(&field)
-
-		cached := constraints.CachedField{
-			Name:         field.Name,
-			JSONName:     jsonName,
-			FieldIndex:   i,
-			IsCollection: isCollection,
-			IsMap:        isMap,
-		}
-
-		if parsedTag != nil {
-			cached.HasDive = parsedTag.DivePresent
-
-			// Check for required tag
-			if _, hasRequired := parsedTag.CollectionConstraints["required"]; hasRequired {
-				cached.IsRequired = true
-			}
-
-			// Check for omitempty tag
-			if _, hasOmitEmpty := parsedTag.CollectionConstraints["omitempty"]; hasOmitEmpty {
-				cached.IsOmitEmpty = true
-			}
-
-			// Constraints before dive (or regular field constraints)
-			if len(parsedTag.CollectionConstraints) > 0 {
-				cached.Constraints = constraints.BuildConstraints(parsedTag.CollectionConstraints, field.Type)
-				// Extract context-aware validators (called during ValidateCtx)
-				cached.ContextConstraints = constraints.ExtractContextValidators(parsedTag.CollectionConstraints)
-			}
-
-			// Element constraints after dive
-			if parsedTag.DivePresent && len(parsedTag.ElementConstraints) > 0 {
-				cached.ElementConstraints = constraints.BuildConstraints(parsedTag.ElementConstraints, field.Type.Elem())
-			}
-
-			// Map key constraints
-			if isMap && len(parsedTag.KeyConstraints) > 0 {
-				cached.KeyConstraints = constraints.BuildConstraints(parsedTag.KeyConstraints, field.Type.Key())
-			}
-
-			// Cross-field constraints (eqfield, gtfield, etc.) and skip constraints
-			cached.CrossFieldConstraints, cached.SkipConstraints = constraints.BuildCrossFieldConstraintsForField(
-				parsedTag.CollectionConstraints, typ, i)
-			cached.HasSkipConstraints = len(cached.SkipConstraints) > 0
-		}
-
-		// Recurse for nested structs (passing visited set for cycle detection)
-		switch fieldType.Kind() {
-		case reflect.Struct:
-			cached.NestedCache = v.buildFieldConstraints(fieldType, tagName, visited)
-		case reflect.Slice, reflect.Map:
-			elemType := fieldType.Elem()
-			if elemType.Kind() == reflect.Pointer {
-				elemType = elemType.Elem()
-			}
-			if elemType.Kind() == reflect.Struct {
-				cached.NestedCache = v.buildFieldConstraints(elemType, tagName, visited)
-			}
-		}
-
-		cache.Fields = append(cache.Fields, cached)
-	}
-
-	return cache
+	})
 }
 
 // validateDiveTags validates that dive/keys/endkeys tags are used correctly.
@@ -276,25 +273,6 @@ func (v *Validator[T]) validateDiveTags(typ reflect.Type, tagName string) {
 	}
 }
 
-// setFieldValue wraps the deserialize package SetFieldValue for use in validator.
-// Passes options to enable required checking in nested structs (via dive).
-func (v *Validator[T]) setFieldValue(fieldValue reflect.Value, inValue any, fieldType reflect.Type, goFieldName string) error {
-	opts := deserialize.FieldOptions{
-		StrictMissingFields: v.options.StrictMissingFields,
-		TagName:             v.tagName,
-		FieldName:           goFieldName,
-	}
-	// Create a recursive function that uses whatever opts it's called with (callOpts),
-	// not the opts captured above — so nested required-field errors report a
-	// fully-qualified path as callers thread progressively-accumulated Path through
-	// each recursive call, mirroring validateWithCache's explicit path parameter.
-	var recursiveSet func(reflect.Value, any, reflect.Type, deserialize.FieldOptions) error
-	recursiveSet = func(fv reflect.Value, iv any, ft reflect.Type, callOpts deserialize.FieldOptions) error {
-		return deserialize.SetFieldValueWithOptions(fv, iv, ft, recursiveSet, callOpts)
-	}
-	return deserialize.SetFieldValueWithOptions(fieldValue, inValue, fieldType, recursiveSet, opts)
-}
-
 // Validate validates a struct and returns any validation errors
 // NOTE: 'required' is NOT checked here - it's only checked during Unmarshal
 // Validate checks if the value satisfies the constraint.
@@ -311,6 +289,19 @@ func (v *Validator[T]) Validate(obj *T) error {
 	// Reset buffers (keep capacity)
 	ctx.pathBuf = ctx.pathBuf[:0]
 	ctx.errs = ctx.errs[:0]
+	clear(ctx.visited)
+	clear(ctx.depth)
+	ctx.maxDepth = v.options.MaxRecursionDepth
+	if ctx.maxDepth <= 0 {
+		ctx.maxDepth = DefaultMaxRecursionDepth
+	}
+
+	// The root object is validated directly below, not through recurseNested,
+	// so it would otherwise never increment ctx.depth. Seed depth 1 for the
+	// root's own FieldCache so a self-referential type's first nested descent
+	// (which shares this same *FieldCache via the build-time back-edge) lands
+	// at depth 2 - matching Unmarshal, where the root itself is depth 1.
+	ctx.depth[v.fieldCache] = 1
 
 	// Validate all fields using struct tags (required is skipped via buildConstraints)
 	v.validateWithCache(reflect.ValueOf(obj).Elem(), nil, ctx, v.fieldCache)
@@ -349,6 +340,37 @@ func (v *Validator[T]) Validate(obj *T) error {
 	validateContextPool.Put(ctx)
 
 	return result
+}
+
+// recurseNested validates val against nested, enforcing the self-referential
+// depth cap and breaking real in-memory pointer cycles. Diamonds (a shared,
+// non-cyclic sub-object reached via two different branches) are re-validated,
+// since both the visited and depth entries are removed again on leave.
+func (v *Validator[T]) recurseNested(val reflect.Value, path []byte, ctx *validateContext, nested *constraints.FieldCache) {
+	var ptr uintptr
+	if val.CanAddr() {
+		ptr = val.Addr().Pointer()
+		if _, seen := ctx.visited[ptr]; seen {
+			return // cycle: stop this branch (remaining constraints already ran)
+		}
+	}
+	ctx.depth[nested]++
+	if ctx.depth[nested] > ctx.maxDepth {
+		ctx.depth[nested]--
+		ctx.errs = append(ctx.errs, FieldError{
+			Field:   string(path),
+			Message: (&deserialize.MaxDepthExceededError{Path: string(path), Limit: ctx.maxDepth}).Error(),
+		})
+		return
+	}
+	if ptr != 0 {
+		ctx.visited[ptr] = struct{}{}
+	}
+	v.validateWithCache(val, path, ctx, nested)
+	if ptr != 0 {
+		delete(ctx.visited, ptr)
+	}
+	ctx.depth[nested]--
 }
 
 // validateWithCache validates using pre-built cached constraints.
@@ -431,14 +453,29 @@ func (v *Validator[T]) validateWithCache(val reflect.Value, path []byte, ctx *va
 		// (skip for omitempty zero-value fields)
 		if !isOmitEmptyZero {
 			if cached.IsCollection && cached.HasDive {
-				if cached.IsMap {
-					v.validateMapWithCache(fieldVal, fieldPath, ctx, cached)
-				} else {
-					v.validateSliceWithCache(fieldVal, fieldPath, ctx, cached)
+				// IsCollection is computed against the deref'd field type (a
+				// *[]T/*map[K]V field is still IsCollection=true), so the field
+				// value itself may still be a pointer here - dereference it
+				// before Len()/MapRange(), same as validateWithCache does for
+				// nested structs. A nil pointer has nothing to dive into.
+				collVal := fieldVal
+				for collVal.Kind() == reflect.Pointer {
+					if collVal.IsNil() {
+						collVal = reflect.Value{}
+						break
+					}
+					collVal = collVal.Elem()
+				}
+				if collVal.IsValid() {
+					if cached.IsMap {
+						v.validateMapWithCache(collVal, fieldPath, ctx, cached)
+					} else {
+						v.validateSliceWithCache(collVal, fieldPath, ctx, cached)
+					}
 				}
 			} else if cached.NestedCache != nil && !cached.IsCollection {
 				// Recurse for nested structs (but NOT collection elements without dive)
-				v.validateWithCache(fieldVal, fieldPath, ctx, cached.NestedCache)
+				v.recurseNested(fieldVal, fieldPath, ctx, cached.NestedCache)
 			}
 		}
 	}
@@ -461,7 +498,7 @@ func (v *Validator[T]) validateSliceWithCache(val reflect.Value, path []byte, ct
 
 		// Recurse for nested structs
 		if cached.NestedCache != nil {
-			v.validateWithCache(elemVal, elemPath, ctx, cached.NestedCache)
+			v.recurseNested(elemVal, elemPath, ctx, cached.NestedCache)
 		}
 	}
 }
@@ -492,7 +529,7 @@ func (v *Validator[T]) validateMapWithCache(val reflect.Value, path []byte, ctx 
 
 		// Recurse for nested structs
 		if cached.NestedCache != nil {
-			v.validateWithCache(mapVal, elemPath, ctx, cached.NestedCache)
+			v.recurseNested(mapVal, elemPath, ctx, cached.NestedCache)
 		}
 	}
 }
@@ -580,49 +617,12 @@ func (v *Validator[T]) Unmarshal(data []byte) (*T, error) {
 	var obj T
 	objValue := reflect.ValueOf(&obj).Elem()
 
-	// Step 3: Apply field deserializers
+	// Step 3: Decode via the precomputed plan interpreter (zero per-call reflection;
+	// captures ExtraAllow extras inline; enforces the recursion-depth cap).
 	var fieldErrors []FieldError
-	for fieldName, deserializer := range v.fieldDeserializers {
-		var inValue any
-		if val, exists := jsonMap[fieldName]; exists {
-			inValue = val // Field present in JSON (might be nil for JSON null)
-		} else {
-			inValue = deserialize.FieldMissingSentinel // Field missing from JSON
-		}
-
-		if err := deserializer(&objValue, inValue); err != nil {
-			// Check if it's a MultiRequiredFieldError with multiple paths
-			var multiErr *deserialize.MultiRequiredFieldError
-			if errors.As(err, &multiErr) {
-				for _, reqErr := range multiErr.Errors {
-					fieldErrors = append(fieldErrors, FieldError{
-						Field:   reqErr.Field,
-						Code:    constraints.CodeRequired,
-						Message: reqErr.Error(),
-					})
-				}
-			} else {
-				// Check if it's a single RequiredFieldError
-				var reqErr *deserialize.RequiredFieldError
-				if errors.As(err, &reqErr) {
-					fieldErrors = append(fieldErrors, FieldError{
-						Field:   reqErr.Field,
-						Code:    constraints.CodeRequired,
-						Message: reqErr.Error(),
-					})
-				} else {
-					fieldErrors = append(fieldErrors, FieldError{
-						Field:   fieldName,
-						Message: err.Error(),
-					})
-				}
-			}
-		}
-	}
-
-	// Step 3.5: Capture extra fields recursively (for this struct and all nested structs)
-	if v.options.ExtraFields == ExtraAllow {
-		v.captureExtrasRecursive(objValue, jsonMap, v.tagName)
+	st := deserialize.NewPlanState(v.planIndex, v.tagName, v.options.MaxRecursionDepth)
+	if err := deserialize.DecodeStruct(objValue, jsonMap, v.rootPlan, st, ""); err != nil {
+		fieldErrors = appendDecodeError(fieldErrors, err)
 	}
 
 	// Step 4: Run validation constraints (min, max, email, etc.)
@@ -641,6 +641,36 @@ func (v *Validator[T]) Unmarshal(data []byte) (*T, error) {
 	}
 
 	return &obj, nil
+}
+
+// appendDecodeError classifies a non-nil error from deserialize.DecodeStruct
+// and appends the resulting FieldError(s), shared by Unmarshal and
+// unmarshalFromMap so their decode-error handling can't drift apart.
+func appendDecodeError(fieldErrors []FieldError, err error) []FieldError {
+	var multiErr *deserialize.MultiRequiredFieldError
+	var depthErr *deserialize.MaxDepthExceededError
+	switch {
+	case errors.As(err, &multiErr):
+		for _, reqErr := range multiErr.Errors {
+			if reqErr.IsRoot {
+				// Root-level required fields match the legacy top-level
+				// deserializer closure's plain error: JSON field name, no Code.
+				fieldErrors = append(fieldErrors, FieldError{Field: reqErr.Field, Message: reqErr.Error()})
+			} else {
+				fieldErrors = append(fieldErrors, FieldError{Field: reqErr.Field, Code: constraints.CodeRequired, Message: reqErr.Error()})
+			}
+		}
+	case errors.As(err, &depthErr):
+		fieldErrors = append(fieldErrors, FieldError{Field: depthErr.Path, Message: depthErr.Error()})
+	default:
+		var fieldErr *deserialize.FieldDecodeError
+		if errors.As(err, &fieldErr) {
+			fieldErrors = append(fieldErrors, FieldError{Field: fieldErr.Field, Message: fieldErr.Err.Error()})
+		} else {
+			fieldErrors = append(fieldErrors, FieldError{Field: fieldNameRoot, Message: err.Error()})
+		}
+	}
+	return fieldErrors
 }
 
 // getJSONFieldName returns the JSON field name for a struct field, or empty string if ignored.
@@ -669,116 +699,6 @@ func getJSONFieldName(field *reflect.StructField, tagName string) string {
 		return jsonTag
 	}
 	return field.Name
-}
-
-// captureExtrasRecursive recursively captures extra fields for structs with extras field.
-func (v *Validator[T]) captureExtrasRecursive(structVal reflect.Value, jsonMap map[string]any, tagName string) {
-	structType := structVal.Type()
-
-	// Capture extras at this level if extra_fields field exists
-	v.captureExtrasAtLevel(structType, structVal, jsonMap, tagName)
-
-	// Recursively handle nested structs
-	v.captureExtrasInNestedFields(structType, structVal, jsonMap, tagName)
-}
-
-// captureExtrasAtLevel captures extra fields for a single struct level.
-func (v *Validator[T]) captureExtrasAtLevel(structType reflect.Type, structVal reflect.Value, jsonMap map[string]any, tagName string) {
-	extraInfo := deserialize.DetectExtraField(structType, tagName)
-	if extraInfo == nil {
-		return
-	}
-
-	// Build set of known field names
-	knownFields := make(map[string]bool)
-	for i := 0; i < structType.NumField(); i++ {
-		f := structType.Field(i)
-		if name := getJSONFieldName(&f, tagName); name != "" {
-			knownFields[name] = true
-		}
-	}
-
-	// Capture extra fields
-	extras := make(map[string]any)
-	for key, value := range jsonMap {
-		if !knownFields[key] {
-			extras[key] = value
-		}
-	}
-
-	// Set extras on struct (always set, even if empty)
-	structVal.Field(extraInfo.FieldIndex).Set(reflect.ValueOf(extras))
-}
-
-// captureExtrasInNestedFields recursively captures extras in nested struct fields.
-func (v *Validator[T]) captureExtrasInNestedFields(structType reflect.Type, structVal reflect.Value, jsonMap map[string]any, tagName string) {
-	for i := 0; i < structType.NumField(); i++ {
-		field := structType.Field(i)
-		fieldName := getJSONFieldName(&field, tagName)
-		if fieldName == "" {
-			continue
-		}
-
-		nestedJSON, exists := jsonMap[fieldName]
-		if !exists {
-			continue
-		}
-
-		fieldVal := structVal.Field(i)
-		v.captureExtrasInField(fieldVal, field.Type, nestedJSON, tagName)
-	}
-}
-
-// captureExtrasInField captures extras for a single field based on its type.
-func (v *Validator[T]) captureExtrasInField(fieldVal reflect.Value, fieldType reflect.Type, nestedJSON any, tagName string) {
-	switch fieldType.Kind() {
-	case reflect.Struct:
-		if nestedMap, ok := nestedJSON.(map[string]any); ok {
-			v.captureExtrasRecursive(fieldVal, nestedMap, tagName)
-		}
-	case reflect.Pointer:
-		if fieldType.Elem().Kind() == reflect.Struct && !fieldVal.IsNil() {
-			if nestedMap, ok := nestedJSON.(map[string]any); ok {
-				v.captureExtrasRecursive(fieldVal.Elem(), nestedMap, tagName)
-			}
-		}
-	case reflect.Slice:
-		v.captureExtrasInSlice(fieldVal, fieldType, nestedJSON, tagName)
-	}
-}
-
-// captureExtrasInSlice captures extras in slice elements.
-func (v *Validator[T]) captureExtrasInSlice(fieldVal reflect.Value, fieldType reflect.Type, nestedJSON any, tagName string) {
-	elemType := fieldType.Elem()
-	isStructSlice := elemType.Kind() == reflect.Struct
-	isPtrStructSlice := elemType.Kind() == reflect.Pointer && elemType.Elem().Kind() == reflect.Struct
-
-	if !isStructSlice && !isPtrStructSlice {
-		return
-	}
-
-	sliceJSON, ok := nestedJSON.([]any)
-	if !ok {
-		return
-	}
-
-	for idx := 0; idx < fieldVal.Len() && idx < len(sliceJSON); idx++ {
-		elemVal := fieldVal.Index(idx)
-		if elemType.Kind() == reflect.Pointer {
-			if elemVal.IsNil() {
-				continue
-			}
-			elemVal = elemVal.Elem()
-		}
-		if nestedMap, ok := sliceJSON[idx].(map[string]any); ok {
-			v.captureExtrasRecursive(elemVal, nestedMap, tagName)
-		}
-	}
-}
-
-// setDefaultValue wraps the deserialize package SetDefaultValue for use in validator.
-func (v *Validator[T]) setDefaultValue(fieldValue reflect.Value, defaultValue string) {
-	deserialize.SetDefaultValue(fieldValue, defaultValue, v.setDefaultValue)
 }
 
 // Marshal validates and marshals struct to JSON.
@@ -1017,49 +937,13 @@ func (v *Validator[T]) unmarshalFromMap(jsonMap map[string]any) (*T, error) {
 	var obj T
 	objValue := reflect.ValueOf(&obj).Elem()
 
-	// Apply field deserializers (same logic as Unmarshal)
+	// Decode via the precomputed plan interpreter (same logic as Unmarshal): zero
+	// per-call reflection, captures ExtraAllow extras inline, enforces the
+	// recursion-depth cap.
 	var fieldErrors []FieldError
-	for fieldName, deserializer := range v.fieldDeserializers {
-		var inValue any
-		if val, exists := jsonMap[fieldName]; exists {
-			inValue = val
-		} else {
-			inValue = deserialize.FieldMissingSentinel
-		}
-
-		if err := deserializer(&objValue, inValue); err != nil {
-			// Check if it's a MultiRequiredFieldError with multiple paths
-			var multiErr *deserialize.MultiRequiredFieldError
-			if errors.As(err, &multiErr) {
-				for _, reqErr := range multiErr.Errors {
-					fieldErrors = append(fieldErrors, FieldError{
-						Field:   reqErr.Field,
-						Code:    constraints.CodeRequired,
-						Message: reqErr.Error(),
-					})
-				}
-			} else {
-				// Check if it's a single RequiredFieldError
-				var reqErr *deserialize.RequiredFieldError
-				if errors.As(err, &reqErr) {
-					fieldErrors = append(fieldErrors, FieldError{
-						Field:   reqErr.Field,
-						Code:    constraints.CodeRequired,
-						Message: reqErr.Error(),
-					})
-				} else {
-					fieldErrors = append(fieldErrors, FieldError{
-						Field:   fieldName,
-						Message: err.Error(),
-					})
-				}
-			}
-		}
-	}
-
-	// Capture extra fields recursively if ExtraAllow mode is enabled
-	if v.options.ExtraFields == ExtraAllow {
-		v.captureExtrasRecursive(objValue, jsonMap, v.tagName)
+	st := deserialize.NewPlanState(v.planIndex, v.tagName, v.options.MaxRecursionDepth)
+	if err := deserialize.DecodeStruct(objValue, jsonMap, v.rootPlan, st, ""); err != nil {
+		fieldErrors = appendDecodeError(fieldErrors, err)
 	}
 
 	// Run validation constraints

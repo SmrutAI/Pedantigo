@@ -2,14 +2,11 @@ package deserialize
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/SmrutAI/pedantigo/v2/validator/internal/tags"
 )
 
 var (
@@ -144,77 +141,6 @@ func SetFieldValueWithOptions(
 		}
 	}
 
-	// WalkerDecoder / json.Unmarshaler dispatch. A type may control how it is
-	// filled from the already-decoded JSON value; nested structs it delegates via
-	// recurse still get required/default enforcement. Placed after the time.Time /
-	// time.Duration special cases (handled above) and before the Kind-based
-	// branches so a custom-shaped struct field is not misread as an object.
-	if fieldValue.CanAddr() {
-		addr := fieldValue.Addr().Interface()
-		if wd, ok := addr.(WalkerDecoder); ok {
-			// Thread opts (this call's own, already-accumulated Path) into recurse
-			// so DecodeWalk's nested struct/slice values report a fully-qualified
-			// path, matching validateWithCache's explicit path threading.
-			recurse := func(dst any, dec any) error {
-				rv := reflect.ValueOf(dst).Elem()
-				return recursiveSetFunc(rv, dec, rv.Type(), opts)
-			}
-			return wd.DecodeWalk(inValue, recurse)
-		}
-		if u, ok := addr.(json.Unmarshaler); ok {
-			raw, err := json.Marshal(inValue)
-			if err != nil {
-				return err
-			}
-			return u.UnmarshalJSON(raw)
-		}
-	}
-
-	// Handle nested structs: if inValue is map[string]any and target is struct
-	if inVal.Kind() == reflect.Map && fieldType.Kind() == reflect.Struct {
-		// Convert inValue to map[string]any for deserializeStructFields
-		inputMap, ok := inValue.(map[string]any)
-		if !ok {
-			// Fallback: re-marshal the map and unmarshal into the struct
-			jsonBytes, err := json.Marshal(inValue)
-			if err != nil {
-				return fmt.Errorf("failed to marshal nested struct: %w", err)
-			}
-			newStruct := reflect.New(fieldType)
-			if err := json.Unmarshal(jsonBytes, newStruct.Interface()); err != nil {
-				return fmt.Errorf("failed to unmarshal nested struct: %w", err)
-			}
-			fieldValue.Set(newStruct.Elem())
-			return nil
-		}
-
-		// Build path for nested struct fields
-		nestedPath := opts.Path
-		if nestedPath == "" && opts.FieldName != "" {
-			nestedPath = opts.FieldName
-		}
-
-		// Create nested options with updated path
-		nestedOpts := FieldOptions{
-			StrictMissingFields: opts.StrictMissingFields,
-			TagName:             opts.TagName,
-			Path:                nestedPath,
-		}
-
-		// Use deserializeStructFields to properly check required fields
-		return deserializeStructFields(fieldValue, fieldType, inputMap, recursiveSetFunc, nestedOpts)
-	}
-
-	// Handle slices: if inValue is []any and target is slice
-	if inVal.Kind() == reflect.Slice && fieldType.Kind() == reflect.Slice {
-		return setSliceField(fieldValue, inVal, fieldType, recursiveSetFunc, opts)
-	}
-
-	// Handle maps: if inValue is map[string]any and target is map
-	if inVal.Kind() == reflect.Map && fieldType.Kind() == reflect.Map {
-		return setMapField(fieldValue, inVal, fieldType, recursiveSetFunc, opts)
-	}
-
 	// Handle type conversion
 	switch {
 	case inVal.Type().AssignableTo(fieldType):
@@ -274,125 +200,15 @@ func isNumericKind(k reflect.Kind) bool {
 	return false
 }
 
-// deserializeStructFields iterates through struct fields and sets their values from a map.
-// It handles JSON field name resolution, checks for field presence in the input map,
-// and validates required fields during deserialization (to distinguish missing keys from zero values).
-// Collects all errors instead of returning early to provide complete error feedback.
-func deserializeStructFields(
-	structValue reflect.Value,
-	structType reflect.Type,
-	inputMap map[string]any,
-	recursiveSetFunc func(fieldValue reflect.Value, inValue any, fieldType reflect.Type, opts FieldOptions) error,
-	opts FieldOptions,
-) error {
-	var requiredErrors []*RequiredFieldError
-
-	// Iterate through struct fields and set values
-	for j := 0; j < structType.NumField(); j++ {
-		field := structType.Field(j)
-
-		// Skip unexported fields
-		if !field.IsExported() {
-			continue
-		}
-
-		// Get JSON field name
-		jsonTag := field.Tag.Get("json")
-		jsonFieldName := field.Name
-		if jsonTag != "" && jsonTag != "-" {
-			if name, _, found := strings.Cut(jsonTag, ","); found {
-				jsonFieldName = name
-			} else {
-				jsonFieldName = jsonTag
-			}
-		}
-
-		// Build full path for error reporting (e.g., "Items[0].City")
-		// Use Go struct field name (not JSON name) to match existing error format
-		fullPath := field.Name
-		if opts.Path != "" {
-			fullPath = opts.Path + "." + field.Name
-		}
-
-		// Check if field exists in JSON
-		val, exists := inputMap[jsonFieldName]
-		if !exists {
-			// Parse tags to check for defaults and required
-			tagName := opts.TagName
-			if tagName == "" {
-				tagName = tags.DefaultTagName
-			}
-			parsedTag := tags.ParseTagWithName(field.Tag, tagName)
-
-			// Apply static default if present
-			if defVal, hasDefault := parsedTag["default"]; hasDefault {
-				fieldVal := structValue.Field(j)
-				var setDefault func(reflect.Value, string)
-				setDefault = func(fv reflect.Value, dv string) {
-					SetDefaultValue(fv, dv, setDefault)
-				}
-				setDefault(fieldVal, defVal)
-				continue
-			}
-
-			// Apply defaultUsingMethod if present
-			if methodName, hasMethod := parsedTag["defaultUsingMethod"]; hasMethod {
-				fieldVal := structValue.Field(j)
-				if structValue.CanAddr() {
-					ptrValue := structValue.Addr()
-					method := ptrValue.MethodByName(methodName)
-					if method.IsValid() {
-						results := method.Call(nil)
-						if len(results) == 2 {
-							if !results[1].IsNil() {
-								return results[1].Interface().(error)
-							}
-							fieldVal.Set(results[0])
-						}
-					}
-				}
-				continue
-			}
-
-			// No default - check if required
-			if opts.StrictMissingFields {
-				if _, hasRequired := parsedTag["required"]; hasRequired {
-					requiredErrors = append(requiredErrors, &RequiredFieldError{Field: fullPath})
-				}
-			}
-			// Leave as zero value
-			continue
-		}
-
-		// Set the field value. Thread this field's own fully-qualified path
-		// (fullPath, computed above) into the child call so nested required-field
-		// errors report a complete path — mirrors validateWithCache's explicit
-		// path threading (appendPath(ctx.pathBuf, path, name) in validator.go).
-		fieldVal := structValue.Field(j)
-		childOpts := FieldOptions{StrictMissingFields: opts.StrictMissingFields, TagName: opts.TagName, Path: fullPath}
-		if err := recursiveSetFunc(fieldVal, val, field.Type, childOpts); err != nil {
-			// Check if it's a multi-error from nested struct
-			var multiErr *MultiRequiredFieldError
-			if errors.As(err, &multiErr) {
-				requiredErrors = append(requiredErrors, multiErr.Errors...)
-			} else {
-				// For other errors, return immediately (type conversion errors, etc.)
-				return err
-			}
-		}
-	}
-
-	// Return collected required errors
-	if len(requiredErrors) > 0 {
-		return &MultiRequiredFieldError{Errors: requiredErrors}
-	}
-
-	return nil
-}
-
 // RequiredFieldError represents a missing required field error with full path.
 type RequiredFieldError struct {
 	Field string
+	// IsRoot is true when this required field is a direct field of the struct
+	// passed straight to Unmarshal/UnmarshalInto (not reached via nested-struct
+	// or dive recursion). Root-level required errors use the JSON field name and
+	// carry no Code (matching the legacy top-level deserializer behavior); nested
+	// required errors use the dotted Go-field path and Code: CodeRequired.
+	IsRoot bool
 }
 
 func (e *RequiredFieldError) Error() string {
@@ -409,182 +225,6 @@ func (e *MultiRequiredFieldError) Error() string {
 		return e.Errors[0].Error()
 	}
 	return fmt.Sprintf("%d required fields missing", len(e.Errors))
-}
-
-// setSliceField handles deserialization of slice types.
-// For slices containing structs, it uses deserializeStructFields to track field presence.
-// Collects all errors from all elements instead of returning early.
-func setSliceField(
-	fieldValue reflect.Value,
-	inVal reflect.Value,
-	fieldType reflect.Type,
-	recursiveSetFunc func(fieldValue reflect.Value, inValue any, fieldType reflect.Type, opts FieldOptions) error,
-	opts FieldOptions,
-) error {
-	elemType := fieldType.Elem()
-	newSlice := reflect.MakeSlice(fieldType, inVal.Len(), inVal.Len())
-	var requiredErrors []*RequiredFieldError
-
-	for i := 0; i < inVal.Len(); i++ {
-		elemValue := newSlice.Index(i)
-		elemInput := inVal.Index(i).Interface()
-
-		// Build element path (e.g., "Items[0]")
-		// Use FieldName if Path is empty (top-level collection)
-		basePath := opts.Path
-		if basePath == "" && opts.FieldName != "" {
-			basePath = opts.FieldName
-		}
-		elemPath := fmt.Sprintf("%s[%d]", basePath, i)
-		elemOpts := opts
-		elemOpts.Path = elemPath
-
-		// Only non-pointer struct elements reach reflect.TypeOf(elemInput).Kind()
-		// below, which panics on a nil interface. Pointer and scalar elements
-		// already handle a nil (JSON null) element correctly via recursiveSetFunc's
-		// own pointer/nil branches in SetFieldValueWithOptions, so this check must
-		// not fire for them.
-		if elemInput == nil && elemType.Kind() == reflect.Struct {
-			return fmt.Errorf("%s: null is not a valid value for %s", elemPath, elemType)
-		}
-
-		// For structs in slices, manually deserialize fields to track which are present
-		if elemType.Kind() == reflect.Struct && reflect.TypeOf(elemInput).Kind() == reflect.Map {
-			ptrType := reflect.PointerTo(elemType)
-			if ptrType.Implements(walkerDecoderType) || ptrType.Implements(jsonUnmarshalerType) {
-				// Thread elemPath as this element's opts.Path so DecodeWalk's own
-				// nested recurse calls (via the dispatch above) already report a
-				// fully-qualified path — no manual prefixing needed here, matching
-				// how deserializeStructFields collects multiErr.Errors as-is below.
-				if err := recursiveSetFunc(elemValue, elemInput, elemType, elemOpts); err != nil {
-					var multiErr *MultiRequiredFieldError
-					if errors.As(err, &multiErr) {
-						requiredErrors = append(requiredErrors, multiErr.Errors...)
-					} else {
-						return err
-					}
-				}
-				continue
-			}
-			inputMap, ok := elemInput.(map[string]any)
-			if !ok {
-				return fmt.Errorf("expected map for struct element")
-			}
-
-			// Create new struct instance
-			newStruct := reflect.New(elemType).Elem()
-
-			// Deserialize struct fields using helper (passes options for required check)
-			if err := deserializeStructFields(newStruct, elemType, inputMap, recursiveSetFunc, elemOpts); err != nil {
-				// Collect required errors, return immediately on other errors
-				var multiErr *MultiRequiredFieldError
-				if errors.As(err, &multiErr) {
-					requiredErrors = append(requiredErrors, multiErr.Errors...)
-				} else {
-					return err
-				}
-			}
-
-			elemValue.Set(newStruct)
-		} else {
-			if err := recursiveSetFunc(elemValue, elemInput, elemType, elemOpts); err != nil {
-				return err
-			}
-		}
-	}
-
-	fieldValue.Set(newSlice)
-
-	// Return collected errors
-	if len(requiredErrors) > 0 {
-		return &MultiRequiredFieldError{Errors: requiredErrors}
-	}
-	return nil
-}
-
-// setMapField handles deserialization of map types.
-// For maps with struct values, it uses deserializeStructFields to track field presence.
-// Collects all errors from all entries instead of returning early.
-func setMapField(
-	fieldValue reflect.Value,
-	inVal reflect.Value,
-	fieldType reflect.Type,
-	recursiveSetFunc func(fieldValue reflect.Value, inValue any, fieldType reflect.Type, opts FieldOptions) error,
-	opts FieldOptions,
-) error {
-	keyType := fieldType.Key()
-	valueType := fieldType.Elem()
-
-	// Create new map
-	newMap := reflect.MakeMap(fieldType)
-	var requiredErrors []*RequiredFieldError
-
-	// Iterate through map entries
-	iter := inVal.MapRange()
-	for iter.Next() {
-		key := iter.Key()
-		val := iter.Value().Interface()
-
-		// Convert key if needed
-		var convertedKey reflect.Value
-		switch {
-		case key.Type().AssignableTo(keyType):
-			convertedKey = key
-		case key.Type().ConvertibleTo(keyType):
-			convertedKey = key.Convert(keyType)
-		default:
-			return fmt.Errorf("cannot convert map key %v to %v", key.Type(), keyType)
-		}
-
-		// Build element path (e.g., "Offices[branch]")
-		// Use FieldName if Path is empty (top-level collection)
-		basePath := opts.Path
-		if basePath == "" && opts.FieldName != "" {
-			basePath = opts.FieldName
-		}
-		elemPath := fmt.Sprintf("%s[%v]", basePath, key.Interface())
-		elemOpts := opts
-		elemOpts.Path = elemPath
-
-		// For struct values in maps, manually deserialize fields to track which are present
-		if valueType.Kind() == reflect.Struct && reflect.TypeOf(val).Kind() == reflect.Map {
-			inputMap, ok := val.(map[string]any)
-			if !ok {
-				return fmt.Errorf("expected map for struct value")
-			}
-
-			// Create new struct instance
-			newStruct := reflect.New(valueType).Elem()
-
-			// Deserialize struct fields using helper (passes options for required check)
-			if err := deserializeStructFields(newStruct, valueType, inputMap, recursiveSetFunc, elemOpts); err != nil {
-				// Collect required errors, return immediately on other errors
-				var multiErr *MultiRequiredFieldError
-				if errors.As(err, &multiErr) {
-					requiredErrors = append(requiredErrors, multiErr.Errors...)
-				} else {
-					return err
-				}
-			}
-
-			newMap.SetMapIndex(convertedKey, newStruct)
-		} else {
-			// For non-struct values, convert normally
-			newValue := reflect.New(valueType).Elem()
-			if err := recursiveSetFunc(newValue, val, valueType, elemOpts); err != nil {
-				return err
-			}
-			newMap.SetMapIndex(convertedKey, newValue)
-		}
-	}
-
-	fieldValue.Set(newMap)
-
-	// Return collected errors
-	if len(requiredErrors) > 0 {
-		return &MultiRequiredFieldError{Errors: requiredErrors}
-	}
-	return nil
 }
 
 // SetDefaultValue sets a default value on a field.

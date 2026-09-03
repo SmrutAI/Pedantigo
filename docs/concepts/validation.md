@@ -342,4 +342,5 @@ type Website struct {
 
 - See [Constraints Reference](/docs/constraints/string) for the complete list of available constraints
 - Learn about [Cross-Field Validation](/docs/concepts/cross-field) for complex business logic
+- See [Cyclic and Nested Types](/docs/concepts/cyclic-and-nested-types) for self-referential structs and recursion-depth limits
 - Check out [Examples](/docs/examples/basic) for real-world patterns
