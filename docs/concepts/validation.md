@@ -129,14 +129,14 @@ The `required` constraint has special behavior:
 - An explicit `null` value will fail validation if `required` is set
 - Missing JSON keys are treated as missing fields
 
-**During Validate (existing struct):**
-- `required` is NOT checked
+**During Validate, StructPartial, and StructExcept (existing struct):**
+- `required` is NOT checked by any of the three
 - Only format and constraint validations apply (min, max, email, etc.)
 - Existing structs are assumed to be properly initialized
 
 This distinction matters because:
 - JSON unmarshal needs to know which fields were explicitly provided
-- Direct struct validation assumes the struct was already initialized
+- Direct struct validation (whether via `Validate`, `StructPartial`, or `StructExcept`) assumes the struct was already initialized — Go's zero value for a missing field is indistinguishable from a JSON key that was never sent, so none of these three can check `required` meaningfully
 
 Example:
 
@@ -155,7 +155,13 @@ config, err := validator.Unmarshal[Config]([]byte(`{}`))
 // This passes (Validate): required not checked on existing struct
 config := &Config{APIKey: ""}
 validator.Validate(config) // No error for empty string
+
+// This also passes (StructPartial/StructExcept): same reasoning as Validate
+validator.ValidatePartial(config, "APIKey")  // No error for empty string
+validator.ValidateExcept(config)             // No error for empty string
 ```
+
+If `required` enforcement matters, the data must go through `Unmarshal` (or `NewModel`, which also unmarshals) — `Validate`, `StructPartial`, and `StructExcept` are for validating format and cross-field constraints on a struct that already exists, not a substitute for `Unmarshal`'s required-checking.
 
 ## Field-Level vs Cross-Field Validation
 
