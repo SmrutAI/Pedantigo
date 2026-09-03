@@ -12,6 +12,12 @@ const (
 	ExtraAllow
 )
 
+// DefaultMaxRecursionDepth bounds self-referential (cyclic-type) recursion during
+// Unmarshal and Validate. It is a security control against deeply-nested/recursive
+// payloads (a DoS class: uncontrolled recursion, CWE-674). Acyclic nesting through
+// distinct types is NOT limited by this. Callers raise it via Options.MaxRecursionDepth.
+const DefaultMaxRecursionDepth = 3
+
 // Options configures validator behavior.
 type Options struct {
 	// StrictMissingFields controls whether missing fields without defaults are errors
@@ -31,6 +37,12 @@ type Options struct {
 	//   v := validator.New[User](validator.Options{TagName: "binding"})
 	//   // This validator uses `binding:"required,email"` tags
 	TagName string
+
+	// MaxRecursionDepth limits how many times decoding/validation may re-enter the
+	// SAME self-referential type along one path (outermost instance = depth 1).
+	// Exceeding it returns a *MaxDepthExceededError. Distinct-type nesting is
+	// unbounded. Zero or negative means "use DefaultMaxRecursionDepth" (3).
+	MaxRecursionDepth int
 }
 
 // resolveTagName determines the effective tag name for a validator.
@@ -47,5 +59,6 @@ func DefaultOptions() Options {
 	return Options{
 		StrictMissingFields: true,
 		ExtraFields:         ExtraIgnore,
+		MaxRecursionDepth:   DefaultMaxRecursionDepth,
 	}
 }
