@@ -118,17 +118,22 @@ See [Best Practices](#best-practices) below.
 
 ## Simple API vs Validator API
 
-Both APIs exist for different reasons — and it is *not* "one is slow, one is fast." Measured directly (3 runs
-each, `Validate` on the same struct):
+These are **two different tools for different jobs**, not two speeds of the same thing. The Simple API is a thin
+wrapper over a cached instance — ergonomic parity with playground-style call sites, for easy migration — and it
+deliberately does **not** expose the Validator API's capabilities (custom `Options`, multiple differently-configured
+validators per type, explicit `Register`/construction). `New[T]()` itself is a Validator-API function, not a Simple-API
+method. The distinction is about capability, not speed: for a *shared* operation, the wrapper adds no meaningful
+per-call cost. Measured directly (3 runs each, `Validate` on the same struct, warm cache):
 
 | | ns/op | allocs |
 |---|-------|--------|
 | Simple API — `validator.Validate(&user)` (goes through the internal `sync.Map` cache lookup) | ~571 ns | 10 |
 | Validator API — direct instance, no lookup | ~568 ns | 10 |
 
-The difference is ~3 ns — statistically noise, not a real cost. A `sync.Map.Load` keyed by a stable
-`reflect.Type` is far cheaper than the actual validation work that follows it, so it doesn't show up as a
-measurable difference in practice.
+For this shared call path the only per-call difference is one `sync.Map.Load` (keyed by a stable `reflect.Type`) —
+~3 ns, far below the validation work that follows, so the wrapper carries no measurable per-call penalty. This is a
+statement about that one shared operation only — **not** a claim that the two APIs are interchangeable. They differ
+in what they can express, as below.
 
 <Tabs>
 <TabItem value="simple" label="Simple API" default>
